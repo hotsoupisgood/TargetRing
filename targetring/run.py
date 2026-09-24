@@ -38,7 +38,7 @@ from .adapters.opentargets import (
     safety_cell,
 )
 from .cache import Cache
-from .config import RUNS_DIR
+from .config import LLM_SPEND_CAP_USD, RUNS_DIR
 from .contract import check_contracts
 from .de_input import (
     LedgerEntry,
@@ -344,8 +344,13 @@ async def run_analysis(
         "note": "not run",
     }
     if with_triage:
-        from .triage import run_triage
-        llm_info = await run_triage(drawers, gene_order)
+        # LLM triage is not built in v1. Fail loudly rather than ImportError --
+        # a caller asking for triage must not get a figure that silently has none.
+        raise NotImplementedError(
+            "LLM triage is not implemented in v1. AGENTS.md rule 8 caps it at $5 and "
+            f"limits it to the top 10 genes; ${LLM_SPEND_CAP_USD:.2f} is unspent. "
+            "Nothing on the current figure depends on it."
+        )
 
     timings["total_s"] = round(time.time() - t0, 2)
 
