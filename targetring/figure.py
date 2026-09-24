@@ -198,6 +198,19 @@ class RingSpec:
                   then overstated its data. A short label has to be written to
                   stand alone at its length; the full label, caveat included,
                   stays on the scale in the side column.
+
+      wedge_tooltip  whether that short label needs a hover title carrying the
+                  ring's full name, units, domain and source.
+
+                  Puck's rule, the right way round: *"if you can get the point
+                  across no tool tip."* The default is False and a True here is
+                  an admission that the short label is incomplete. What a
+                  tooltip may never be is the place the meaning lives -- the
+                  exported SVG in Illustrator, the PNG and a projected slide
+                  have no hover at all, so the printed label has to be honest
+                  on its own and the tooltip only ever adds detail. A label
+                  that would be *misleading* without its tooltip is a bug in
+                  the label, not a reason to set this flag.
     """
 
     key: str
@@ -213,12 +226,40 @@ class RingSpec:
     transform: str = ""
     short_source: str = ""
     short_label: str = ""
+    wedge_tooltip: bool = False
 
     @property
     def wedge_label(self) -> str:
         """What the wedge draws. Falls back to the full label, and then the fit
         assertion is what refuses the render -- never a silent truncation."""
         return self.short_label or self.label
+
+    @property
+    def tooltip(self) -> str:
+        """"What is this and what am I looking at", in one hover.
+
+        Full name, then what one number on the ring *is*, then what its ends
+        mean, then who says so -- which is the order a reader asks them in. A
+        bounded ring prints its fixed domain; an unbounded one says the range
+        moves with the submitted set, because the honest answer there is that a
+        colour means something different in the next run and the scale in the
+        column is the only place the numbers live.
+        """
+        if not self.wedge_tooltip:
+            return ""
+        bits = [self.label, self.units]
+        # `transform` already says "fixed 0-1" or "range moves with the
+        # submitted set" on the rings that have one, so it stands in for the
+        # synthetic sentence rather than sitting beside it: a tooltip that
+        # states one fact twice in two wordings reads as two facts.
+        if self.transform:
+            bits.append(self.transform)
+        elif self.domain:
+            bits.append(f"fixed domain {self.domain[0]:g} to {self.domain[1]:g}")
+        elif not self.categorical:
+            bits.append("range moves with the submitted set — see its scale")
+        bits.append(f"source: {self.short_source}")
+        return " · ".join(b for b in bits if b)
 
 
 # PLAN.md §2. Order is outermost-first.
@@ -298,7 +339,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="tractability", units="mean of 3 keys, each 0 or 1",
              domain=(0.0, 1.0), transform="fixed 0–1, same colour in every run",
              short_source="Open Targets",
-             short_label="Tractability"),
+             short_label="Tractability (suggested)",
+             wedge_tooltip=True),
     # Binary with absence: an explicit 0.0 is a measurement ("looked, no probe")
     # and a missing key is no_data. Two values and nothing between them, so two
     # swatches -- a 256-step ramp here would offer a reader positions that do
@@ -310,7 +352,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(0.0, 1.0), levels=2,
              transform="binary; absent key is hatched, never 0",
              short_source="Open Targets",
-             short_label="Chemical probe"),
+             short_label="Chemical probe (yes/no)"),
     # Signed with a stated bad direction, which makes it diverging and NOT the
     # same kind of diverging as logFC: here one arm genuinely is the bad one, so
     # it gets the warm arm and says so. The caveat stays on the label because
@@ -321,7 +363,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(-1.0, 1.0), scale="diverging",
              transform="fixed −1…+1, diverging at 0; amber arm is the bad one",
              short_source="Open Targets",
-             short_label="Safety flags ≠ safety"),
+             short_label="Safety flags ≠ safe"),
     # V6: a ratio over five orders of magnitude, so log10. Deliberately NOT a
     # fixed domain: the ratio is unbounded above (TTR reaches 5,204x in liver)
     # and a fixed domain would clip TTR, APOB and SERPINA1 to the same top
@@ -335,7 +377,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              transform="log10; ticks are the raw ratio. Range moves with the "
                        "submitted set — unbounded above",
              short_source="GTEx v8",
-             short_label="Regional specificity"),
+             short_label="Region TPM ÷ median",
+             wedge_tooltip=True),
     # A stage ordinal with six levels and nothing between them.
     RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)",
              "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence",
@@ -343,7 +386,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(0.0, 5.0), levels=6,
              transform="6 discrete stages, fixed; no value between two stages",
              short_source="Open Targets",
-             short_label="Pipeline: furthest phase"),
+             short_label="Furthest trial phase",
+             wedge_tooltip=True),
     # Puck's hard condition from v2.2 item 2 stands: the ring must state which
     # source it counted, on the figure. v2.4 changes the answer -- the per-drug
     # ClinicalTrials.gov hop is retired and these rows come from Open Targets'
@@ -359,7 +403,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS,
              transform="categorical — not a ramp, and not comparable to one",
              short_source="Open Targets",
-             short_label="Pipeline: activity now"),
+             short_label="Trial activity now",
+             wedge_tooltip=True),
     # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred -- four
     # named levels, so four swatches.
     RingSpec("tdl", "Target development level (Pharos TDL — knowledge, not a pocket)",
@@ -368,7 +413,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(0.0, float(TDL_MAX)), levels=TDL_MAX + 1,
              transform="4 discrete levels, fixed",
              short_source="Pharos",
-             short_label="TDL (knowledge)"),
+             short_label="TDL — knowledge",
+             wedge_tooltip=True),
     # V9: reduced to three states, so there is no count left to scale. Two of
     # the three are values (0 phenotyped-and-normal, 1 phenotyped-and-abnormal)
     # and the third is `no_data`, hatched -- so the ring draws two swatches.
@@ -394,7 +440,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
              transform="the adapter stores log10(1 + records); ticks are "
                        "records. Range moves with the submitted set",
              short_source="PubTator3",
-             short_label="Literature volume"),
+             short_label="Literature count"),
     # V13: k over external rings only, on a fixed 0..K domain. It is a gauge and
     # not evidence, which is why it is the one ring drawn at a third of the
     # chroma the others use -- a deliberately muted instrument rather than a
@@ -408,7 +454,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
              transform="a completeness gauge: it orders nothing and selects "
                        "nothing, and is drawn muted to say so",
              short_source="derived",
-             short_label="k (completeness)"),
+             short_label=f"k of {EXTERNAL_RING_COUNT} rings"),
 )
 
 
@@ -1076,12 +1122,17 @@ def render(
     #
     # deg=0 is 12 o'clock, which is the middle of the gap by construction
     # (sectors run from wedge/2 to 360-wedge/2).
-    wedge_labels = [
-        ax.text(0.0, ring_mid_r[spec.key], spec.wedge_label,
-                size=lay.wedge_label_size, ha="center", va="center",
-                color="#111111", zorder=CELL_ZORDER + 1)
-        for spec in rings
-    ] if wedge > 0 else []
+    wedge_labels = []
+    if wedge > 0:
+        for spec in rings:
+            t = ax.text(0.0, ring_mid_r[spec.key], spec.wedge_label,
+                        size=lay.wedge_label_size, ha="center", va="center",
+                        color="#111111", zorder=CELL_ZORDER + 1)
+            # The gid is the handle `_add_wedge_tooltips` writes the hover title
+            # against after the file is saved, and the same handle the tests
+            # read the names back out of. Same idiom as the cells' `cell|...`.
+            t.set_gid(f"ringname|{spec.key}")
+            wedge_labels.append(t)
     if wedge_labels:
         # The band, in pixels, is the vertical room a name has before it crowds
         # the name on the ring above it. Read off the axes' own transform rather
@@ -1147,6 +1198,11 @@ def render(
     # exactly what the Layout declares.
     with plt.rc_context(SAVE_RC):
         fig.savefig(out_svg, format="svg")
+    _add_wedge_tooltips(out_svg, rings, {
+        "regional_specificity":
+            f"this run: {region} TPM ÷ median across "
+            f"{gtex_panel_size(cells_by_ring) or 'the GTEx panel'}",
+    })
     if out_png is not None:
         # Convenience only. SVG plus the CSV is the export that matters for v1
         # (PLAN §5); this exists so a run can be eyeballed without a browser.
@@ -1157,6 +1213,48 @@ def render(
                         caption=cap,
                         ordering_note=ordering_note,
                         filter_notes=list(filter_notes))
+
+
+def _add_wedge_tooltips(out_svg: Path, rings: Sequence[RingSpec],
+                        run_detail: dict[str, str] | None = None) -> None:
+    """The hover text, written into the artefact rather than into the app.
+
+    Puck asked for "a tool tip on hover or something" where a short name cannot
+    stand alone. The `or something` is decided by where it has to keep working:
+    `app.js` inlines `figure.svg` into the page, so an SVG `<title>` is a native
+    browser tooltip with no JavaScript -- and, because it lives in the file, the
+    downloaded SVG still has it when it is opened in a browser weeks later. A
+    handler in `app.js` would have been a tooltip that only existed while the
+    app was running, which is the opposite of what this build exports.
+
+    What it is NOT is where the meaning lives. Illustrator, PowerPoint, the PNG
+    and a projected slide have no hover, so every ring's printed label has to be
+    honest without this. That is `wedge_tooltip`'s whole discipline: it is set
+    on the rings whose short label is *incomplete*, never on one that would be
+    wrong without it.
+
+    matplotlib has no API for this, so it is a post-pass on the saved file.
+    Anchored on the `ringname|<key>` gid rather than on the drawn string,
+    because `fit_wedge_labels` may have wrapped that string onto two lines.
+    """
+    tips = {s.key: s.tooltip for s in rings if s.tooltip}
+    # A ring whose meaning depends on the run gets that number here rather than
+    # a generic phrase. `regional_specificity` is the case Puck named: "region
+    # TPM / median across 54 tissues" is what it means, and 54 is this run's
+    # panel, not a constant.
+    for key, extra in (run_detail or {}).items():
+        if tips.get(key) and extra:
+            tips[key] = f"{tips[key]} · {extra}"
+    if not tips:
+        return
+    text = out_svg.read_text()
+    for key, tip in tips.items():
+        anchor = f'<g id="ringname|{key}">'
+        if anchor not in text:            # no wedge on this layout
+            continue
+        safe = (tip.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+        text = text.replace(anchor, f"{anchor}\n   <title>{safe}</title>", 1)
+    out_svg.write_text(text)
 
 
 def _wrap(names, per_line: int = 5) -> str:
@@ -1664,16 +1762,25 @@ def wedge_note(lay, n_genes: int, space: float, short: bool = False) -> str:
     )
 
 
+def gtex_panel_size(cells_by_ring) -> str:
+    """How many GTEx tissues this run's median was taken across, as a phrase.
+
+    Read off the cells rather than hard-coded: the panel is whatever the adapter
+    actually returned for these genes, and "54" in a sentence the adapter did not
+    produce is a number the figure cannot stand behind.
+    """
+    for c in cells_by_ring.get("regional_specificity", {}).values():
+        if c.state == "value" and isinstance(c.raw, dict) and c.raw.get("n_tissues"):
+            return f"{c.raw['n_tissues']} GTEx tissues"
+    return ""
+
+
 def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
                  cells_by_ring, gene_flags=None, subtitle: str = "",
                  wedge: str = "", clock: str = "") -> list[str]:
     """The footer's sentences, built once so `assert_footer_is_true` checks
     exactly the text that gets drawn rather than a copy of it."""
-    n_tissues = ""
-    for c in cells_by_ring.get("regional_specificity", {}).values():
-        if c.state == "value" and isinstance(c.raw, dict) and c.raw.get("n_tissues"):
-            n_tissues = f"{c.raw['n_tissues']} GTEx tissues"
-            break
+    n_tissues = gtex_panel_size(cells_by_ring)
     notes = [
         # v2.5 item 1. The two lines that were here -- the Pareto headline and
         # the weighted convenience score with its printed weights -- are gone

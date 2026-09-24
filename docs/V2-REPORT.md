@@ -2602,13 +2602,11 @@ at the ring's own radius inside the circle, scale beside the circle, and the
 figure says which holds which. The monospace ring key stayed retired — v2.6
 already removed it, and the wedge is what now does its job.
 
-**4. Five ring names are shorter than they were yesterday**, because a name has
-to fit at its own radius and the innermost radius is the tightest. The one
-worth your eye: `safety` reads **"Safety flags ≠ safety"** in the wedge. Its
-full label — *"Safety flags & constraint — NOT evidence of safety"* — is
-unchanged on its scale in the column and unchanged on the slide line. The wedge
-never truncates: it wraps, then shrinks to a floor, then refuses to render.
-QA-v2-retest §5 is the record of what truncating that particular label does.
+**4. All twelve ring names were rewritten to fit their own radius**, and the
+full labels are unchanged on the scales in the column and on the slide line.
+The wedge never truncates: it wraps, then shrinks to a floor, then refuses to
+render. QA-v2-retest §5 is the record of what truncating a ring label does. The
+table of the twelve, and which five needed a hover tooltip, is in §v2.7.1.
 
 **5. One sentence on the figure was quietly false the moment the gap existed**
 and is corrected: *"The circle starts at 12 o'clock"*. 12 o'clock is the middle
@@ -2709,3 +2707,74 @@ old check and passes the new one, and the same label swung out of the gap to
 2. **Whether `Safety flags ≠ safety` is the right compression of that caveat.**
    *Read this first 4.*
 3. Everything already in §v2.6 and §v2.1–§v2.5, unchanged.
+
+## v2.7.1 — the twelve labels, and where a tooltip earned its place
+
+Your words: *"if the name is long use a descriptive shorter one and have a tool
+tip on hover or something. but if you can get the point across no tool tip."*
+
+**The rule that decided it is yours, and the constraint that enforced it is the
+export.** Illustrator, PowerPoint, the PNG and a projected slide have no hover.
+So the test per ring was never "is there a tooltip" — it was *"would someone
+seeing only this label, projected, know what the ring is"*. A tooltip adds
+detail in the web app. It is never where the meaning lives, and a label that
+would be **misleading** without one is a bug in the label, not a case for a
+tooltip.
+
+**Five of twelve needed one. Seven did not.**
+
+| # | wedge label | budget | fits with | tooltip | why |
+|---|---|---|---|---|---|
+| 1 | `logFC (yours)` | 33 ch | 51 px | — | your own column |
+| 2 | `−log10 padj (yours)` | 31 | 32 px | — | your own column |
+| 3 | `Tractability (suggested)` | 30 | 18 px | **yes** | "Tractability" alone reads as validated druggability. `(suggested)` is the hedge from the full label — *family suggests druggable* — and is what stops it overstating; the tooltip names the three OT keys |
+| 4 | `Chemical probe (yes/no)` | 28 | 13 px | — | binary, and the hatching plus the cell-state legend carry the absence case |
+| 5 | `Safety flags ≠ safe` | 27 | 23 px | — | you called this one easy and you were right: the caveat *is* the point, and `≠ safe` is it. Full caveat unchanged on the scale and on the slide line |
+| 6 | `Region TPM ÷ median` | 25 | 11 px | **yes** | your example. No short label carries "across 54 tissues", so the label became the **definition** rather than the name — `Regional specificity` named it and defined nothing. Tooltip carries this run's panel size, read off the cells |
+| 7 | `Furthest trial phase` | 24 | 14 px | **yes** | the attribution gate — only drugs with mechanistic evidence for *this* target — is COUNCIL V1 and no short label holds it |
+| 8 | `Trial activity now` | 22 | 15 px | **yes** | three named states, and which three is not guessable |
+| 9 | `TDL — knowledge` | 21 | 9 px | **yes** | your example. `TDL` alone is jargon and reads as druggability; `— knowledge` is the hedge that stops it. Tooltip carries Tdark/Tbio/Tchem/Tclin |
+| 10 | `Mouse phenotype` | 19 | 7 px | — | you called this easy. **It does drop the word "lead"** from `Mouse phenotype lead (3 states)`, and that is only acceptable because the footer carries *"a LEAD, not a verdict"* in full on the same render — asserted in `test_a_short_label_is_written_not_truncated` |
+| 11 | `Literature count` | 18 | 6 px | — | `volume` became `count`; the units on its scale say PubTator3 records |
+| 12 | `k of 9 rings` | 16 | 15 px | — | `k` is already on every spoke label as `(k=8/9)` and defined in the footer |
+
+*Budget is characters at that ring's radius; "fits with" is the measured
+half-width margin in px on the audit canvas at twelve rings. The tightest is
+`Literature count` at 6.3 px.*
+
+### Where the tooltip lives, and why it is not in `app.js`
+
+An SVG `<title>` child, written into `figure.svg` after it is saved. `app.js`
+inlines the SVG into the page, so this is a native browser tooltip with no
+JavaScript — and, because it is in the file, **the SVG you download still has
+it** when you open it in a browser weeks later. A handler in `app.js` would
+have been a tooltip that existed only while the app was running, which is the
+opposite of what this build exports. Anchored on a `ringname|<key>` gid, the
+same idiom the cells use, so wrapping a label onto two lines cannot break it.
+
+Each tooltip carries **full name · units · domain or transform · source**, and
+`regional_specificity` additionally carries *"this run: Liver TPM ÷ median
+across 54 GTEx tissues"* — the panel size read off the cells, not a constant.
+
+**Verified in the live DOM**, not only in the file: driving the running app,
+the five groups have a `<title>` child and the seven do not. The tooltip
+*popup* itself is browser chrome rather than DOM, so I have not screenshotted
+one — what is proven is the mechanism and its contents.
+
+### Verification (unchanged shape, re-run on the new labels)
+
+- **450 tests pass** (445 before; 5 new).
+- **7/7 invariants on all seven cold runs** (`logs/v27-matrix.json`), and on a
+  cold 50-gene run in 21.9 s (`logs/cold50-v27.json`).
+- Screenshots retaken; `docs/screenshots/10-ring-names-in-the-wedge.png`
+  re-cropped on the new names.
+- The slide render has no `ringname|` groups and no `<title>` at all, asserted —
+  it has no wedge, and no hover either.
+
+### Still open, added to §v2.7
+
+5. **`Mouse phenotype` drops "lead".** Defensible because the footer says it in
+   full, but it is the one label where I traded a hedge for the radius. Say the
+   word and it becomes `Mouse pheno. lead`, which fits.
+6. **`Safety flags ≠ safe` uses `≠`.** It reads correctly on screen; I have not
+   tested it in a mono laser print, which is the §v2.6 open item it lands on.

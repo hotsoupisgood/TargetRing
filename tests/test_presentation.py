@@ -426,6 +426,83 @@ class TestWedge:
             assert_wedge_labels_fit(fig, ax, [a, b], w)
         plt.close(fig)
 
+    def test_a_short_label_is_written_not_truncated(self, tmp_path: Path) -> None:
+        """QA-v2-retest §5: `_short` truncated at 34 characters and turned
+        "Safety flags & constraint — NOT evidence of safety" into "…NOT e…", so
+        the figure overstated its data.
+
+        Two things are checkable here. Every short label is a written phrase,
+        not a machine cut — nothing trails off. And the two hedges that change
+        what a ring *claims* are on the figure whatever the wedge says: the
+        safety caveat (COUNCIL V4) and the mouse ring being a lead rather than a
+        verdict (AGENTS.md rule 6). `Mouse phenotype` does drop the word "lead"
+        from its full label, and that is only acceptable because the footer
+        carries the hedge in full on the same render.
+        """
+        from targetring.figure import RING_SPECS
+        for spec in RING_SPECS:
+            assert spec.short_label, f"{spec.key} has no short_label"
+            assert not spec.short_label.rstrip().endswith(("…", "...", "-")), (
+                f"{spec.key}: {spec.short_label!r} trails off")
+        _, svg = self._render_n(tmp_path, 14, "audit")
+        body = svg.read_text()
+        # The scale column wraps the safety title onto a continuation line, so
+        # the caveat is checked in the two pieces the figure actually draws.
+        assert "NOT evidence" in body and "of safety" in body
+        assert "a LEAD, not a verdict" in body
+
+    def test_every_tooltip_answers_what_is_this_and_what_am_i_looking_at(self) -> None:
+        """Full name, what one number is, what its ends mean, and who says so."""
+        from targetring.figure import RING_SPECS
+        for spec in RING_SPECS:
+            if not spec.wedge_tooltip:
+                assert spec.tooltip == "", f"{spec.key} builds a tooltip it does not use"
+                continue
+            tip = spec.tooltip
+            assert spec.label in tip, f"{spec.key}: tooltip omits the full name"
+            assert spec.units in tip, f"{spec.key}: tooltip omits the units"
+            assert f"source: {spec.short_source}" in tip, f"{spec.key}: no source"
+            assert len(tip) > len(spec.short_label) * 3, (
+                f"{spec.key}: the tooltip adds too little to be worth a hover")
+
+    def test_the_tooltip_is_in_the_file_and_not_in_the_app(self, tmp_path: Path) -> None:
+        """`app.js` inlines `figure.svg`, so an SVG `<title>` is a native
+        tooltip with no JavaScript — and the *downloaded* SVG still has it. A
+        handler in `app.js` would be a tooltip that only existed while the app
+        was running."""
+        from targetring.figure import RING_SPECS
+        _, svg = self._render_n(tmp_path, 14, "audit")
+        body = svg.read_text()
+        for spec in RING_SPECS:
+            anchor = f'<g id="ringname|{spec.key}">'
+            assert anchor in body, f"{spec.key} has no wedge label in the SVG"
+            has_title = f"{anchor}\n   <title>" in body
+            assert has_title == spec.wedge_tooltip, (
+                f"{spec.key}: tooltip in the SVG={has_title}, declared="
+                f"{spec.wedge_tooltip}")
+        # Puck's rule, counted: most rings get their point across unaided.
+        assert body.count("<title>") == sum(1 for s in RING_SPECS if s.wedge_tooltip)
+
+    def test_the_specificity_tooltip_carries_this_runs_panel_not_a_constant(
+            self, tmp_path: Path) -> None:
+        """"Region TPM ÷ median" is the ring's meaning and the short label says
+        so; how many tissues the median was taken across is the part no short
+        label carries, and it is a fact about *this run*."""
+        _, svg = self._render_n(tmp_path, 14, "audit")
+        body = svg.read_text()
+        i = body.index('<g id="ringname|regional_specificity">')
+        tip = body[i:i + 900]
+        assert "this run: Liver TPM ÷ median across" in tip
+
+    def test_the_slide_carries_no_tooltips_because_it_carries_no_wedge(
+            self, tmp_path: Path) -> None:
+        """A projected slide has no hover, which is exactly why the printed
+        label has to stand alone in the first place."""
+        _, svg = self._render_n(tmp_path, 14, "slide")
+        body = svg.read_text()
+        assert "ringname|" not in body
+        assert "<title>" not in body
+
     def test_the_footer_no_longer_claims_the_circle_starts_at_12_oclock(
             self, tmp_path: Path) -> None:
         """COUNCIL V5. 12 o'clock is the middle of the gap now and the first
