@@ -74,11 +74,14 @@ class Http:
         _check_status(r)
         return r
 
-    async def post_json(self, url: str, payload: dict[str, Any]) -> httpx.Response:
+    async def post_json(
+        self, url: str, payload: dict[str, Any], check_status: bool = True
+    ) -> httpx.Response:
         async with _semaphore(url):
             assert self._client is not None
             r = await self._client.post(url, json=payload)
-        _check_status(r)
+        if check_status:
+            _check_status(r)
         return r
 
 
@@ -150,14 +153,30 @@ async def graphql(http: Http, url: str, query: str, variables: dict[str, Any] | 
     payload: dict[str, Any] = {"query": query}
     if variables:
         payload["variables"] = variables
-    r = await http.post_json(url, payload)
-    body = json_or_raise(r)
+    # Open Targets answers a bad field with HTTP 400 and the useful detail in a
+    # JSON body. Raising on the status first would bury "Cannot query field
+    # 'knownDrugs'" under a generic 400, so the body is inspected first and the
+    # status is enforced afterwards.
+    r = await http.post_json(url, payload, check_status=False)
+    if r.status_code == 429:
+        _check_status(r)
+    if "json" not in r.headers.get("content-type", "").lower():
+        _check_status(r)
+        raise HardFailure(
+            f"expected JSON from {url}, got content-type "
+            f"{r.headers.get('content-type')!r} ({len(r.content)} B)"
+        )
+    body = r.json()
     if not isinstance(body, dict):
         raise HardFailure(f"GraphQL response from {url} was {type(body).__name__}, not an object")
     if "syntaxError" in body:
         raise HardFailure(f"GraphQL syntax error from {url}: {body['syntaxError']!r}")
     if body.get("errors"):
-        raise HardFailure(f"GraphQL errors from {url}: {json.dumps(body['errors'])[:600]}")
+        raise HardFailure(
+            f"GraphQL errors from {url} (HTTP {r.status_code}): "
+            f"{json.dumps(body['errors'])[:600]}"
+        )
+    _check_status(r)
     if "data" not in body:
         raise HardFailure(f"GraphQL response from {url} had no `data` key: {list(body)}")
     return body["data"]
