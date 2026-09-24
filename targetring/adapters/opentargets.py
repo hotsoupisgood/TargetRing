@@ -161,10 +161,25 @@ STATUS_SOURCE = "AACT"
 # outrank a gene with none.
 NO_ABNORMAL = "no abnormal phenotype detected"
 
-# The four prioritisation keys behind each ring. Stated reductions, not field
-# reads (QA B1: there is no single scalar tractability value).
-DRUGGABILITY_KEYS = ("hasLigand", "hasPocket", "hasSmallMoleculeBinder",
-                     "hasHighQualityChemicalProbes")
+# The prioritisation keys behind each ring. Stated reductions, not field reads
+# (QA B1: there is no single scalar tractability value).
+#
+# --- v2.3 item 1: COUNCIL M7/V8, the two-ring split ------------------------
+# Until 2026-09-24 these four were one "Druggability" ring. M7 and S1 both asked
+# for the split -- "has been drugged" and "family suggests druggable" are
+# different claims -- and v2.2 item 1 made not splitting them untenable: once an
+# absent probe key correctly became `no_data`, the *whole* four-key mean refused,
+# and `hasHighQualityChemicalProbes` is absent for 9 of the 14 council targets
+# and 11 of 14 on `de_realistic.csv`. Those genes lost a Pareto axis for want of
+# a key that describes chemical-probe stock, not tractability, and eligibility
+# fell 10 -> 4 (`docs/V2-REPORT.md` §v2.2, "Read this first").
+#
+# So: three dense keys carry tractability and the Pareto axis, and the sparse key
+# gets its own ring which is allowed to be hatched. Nothing is imputed to achieve
+# this -- the probe ring still refuses when the key is absent, it just no longer
+# takes the tractability cell down with it.
+TRACTABLE_KEYS = ("hasLigand", "hasPocket", "hasSmallMoleculeBinder")
+PROBE_KEYS = ("hasHighQualityChemicalProbes",)
 SAFETY_KEYS = ("hasSafetyEvent", "geneEssentiality", "geneticConstraint", "isCancerDriverGene")
 
 # COUNCIL V4 / V8. Some prioritisation keys are emitted by Open Targets *only*
@@ -228,8 +243,12 @@ SPARSE_KEY_ABSENT_VALUE: dict[str, float] = {
 #     every other key                          23      0   n/a (dense)
 #
 # So: no key this build *reads* has acquired the behaviour except the one Puck
-# ruled on. The two that have are not in DRUGGABILITY_KEYS or SAFETY_KEYS and
+# ruled on. The two that have are not in TRACTABLE_KEYS or SAFETY_KEYS and
 # feed nothing, and they are listed here so the next census has a baseline.
+#
+# v2.3 item 1: the ruling is unchanged, but the key now sits alone on its own
+# ring (`chemical_probe_cell`), so an absent probe key hatches one cell instead
+# of refusing a four-key mean that three dense keys could have carried.
 # `TestSparseKeyCensusStillHolds` now checks the whole key set rather than only
 # the mapped ones, so a future key acquiring it fails loudly instead of quietly
 # becoming imputation.
@@ -462,6 +481,11 @@ def _mean_of_keys(rec: OTRecord, keys: tuple[str, ...], label: str) -> Cell:
     identically to a 4-key mean. On druggability the mirror image made
     `hasHighQualityChemicalProbes` arithmetically inert: BRAF mean(1,1,1,1) and
     PCSK9 mean(1,1,1) were both exactly 1.0.
+
+    v2.3 item 1: no key reached by this function is in EXPLICIT_ZERO_KEYS any
+    more -- the one that was now has its own single-key ring. The explicit-zero
+    branch below is kept armed rather than deleted, because the census test can
+    only tell us a *new* key has acquired the behaviour after it already has.
     """
     if not rec.found:
         return no_data(f"{rec.ensembl_id} not found in Open Targets")
@@ -523,8 +547,53 @@ def _mean_of_keys(rec: OTRecord, keys: tuple[str, ...], label: str) -> Cell:
     )
 
 
-def druggability_cell(rec: OTRecord) -> Cell:
-    return _mean_of_keys(rec, DRUGGABILITY_KEYS, "druggability")
+def tractable_cell(rec: OTRecord) -> Cell:
+    """v2.3 item 1. The dense half of the old druggability ring.
+
+    `hasLigand`, `hasPocket` and `hasSmallMoleculeBinder` were present for 24/24
+    targets in the live census and 23/23 in the re-census, so this cell refuses
+    only when Open Targets has no prioritisation record for the target at all --
+    which is the one case where refusing is the right answer. That density is
+    the whole point of the split: it is what lets the Pareto axis ride here.
+    """
+    return _mean_of_keys(rec, TRACTABLE_KEYS, "tractability")
+
+
+def chemical_probe_cell(rec: OTRecord) -> Cell:
+    """v2.3 item 1. The sparse half, on its own ring, allowed to be hatched.
+
+    One key, so there is no mean and no denominator to encode the answer. v2.2
+    item 1's ruling is unchanged and now applies to exactly one cell instead of
+    dragging three dense keys down with it: an explicit 0.0 is a measurement
+    ("Open Targets looked, no high-quality probe"), an absent key is `no_data`.
+    """
+    if not rec.found:
+        return no_data(f"{rec.ensembl_id} not found in Open Targets")
+    if not has_prioritisation_record(rec):
+        return no_data(
+            "Open Targets holds no prioritisation record for this target, so the "
+            "chemical-probe key cannot be read. This is absence of a record, not "
+            "'no probe exists'."
+        )
+    key = PROBE_KEYS[0]
+    if key not in rec.prioritisation:
+        return no_data(
+            f"{key} is absent for this gene, and Open Targets also writes the key "
+            f"explicitly as 0.0 for other genes — so absence here is silence, not a "
+            f"measured zero, and filling it would be imputation (v2.2 item 1). This "
+            f"ring is allowed to be hatched; the tractability ring beside it is not "
+            f"affected (v2.3 item 1, COUNCIL M7/V8)."
+        )
+    v = rec.prioritisation[key]
+    meaning = ("an explicit 0.0: Open Targets looked and holds no high-quality chemical probe"
+               if v == 0.0 else f"{key}={v:+.2f}")
+    return value(
+        v,
+        f"{key} = {meaning}. Chemical-probe stock is prior tool-compound effort, NOT "
+        f"tractability — the tractability ring is the one that carries the Pareto axis "
+        f"(COUNCIL M7/V8).",
+        raw={"keys": {key: v}, "inferred_from_absence": []},
+    )
 
 
 def safety_cell(rec: OTRecord) -> Cell:
@@ -1013,7 +1082,9 @@ __all__ = [
     "GENETIC_ATTRIBUTION_DATATYPES",
     "SPARSE_KEY_ABSENT_VALUE", "EXPLICIT_ZERO_KEYS", "EXPLICIT_ZERO_KEYS_NOT_READ",
     "DENSE_PRIORITISATION_KEYS", "SEVERE_LIABILITY_TERMS",
-    "druggability_cell", "safety_cell", "clinical_phase_cell", "clinical_activity_cell",
+    "TRACTABLE_KEYS", "PROBE_KEYS", "SAFETY_KEYS",
+    "tractable_cell", "chemical_probe_cell",
+    "safety_cell", "clinical_phase_cell", "clinical_activity_cell",
     "rodent_cell", "drug_pipeline_rows", "pipeline_summary", "failed",
     "attributable_indications", "mechanistic_evidence", "severe_liabilities",
     "per_indication_stages",

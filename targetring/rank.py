@@ -33,7 +33,9 @@ from .states import Cell
 # they are +1. `padj` is flipped because a smaller adjusted p is a stronger
 # result.
 RING_SIGN: dict[str, int] = {
-    "druggability": +1,
+    # v2.3 item 1 (COUNCIL M7/V8): one "druggability" ring became two.
+    "tractable": +1,
+    "chemical_probe": +1,
     "safety": +1,
     "regional_specificity": +1,
     "clinical_phase": +1,
@@ -58,8 +60,8 @@ RING_SIGN: dict[str, int] = {
 # said the range was [7, 9]. k now counts only the rings a source has to answer
 # for, and the maximum is stated on the figure.
 EXTERNAL_RINGS: tuple[str, ...] = (
-    "druggability", "safety", "regional_specificity", "clinical_phase",
-    "clinical_activity", "tdl", "rodent", "literature",
+    "tractable", "chemical_probe", "safety", "regional_specificity",
+    "clinical_phase", "clinical_activity", "tdl", "rodent", "literature",
 )
 EXTERNAL_RING_COUNT = len(EXTERNAL_RINGS)
 
@@ -79,8 +81,16 @@ EXTERNAL_RING_COUNT = len(EXTERNAL_RINGS)
 #    fewer genes are dominated, so the headline set is larger among the genes
 #    that are eligible. The before/after is measured in `docs/V2-REPORT.md`
 #    §v2.2 rather than asserted here.
+#
+# v2.3 item 1 (COUNCIL M7/V8): the druggability axis is now the *dense* half of
+# the split ring. `hasLigand`/`hasPocket`/`hasSmallMoleculeBinder` are present
+# for every target with a prioritisation record, so the axis withdraws a gene
+# only when Open Targets has no record at all. The sparse chemical-probe key is
+# drawn on its own ring and is deliberately NOT an axis: it describes tool-
+# compound stock, not tractability, and making it an axis would reinstate
+# exactly the eligibility collapse this change undoes.
 PARETO_AXES: tuple[str, ...] = (
-    "druggability", "safety", "regional_specificity", "clinical_phase", "tdl",
+    "tractable", "safety", "regional_specificity", "clinical_phase", "tdl",
 )
 
 # Provisional. AGENTS.md: the defaults are a scientific choice, not a QA item,
@@ -96,8 +106,11 @@ PARETO_AXES: tuple[str, ...] = (
 #     weighted sum. It is still a Pareto axis; it is no longer a score term.
 # If either is ever put back, `_draw_stamps` must lose the sentence that denies
 # it. A figure must not make a false claim about its own method.
+#
+# v2.3 item 1: `druggability=1.0` becomes `tractable=1.0`. The weight is not
+# split in two and the probe ring gets none of it -- see EXCLUDED_FROM_SCORE.
 DEFAULT_WEIGHTS: dict[str, float] = {
-    "druggability": 1.0,
+    "tractable": 1.0,
     "safety": 1.0,
     "regional_specificity": 1.0,
     "literature": 0.5,
@@ -113,6 +126,14 @@ EXCLUDED_FROM_SCORE: dict[str, str] = {
     # an approved drug existing, which druggability and the phase ring already
     # measure. Weighting it would count prior effort three times.
     "tdl": "COUNCIL S1 / D7 by analogy — a Pareto axis, deliberately not a score term",
+    # v2.3 item 1. The probe ring is sparse (absent for 9 of 14 council targets),
+    # and `weighted()` renormalises over available rings -- so weighting it would
+    # give two genes scores computed from different ring sets and print them in
+    # the same column. It is drawn, it is in the drawer, and it is ranked
+    # nowhere: COUNCIL V8's complaint was that this key did arithmetic work it
+    # could not justify, and the fix is to stop it doing any.
+    "chemical_probe": "COUNCIL M7/V8 — tool-compound stock, not tractability; drawn, "
+                      "never scored, never a Pareto axis",
 }
 
 

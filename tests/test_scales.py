@@ -50,7 +50,7 @@ def _axes_spec(genes):
     """
     n = len(genes)
     spec = {
-        "druggability": {g: value(i / (n - 1)) for i, g in enumerate(genes)},
+        "tractable": {g: value(i / (n - 1)) for i, g in enumerate(genes)},
         "safety": {g: value(2 * i / (n - 1) - 1) for i, g in enumerate(genes)},
         "regional_specificity": {g: value(1.0 + i) for i, g in enumerate(genes)},
         "clinical_phase": {g: value(float(i % 6)) for i, g in enumerate(genes)},
@@ -108,8 +108,8 @@ class TestV6ScalesMeanSomething:
         c = _scaled(SPEC["regional_specificity"], 100.0)
         assert b - a == pytest.approx(c - b) == pytest.approx(1.0)
 
-    @pytest.mark.parametrize("ring", ["druggability", "safety", "clinical_phase",
-                                      "rodent", "completeness"])
+    @pytest.mark.parametrize("ring", ["tractable", "chemical_probe", "safety",
+                                      "clinical_phase", "rodent", "completeness"])
     def test_a_bounded_ring_has_a_fixed_domain(self, ring: str) -> None:
         """So a colour means the same thing between two runs."""
         assert SPEC[ring].domain is not None
@@ -124,7 +124,7 @@ class TestV6ScalesMeanSomething:
         fills = _fill("regional_specificity", cells)
         assert len({fills[g] for g in ("TTR", "APOB", "SERPINA1")}) == 3
 
-    @pytest.mark.parametrize("ring", ["druggability", "safety", "clinical_phase"])
+    @pytest.mark.parametrize("ring", ["tractable", "chemical_probe", "safety", "clinical_phase"])
     def test_a_fixed_domain_does_not_move_with_the_submission(self, ring: str) -> None:
         small = {"A": value(0.0), "B": value(0.2)}
         big = {"A": value(0.0), "B": value(0.2), "C": value(1.0) if ring != "safety"
@@ -152,8 +152,8 @@ class TestFixedDomainsAreNeverSilentlyClipped:
     """A clipped cell is drawn in a colour that means a different number."""
 
     @pytest.mark.parametrize("ring,bad", [
-        ("druggability", 1.4), ("safety", -1.2), ("clinical_phase", 6.0),
-        ("completeness", 9.0), ("rodent", 2.0),
+        ("tractable", 1.4), ("chemical_probe", 1.4), ("safety", -1.2),
+        ("clinical_phase", 6.0), ("completeness", 10.0), ("rodent", 2.0),
     ])
     def test_an_out_of_range_value_raises_rather_than_clipping(self, ring, bad) -> None:
         from targetring.figure import assert_within_domain
@@ -161,10 +161,11 @@ class TestFixedDomainsAreNeverSilentlyClipped:
             assert_within_domain(SPEC[ring], {"X": value(bad)})
 
     def test_the_declared_domains_cover_what_the_adapters_can_produce(self) -> None:
-        """druggability is a mean of keys in {0,1}; safety a mean of keys in
+        """tractability is a mean of 3 keys in {0,1}; safety a mean of keys in
         [-1,1]; clinical_phase the stage ordinal; rodent three states; k the
         count of external rings."""
-        assert SPEC["druggability"].domain == (0.0, 1.0)
+        assert SPEC["tractable"].domain == (0.0, 1.0)
+        assert SPEC["chemical_probe"].domain == (0.0, 1.0)
         assert SPEC["safety"].domain == (-1.0, 1.0)
         from targetring.adapters.opentargets import CLINICAL_STAGE_ORDINAL
         assert SPEC["clinical_phase"].domain == (0.0, float(max(CLINICAL_STAGE_ORDINAL.values())))
@@ -182,23 +183,25 @@ class TestV13KCountsExternalRingsOnly:
         spec = {
             "logfc": {"A": value(1.0), "B": value(2.0)},
             "neg_log10_padj": {"A": value(3.0), "B": value(4.0)},
-            "druggability": {"A": value(0.5), "B": no_data("x")},
+            "tractable": {"A": value(0.5), "B": no_data("x")},
         }
         out = rank_genes(spec)
         assert out["A"].k == 1, "logfc and padj are his measurement, not a source's"
         assert out["B"].k == 0, "a gene nothing is known about must be able to reach 0"
 
     def test_the_maximum_is_the_number_of_external_rings(self) -> None:
-        # v2.2 item 4 added `tdl`, the eighth external ring.
-        assert EXTERNAL_RING_COUNT == 8
+        # v2.2 item 4 added `tdl`, the eighth external ring; v2.3 item 1 split
+        # druggability into `tractable` + `chemical_probe`, which makes nine.
+        assert EXTERNAL_RING_COUNT == 9
         assert "tdl" in EXTERNAL_RINGS
+        assert {"tractable", "chemical_probe"} <= set(EXTERNAL_RINGS)
         assert "logfc" not in EXTERNAL_RINGS and "neg_log10_padj" not in EXTERNAL_RINGS
         assert "completeness" not in EXTERNAL_RINGS
         assert SPEC["completeness"].domain == (0.0, float(EXTERNAL_RING_COUNT))
 
     def test_the_figure_states_the_denominator(self, tmp_path: Path) -> None:
         spec = {"logfc": {"A": value(1.0), "B": value(2.0)},
-                "druggability": {"A": value(0.5), "B": value(0.9)}}
+                "tractable": {"A": value(0.5), "B": value(0.9)}}
         render(genes=["A", "B"], cells_by_ring=spec, rankings=rank_genes(spec),
                region="Liver", out_svg=tmp_path / "k.svg", input_count=2,
                rendered_count=2, ledger_counts={})

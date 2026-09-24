@@ -22,10 +22,11 @@ from targetring.adapters.literature import (
 from targetring.adapters.opentargets import (
     CLINICAL_STAGE_ORDINAL,
     OTRecord,
+    chemical_probe_cell,
     clinical_activity_cell,
     clinical_phase_cell,
-    druggability_cell,
     per_indication_stages,
+    tractable_cell,
     rodent_cell,
     safety_cell,
     severe_liabilities,
@@ -43,7 +44,7 @@ class TestMissingIsNotLow:
 
     def test_absent_from_batch_is_no_data_not_zero(self) -> None:
         rec = OTRecord("ENSG00000999999", found=False)
-        for cell in (druggability_cell(rec), safety_cell(rec),
+        for cell in (tractable_cell(rec), chemical_probe_cell(rec), safety_cell(rec),
                      clinical_phase_cell(rec), rodent_cell(rec)):
             assert cell.state == "no_data"
             assert cell.value is None
@@ -64,16 +65,17 @@ class TestMissingIsNotLow:
                                   "hasSmallMoleculeBinder": 1.0,
                                   "hasHighQualityChemicalProbes": 1.0})
         partial = ot(prioritisation={"hasLigand": 1.0})
-        assert druggability_cell(full).value == 1.0
+        assert tractable_cell(full).value == 1.0
 
-        cell = druggability_cell(partial)
+        cell = tractable_cell(partial)
         assert cell.state == "no_data" and cell.value is None
         assert "hasPocket" in cell.detail and "hasSmallMoleculeBinder" in cell.detail
-        # Specifically: not 0.25 (zero-filled) and not 1.0 (shorter mean).
+        # Specifically: not 1/3 (zero-filled) and not 1.0 (shorter mean).
         assert "denominator would encode the answer" in cell.detail
 
     def test_no_keys_at_all_is_no_data(self) -> None:
-        assert druggability_cell(ot(prioritisation={})).state == "no_data"
+        assert tractable_cell(ot(prioritisation={})).state == "no_data"
+        assert chemical_probe_cell(ot(prioritisation={})).state == "no_data"
 
 
 def _row(stage, *disease_ids, drug="DRUG", per_indication=None):
@@ -424,35 +426,63 @@ class TestSparsePrioritisationKeys:
         that separates a chemically-probed target from an unprobed one changed
         nothing.
 
-        v2.2 item 1: Open Targets now writes the probe key explicitly as 0.0, so
-        this compares two *stated* values rather than a stated one and a silence.
+        v2.3 item 1 (COUNCIL M7/V8): it is no longer inert *and* no longer
+        buried in a mean — it is its own ring, so the difference between the two
+        genes is visible as a cell rather than as 0.25 of a shared one.
         """
-        from targetring.adapters.opentargets import druggability_cell
+        from targetring.adapters.opentargets import chemical_probe_cell
         braf = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0,
                          hasHighQualityChemicalProbes=1.0)
         pcsk9 = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0,
                           hasHighQualityChemicalProbes=0.0)
-        assert druggability_cell(braf).value == pytest.approx(1.0)
-        assert druggability_cell(pcsk9).value == pytest.approx(0.75)
-        assert druggability_cell(braf).value > druggability_cell(pcsk9).value
+        assert chemical_probe_cell(braf).value == pytest.approx(1.0)
+        assert chemical_probe_cell(pcsk9).value == pytest.approx(0.0)
+        assert chemical_probe_cell(braf).value > chemical_probe_cell(pcsk9).value
 
     def test_v8_the_probe_key_no_longer_reorders_genes_for_free(self) -> None:
         """v1: DDR1 mean(1,0,1,1)=0.75 outranked KCNH2 mean(1,0,1)=0.667 purely
-        because DDR1's probe key existed. Both now score their own four keys."""
-        from targetring.adapters.opentargets import druggability_cell
+        because DDR1's probe key existed — an ordering with no scientific
+        content. After the split the probe key cannot reorder anything at all:
+        it is not in RANKED_RINGS, not in DEFAULT_WEIGHTS and not a Pareto axis,
+        and the two genes' tractability is identical."""
+        from targetring.adapters.opentargets import tractable_cell
         ddr1 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0,
                          hasHighQualityChemicalProbes=1.0)
         kcnh2 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0,
                           hasHighQualityChemicalProbes=0.0)
-        assert druggability_cell(ddr1).value == pytest.approx(0.75)
-        assert druggability_cell(kcnh2).value == pytest.approx(0.50)
+        assert tractable_cell(ddr1).value == pytest.approx(2 / 3)
+        assert tractable_cell(kcnh2).value == pytest.approx(2 / 3)
+
+    def test_m7_the_split_is_real_in_every_structure_that_ranks(self) -> None:
+        """COUNCIL M7/V8 asked for two rings; this asserts the sparse one does no
+        ranking work anywhere, which is the whole reason the dense one can carry
+        the axis."""
+        from targetring.rank import (
+            DEFAULT_WEIGHTS,
+            EXTERNAL_RINGS,
+            PARETO_AXES,
+            RING_SIGN,
+        )
+        from targetring.run import RANKED_RINGS
+        assert "druggability" not in PARETO_AXES and "tractable" in PARETO_AXES
+        assert "chemical_probe" not in PARETO_AXES
+        assert "chemical_probe" not in DEFAULT_WEIGHTS
+        assert "chemical_probe" not in RANKED_RINGS
+        # Drawn and counted in k, though — it is a real measurement when present.
+        assert "chemical_probe" in EXTERNAL_RINGS and "tractable" in EXTERNAL_RINGS
+        assert "druggability" not in EXTERNAL_RINGS
+        assert RING_SIGN["tractable"] == +1 and RING_SIGN["chemical_probe"] == +1
 
     def test_no_prioritisation_record_is_no_data_not_a_default_mean(self) -> None:
         """The sparse defaults must not manufacture a value for a target Open
         Targets does not score at all."""
-        from targetring.adapters.opentargets import druggability_cell, safety_cell
+        from targetring.adapters.opentargets import (
+            chemical_probe_cell,
+            safety_cell,
+            tractable_cell,
+        )
         empty = self._rec()
-        for cell in (safety_cell(empty), druggability_cell(empty)):
+        for cell in (safety_cell(empty), tractable_cell(empty), chemical_probe_cell(empty)):
             assert cell.state == "no_data"
             assert "no prioritisation record" in cell.detail
 
@@ -492,30 +522,42 @@ class TestExplicitZeroProbeKey:
         assert "hasHighQualityChemicalProbes" in EXPLICIT_ZERO_KEYS
 
     def test_an_explicit_zero_is_a_real_value(self) -> None:
-        """'Looked, none exists' is information, and it does arithmetic work."""
-        from targetring.adapters.opentargets import druggability_cell
-        cell = druggability_cell(self._rec(
+        """'Looked, none exists' is information, and it is rendered as a value.
+
+        v2.3 item 1: it is a value on the probe ring rather than a quarter of the
+        druggability mean. The ruling is unchanged; the cell it lands in is not.
+        """
+        from targetring.adapters.opentargets import chemical_probe_cell
+        cell = chemical_probe_cell(self._rec(
             hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0,
             hasHighQualityChemicalProbes=0.0))
         assert cell.state == "value"
-        assert cell.value == pytest.approx(0.75)
-        assert "mean of 4/4 keys" in cell.detail
+        assert cell.value == pytest.approx(0.0)
         assert cell.raw["inferred_from_absence"] == [], "read, not inferred"
-        assert "hasHighQualityChemicalProbes=+0.00" in cell.detail
-        assert "hasHighQualityChemicalProbes=+0.00*" not in cell.detail, (
-            "the * marks a key inferred from absence; this one was stated")
+        assert "explicit 0.0" in cell.detail
 
     def test_an_absent_key_is_no_data_and_says_why(self) -> None:
-        """The other half of the decision. A shorter mean is the V4 defect and a
-        substituted 0.0 is the imputation, so the cell refuses both."""
-        from targetring.adapters.opentargets import druggability_cell
-        cell = druggability_cell(self._rec(
+        """The other half of the decision: a substituted 0.0 would be imputation,
+        so the probe cell refuses."""
+        from targetring.adapters.opentargets import chemical_probe_cell
+        cell = chemical_probe_cell(self._rec(
             hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0))
         assert cell.state == "no_data"
         assert cell.value is None
         assert "hasHighQualityChemicalProbes" in cell.detail
         assert "imputation" in cell.detail
-        assert "denominator would encode the answer" in cell.detail
+
+    def test_an_absent_probe_key_no_longer_takes_tractability_down_with_it(self) -> None:
+        """v2.3 item 1, the defect this change undoes. Before the split this same
+        record produced `no_data` for the whole druggability cell and cost the
+        gene a Pareto axis; 9 of the 14 council targets are in exactly this
+        state. Nothing is imputed — the probe cell still refuses."""
+        from targetring.adapters.opentargets import chemical_probe_cell, tractable_cell
+        rec = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0)
+        assert tractable_cell(rec).state == "value"
+        assert tractable_cell(rec).value == pytest.approx(1.0)
+        assert "mean of 3/3 keys" in tractable_cell(rec).detail
+        assert chemical_probe_cell(rec).state == "no_data"
 
     def test_the_two_liability_keys_are_still_inferred_from_absence(self) -> None:
         """The decision is about one key. `hasSafetyEvent` and

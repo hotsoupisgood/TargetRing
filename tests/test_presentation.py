@@ -32,7 +32,7 @@ GENES = ["BRAF", "CDKN2A", "INS", "KCNQ1", "EGFR", "GAPDH"]
 def _spec():
     return {
         "logfc": {g: value(float(i) - 2.5) for i, g in enumerate(GENES)},
-        "druggability": {g: value(0.2 * i) for i, g in enumerate(GENES)},
+        "tractable": {g: value(0.2 * i) for i, g in enumerate(GENES)},
         "safety": {
             **{g: value(-0.1 * i) for i, g in enumerate(GENES)},
             "GAPDH": no_data("never measured"),
@@ -176,7 +176,7 @@ class TestA6NoTextOverTheRings:
         spec = {"logfc": {g: value(float(i)) for i, g in enumerate(genes)},
                 # inside the declared [0, 1] domain, so assert_within_domain
                 # does not fire on synthetic data
-                "druggability": {g: value((i % 4) / 3) for i, g in enumerate(genes)}}
+                "tractable": {g: value((i % 4) / 3) for i, g in enumerate(genes)}}
         for layout in ("audit", "slide"):
             render(genes=genes, cells_by_ring=spec, rankings=rank_genes(spec),
                    region="Liver", out_svg=tmp_path / f"{layout}{n}.svg",
@@ -190,6 +190,27 @@ class TestA6NoTextOverTheRings:
         bad = fig.text(0.5, 0.5, "straight through the middle", ha="center")
         with pytest.raises(AssertionError, match="over the figure's own data"):
             assert_no_text_over_the_rings(fig, ax, [bad])
+        plt.close(fig)
+
+    def test_a_near_miss_is_a_collision_too(self, tmp_path: Path) -> None:
+        """v2.3 item 1. The slide's footer cleared the bottom spoke label by
+        0.3 px on a 900 px canvas — strictly no overlap, so the check passed,
+        and one spoke reorder later the same geometry failed. A required
+        clearance makes "we got away with it" fail while it is still cheap."""
+        import matplotlib.pyplot as plt
+
+        from targetring.figure import LABEL_CLEARANCE_PX
+        fig = plt.figure(figsize=(4, 4), dpi=100)
+        ax = fig.add_axes((0.3, 0.3, 0.4, 0.4))
+        # A spoke label at the very bottom-left corner, outside the circle...
+        ax.text(0.02, 0.02, "SPOKE", transform=fig.transFigure, va="bottom")
+        fig.canvas.draw()
+        lb = ax.texts[0].get_window_extent(renderer=fig.canvas.get_renderer())
+        # ...and a footer block ending a fraction of a pixel below it.
+        y = (lb.y0 - LABEL_CLEARANCE_PX / 2) / fig.bbox.height
+        near = fig.text(0.02, y, "footer", va="top")
+        with pytest.raises(AssertionError, match="comes within"):
+            assert_no_text_over_the_rings(fig, ax, [near])
         plt.close(fig)
 
     def test_a_block_in_the_corner_is_not_a_collision(self, tmp_path: Path) -> None:

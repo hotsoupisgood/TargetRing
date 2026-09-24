@@ -28,7 +28,7 @@ GENES = ["AAA", "BBB", "CCC", "DDD"]
 def _spec():
     return {
         "logfc": {g: value(float(i) - 1.5) for i, g in enumerate(GENES)},
-        "druggability": {
+        "tractable": {
             "AAA": value(1.0), "BBB": value(0.2),
             "CCC": no_data("never measured"), "DDD": not_applicable("non-coding"),
         },
@@ -226,7 +226,7 @@ class TestDegenerateGeometry:
     def test_tiny_circles_render(self, tmp_path: Path, n: int) -> None:
         genes = GENES[:n]
         spec = {"logfc": {g: value(1.0) for g in genes},
-                "druggability": {g: value(0.5) for g in genes}}
+                "tractable": {g: value(0.5) for g in genes}}
         res = render(genes=genes, cells_by_ring=spec, rankings=rank_genes(spec),
                      region="Lung", out_svg=tmp_path / f"n{n}.svg",
                      input_count=n, rendered_count=n, ledger_counts={})
@@ -256,7 +256,7 @@ class TestA1OutageIsNotInvariantFailure:
             regression={"ok": True, "detail": "stub"},
             literature_audit={"echo_live": 4, "echo_replayed": 0, "ncbi_checked": 4,
                               "echo_mismatches": [], "ncbi_errors": []},
-            pareto_audit={"axes": ["druggability", "safety", "regional_specificity",
+            pareto_audit={"axes": ["tractable", "safety", "regional_specificity",
                                    "clinical_phase"],
                           "front": [], "front_pareto_k": {}, "n_eligible": 0,
                           "n_ineligible": 0, "diamond_genes": []},
@@ -358,12 +358,12 @@ class TestV11ReplayedEchoIsNotACheckedEcho:
 
 class TestI7HeadlineEligibility:
     """COUNCIL V2/V3, the new invariant. It would have caught the original
-    defect: a gene whose only Pareto axis was druggability=1.0 reached the front
+    defect: a gene whose only Pareto axis was tractable=1.0 reached the front
     and ejected two genes that had all four."""
 
     def _audit(self, **kw):
         base = {
-            "axes": ["druggability", "safety", "regional_specificity", "clinical_phase"],
+            "axes": ["tractable", "safety", "regional_specificity", "clinical_phase"],
             "front": ["AAA"], "front_pareto_k": {"AAA": 4, "BBB": 2},
             "n_eligible": 1, "n_ineligible": 1, "diamond_genes": ["AAA"],
         }
@@ -422,7 +422,7 @@ class TestI7HeadlineEligibility:
         n = PARETO_MIN_ELIGIBLE + 2
         genes = [f"G{i:02d}" for i in range(n)]
         spec = {
-            "druggability": {g: v(i / (n - 1)) for i, g in enumerate(genes)},
+            "tractable": {g: v(i / (n - 1)) for i, g in enumerate(genes)},
             "safety": {g: v(2 * i / (n - 1) - 1) for i, g in enumerate(genes)},
             "regional_specificity": {g: v(1.0 + i) for i, g in enumerate(genes)},
             "clinical_phase": {g: v(float(i % 6)) for i, g in enumerate(genes)},

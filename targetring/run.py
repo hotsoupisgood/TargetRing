@@ -34,14 +34,15 @@ from .adapters.pharos import PharosAdapter, PharosRecord, tdl_cell
 from .adapters.opentargets import (
     OpenTargetsAdapter,
     OTRecord,
+    chemical_probe_cell,
     clinical_activity_cell,
     clinical_phase_cell,
     drug_pipeline_rows,
-    druggability_cell,
     pipeline_summary,
     rodent_cell,
     safety_cell,
     severe_liabilities,
+    tractable_cell,
 )
 from .cache import Cache
 from .config import LLM_SPEND_CAP_USD, RUNS_DIR
@@ -90,8 +91,12 @@ COST_SHARE_WARN = 0.40
 # in both the weighted score and the median available rank while the figure's
 # footer asserted it was "never folded into any score". It is now drawn, read in
 # the drawer, and ranked nowhere -- which is what M4 asked for.
+#
+# v2.3 item 1: `chemical_probe` is drawn but is NOT here. It is sparse, and the
+# median available rank would silently be computed over a different ring set for
+# a probed gene than for an unprobed one.
 RANKED_RINGS = (
-    "druggability", "safety", "regional_specificity",
+    "tractable", "safety", "regional_specificity",
     "clinical_phase", "clinical_activity", "tdl", "literature",
 )
 
@@ -274,7 +279,10 @@ async def run_analysis(
                 else no_data("adjusted p is exactly 0; -log10 is undefined, not infinite"))
             for g in genes
         },
-        "druggability": {g: druggability_cell(ot_by_gene[g]) for g in genes},
+        # v2.3 item 1 (COUNCIL M7/V8): the dense three-key ring carries the
+        # Pareto axis; the sparse probe key is beside it and may be hatched.
+        "tractable": {g: tractable_cell(ot_by_gene[g]) for g in genes},
+        "chemical_probe": {g: chemical_probe_cell(ot_by_gene[g]) for g in genes},
         "safety": {g: safety_cell(ot_by_gene[g]) for g in genes},
         "regional_specificity": {
             g: specificity_cell(gtex_by_gene[g], region) for g in genes

@@ -23,40 +23,40 @@ def cells(**kw) -> dict[str, Cell]:
 class TestRankWithinSet:
     def test_ranks_are_relative_to_the_submitted_set(self) -> None:
         """PLAN §3: within the submitted gene set, not a global background."""
-        small = rank_within_set(cells(A=1.0, B=2.0, C=3.0), "druggability")
+        small = rank_within_set(cells(A=1.0, B=2.0, C=3.0), "tractable")
         assert small == {"A": 0.0, "B": 0.5, "C": 1.0}
         # Same absolute value, different set, different rank. That is the point.
-        big = rank_within_set(cells(A=1.0, B=100.0), "druggability")
+        big = rank_within_set(cells(A=1.0, B=100.0), "tractable")
         assert big["A"] == 0.0
 
     def test_ties_average_rather_than_invent_an_order(self) -> None:
-        r = rank_within_set(cells(A=5.0, B=5.0, C=1.0), "druggability")
+        r = rank_within_set(cells(A=5.0, B=5.0, C=1.0), "tractable")
         assert r["A"] == r["B"] == 0.75
         assert r["C"] == 0.0
 
     def test_single_gene_does_not_divide_by_zero(self) -> None:
-        assert rank_within_set(cells(A=1.0), "druggability") == {"A": 1.0}
+        assert rank_within_set(cells(A=1.0), "tractable") == {"A": 1.0}
 
     def test_no_values_returns_empty(self) -> None:
-        assert rank_within_set(cells(A=None, B=None), "druggability") == {}
+        assert rank_within_set(cells(A=None, B=None), "tractable") == {}
 
 
 class TestNeverImpute:
     """AGENTS.md rule 1 and PLAN §3's last line."""
 
     def test_missing_genes_are_absent_from_the_ranking_not_ranked_last(self) -> None:
-        r = rank_within_set(cells(A=1.0, B=None, C=3.0), "druggability")
+        r = rank_within_set(cells(A=1.0, B=None, C=3.0), "tractable")
         assert "B" not in r
         assert r == {"A": 0.0, "C": 1.0}
 
     def test_all_four_states_except_value_are_unranked(self) -> None:
         cs = {"A": value(1.0), "B": no_data("x"), "C": not_applicable("y"),
               "D": Cell("failed", None, "z")}
-        assert set(rank_within_set(cs, "druggability")) == {"A"}
+        assert set(rank_within_set(cs, "tractable")) == {"A"}
 
     def test_k_counts_only_real_measurements(self) -> None:
         out = rank_genes({
-            "druggability": cells(A=1.0, B=2.0),
+            "tractable": cells(A=1.0, B=2.0),
             "safety": {"A": value(1.0), "B": no_data("x")},
             "rodent": {"A": not_applicable("x"), "B": value(3.0)},
         })
@@ -64,7 +64,7 @@ class TestNeverImpute:
         assert out["B"].k == 2
 
     def test_a_gene_with_nothing_is_reported_not_dropped(self) -> None:
-        out = rank_genes({"druggability": {"A": value(1.0), "Z": no_data("x")}})
+        out = rank_genes({"tractable": {"A": value(1.0), "Z": no_data("x")}})
         assert "Z" in out
         assert out["Z"].median_rank is None
         assert out["Z"].weighted_score is None
@@ -94,9 +94,9 @@ class TestPareto:
         everywhere, so both survive. Eligibility (V2) does not collapse the
         front onto a single winner."""
         ranks = {
-            "druggable": self._axes(druggability=1.0, safety=0.0,
+            "druggable": self._axes(tractable=1.0, safety=0.0,
                                     regional_specificity=1.0, clinical_phase=0.0),
-            "safe": self._axes(druggability=0.0, safety=1.0,
+            "safe": self._axes(tractable=0.0, safety=1.0,
                                regional_specificity=0.0, clinical_phase=1.0),
         }
         assert pareto_front(ranks) == {"druggable", "safe"}
@@ -105,7 +105,7 @@ class TestPareto:
         """COUNCIL V2. Eligibility is EVERY axis, not the shared subset."""
         ranks = {
             "full": self._axes(**dict.fromkeys(PARETO_AXES, 1.0)),
-            "sparse": {"druggability": 0.5},
+            "sparse": {"tractable": 0.5},
         }
         assert pareto_front(ranks) == {"full"}
         assert not pareto_eligible(ranks["sparse"])
@@ -122,12 +122,12 @@ class TestPareto:
 
     def test_no_axis_at_all_is_not_a_free_pass(self) -> None:
         """v1 returned both of these as non-dominated because they shared no axis."""
-        ranks = {"a": {"druggability": 0.1}, "b": {"safety": 0.9}}
+        ranks = {"a": {"tractable": 0.1}, "b": {"safety": 0.9}}
         assert pareto_front(ranks) == set()
 
     def test_ineligible_genes_are_flagged_with_what_is_missing(self) -> None:
         out = rank_genes({
-            "druggability": cells(A=1.0, B=0.5),
+            "tractable": cells(A=1.0, B=0.5),
             "safety": cells(A=1.0, B=0.5),
         })
         assert not out["A"].pareto
@@ -140,7 +140,7 @@ class TestPareto:
 class TestV2OneAxisCannotDominateFour:
     """COUNCIL V2, reproduced from the council's own probe.
 
-    A gene whose only Pareto axis is druggability=1.0 (tied top) and whose other
+    A gene whose only Pareto axis is tractable=1.0 (tied top) and whose other
     three axes are `no_data` entered the v1 front and ejected two genes that had
     all four axes. The note v1 printed — "fewer axes make domination harder" —
     stated the opposite of what the code did.
@@ -148,7 +148,7 @@ class TestV2OneAxisCannotDominateFour:
 
     def _spec(self, with_oneaxis: bool):
         spec = {
-            "druggability": {
+            "tractable": {
                 "ASGR1": value(0.8), "PCSK9": value(1.0),
                 "SERPINA1": value(0.6), "TTR": value(0.4),
             },
@@ -173,9 +173,9 @@ class TestV2OneAxisCannotDominateFour:
             },
         }
         if with_oneaxis:
-            spec["druggability"]["ONEAXIS"] = value(1.0)
+            spec["tractable"]["ONEAXIS"] = value(1.0)
             for ring in PARETO_AXES:
-                if ring != "druggability":
+                if ring != "tractable":
                     spec.setdefault(ring, {})["ONEAXIS"] = no_data("adapter returned nothing")
         return spec
 
@@ -208,7 +208,7 @@ class TestV3TransientFailureCannotRewriteTheHeadline:
 
     def _spec(self):
         return {
-            "druggability": {g: value(v) for g, v in
+            "tractable": {g: value(v) for g, v in
                              [("ASGR1", .8), ("PCSK9", 1.), ("SERPINA1", .6),
                               ("TTR", .4), ("APOB", .9)]},
             "safety": {g: value(v) for g, v in
@@ -229,7 +229,7 @@ class TestV3TransientFailureCannotRewriteTheHeadline:
     def test_a_single_503_cannot_remove_a_gene_from_the_front(self) -> None:
         base = self._front(self._spec())
         for gene in ("APOB", "TTR", "PCSK9"):
-            for ring in ("safety", "regional_specificity", "druggability", "clinical_phase"):
+            for ring in ("safety", "regional_specificity", "tractable", "clinical_phase"):
                 spec = self._spec()
                 spec[ring][gene] = no_data("transient 503")
                 got = self._front(spec)
@@ -247,10 +247,10 @@ class TestV3TransientFailureCannotRewriteTheHeadline:
 
 class TestWeightedScore:
     def test_renormalised_over_available_rings(self) -> None:
-        w = {"druggability": 1.0, "safety": 3.0}
-        assert weighted({"druggability": 1.0, "safety": 0.0}, w) == pytest.approx(0.25)
-        # Missing safety: the score uses druggability alone, not a zero.
-        assert weighted({"druggability": 1.0}, w) == pytest.approx(1.0)
+        w = {"tractable": 1.0, "safety": 3.0}
+        assert weighted({"tractable": 1.0, "safety": 0.0}, w) == pytest.approx(0.25)
+        # Missing safety: the score uses tractable alone, not a zero.
+        assert weighted({"tractable": 1.0}, w) == pytest.approx(1.0)
 
     def test_no_rings_gives_none_not_zero(self) -> None:
         assert weighted({}, DEFAULT_WEIGHTS) is None
@@ -267,7 +267,7 @@ class TestWeightedScore:
 class TestStabilityFlag:
     def test_deterministic(self) -> None:
         spec = {
-            "druggability": cells(**{f"G{i}": float(i) for i in range(14)}),
+            "tractable": cells(**{f"G{i}": float(i) for i in range(14)}),
             "safety": cells(**{f"G{i}": float(13 - i) for i in range(14)}),
             "regional_specificity": cells(**{f"G{i}": float(i % 5) for i in range(14)}),
             "clinical_phase": cells(**{f"G{i}": float(i % 3) for i in range(14)}),
@@ -278,7 +278,7 @@ class TestStabilityFlag:
 
     def test_a_tradeoff_heavy_set_flags_something(self) -> None:
         spec = {
-            "druggability": cells(**{f"G{i}": float(i) for i in range(14)}),
+            "tractable": cells(**{f"G{i}": float(i) for i in range(14)}),
             "safety": cells(**{f"G{i}": float(13 - i) for i in range(14)}),
             "regional_specificity": cells(**{f"G{i}": float((i * 7) % 14) for i in range(14)}),
             "clinical_phase": cells(**{f"G{i}": float((i * 3) % 14) for i in range(14)}),
@@ -299,19 +299,24 @@ class TestV5TheFooterMustNotContradictTheCode:
         from targetring.run import RANKED_RINGS
         # v2.2 item 4 adds `tdl` by the same D7 argument: a Pareto axis, and not
         # a score term, because Tclin is defined by an approved drug existing —
-        # which druggability and the phase ring already weigh.
-        assert set(EXCLUDED_FROM_SCORE) == {"rodent", "clinical_phase", "tdl"}
+        # which tractable and the phase ring already weigh.
+        # v2.3 item 1 adds `chemical_probe`: sparse, so weighting it would give
+        # two genes scores renormalised over different ring sets.
+        assert set(EXCLUDED_FROM_SCORE) == {
+            "rodent", "clinical_phase", "tdl", "chemical_probe"}
         for ring in EXCLUDED_FROM_SCORE:
             assert ring not in DEFAULT_WEIGHTS
         assert "rodent" not in RANKED_RINGS
         # Both stay ranked: they are Pareto axes, just not score terms.
         assert "clinical_phase" in RANKED_RINGS
         assert "tdl" in RANKED_RINGS
+        # The probe ring is the exception: excluded from the score AND unranked.
+        assert "chemical_probe" not in RANKED_RINGS
 
     def test_the_rodent_ring_reaches_no_rank(self) -> None:
         from targetring.run import RANKED_RINGS
         spec = {
-            "druggability": cells(A=1.0, B=0.0),
+            "tractable": cells(A=1.0, B=0.0),
             "rodent": cells(A=0.0, B=249.0),
         }
         out = rank_genes(spec, DEFAULT_WEIGHTS, RANKED_RINGS)
@@ -324,14 +329,14 @@ class TestV5TheFooterMustNotContradictTheCode:
         cannot drift apart again."""
         from targetring.figure import assert_footer_is_true
         with pytest.raises(AssertionError, match="never folded into any score"):
-            assert_footer_is_true({**DEFAULT_WEIGHTS, "rodent": 0.5}, ("druggability",))
+            assert_footer_is_true({**DEFAULT_WEIGHTS, "rodent": 0.5}, ("tractable",))
         with pytest.raises(AssertionError, match="never folded into any score"):
             assert_footer_is_true({**DEFAULT_WEIGHTS, "clinical_phase": 1.0}, ())
 
     def test_putting_rodent_back_in_ranked_rings_fails_the_render(self) -> None:
         from targetring.figure import assert_footer_is_true
         with pytest.raises(AssertionError, match="median available rank"):
-            assert_footer_is_true(DEFAULT_WEIGHTS, ("druggability", "rodent"))
+            assert_footer_is_true(DEFAULT_WEIGHTS, ("tractable", "rodent"))
 
     def test_a_clean_configuration_passes(self) -> None:
         from targetring.figure import assert_footer_is_true

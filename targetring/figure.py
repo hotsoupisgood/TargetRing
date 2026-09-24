@@ -103,6 +103,14 @@ PARETO_MIN_ELIGIBLE = 10
 # separate SVG element with its own id.
 CELL_ZORDER = 2.0
 
+# UX A6 / v2.3 item 1. `assert_no_text_over_the_rings` tested for strict overlap,
+# so a 0.3 px near-miss passed and the same geometry failed on the next gene set
+# -- which is exactly what happened when a twelfth ring changed the spoke order
+# and put `⚠ KCNH2 (k=8/9) *` at the bottom of the slide render (measured: label
+# bottom 21.2 px, footer top 21.5 px, on a 900 px canvas). A required clearance
+# turns "we got away with it" into a failure you can see coming.
+LABEL_CLEARANCE_PX = 4.0
+
 # Deliberately neutral / achromatic. Viridis is saturated across its whole
 # range, so these cannot collide with a value colour -- and that claim is
 # asserted, not assumed.
@@ -186,9 +194,16 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # as "worst" on the one ring where dark does not mean worst.
     RingSpec("logfc", "logFC (yours)", "submitted DE table", scale="diverging"),
     RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table"),
-    RingSpec("druggability", "Druggability (prior effort + tractability)",
-             "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, "
-             "hasHighQualityChemicalProbes (explicit 0.0 = looked, no probe; key absent = no_data)",
+    # v2.3 item 1 / COUNCIL M7/V8. One ring became two, and the labels say which
+    # claim each one makes. The dense ring is the Pareto axis; the sparse one is
+    # allowed to be hatched and is ranked and weighted nowhere.
+    RingSpec("tractable", "Tractability (family suggests druggable) — Pareto axis",
+             "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder — "
+             "3 dense keys, present for every target with a prioritisation record",
+             domain=(0.0, 1.0)),
+    RingSpec("chemical_probe", "Chemical probe available (prior tool-compound effort)",
+             "OT prioritisation: hasHighQualityChemicalProbes — SPARSE. Explicit 0.0 = "
+             "looked, no probe; key absent = no_data (hatched). Not a Pareto axis, not scored",
              domain=(0.0, 1.0)),
     RingSpec("safety", "Safety flags & constraint — NOT evidence of safety",
              "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene",
@@ -405,7 +420,14 @@ AUDIT = Layout("audit", (17.5, 14.0), 8.0, (0.250, 0.205, 0.53, 0.755),
 # label lands at 9.6 pt -- against v1's 3.9, where an 18.3 x 15.2 in canvas on
 # the same slide was a 0.49 scale. The key and the caveats leave the canvas
 # entirely and go into caption.txt.
-SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.295, 0.075, 0.38, 0.86),
+# v2.3 item 1: the width was 0.38, which made the plotted square exactly 608 px
+# on a 900 px canvas and left the bottom spoke label ending 0.3 px above the
+# footer -- i.e. no margin at all, and a spoke reorder was enough to collide
+# (docs/V2-REPORT.md §v2.2 "Still open" 6). At 0.36 the square is 576 px, which
+# buys 16 px top and bottom. The circle is ~5% smaller on the slide and every
+# label still reads at 11.5 pt; `LABEL_CLEARANCE_PX` is what stops it drifting
+# back.
+SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.295, 0.075, 0.36, 0.86),
                False, False, 0.0, 1.15, False, 0.838, 0.020, False)
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE}
 
@@ -686,7 +708,7 @@ def _draw_colourbar(fig, cmap, lay) -> list:
     always contains a full-saturation yellow and a full purple whatever the
     underlying values are. The natural reading of a Circos plot is radial, down
     a spoke, and that reading is invalid here: a gene brightest on literature
-    volume looks exactly as good as a gene brightest on druggability. The bar
+    volume looks exactly as good as a gene brightest on tractability. The bar
     says so, in the place the reader looks to decode a colour.
     """
     x = lay.cbar_x
@@ -1086,10 +1108,13 @@ def assert_no_text_over_the_rings(fig, ax, blocks) -> None:
                 f"overlaps the rings (centre {cx:.0f},{cy:.0f} radius {radius:.0f})")
             continue
         for lt, lb in labels:
-            if bb.x0 < lb.x1 and lb.x0 < bb.x1 and bb.y0 < lb.y1 and lb.y0 < bb.y1:
+            if (bb.x0 - LABEL_CLEARANCE_PX < lb.x1 and lb.x0 < bb.x1 + LABEL_CLEARANCE_PX
+                    and bb.y0 - LABEL_CLEARANCE_PX < lb.y1
+                    and lb.y0 < bb.y1 + LABEL_CLEARANCE_PX):
+                gap_y = max(lb.y0 - bb.y1, bb.y0 - lb.y1)
                 offenders.append(
-                    f"{t.get_text()[:34]!r} overlaps the spoke label "
-                    f"{lt.get_text()[:24]!r}")
+                    f"{t.get_text()[:34]!r} comes within {LABEL_CLEARANCE_PX:g} px of the "
+                    f"spoke label {lt.get_text()[:24]!r} (vertical gap {gap_y:.1f} px)")
                 break
     if offenders:
         raise AssertionError(

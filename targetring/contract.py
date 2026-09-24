@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .adapters.opentargets import DRUGGABILITY_KEYS, SAFETY_KEYS, TARGET_QUERY
+from .adapters.opentargets import PROBE_KEYS, SAFETY_KEYS, TARGET_QUERY, TRACTABLE_KEYS
 from .config import GTEX_BASE, GTEX_DATASET, OPENTARGETS_URL
 from .http import Http, describe, graphql, json_or_raise
 
@@ -60,7 +60,10 @@ async def check_contracts(http: Http) -> list[dict[str, Any]]:
         record("opentargets.prioritisation_keys", not missing_keys,
                "all 18 keys present" if not missing_keys
                else f"missing since the snapshot: {sorted(missing_keys)}")
-        ring_keys = set(DRUGGABILITY_KEYS) | set(SAFETY_KEYS)
+        # v2.3 item 1: checked against BRAF, which carries the sparse probe key.
+        # A gene-level absence of that key is expected and is the probe ring's
+        # `no_data`; its absence *for BRAF* would mean the key itself has gone.
+        ring_keys = set(TRACTABLE_KEYS) | set(PROBE_KEYS) | set(SAFETY_KEYS)
         absent = ring_keys - set(items)
         record("opentargets.ring_keys", not absent,
                "every key a ring reads is present" if not absent
