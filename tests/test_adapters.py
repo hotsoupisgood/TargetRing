@@ -866,3 +866,34 @@ class TestAFailureAlwaysCarriesAReason:
         assert not offenders, (
             "record failures with `describe(e)`, which always names the exception "
             "type: " + "; ".join(offenders))
+
+
+class TestTheActivityRingSaysWhatItLookedFor:
+    """Found while re-running v2.1, 2026-09-24: Open Targets stopped emitting
+    `AACT` as a clinicalReports source and now labels the same trials
+    `ClinicalTrials.gov` -- 0 AACT rows across 109 targets today against 4,195
+    in the previous night's cache. `clinical_activity` reads AACT only, so the
+    whole ring went to `no_data` for every gene.
+
+    That is honest (hatched, off-colormap, never imputed) but it was mute: the
+    detail named the source it wanted and not the ones it got, so a reader
+    could not tell an upstream rename from a target with no trials. Changing
+    what the ring counts is a source-semantics decision and not one to take
+    unattended; saying what happened is not.
+    """
+
+    def test_the_detail_names_the_sources_that_were_there(self) -> None:
+        rec = ot(drug_count=2, drug_rows=[{"clinicalReports": [
+            {"source": "ClinicalTrials.gov", "trialOverallStatus": "RECRUITING"},
+            {"source": "DailyMed", "trialOverallStatus": None},
+        ]}])
+        c = clinical_activity_cell(rec)
+        assert c.state == "no_data" and c.value is None
+        assert "ClinicalTrials.gov" in c.detail and "DailyMed" in c.detail
+        assert "AACT" in c.detail, "and which source it was looking for"
+
+    def test_a_target_with_no_reports_at_all_still_reads_cleanly(self) -> None:
+        rec = ot(drug_count=1, drug_rows=[{"clinicalReports": []}])
+        c = clinical_activity_cell(rec)
+        assert c.state == "no_data"
+        assert "none" in c.detail

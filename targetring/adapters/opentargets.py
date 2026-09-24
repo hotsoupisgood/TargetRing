@@ -762,7 +762,22 @@ def clinical_activity_cell(rec: OTRecord) -> Cell:
                 for_cause += 1
 
     if with_status == 0:
-        return no_data(f"{rec.drug_count} candidates but no {STATUS_SOURCE}-sourced trial status")
+        # Naming what WAS there is the difference between a ring that is blank
+        # and a ring that is diagnosable. Found 2026-09-24: Open Targets stopped
+        # emitting `AACT` and now labels the same trials `ClinicalTrials.gov`
+        # (0 AACT rows across 109 targets today, 4,195 in last night's cache),
+        # which empties this ring for every gene. Whether ClinicalTrials.gov
+        # rows are the same population AACT was is a source-semantics question
+        # and Puck's call, not one to answer unattended -- but the figure must
+        # say which source it looked for and what it found instead.
+        seen = sorted({str(r.get("source")) for row in rec.drug_rows
+                       for r in (row.get("clinicalReports") or []) if r.get("source")})
+        return no_data(
+            f"{rec.drug_count} candidates but no {STATUS_SOURCE}-sourced trial status. "
+            f"Trial-report sources present for this target: {seen[:6] or 'none'}. "
+            f"This build reads trial status from {STATUS_SOURCE} only (COUNCIL D1 gap (ii): "
+            f"TTD/EMA/label rows carry no status and would read as inactive)."
+        )
 
     active = sum(1 for s in statuses if s in ACTIVE_STATUSES)
     raw = {"active": active, "for_cause": for_cause, "n_status_rows": with_status}
