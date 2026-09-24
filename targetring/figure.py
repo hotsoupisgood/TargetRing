@@ -66,7 +66,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
     RingSpec("druggability", "Druggability (prior effort + tractability)", "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, hasHighQualityChemicalProbes"),
     RingSpec("safety", "Safety flags & constraint — NOT evidence of safety", "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"),
     RingSpec("regional_specificity", "Regional specificity", "GTEx v8 median TPM ratio"),
-    RingSpec("clinical_phase", "Pipeline: furthest phase", "OT drugAndClinicalCandidates"),
+    RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)", "OT drugAndClinicalCandidates, gated on OT target-disease mechanistic evidence"),
     RingSpec("clinical_activity", "Pipeline: current activity", "OT clinicalReports (AACT rows only)"),
     RingSpec("rodent", "Rodent phenotype lead", "OT mousePhenotypes, 'no abnormal phenotype' excluded"),
     RingSpec("literature", "Literature volume", "PubTator3, gene-id resolved, log10(1+n)"),
@@ -127,6 +127,7 @@ def render(
     invariant_failures: Sequence[str] = (),
     weights: dict[str, float] | None = None,
     ranked_rings: Sequence[str] = (),
+    gene_flags: dict[str, list[str]] | None = None,
     subtitle: str = "",
     provenance: str = "",
 ) -> FigureResult:
@@ -200,8 +201,13 @@ def render(
         gr = rankings.get(gene)
         k = gr.k if gr else 0
         mark = "◆ " if (gr and gr.pareto) else ""
+        # COUNCIL V1 (ii). Open Targets has no anti-target axis, so hERG reads as
+        # druggable, clinically validated and actively trialled while its own
+        # safetyLiabilities are Torsades de Pointes and Increased Mortality. The
+        # marker sits where the eye already is, next to k.
+        liab = "⚠ " if gene in (gene_flags or {}) else ""
         warn = " *" if (gr and gr.unstable) else ""
-        label = f"{mark}{gene} (k={k}){warn}"
+        label = f"{mark}{liab}{gene} (k={k}){warn}"
         sector.text(label, r=r_outer + 3, size=6.5 if len(genes) > 18 else 8,
                     orientation="vertical", color="#111111")
 
@@ -214,7 +220,7 @@ def render(
 
     _draw_centre(ax, region, len(genes), input_count, rendered_count, ledger_counts)
     _draw_legend(fig, rings, norms, cmap)
-    _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring)
+    _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring, gene_flags)
     if invariant_failures:
         _draw_banner(fig, invariant_failures)
 
@@ -287,7 +293,8 @@ def assert_footer_is_true(weights: dict[str, float], ranked_rings: Sequence[str]
             )
 
 
-def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring) -> None:
+def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
+                 gene_flags=None) -> None:
     w = ", ".join(f"{k}={v:g}" for k, v in sorted(weights.items()))
     n_tissues = ""
     for c in cells_by_ring.get("regional_specificity", {}).values():
@@ -306,7 +313,16 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring) -> N
         "and weighted nowhere. Asserted against the weights at draw time, not just claimed.",
         "Missing is never imputed. k = rings with a real measurement for that gene.",
         "* = this gene's top-10 place does not survive reweighting.",
+        "Pipeline: furthest phase counts only drugs indicated for a disease with mechanistic "
+        "evidence linking it to THIS target. A drug that hits the target for an unrelated "
+        "indication sets no phase; those genes are drawn 'not applicable', not 'low'.",
     ]
+    if gene_flags:
+        notes.append(
+            "⚠ = Open Targets records a cardiac-conduction, cardiotoxicity or mortality "
+            f"safety liability for this target ({', '.join(sorted(gene_flags))}). The "
+            "clinical rings are a pipeline statement, never a safety one."
+        )
     if subtitle:
         notes.insert(0, subtitle)
     fig.text(0.5, 0.008, "\n".join(notes), fontsize=7.5, ha="center", va="bottom",

@@ -36,6 +36,7 @@ from .adapters.opentargets import (
     pipeline_summary,
     rodent_cell,
     safety_cell,
+    severe_liabilities,
 )
 from .cache import Cache
 from .config import LLM_SPEND_CAP_USD, RUNS_DIR
@@ -170,6 +171,9 @@ async def run_analysis(
         chembl = ChEMBLAdapter(http, cache)
 
         ot_records = await ot_adapter.fetch([res.ensembl_id for _, _, res in live])
+        # COUNCIL V1: the indication-attribution query needs the drug rows, so it
+        # runs after the main fetch and only for targets that have drugs.
+        await ot_adapter.fetch_attribution(ot_records)
         gtex_records, lit_records, chembl_records, epmc_results = await asyncio.gather(
             asyncio.gather(*(gtex.fetch_one(res.gencode_id) for _, _, res in live)),
             asyncio.gather(*(pubtator.fetch_one(d, None) for d, _, _ in live)),
@@ -223,6 +227,14 @@ async def run_analysis(
     }
     gene_order = order_for_figure(rankings)
 
+    # COUNCIL V1 (ii): genes whose Open Targets safety record includes a cardiac
+    # or mortality liability. Carried to the figure so the clinical rings cannot
+    # be read as a safety statement.
+    severe_liability_flags = {
+        g: [x["event"] for x in sl]
+        for g in genes if (sl := severe_liabilities(ot_by_gene[g]))
+    }
+
     # --- literature audit for invariant 5 --------------------------------
     echo_checked = ncbi_checked = 0
     echo_mismatches: list[str] = []
@@ -270,6 +282,7 @@ async def run_analysis(
             invariant_failures=failures,
             weights=DEFAULT_WEIGHTS,
             ranked_rings=RANKED_RINGS,
+            gene_flags=severe_liability_flags,
             provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
         )
 
@@ -320,6 +333,8 @@ async def run_analysis(
             "weighted_score": rankings[g].weighted_score,
             "rank_note": rankings[g].note,
             "pipeline_summary": pipeline_summary(rec),
+            "severe_liabilities": severe_liabilities(rec),
+            "attribution_error": rec.associations_error,
             "drugs": drug_pipeline_rows(rec),
             "safety_liabilities": rec.safety_liabilities,
             "literature": {

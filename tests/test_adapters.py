@@ -27,6 +27,7 @@ from targetring.adapters.opentargets import (
     druggability_cell,
     rodent_cell,
     safety_cell,
+    severe_liabilities,
 )
 
 
@@ -74,6 +75,16 @@ class TestMissingIsNotLow:
         assert druggability_cell(ot(prioritisation={})).state == "no_data"
 
 
+def _row(stage, *disease_ids, drug="DRUG"):
+    """One drugAndClinicalCandidates row with its indications."""
+    return {
+        "maxClinicalStage": stage,
+        "drug": {"id": "CHEMBL1", "name": drug},
+        "diseases": [{"disease": {"id": d, "name": d.lower()}} for d in disease_ids],
+        "clinicalReports": [],
+    }
+
+
 class TestClinicalPhase:
     def test_string_enum_is_never_parsed_as_int(self) -> None:
         """COUNCIL M1: parseInt('PHASE_1_2') is the bug this table prevents."""
@@ -87,19 +98,28 @@ class TestClinicalPhase:
         assert c.state == "value" and c.value == 0.0
         assert "genuinely" in c.detail or "0 drug" in c.detail
 
-    def test_max_stage_wins(self) -> None:
+    def test_max_stage_wins_among_attributable_rows(self) -> None:
+        """Superseded by COUNCIL V1: the max is now taken over attributable rows
+        only. Given attribution, the ordinal behaves exactly as before."""
         rec = ot(drug_count=3, drug_rows=[
-            {"maxClinicalStage": "PHASE_1"},
-            {"maxClinicalStage": "APPROVAL"},
-            {"maxClinicalStage": "PHASE_2"},
+            _row("PHASE_1", "MONDO_1"), _row("APPROVAL", "MONDO_1"),
+            _row("PHASE_2", "MONDO_1"),
         ])
+        rec.associations = {"MONDO_1": {"genetic_association": 0.8}}
         assert clinical_phase_cell(rec).value == 5.0
 
     def test_unmapped_stage_does_not_become_zero(self) -> None:
-        rec = ot(drug_count=2, drug_rows=[{"maxClinicalStage": None},
-                                          {"maxClinicalStage": "SOMETHING_NEW"}])
+        rec = ot(drug_count=2, drug_rows=[
+            {"maxClinicalStage": None, "diseases": []},
+            {"maxClinicalStage": "SOMETHING_NEW", "diseases": []},
+        ])
+        rec.associations = {}
         c = clinical_phase_cell(rec)
-        assert c.value == 1.0 and "none with a mapped clinical stage" in c.detail
+        # v1 returned value(1.0) here, which quietly absorbed any new enum value
+        # Open Targets might introduce. An unmapped stage is a fact we do not
+        # have, not a low one — and it must not become zero either.
+        assert c.state == "no_data" and c.value is None
+        assert "SOMETHING_NEW" in c.detail
 
 
 class TestClinicalActivity:
@@ -365,3 +385,202 @@ class TestSparseKeyCensusStillHolds:
                 f"Open Targets now emits {k}={absent_value} explicitly (observed "
                 f"{sorted(seen[k])}). Absence is no longer that value, so mapping it to "
                 f"{absent_value} would be imputation.")
+
+
+# --- COUNCIL V1: polypharmacology must not set the ring to Approved ---------
+
+class TestV1IndicationAttribution:
+    """COUNCIL V1, reproduced from the council's own liver run.
+
+    `clinical_phase` took max(maxClinicalStage) over every row with no test that
+    the drug's indication had anything to do with the target, so a target with
+    no approved drug rendered identically to one with three.
+    """
+
+    def test_epha2_is_no_longer_approved_by_three_other_targets_drugs(self) -> None:
+        """EPHA2, run 20260924T064712Z-1bcd4f: clinical_phase = 5.0,
+        "Approved (3 candidates)", brightest fill — on vandetanib (medullary
+        thyroid, RET/VEGFR), dasatinib (CML, BCR-ABL1) and regorafenib
+        (colorectal). There is no approved EPHA2 drug."""
+        rec = ot(drug_count=3, drug_rows=[
+            _row("APPROVAL", "MONDO_0015277", drug="VANDETANIB"),
+            _row("APPROVAL", "MONDO_0011996", drug="DASATINIB"),
+            _row("APPROVAL", "MONDO_0005575", drug="REGORAFENIB"),
+        ])
+        # Measured live 2026-09-24: none of the three carries a mechanistic
+        # datatype for EPHA2. Colorectal is literature + rna_expression +
+        # clinical; CML and medullary thyroid are clinical only.
+        rec.associations = {
+            "MONDO_0005575": {"literature": 0.781, "rna_expression": 0.033,
+                              "clinical": 0.937},
+            "MONDO_0011996": {"literature": 0.135, "clinical": 0.948},
+            "MONDO_0015277": {"clinical": 0.892},
+        }
+        c = clinical_phase_cell(rec)
+        assert c.state == "not_applicable", "an unattributed approval is not a phase"
+        assert c.value is None, "and must not be a lower number on the same scale"
+        assert "NONE is indicated for a disease" in c.detail
+        assert "Approved" in c.detail, "the excluded finding still has to be visible"
+        assert c.raw["unattributed_max_stage"] == 5
+
+    def test_braf_keeps_its_approval(self) -> None:
+        """The rule must not destroy the true positive: BRAF x melanoma carries
+        genetic_association 0.699."""
+        rec = ot(drug_count=2, drug_rows=[
+            _row("APPROVAL", "MONDO_0005105", drug="VEMURAFENIB"),
+            _row("PHASE_2", "MONDO_0005575", drug="SORAFENIB"),
+        ])
+        rec.associations = {
+            "MONDO_0005105": {"somatic_mutation": 0.796, "genetic_association": 0.699,
+                              "affected_pathway": 0.434, "clinical": 0.978,
+                              "literature": 0.998},
+            "MONDO_0005575": {"genetic_association": 0.771, "clinical": 0.941},
+        }
+        c = clinical_phase_cell(rec)
+        assert c.state == "value" and c.value == 5.0
+        assert "VEMURAFENIB" in c.detail and "genetic_association 0.70" in c.detail
+
+    def test_egfr_the_canonical_oncology_on_target_approval_survives(self) -> None:
+        """The false-negative worry for a genetics-only rule is oncology, where
+        the driver is somatic. Measured: EGFR x NSCLC carries
+        genetic_association 0.75 and genetic_literature 0.61, so afatinib keeps
+        its approval."""
+        rec = ot(drug_count=82, drug_rows=[_row("APPROVAL", "MONDO_0005233",
+                                                drug="AFATINIB")])
+        rec.associations = {"MONDO_0005233": {
+            "genetic_association": 0.75, "genetic_literature": 0.61,
+            "somatic_mutation": 0.83, "affected_pathway": 0.82, "clinical": 1.0}}
+        assert clinical_phase_cell(rec).value == 5.0
+
+    def test_sorafenib_for_renal_cell_carcinoma_does_not_attribute(self) -> None:
+        """PLAN §2 names this case: "BRAF's top row is sorafenib, approved for
+        RCC/HCC, not BRAF-driven disease". Measured: genetics 0.000 for both,
+        somatic_mutation 0.304/0.456 -- which is BRAF's pan-cancer floor, not
+        disease-specific evidence."""
+        rec = ot(drug_count=2, drug_rows=[
+            _row("APPROVAL", "MONDO_0005005", drug="SORAFENIB"),   # RCC
+            _row("APPROVAL", "MONDO_0007256", drug="SORAFENIB"),   # HCC
+        ])
+        rec.associations = {
+            "MONDO_0005005": {"somatic_mutation": 0.304, "literature": 0.232,
+                              "clinical": 0.950},
+            "MONDO_0007256": {"somatic_mutation": 0.456, "literature": 0.670,
+                              "clinical": 0.973},
+        }
+        assert clinical_phase_cell(rec).state == "not_applicable"
+
+    def test_the_pan_cancer_somatic_floor_does_not_attribute(self) -> None:
+        """BRAF returns somatic_mutation = 0.456 for thirty-odd unrelated tumour
+        types. A datatype that fires everywhere discriminates nowhere."""
+        rec = ot(drug_count=1, drug_rows=[_row("APPROVAL", "MONDO_RHABDO")])
+        rec.associations = {"MONDO_RHABDO": {"somatic_mutation": 0.456}}
+        assert clinical_phase_cell(rec).state == "not_applicable"
+
+    def test_pathway_membership_does_not_attribute(self) -> None:
+        """EPHA2 x squamous cell lung carcinoma = affected_pathway 0.760, purely
+        through Eph receptor signalling."""
+        rec = ot(drug_count=1, drug_rows=[_row("APPROVAL", "MONDO_SCC")])
+        rec.associations = {"MONDO_SCC": {"affected_pathway": 0.760,
+                                          "literature": 0.104, "clinical": 0.061}}
+        assert clinical_phase_cell(rec).state == "not_applicable"
+
+    def test_the_strongest_evidence_row_is_the_one_named(self) -> None:
+        """Ties at stage 5 are common -- BRAF has 18 approved candidates -- and
+        naming the first would put a weak exemplar on a well-attributed ring."""
+        rec = ot(drug_count=2, drug_rows=[
+            _row("APPROVAL", "MONDO_WEAK", drug="WEAK"),
+            _row("APPROVAL", "MONDO_STRONG", drug="STRONG"),
+        ])
+        rec.associations = {"MONDO_WEAK": {"genetic_association": 0.15},
+                            "MONDO_STRONG": {"genetic_association": 0.90}}
+        assert "STRONG" in clinical_phase_cell(rec).detail
+
+    def test_circular_evidence_alone_never_attributes(self) -> None:
+        """`clinical` IS the drug, and `literature` co-mention is inflated by the
+        trials themselves. Either alone must not make an indication count."""
+        for dts in ({"clinical": 0.99}, {"literature": 0.99},
+                    {"clinical": 0.99, "literature": 0.99, "rna_expression": 0.5}):
+            rec = ot(drug_count=1, drug_rows=[_row("APPROVAL", "MONDO_X")])
+            rec.associations = {"MONDO_X": dts}
+            assert clinical_phase_cell(rec).state == "not_applicable", dts
+
+    def test_a_trace_level_score_is_not_attribution(self) -> None:
+        """EPHA2 x melanoma carries genetic_association = 0.0 exactly."""
+        rec = ot(drug_count=1, drug_rows=[_row("APPROVAL", "MONDO_0005105")])
+        rec.associations = {"MONDO_0005105": {"genetic_association": 0.0,
+                                              "literature": 0.875}}
+        assert clinical_phase_cell(rec).state == "not_applicable"
+        rec.associations = {"MONDO_0005105": {"genetic_association": 0.2}}
+        assert clinical_phase_cell(rec).value == 5.0
+
+    def test_the_excluded_higher_stage_is_reported_not_hidden(self) -> None:
+        rec = ot(drug_count=2, drug_rows=[
+            _row("PHASE_1", "MONDO_OWN", drug="ONTARGET"),
+            _row("APPROVAL", "MONDO_OTHER", drug="PROMISCUOUS"),
+        ])
+        rec.associations = {"MONDO_OWN": {"genetic_association": 0.9},
+                            "MONDO_OTHER": {"clinical": 0.9}}
+        c = clinical_phase_cell(rec)
+        assert c.value == 2.0, "Phase 1, on the attributable drug"
+        assert "Approved was reached by a candidate whose indication is NOT attributable" \
+            in c.detail
+
+    def test_a_failed_attribution_query_is_failed_not_unattributed(self) -> None:
+        """'We asked and could not find out' is not 'nothing is attributable'.
+        Guessing either way would be a confident wrong answer."""
+        rec = ot(drug_count=3, drug_rows=[_row("APPROVAL", "MONDO_X")])
+        rec.associations_error = "HTTP 503 from api.platform.opentargets.org"
+        c = clinical_phase_cell(rec)
+        assert c.state == "failed" and c.value is None
+        assert "503" in c.detail
+
+    def test_zero_drugs_is_still_a_meaningful_zero(self) -> None:
+        """COUNCIL D5 must survive the change."""
+        rec = ot(drug_count=0)
+        rec.associations = {}
+        c = clinical_phase_cell(rec)
+        assert c.state == "value" and c.value == 0.0
+
+
+class TestV1SevereLiabilityFlag:
+    """COUNCIL V1 (ii). KCNH2 rendered druggable, "Approved (17 candidates)" and
+    actively trialled while its own safetyLiabilities — fetched in the same call
+    — were Torsades de Point, Increased Mortality and Reduced survival."""
+
+    def test_kcnh2_is_flagged(self) -> None:
+        rec = ot(safety_liabilities=[
+            {"event": "Torsades de Point", "datasource": "AOP"},
+            {"event": "Increased Mortality", "datasource": "AOP"},
+            {"event": "Reduced, survival", "datasource": "AOP"},
+            {"event": "prolongation of QT interval of ECG", "datasource": "AOP"},
+            {"event": "receptor binding", "datasource": "AOP"},
+        ])
+        flags = severe_liabilities(rec)
+        assert {f["event"] for f in flags} >= {"Torsades de Point", "Increased Mortality"}
+        assert "receptor binding" not in {f["event"] for f in flags}
+        # The matched term travels with the flag, so the claim is auditable.
+        assert all(f["matched"] for f in flags)
+
+    def test_a_target_with_no_cardiac_or_mortality_record_is_not_flagged(self) -> None:
+        rec = ot(safety_liabilities=[
+            {"event": "Skin rash"}, {"event": "alopecia"}, {"event": "diarrhoea"},
+        ])
+        assert severe_liabilities(rec) == []
+
+    def test_no_safety_record_at_all_is_not_flagged(self) -> None:
+        assert severe_liabilities(ot()) == []
+
+    def test_the_flag_reaches_the_figure(self, tmp_path) -> None:
+        from targetring.figure import render
+        from targetring.rank import rank_genes
+        from targetring.states import value as v
+        spec = {"logfc": {"KCNH2": v(1.0), "PCSK9": v(2.0)},
+                "druggability": {"KCNH2": v(0.5), "PCSK9": v(0.9)}}
+        render(genes=["KCNH2", "PCSK9"], cells_by_ring=spec,
+               rankings=rank_genes(spec), region="Liver",
+               out_svg=tmp_path / "f.svg", input_count=2, rendered_count=2,
+               ledger_counts={}, gene_flags={"KCNH2": ["Torsades de Point"]})
+        svg = (tmp_path / "f.svg").read_text()
+        assert "⚠ KCNH2" in svg or "KCNH2" in svg
+        assert "cardiac-conduction, cardiotoxicity or mortality" in svg
+        assert "never a safety one" in svg

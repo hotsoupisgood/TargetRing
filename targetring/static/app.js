@@ -123,7 +123,7 @@ function wireFigure() {
     el.addEventListener("click", () => openDrawer(gene));
   });
   $("#figure").querySelectorAll("text").forEach((t) => {
-    const m = (t.textContent || "").match(/^[◆\s]*([A-Za-z0-9._-]+)\s*\(k=/);
+    const m = (t.textContent || "").match(/^[◆⚠\s]*([A-Za-z0-9._-]+)\s*\(k=/);
     if (!m) return;
     if (!RUN.gene_order.includes(m[1])) return;
     t.style.cursor = "pointer";
@@ -242,6 +242,18 @@ function drawerHtml(d) {
   // --- drug pipeline (COUNCIL D6) ---
   h += `<h4>drug pipeline</h4>
         <p class="summary-line">${esc(d.pipeline_summary)}</p>`;
+  if ((d.severe_liabilities || []).length) {
+    h += `<div class="note bad"><b>⚠ Open Targets records a cardiac or mortality safety
+      liability for this target:</b> ${d.severe_liabilities
+        .map((s) => `${esc(s.event)} <span class="hint">(matched “${esc(s.matched)}”${
+          s.datasource ? ", " + esc(s.datasource) : ""})</span>`).join("; ")}.
+      The clinical rings are a pipeline statement, never a safety one.</div>`;
+  }
+  if (d.attribution_error) {
+    h += `<div class="note warn">Indication attribution could not be evaluated for this
+      gene, so the furthest-phase ring is <code>failed</code> rather than a number:
+      ${esc(d.attribution_error)}</div>`;
+  }
   if (drugs.length) {
     h += `<div class="note">An approved drug that hits this target is not the same as
       this target being clinically validated — polypharmacology defeats a mechanism
