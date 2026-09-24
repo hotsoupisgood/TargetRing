@@ -449,3 +449,52 @@ class TestI7HeadlineEligibility:
         assert res.diamonds_suppressed, "4 genes is below the V10 floor"
         drawn = diamond_genes(tmp_path / "d.svg")
         assert drawn == [], "and none is drawn"
+
+
+class TestManifestCarriesTheRedBannerQuestion:
+    """QA-v2-retest §4. V2-REPORT §3.1 said the red-banner/amber split was "in
+    the manifest (`any_invariant_failed`, `run_conditions`)". `run_conditions`
+    was; `any_invariant_failed` and `all_invariants_pass` were `@property` on
+    `Manifest` and `asdict()` drops properties, so neither reached
+    `manifest.json`. The values were recoverable from the `invariants` array —
+    nothing on disk was wrong — but the specific promise, that a screenshot's
+    manifest answers "did anything fail?" in one field, was unmet.
+    """
+
+    def _manifest(self, outcomes, tmp_path):
+        import json
+
+        from targetring import manifest as m
+        man = m.Manifest(
+            run_id="T", timestamp_utc="now", git_sha="deadbeef", region="Liver",
+            input_row_count=1, rendered_count=1, ledger_count=0,
+            invariants=[{"id": f"I{i}", "outcome": o, "detail": ""}
+                        for i, o in enumerate(outcomes, start=1)],
+        )
+        return man, json.loads(man.write(tmp_path / "manifest.json").read_text())
+
+    def test_both_keys_are_written(self, tmp_path: Path) -> None:
+        man, on_disk = self._manifest(["PASS"] * 7, tmp_path)
+        assert "any_invariant_failed" in on_disk, "the §3.1 claim, now true"
+        assert "all_invariants_pass" in on_disk
+        assert on_disk["any_invariant_failed"] is False
+        assert on_disk["all_invariants_pass"] is True
+
+    def test_a_failure_is_visible_in_the_one_field(self, tmp_path: Path) -> None:
+        _, on_disk = self._manifest(["PASS", "FAIL"] + ["PASS"] * 5, tmp_path)
+        assert on_disk["any_invariant_failed"] is True
+        assert on_disk["all_invariants_pass"] is False
+
+    def test_not_evaluated_is_not_a_failure(self, tmp_path: Path) -> None:
+        """UX A1's whole point: a source being down and an invariant being
+        violated are different things, and the red banner answers only the
+        second. NOT_EVALUATED makes `all_invariants_pass` false and must leave
+        `any_invariant_failed` false."""
+        _, on_disk = self._manifest(["PASS"] * 6 + ["NOT_EVALUATED"], tmp_path)
+        assert on_disk["any_invariant_failed"] is False
+        assert on_disk["all_invariants_pass"] is False
+
+    def test_the_file_cannot_drift_from_the_object(self, tmp_path: Path) -> None:
+        man, on_disk = self._manifest(["FAIL"] + ["PASS"] * 6, tmp_path)
+        assert on_disk["any_invariant_failed"] == man.any_invariant_failed
+        assert on_disk["all_invariants_pass"] == man.all_invariants_pass

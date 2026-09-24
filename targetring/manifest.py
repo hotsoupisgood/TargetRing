@@ -81,9 +81,25 @@ class Manifest:
         `all_invariants_pass`, which a NOT_EVALUATED result also makes false."""
         return any(i["outcome"] == "FAIL" for i in self.invariants)
 
+    def as_dict(self) -> dict[str, Any]:
+        """QA-v2-retest §4. `asdict()` serialises fields and drops properties, so
+        the two questions a screenshot's manifest is supposed to answer in one
+        field -- did anything FAIL, did everything PASS -- were computable from
+        the `invariants` array and absent from the file, while V2-REPORT §3.1
+        claimed they were in it. They are written now.
+
+        They stay `@property` as well, so there is exactly one definition of
+        each and the file cannot drift from the object.
+        """
+        return {
+            **asdict(self),
+            "any_invariant_failed": self.any_invariant_failed,
+            "all_invariants_pass": self.all_invariants_pass,
+        }
+
     def write(self, path: Path) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(asdict(self), indent=2, default=str))
+        path.write_text(json.dumps(self.as_dict(), indent=2, default=str))
         return path
 
 
