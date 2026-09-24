@@ -784,8 +784,8 @@ AUDIT = Layout("audit", (19.5, 14.0), 8.0, (0.225, 0.205, 0.475, 0.755),
 # buys 16 px top and bottom. The circle is ~5% smaller on the slide and every
 # label still reads at 11.5 pt; `LABEL_CLEARANCE_PX` is what stops it drifting
 # back.
-SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.275, 0.075, 0.345, 0.86),
-               False, False, 0.0, 1.15, False, (0.690, 0.045, 0.300, 0.855),
+SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.075, 0.345, 0.86),
+               False, False, 0.0, 1.15, False, (0.700, 0.045, 0.290, 0.855),
                8.4, 7.6, 52, False, False)
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE}
 
@@ -1181,11 +1181,13 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
     # stronger claim now and it needs to be: the rings no longer merely have
     # different ranges, they have different colours and, on five of them, a
     # different kind of scale.
+    # Split on purpose rather than wrapped: the first line is the claim and it
+    # has to survive being read out of the SVG in one piece, which is how
+    # tests/test_presentation.py checks it is on the figure and not clipped.
     blocks.append(fig.text(
         x0, y0 + h + line(ts) * 0.5,
-        textwrap.fill("EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS \u2014 "
-                      "a colour means nothing outside its own ring",
-                      lay.scale_wrap + 4),
+        "EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS\n"
+        "a colour means nothing outside its own ring",
         fontsize=ts * 0.95, va="bottom", ha="left", color="#8a4b00", weight="bold"))
 
     top = y0 + h
@@ -1211,13 +1213,24 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
             cax.set_ylim(0, 1)
             for j, colour in enumerate(sw):
                 cax.add_patch(plt.Rectangle((j + 0.06, 0), 0.88, 1,
-                                            facecolor=colour, edgecolor="none"))
+                                            facecolor=colour, edgecolor="none",
+                                            clip_on=False))
             cax.set_facecolor("none")
             for side in cax.spines.values():
                 side.set_visible(False)
         else:
-            cax.imshow([list(range(256))], aspect="auto",
-                       cmap=cmaps[spec.key], extent=(0, 1, 0, 1))
+            # Drawn as 256 unclipped rectangles rather than an `imshow`: an
+            # image inside an axes carries a clipPath into the SVG -- and
+            # `TestExportRemainsEditable` asserts there are none, so that an
+            # Illustrator user cannot find part of the figure invisible and
+            # unselectable. Rectangles also keep the export editable.
+            cax.set_xlim(0, 1)
+            cax.set_ylim(0, 1)
+            ramp = FAMILIES[spec.family].hexes
+            for j in range(len(ramp)):
+                cax.add_patch(plt.Rectangle((j / len(ramp), 0), 1.02 / len(ramp), 1,
+                                            facecolor=ramp[j], edgecolor="none",
+                                            clip_on=False))
             for side in cax.spines.values():
                 side.set_linewidth(0.5)
                 side.set_color("#666666")

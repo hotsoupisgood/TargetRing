@@ -75,10 +75,17 @@ class TestA4SlideRender:
     1.78:1 slide the figure filled the middle ~60% of the width."""
 
     def test_the_audit_render_is_unchanged_in_kind(self, tmp_path: Path) -> None:
+        """v2.6 retires the numbered monospace key: each ring has its own scale
+        now, beside its own colours, and two places claiming to tell a reader
+        how to decode a cell is one too many. What the key was *for* -- the ring
+        number, its name and its range -- is asserted here on the thing that
+        replaced it."""
         _, svg = _render(tmp_path, "audit")
         body = svg.read_text()
-        assert "rings, outermost first" in body, "the audit render keeps the key"
-        assert "Mouse-phenotype ring" in body, "and the full footer block"
+        assert "rings, outermost first" not in body, "the numbered key is retired"
+        assert "1. logFC (yours)" in body, "the scale column numbers the rings"
+        assert "EACH RING HAS ITS OWN SCALE" in body
+        assert "Mouse-phenotype ring" in body, "and the full footer block stays"
 
     def test_the_slide_render_is_16_by_9(self, tmp_path: Path) -> None:
         _, svg = _render(tmp_path, "slide")
@@ -116,6 +123,11 @@ class TestA4SlideRender:
         assert "rings, outermost first" not in body
         assert "hasSmallMoleculeBinder" not in body
         assert "Mouse-phenotype ring" not in body
+        # v2.6 / §v2.3 Still open 4: the slide now carries the ring scales and
+        # a short source per ring. The long provenance strings stay in the
+        # caption -- they are what made v1's key overprint the arcs.
+        assert "1. logFC (yours)" in body
+        assert "GTEx v8" in body
         # One line still does the honest work, and v2.5 put the spoke order on
         # it: a slide whose circle has an order nobody can see is the same
         # defect the ring key's caveat had.
@@ -142,19 +154,30 @@ class TestA5ColourBar:
     reader whether purple or yellow is the high end of a heatmap." """
 
     @pytest.mark.parametrize("layout", ["audit", "slide"])
-    def test_both_renders_carry_a_colour_bar(self, tmp_path: Path, layout: str) -> None:
-        _, svg = _render(tmp_path, layout)
+    def test_both_renders_carry_a_scale_for_every_ring(
+            self, tmp_path: Path, layout: str) -> None:
+        """v2.5 answered A5 with one bar labelled low/high, which was honest
+        only while every ring shared one ramp. v2.6 gives each ring its own
+        scale in its own units, and that is what the reader decodes against."""
+        res, svg = _render(tmp_path, layout)
         body = svg.read_text()
-        assert ">low<" in body and ">high<" in body
+        for i, key in enumerate(("logFC (yours)", "Tractability", "Safety flags",
+                                 "Regional specificity", "Pipeline: furthest phase",
+                                 "Literature volume"), start=1):
+            assert f"{i}. {key}" in body, (layout, key)
+        # In the ring's own units, not a position on a shared ramp.
+        assert "PubTator3 records" in body
+        assert "GTEx v8" in body
 
     @pytest.mark.parametrize("layout", ["audit", "slide"])
     def test_it_says_the_rings_are_not_comparable(self, tmp_path: Path, layout: str) -> None:
-        """The natural reading of a Circos plot is radial, and because every
-        ring is min-max normalised within itself that reading is invalid."""
+        """The natural reading of a Circos plot is radial, and that reading is
+        invalid here. v2.5 said "RESCALED WITHIN EACH RING"; v2.6's claim is
+        stronger because the rings no longer share colours either."""
         _, svg = _render(tmp_path, layout)
         body = svg.read_text().replace("\n", " ")
-        assert "RESCALED WITHIN EACH RING" in body
-        assert "means nothing in common" in body
+        assert "EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS" in body
+        assert "a colour means nothing outside its own ring" in body
 
     def test_the_value_swatch_no_longer_hides_the_point_in_a_parenthetical(
             self, tmp_path: Path) -> None:
@@ -371,7 +394,7 @@ class TestNothingIsClippedAtTheCanvasEdge:
         found = False
         for el in root.iter(f"{ns}text"):
             text = "".join(el.itertext())
-            if "RESCALED WITHIN EACH RING" not in text:
+            if "EACH RING HAS ITS OWN SCALE" not in text:
                 continue
             found = True
             tr = el.get("transform") or ""

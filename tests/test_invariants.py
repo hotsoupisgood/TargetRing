@@ -60,10 +60,13 @@ class TestPalette:
         assert_fills_disjoint()
 
     def test_the_check_would_catch_a_bad_palette(self, monkeypatch) -> None:
+        """v2.6: `colormap_hexes` is the union over twelve families, so this
+        also proves the check widened with them -- a reserved fill has to be
+        outside every ring's colours, not outside whichever ramp came first."""
         colliding = sorted(colormap_hexes())[len(colormap_hexes()) // 2]
         monkeypatch.setitem(STATE_STYLE, "no_data",
                             {**STATE_STYLE["no_data"], "fc": colliding})
-        with pytest.raises(AssertionError, match=f"also produced by the {VALUE_CMAP}"):
+        with pytest.raises(AssertionError, match="also produced by the value colormaps"):
             assert_fills_disjoint()
 
 

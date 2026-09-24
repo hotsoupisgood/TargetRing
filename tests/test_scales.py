@@ -16,7 +16,7 @@ from targetring.adapters.opentargets import SOURCE_LABEL as ACTIVITY_SOURCE_LABE
 from targetring.adapters.pharos import TDL_MAX
 from targetring.figure import (
     ACTIVITY_PALETTE,
-    CMAP_STOPS,
+    CMAP_LUM,
     GREYSCALE_MIN_DELTA,
     RING_SPECS,
     STATE_STYLE,
@@ -24,11 +24,16 @@ from targetring.figure import (
     _scaled,
     assert_fills_disjoint,
     assert_greyscale_disjoint,
+    assert_ramp_luminance_is_monotone,
+    assert_rings_are_distinguishable,
     colormap_hexes,
     relative_luminance,
     render,
+    ring_cmap,
+    ring_swatches,
     value_cmap,
 )
+from targetring.palette import FAMILIES, all_value_hexes
 from targetring.order import EXTERNAL_RING_COUNT, EXTERNAL_RINGS, gene_stats
 from targetring.states import no_data, value
 
@@ -53,11 +58,16 @@ def _axes_spec(genes):
 
 
 def _fill(ring_key: str, cells: dict) -> dict[str, str]:
-    """The fill each gene's cell would get on this ring."""
+    """The fill each gene's cell would get on this ring.
+
+    v2.6: the colormap is the *ring's*, not one shared ramp. This mirrors the
+    render path in `figure.render` rather than approximating it, which is the
+    only way these tests keep testing the figure people get.
+    """
     from matplotlib.colors import to_hex
     spec = SPEC[ring_key]
     norm = _norm_for(spec, cells)
-    cmap = value_cmap()
+    cmap = ring_cmap(spec)
     out = {}
     for g, c in cells.items():
         if c.state != "value":
@@ -126,15 +136,14 @@ class TestV6ScalesMeanSomething:
     def test_the_k_ring_no_longer_spends_the_colormap_on_a_two_step_difference(self) -> None:
         """v1: "the same rule spends the entire colormap on a 7->9 difference,
         so TMEM229B's k cell is maximally dark"."""
-        from matplotlib.colors import to_hex
-        cmap = value_cmap()
         top = float(EXTERNAL_RING_COUNT)
+        swatches = ring_swatches(SPEC["completeness"])
         cells = {"A": value(top - 2), "B": value(top - 1), "C": value(top)}
         fills = _fill("completeness", cells)
-        assert fills["A"] != to_hex(cmap(0.0)), \
+        assert fills["A"] != swatches[0], \
             "k-2 is not the bottom of the scale just because it is the lowest here"
         # A two-step difference covers 2/K of the ramp, not all of it.
-        assert fills["C"] == to_hex(cmap(1.0)), "K of K is the top, and genuinely is"
+        assert fills["C"] == swatches[-1], "K of K is the top, and genuinely is"
         norm = _norm_for(SPEC["completeness"], cells)
         assert norm(top - 2) == pytest.approx((top - 2) / top)
 
@@ -212,10 +221,15 @@ class TestV12CategoricalActivityRing:
         assert _fill("clinical_activity", two)["A"] == \
             _fill("clinical_activity", three)["A"]
 
-    def test_its_colours_are_outside_the_value_colormap(self) -> None:
-        ramp = colormap_hexes()
+    def test_its_colours_are_outside_every_value_ramp(self) -> None:
+        """v2.5 had one ramp to be outside of. v2.6 has twelve families, and the
+        claim is the same and stronger: a three-state categorical must not be a
+        position on any of them."""
+        ramps = {h for fam in FAMILIES.values() for h in fam.hexes}
+        ramps |= {h for spec in RING_SPECS if spec.levels
+                  for h in ring_swatches(spec)}
         for colour in ACTIVITY_PALETTE.values():
-            assert colour not in ramp
+            assert colour not in ramps
 
     def test_its_colours_are_outside_the_reserved_state_fills(self) -> None:
         reserved = {st["fc"] for st in STATE_STYLE.values()}
@@ -248,7 +262,7 @@ class TestV17SignedRingHasAZeroAnchor:
     def test_zero_sits_at_the_midpoint_of_the_ramp(self) -> None:
         from matplotlib.colors import to_hex
         cells = {"down": value(-3.3), "flat": value(0.0), "up": value(3.1)}
-        assert _fill("logfc", cells)["flat"] == to_hex(value_cmap()(0.5))
+        assert _fill("logfc", cells)["flat"] == to_hex(ring_cmap(SPEC["logfc"])(0.5))
 
     def test_equal_and_opposite_changes_are_equally_far_from_the_middle(self) -> None:
         cells = {"a": value(-2.0), "b": value(2.0), "c": value(0.0)}
@@ -302,7 +316,11 @@ class TestGreyscaleDisjointness:
         assert_greyscale_disjoint()
 
     def test_no_value_colour_is_within_the_threshold_of_any_reserved_fill(self) -> None:
-        ramp = [relative_luminance(value_cmap()(i / 255)) for i in range(256)]
+        """v2.6: "any value colour" is now the union over twelve families, not
+        256 steps of one ramp. That is the whole point -- a reserved fill has to
+        be outside all of them."""
+        ramp = [relative_luminance(h) for h in all_value_hexes()]
+        assert len(ramp) > 1500, "this is the union over every ring, not one ramp"
         for name, st in STATE_STYLE.items():
             l = relative_luminance(st["fc"])
             closest = min(abs(l - x) for x in ramp)
@@ -326,17 +344,42 @@ class TestGreyscaleDisjointness:
         finally:
             F.STATE_STYLE["no_data"] = old
 
-    def test_the_truncation_is_what_makes_room(self) -> None:
-        lo, hi = CMAP_STOPS
-        assert lo > 0.0 and hi < 1.0
-        ramp = [relative_luminance(value_cmap()(i / 255)) for i in range(256)]
-        assert min(ramp) > GREYSCALE_MIN_DELTA, "black must clear the dark end"
-        assert max(ramp) < 1.0 - 2 * GREYSCALE_MIN_DELTA, "white and near-white need room"
+    def test_one_luminance_envelope_is_what_makes_room(self) -> None:
+        """v2.5 made room by truncating one ramp to [0.16, 0.92]. v2.6 has
+        twelve, so the room is made by *construction*: every family is built
+        inside `CMAP_LUM`, and the three reserved fills sit outside it."""
+        lo, hi = CMAP_LUM
+        assert lo >= GREYSCALE_MIN_DELTA, "black must clear the dark end"
+        assert hi < 1.0 - 2 * GREYSCALE_MIN_DELTA, "white and near-white need room"
+        ramp = [relative_luminance(h) for h in all_value_hexes()]
+        assert min(ramp) >= lo - 2e-3 and max(ramp) <= hi + 2e-3, (
+            "a family escaped the shared luminance envelope, which is how twelve "
+            "colormaps would reopen the collision one truncated ramp closed")
 
-    def test_the_ramp_is_still_monotone_in_luminance(self) -> None:
-        """Truncating must not have broken the thing that makes viridis readable."""
-        ramp = [relative_luminance(value_cmap()(i / 255)) for i in range(256)]
-        assert all(b >= a - 1e-6 for a, b in zip(ramp, ramp[1:]))
+    def test_every_ramp_is_monotone_in_luminance(self) -> None:
+        """Within a ring, darker must always mean less -- on every family, and
+        on each arm of a diverging one."""
+        assert_ramp_luminance_is_monotone()
+        for name, fam in FAMILIES.items():
+            if fam.kind != "sequential":
+                continue
+            lums = [relative_luminance(h) for h in fam.hexes]
+            assert all(b >= a - 1e-6 for a, b in zip(lums, lums[1:])), name
+
+    def test_the_check_would_catch_a_family_that_left_the_envelope(self) -> None:
+        """A check that has never been seen to fail is not a check."""
+        import targetring.palette as P
+        from targetring.palette import Family, sequential_hexes
+        old = P.FAMILIES["padj"]
+        try:
+            P.FAMILIES["padj"] = Family(
+                "escaped", "sequential",
+                tuple(sequential_hexes("rose", lum=(0.075, 0.82))), "")
+            with pytest.raises(AssertionError,
+                               match="indistinguishable from a real measurement"):
+                assert_greyscale_disjoint()
+        finally:
+            P.FAMILIES["padj"] = old
 
 
 class TestTheKeyDoesNotMisstateItsOwnRings:
@@ -357,6 +400,19 @@ class TestTheKeyDoesNotMisstateItsOwnRings:
         spec = next(r for r in RING_SPECS if r.key == "tdl")
         assert _range_label(spec, None) == "no values"
 
+    def test_every_ring_states_its_units(self) -> None:
+        """v2.6. A range is a pair of numbers; without the units it is a pair of
+        numbers in whatever a reader assumes."""
+        for spec in RING_SPECS:
+            assert spec.units, spec.key
+            assert spec.short_source, spec.key
+
+    def test_a_transformed_domain_prints_its_transform(self) -> None:
+        """V6's actual instruction: if a domain is changed, say so on the scale.
+        These four rings do not colour the raw number."""
+        for key in ("regional_specificity", "neg_log10_padj", "literature", "logfc"):
+            assert SPEC[key].transform, key
+
     def test_the_rendered_key_says_it(self, tmp_path: Path) -> None:
         spec = {"logfc": {g: value(1.0 * i) for i, g in enumerate("ABC")},
                 "clinical_activity": {"A": value(-1.0), "B": value(0.0), "C": value(1.0)}}
@@ -364,4 +420,141 @@ class TestTheKeyDoesNotMisstateItsOwnRings:
                region="Liver", out_svg=tmp_path / "k2.svg", input_count=3,
                rendered_count=3, ledger_counts={}, ordering_note=ORDER_NOTE)
         body = (tmp_path / "k2.svg").read_text()
-        assert "3 states" in body
+        # v2.6: the ring key this used to check is gone -- each ring has its own
+        # scale now, and the activity ring's scale draws its three swatches with
+        # their three levels under them. The claim is unchanged: a ring full of
+        # drawn cells must never be described as having none.
+        assert "three named states" in body
+        assert "no values in this run" not in body
+
+
+class TestV26EncodingFollowsTheDataType:
+    """UX A5 and COUNCIL V6/V12/V17, taken together.
+
+    v2.5 answered the *scale* half of these findings and left the *colour* half:
+    twelve rings on one viridis ramp, so ring 3's yellow and ring 7's yellow
+    were the same pixel and meant unrelated things. What is checked here is that
+    each ring's colour now follows what its number is.
+    """
+
+    def test_the_signed_rings_diverge_and_nothing_else_does(self) -> None:
+        """V17. A sequential ramp on a signed quantity puts 'strongly
+        down-regulated' at the end of the scale where every other ring puts
+        'worst'."""
+        diverging = {k for k, s in SPEC.items()
+                     if s.family and FAMILIES[s.family].kind == "diverging"}
+        assert diverging == {"logfc", "safety"}
+
+    def test_equal_and_opposite_are_equally_far_from_the_middle_in_colour(self) -> None:
+        """Not just in the norm, which is what v2.5 fixed, but in the luminance
+        a reader actually sees."""
+        from targetring.palette import relative_luminance
+        from matplotlib.colors import to_rgb
+        for key in ("logfc", "safety"):
+            ramp = FAMILIES[SPEC[key].family].hexes
+            for d in (0, 10, 40, 100):
+                lo = relative_luminance(to_rgb(ramp[d]))
+                hi = relative_luminance(to_rgb(ramp[len(ramp) - 1 - d]))
+                assert abs(lo - hi) < 0.02, (key, d, lo, hi)
+
+    @pytest.mark.parametrize("ring,levels", [
+        ("chemical_probe", 2), ("clinical_phase", 6), ("tdl", TDL_MAX + 1),
+        ("rodent", 2),
+    ])
+    def test_a_few_level_ring_gets_that_many_colours(self, ring, levels) -> None:
+        """A four-step ordinal drawn on a 256-step ramp offers a reader
+        positions that do not exist."""
+        assert SPEC[ring].levels == levels
+        assert len(set(ring_swatches(SPEC[ring]))) == levels
+
+    def test_a_stepped_ring_paints_only_its_own_swatches(self) -> None:
+        cells = {f"G{i}": value(float(i)) for i in range(6)}
+        assert set(_fill("clinical_phase", cells).values()) <= \
+            set(ring_swatches(SPEC["clinical_phase"]))
+
+    def test_the_categorical_ring_has_no_family_and_no_ramp(self) -> None:
+        """COUNCIL V12: three states are not three positions on a scale."""
+        assert SPEC["clinical_activity"].family == ""
+        assert SPEC["clinical_activity"].levels is None
+        assert SPEC["clinical_activity"].categorical
+
+    def test_the_gauge_is_the_one_ring_drawn_muted(self) -> None:
+        """v2.5 narrowed what k means — a completeness gauge that orders nothing
+        and selects nothing. Drawing it at full chroma would make it look like a
+        twelfth piece of evidence."""
+        from targetring.palette import GAUGE_CHROMA, RAMP_CHROMA
+        assert GAUGE_CHROMA < RAMP_CHROMA / 2
+        assert SPEC["completeness"].family == "gauge"
+
+    def test_no_colour_is_painted_by_two_rings_that_are_not_comparable(self) -> None:
+        """The literal defect, as a check: with one ramp this was true of every
+        pair of rings."""
+        assert_rings_are_distinguishable()
+
+    def test_the_check_would_catch_two_rings_sharing_a_ramp(self) -> None:
+        """A check that has never been seen to fail is not a check. This is
+        exactly what v2.5 looked like: two rings that answer different
+        questions, painting the same colours."""
+        import targetring.palette as P
+        old = P.FAMILIES["specificity"]
+        try:
+            P.FAMILIES["specificity"] = P.FAMILIES["knowledge"]
+            with pytest.raises(AssertionError, match="different colour families"):
+                assert_rings_are_distinguishable(
+                    [SPEC["regional_specificity"], SPEC["literature"]])
+        finally:
+            P.FAMILIES["specificity"] = old
+
+    def test_the_rings_declared_comparable_are_exactly_the_two_pairs(self) -> None:
+        """Sharing a family is a claim that two rings answer the same question.
+        Only two pairs make it: the druggability ring v2.3 split in two, and the
+        two rings that both measure how much anybody has studied the gene."""
+        from collections import defaultdict
+        by_family = defaultdict(list)
+        for s in RING_SPECS:
+            if s.family:
+                by_family[s.family].append(s.key)
+        shared = {tuple(sorted(v)) for v in by_family.values() if len(v) > 1}
+        assert shared == {("chemical_probe", "tractable"), ("literature", "tdl")}
+
+
+class TestV26TheScalesSayWhatWasDoneToTheDomain:
+    """V6's actual instruction, which v2.5 half-answered: log-scale the ratio
+    rings, fix the bounded ones — and *print the transform*, because a domain
+    that was changed and not stated is a false claim about the data."""
+
+    def test_a_heavy_tailed_ring_is_log_spaced_and_says_so(self) -> None:
+        from targetring.figure import _scale_ticks
+        spec = SPEC["neg_log10_padj"]
+        assert spec.scale == "log1p"
+        assert "log" in spec.transform
+        # padj = 1 gives -log10 padj = 0, which log10 alone cannot colour.
+        assert _scaled(spec, 0.0) == 0.0
+        # An outlier at p=1e-300 no longer flattens the rest.
+        cells = {"a": value(1.4), "b": value(2.0), "c": value(3.0), "d": value(300.0)}
+        fills = _fill("neg_log10_padj", cells)
+        assert len(set(fills.values())) == 4
+
+    def test_the_ticks_are_in_the_units_the_source_counted_in(self) -> None:
+        """The colour position is log10(1 + records); the tick is records."""
+        from targetring.figure import _scale_ticks
+        spec = SPEC["literature"]
+        cells = {"a": value(1.81), "b": value(5.32)}
+        ticks = _scale_ticks(spec, _norm_for(spec, cells))
+        assert ticks[0][1] == "64", ticks
+        assert ticks[-1][1].startswith("2e"), ticks
+
+    def test_a_diverging_ring_ticks_its_zero(self) -> None:
+        from targetring.figure import _scale_ticks
+        spec = SPEC["logfc"]
+        cells = {"a": value(-3.3), "b": value(3.1)}
+        ticks = _scale_ticks(spec, _norm_for(spec, cells))
+        assert [t[1] for t in ticks] == ["-3.3", "0", "3.3"]
+
+    def test_a_stepped_ring_ticks_the_middle_of_each_swatch(self) -> None:
+        """A tick on the join between two swatches labels neither."""
+        from targetring.figure import _scale_ticks
+        spec = SPEC["tdl"]
+        ticks = _scale_ticks(spec, _norm_for(spec, {"a": value(0.0)}))
+        assert [t[1] for t in ticks] == ["0", "1", "2", "3"]
+        assert ticks[0][0] == pytest.approx(0.125)
