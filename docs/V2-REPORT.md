@@ -2251,3 +2251,310 @@ biology" — there are no weights and there is no ranking.
    Removing it is ten minutes; the default and alphabetical stand either way.
 3. Everything already in §6, §v2.1–§v2.4, unchanged: licensing before any
    workplace use.
+
+# v2.6 — a colour family per ring, and a scale for each of them
+
+Wren II, 2026-09-24. Local only, nothing deployed, nothing pushed, no money
+spent (triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched, the
+OpenClaw gateway not restarted. Five commits and this report. The targetring
+dev server on :8811 was restarted — it was still serving v2.5's code and would
+have produced v2.5's screenshots.
+
+**Tests: 429 passed, 0 skipped, 0 failed** (410 before). All seven invariants
+PASS on a clean cold run (`runs/V26-COUNCIL-COLD`), on all six fixture × region
+combinations, on the filtered combination, and on the cold 50-gene run.
+
+**Cold 50 genes: 24.5 s against a 60 s target** (23.8 s in v2.5). The 0.7 s is
+not a regression I can measure — the run is network-dominated and this is one
+cold run against a live API — but the render step went 3.1 s from 2.4 s in the
+council run, and drawing twelve ramps instead of one is the obvious candidate.
+
+## Read this first: what is broken, and what is newly uncertain
+
+**1. The distinguishability target is not met on four of ten ring boundaries,
+and it is not going to be.** The dataviz method's categorical target is Delta E
+8 under the worst of normal, protanopic and deuteranopic vision. Four touching
+pairs come in under it: `logfc`/`neg_log10_padj` (3.7), `clinical_phase`/
+`clinical_activity` (3.8), `clinical_activity`/`tdl` (1.4) and `tdl`/`rodent`
+(5.3). Every one of those is pale-meets-pale or dark-meets-dark, and the reason
+is the gamut rather than the assignment: sRGB holds almost no chroma near black
+or near white, so the darkest cell of *any* two rings is two near-blacks
+whatever their hues, and a diverging ring's middle is near-neutral by
+construction. Under protanopia or deuteranopia at a fixed luminance the whole
+hue circle collapses onto one axis, where the widest separation two hues can
+reach is about 23 — twelve rings cannot all be far apart on one axis.
+
+So I did not assert Delta E. **`assert_rings_are_distinguishable` asserts the
+thing that is assertable and is the literal defect: no colour is painted by two
+rings that are not declared comparable.** On the council liver run v2.5 painted
+16 (gene, colour) pairs identically across two to seven *different* rings —
+EGFR was the same `#cae11f` on seven of them. v2.6 paints none.
+`scripts/check_ring_colours.py` measures the Delta E table and prints it;
+`logs/v26-ring-colours.txt` is what it says. **If you would rather this were a
+hard gate that fails the render, say so** — it would mean either fewer rings or
+giving up the shared luminance envelope, and I would not make that trade
+without you.
+
+**2. Two rings now claim something different from what they claimed
+yesterday**, and both changes are corrections rather than cosmetics:
+
+- **`logfc` was a sequential ramp on a signed quantity** (COUNCIL V17). v2.5
+  anchored the *norm* on zero, which fixed the arithmetic and left the colour
+  saying that −3.31 was the bottom of a scale running up to +3.31. It is
+  diverging now: cool for down, pale for no change, warm for up, symmetric.
+  A strongly down-regulated gene no longer reads as "worst". The figure still
+  cannot say whether up-regulation is the therapeutic direction (M10) and the
+  scale now says so in as many words.
+- **`safety` was the same defect with a stated bad direction.** −1 rendered
+  dark, which reads as "low"; it now renders on the warm arm, which reads as
+  "liability". The caveat on the label is unchanged: NOT evidence of safety.
+
+**3. One ring's domain changed, which moves which cells look extreme.**
+`neg_log10_padj` is heavy-tailed even after the −log10: one gene at p=1e-300
+and fourteen between p=0.05 and p=1e-5 is an ordinary DE table, and linear on
+that range is V6's collapse with different numbers. It is drawn on
+log10(1 + x) — not a second log10, because padj=1 gives x=0 and log10(0) is not
+a colour — and the scale prints the transform and ticks in raw −log10 padj.
+**This is a judgement call about your own column and it is yours to overrule.**
+On the council list the range is 1.4 to 4.7, where the transform changes little;
+it matters the first time you submit a table with a 1e-300 in it.
+
+**4. Four rings stopped being continuous.** `chemical_probe` (2 levels),
+`clinical_phase` (6), `tdl` (4) and `rodent` (2) are drawn as discrete swatches.
+They always had that many values; a 256-step ramp offered a reader positions
+between them that do not exist. `tractable` stays continuous — it is a mean of
+three keys and the key count could change.
+
+**5. The greyscale guarantee held, and it held by construction rather than by
+luck.** Details below; the short version is that generalising it was the
+constraint the whole palette was built inside, not a check run afterwards.
+
+## Item 1 — colour chosen from the data type ✅
+
+**Commit** `231d08e`. New module `targetring/palette.py` (318 lines).
+
+| # | ring | what the number is | encoding |
+|---|---|---|---|
+| 1 | `logfc` | signed, zero meaningful | **diverging**, blue↔orange, pale at 0, symmetric |
+| 2 | `neg_log10_padj` | sequential, heavy-tailed | sequential rose, **log10(1+x) domain**, ticks in raw x |
+| 3 | `tractable` | sequential, bounded | sequential olive, fixed [0, 1] |
+| 4 | `chemical_probe` | binary with absence | **2 swatches**, olive — same family as ring 3, on purpose |
+| 5 | `safety` | signed, negative is bad | **diverging**, red↔blue, fixed [−1, +1], warm arm is the bad one |
+| 6 | `regional_specificity` | sequential, five orders of magnitude | sequential green, log10, ticks in raw ×-fold |
+| 7 | `clinical_phase` | ordinal, 6 levels | **6 swatches**, teal |
+| 8 | `clinical_activity` | 3-state categorical (V12) | **3 fixed colours, off every ramp** |
+| 9 | `tdl` | ordinal, 4 levels | **4 swatches**, chartreuse |
+| 10 | `rodent` | binary with absence | **2 swatches**, jade |
+| 11 | `literature` | sequential, heavy-tailed | sequential chartreuse — same family as ring 9, on purpose |
+| 12 | `completeness` | a gauge, not evidence | sequential slate at **a third of the chroma** |
+
+Two pairs share a family, and sharing one is a claim that two rings answer the
+same question. `tractable`/`chemical_probe` were one ring until v2.3 and still
+answer "has anyone got chemical matter near this target". `tdl`/`literature`
+both measure how much anybody has studied the gene, which is COUNCIL M3's bias
+and worth being able to see as one block. `tests/test_scales.py` asserts those
+are the only two.
+
+### How the hues were chosen
+
+Not by eye. `scripts/hue_search.py` anneals the ten chromatic identities,
+maximising the worst *touching* pair over normal / protanopic / deuteranopic
+vision (Machado 2009 at severity 1.0 — the same model the dataviz validator
+uses, matrices copied from it so the two agree), subject to three hard
+constraints: every pair clears a normal-vision floor, each diverging ring's two
+arms are far apart, and the two signed rings keep their direction. It reached
+8.6 for the worst touching pair of representative colours and 6.3 for the worst
+pair anywhere.
+
+Raising the all-pairs floor to 7.0 was tried (`logs/v26-hue-search-7.txt`): it
+buys 0.7 on the worst pair anywhere, costs 0.2 on the worst pair that touches,
+and gives up blue-down/orange-up on logFC for a purple/green pair. The pairs
+that touch are the ones a reader compares without meaning to, so they won.
+
+### The greyscale guarantee, and why it survived twelve colormaps
+
+It survived, and the question in your brief was the right one to ask: twelve
+independently chosen colormaps have twelve luminance spans, and `no_data` at
+0.807 only needs *one* of them to reach up that far to become a plausible value
+again. Taking `plasma`, `Blues` and `YlOrBr` off the shelf would have reopened
+exactly the collision v2.2's truncation closed.
+
+The fix is not a bigger tolerance. **Every ramp is built inside one shared
+luminance envelope** — `palette.RAMP_LUM`, which is v2.5's measured
+[0.056, 0.663] generalised — by solving for the OKLab lightness that hits each
+target luminance at the ring's hue, with chroma clipped rather than the channels
+clamped. The number of families therefore cannot change what the check has to
+prove. Measured on all 2,076 colours any ring can paint:
+
+```
+value colours span luminance 0.0743 .. 0.6611
+no_data         #e8e8e8  lum 0.8070   nearest value colour 0.1459 away   [need 0.05]
+not_applicable  #ffffff  lum 1.0000   nearest value colour 0.3389 away   [need 0.05]
+failed          #000000  lum 0.0000   nearest value colour 0.0743 away   [need 0.05]
+```
+
+`colormap_hexes()` and therefore invariant 2 widened with it: I2's detail line
+on the cold run reads "disjoint from ... the full 2076-step colormap", where
+v2.5 said 256. Two new assertions run before any cell is drawn:
+`assert_ramp_luminance_is_monotone` (darker always means less — end to end on a
+sequential family, and on each arm of a diverging one, with the arms meeting at
+the same luminance) and `assert_rings_are_distinguishable`.
+
+**What greyscale does not survive, and this is inherent:** on a diverging ring
+equal and opposite values have the same luminance *by design*. The sign lives in
+the hue, which survives projection and both common colour-vision deficiencies
+but not a photocopier. That is a property of encoding polarity at all, and the
+alternative — a sequential ramp on signed data — is the V17 defect. It is on the
+ring's scale in words.
+
+**Evidence:** `tests/test_scales.py` (61, from 45), including the two negative
+tests — a family made to escape the luminance envelope, and two rings made to
+share a ramp, which is what v2.5 looked like.
+
+## Item 2 — a visible scale per ring ✅
+
+**Commit** `04a6c91`.
+
+The numbered monospace key and the single low/high colour bar are both gone. The
+bar was honest only while every ring shared one ramp, and leaving both would
+have left two places on the figure claiming to tell a reader how to decode a
+cell. Each ring now has a row in a column beside the circle carrying four
+things, which are four different claims:
+
+- **which ring it is** — the number and the full name, matching the radial
+  order. The label wraps rather than eliding, through the same `_key_lines`
+  QA-v2-retest §5 put there, so "— NOT evidence of safety" cannot be truncated
+  off the safety ring a second time;
+- **what the colours are** — that ring's own ramp, or its own swatches;
+- **what the numbers are** — ticks in the ring's own units. `regional_specificity`
+  ticks 0.0522 to 5,204 (×-fold, drawn on log10); `literature` ticks 64 to 2e5
+  (PubTator3 records, drawn on the log10(1+n) the adapter stores); `logfc` ticks
+  its zero; a stepped ring ticks the middle of each swatch, because a tick on the
+  join between two labels neither;
+- **what was done to the domain, and by whom** — the transform sentence and a
+  short source.
+
+The centre was never a candidate: `assert_centre_fits_the_hole` refused to
+render during v2.5 and the hole has less room now, not more. The audit canvas
+grew from 17.5 × 14 in to 19.5 × 14 in and the axes box narrowed to match, so
+the circle is the same size it was and the 2.0 in it gained is the column.
+
+**The slide render carries the scales too, with a short source per ring** —
+§v2.3 *Still open* 4, which has been open since v2.3. It does not carry the
+transform sentences: at 16:9 the column is shorter and a sentence per ring would
+take the type below legibility, which is UX A4 reappearing in a new place. The
+rows are laid out end to end and the type is fitted to the column, the same way
+the centre block is fitted to the hole — the first version overprinted itself on
+the slide and the fit is what stopped it.
+
+Two things had to change for the export to stay what it was. The ramps are drawn
+as 256 unclipped rectangles rather than an `imshow`, because an image inside an
+axes carries a `clipPath` into the SVG and `TestExportRemainsEditable` asserts
+there are none. And the "value" legend entry is an empty dashed box rather than
+a white one: a white patch beside `not_applicable`'s white-with-dots is two cell
+states told apart by a hatch alone.
+
+**Evidence:** `tests/test_presentation.py` (42), re-pointed at what replaced the
+key rather than dropped — `TestA5ColourBar` now asserts that both renders carry
+a scale for every ring, in the ring's own units, and that the comparability
+sentence is whole in the SVG.
+
+## The clean run
+
+`runs/V26-COUNCIL-COLD`, council liver set, region Liver, **empty cache**.
+
+```
+I1 PASS  I2 PASS  I3 PASS  I4 PASS  I5 PASS  I6 PASS  I7 PASS
+any_invariant_failed: False   all_invariants_pass: True
+15 in / 14 rendered / 1 ledgered · 15.5 s
+I1: 168 cells across 12 rings match the CSV
+I2: 19 non-value cells painted only in 4 reserved fills; disjoint from the 149
+    value cells' 88 colours and from the full 2076-step colormap
+I5: 1 Europe PMC echo checked live and byte-identical; no ERROR key in 14 NCBI responses
+I7: no headline marker survives the ranking; the spoke order is printed on the
+    figure and the spokes follow it; no threshold filter was active
+RUN CONDITIONS: none
+```
+
+| fixture | Liver | Lung |
+|---|---|---|
+| `de_realistic.csv` (15 in / 14 / 1) | 7/7, 14.6 s | 7/7, 11.4 s |
+| `de_broken.csv` (16 in / 7 / 9) | 7/7, 7.7 s | 7/7, 7.3 s |
+| council liver set (15 in / 14 / 1) | 7/7, 15.5 s | 7/7, 11.5 s |
+| `de_realistic.csv` **filtered** (15 in / 7 / 8) | 7/7, 10.9 s | — |
+
+Cold 50 genes, empty cache, 50 rendered / 0 ledgered, no 429
+(`logs/cold50-v26.json`, `runs/COLD50-V26`):
+
+```
+total                    24.5 s     TARGET 60 s — MET, 59% under
+  resolve                  7.0 s
+  adapters (concurrent)    8.9 s
+  render                   3.1 s    (2.4 s in v2.5, on one colormap)
+  source contracts         1.5 s
+  5-ID regression          1.1 s
+```
+
+## Screenshots
+
+`docs/screenshots/`, retaken on this code after restarting the dev server. One
+new, and one renamed:
+
+| file | shows |
+|---|---|
+| `9-two-rings-that-looked-alike.png` | **the one you asked for.** TTR's `clinical_phase` (5, approved) and `regional_specificity` (5,204×) cells, cropped from the v2.5 and v2.6 audit renders. In v2.5 both are `#cae11f` — the identical pixel, two rings that measure nothing in common. In v2.6 they are `#22e2dd` and `#c9de71`. Built by `scripts/before_after_crop.py`, which finds the same cells by their SVG ids because the two canvases are different sizes |
+| `7b-ring-scales-and-sources.png` | was `7b-ring-key-sources.png`. The key it was named after no longer exists; this is the scale column — twelve scales, each in its own colours and units, the activity ring's source named on it (your v2.2 condition), the TDL ring's four discrete levels |
+
+`5-council-list-figure.png` is the one to compare with yesterday's: same genes,
+same rings, same values, twelve colour families and twelve scales.
+
+## Still open
+
+**1. The four ring boundaries under the Delta E target.** Measured, printed by
+`scripts/check_ring_colours.py`, and argued above rather than fixed. What
+carries ring identity for every reader instead: the fixed radial position, the
+ring number, and the labelled swatch on each ring's own scale. That is the
+secondary encoding the dataviz method requires when a pair sits in its 6–8 floor
+band, and it is why the scale column is not decoration.
+
+**2. The slide render's centre block overlaps itself, and did before this work
+too.** "Liver" sits on "targetring v2" and the counts sit on the ordering note,
+at `centre_scale` 1.15 on a 774 px axes. It is in v2.5's
+`figure-slide.png` as well — I did not introduce it and I did not fix it,
+because it is a spacing change in a function this work otherwise did not touch
+and it is not what you asked for. Say the word and it is ten minutes.
+
+**3. The `neg_log10_padj` transform is mine, not yours.** See *Read this first*
+3. The alternative is linear over the submitted range, which is what v2.5 did
+and which collapses on a table with a very small adjusted p in it.
+
+**4. The gauge ring is drawn at a third of the chroma of everything else**,
+which is deliberate — k orders nothing and selects nothing, and drawing it at
+full chroma made it look like a twelfth piece of evidence. It fails the
+dataviz chroma floor and is meant to. If it reads as "greyed out / broken"
+rather than "muted instrument", that is a real objection and I would raise the
+chroma.
+
+**5. `render` got slower by about 0.7 s on a 50-gene run.** Twelve ramps are
+built at import and twelve colour bars are drawn per figure. I have not profiled
+it and it is nowhere near the target, so I have not spent time on it.
+
+**6. Unchanged and still not claimed:** LLM triage unbuilt ($5.00 of $5.00
+unspent); licensing (PLAN §9) is a human job before any workplace use. QA §11's
+three items — the slide in a real presentation tool, Illustrator font
+substitution, a mono laser print — are still not re-evaluated; there is no
+PowerPoint, Illustrator or printer on this machine, and the mono print is the
+one that would test the greyscale claim above on paper rather than in
+arithmetic. §v2.5 *Still open* 1, 3 and 4 stand unchanged. §v2.3 *Still open* 4
+drops off this list: the slide carries the ring sources now.
+
+## What you need to decide
+
+1. **Whether Delta E between touching rings should be a hard gate.** *See Read
+   this first 1.* Today it is measured and reported; making it fail the render
+   means fewer rings.
+2. **Whether the `neg_log10_padj` log domain is the right call on your column.**
+   *See Read this first 3.*
+3. **Whether the muted gauge reads as muted or as broken.** *Still open 4.*
+4. Everything already in §6, §v2.1–§v2.5, unchanged: licensing before any
+   workplace use, and whether the single-ring ordering earns its place.
