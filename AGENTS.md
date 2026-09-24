@@ -47,9 +47,15 @@ produce a clean-looking chart.
    `asserted` / `asserted-negative` / `none found`, labelled "abstract asserts
    target manipulation altered the phenotype (unverified)". Show the sentence
    and the PMID. Never fold it into the score.
-7. **No weighted sum as the headline.** Rank within the submitted gene set,
-   report the Pareto non-dominated set as the headline and the weighted score
-   as a labelled convenience. Print the default weights on the figure.
+7. **No ranking at all** (v2.5, Puck's decision — PLAN §3). This rule used to
+   read "no weighted sum as the headline: rank within the submitted set, report
+   the Pareto non-dominated set as the headline and the weighted score as a
+   labelled convenience". The Pareto mechanism kept reproducing the defect it
+   was prescribed to fix (COUNCIL V2, V10), so all of it is gone: no front, no
+   score, no weights, no eligibility, no stability flag. The spoke order is
+   **decided, stated on the figure and checked in the artefact**, and the
+   default is the order of the submitted table. Threshold filters may remove
+   genes from the plot, and then the figure says so.
 8. **Money.** The LLM triage is the only paid call. Cap $5 for this project,
    separate from ytpt's ledger. Triage the top 10 genes or on click, never a
    whole 200-gene list.
@@ -68,9 +74,11 @@ not a deliverable.
 ## What is not claimed
 
 Overnight work produces a figure that is internally consistent and auditable.
-It does not produce a validated ranking. Triage precision is unmeasured until a
-human labels a gold set; the default weights are provisional until Puck signs
-them off. Say this on the figure, not only in the report.
+It produces no ranking, score or recommendation of any kind (v2.5). Triage
+precision is unmeasured until a human labels a gold set. Say what the figure is
+on the figure, not only in the report — including the spoke-ordering rule and
+any active filter, because a reader must not mistake a filtered plot for the
+whole submitted set.
 
 ## Talking to Puck
 
