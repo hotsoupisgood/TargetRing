@@ -178,7 +178,7 @@ class TestA6NoTextOverTheRings:
         fig = plt.figure(figsize=(4, 4))
         ax = fig.add_axes((0.1, 0.1, 0.8, 0.8))
         bad = fig.text(0.5, 0.5, "straight through the middle", ha="center")
-        with pytest.raises(AssertionError, match="over the coloured arcs"):
+        with pytest.raises(AssertionError, match="over the figure's own data"):
             assert_no_text_over_the_rings(fig, ax, [bad])
         plt.close(fig)
 
@@ -306,3 +306,54 @@ class TestA3DroppedGenesAreNamed:
         for layout in ("audit", "slide"):
             _render(tmp_path, layout, dropped_names=many,
                     ledger_counts={f"reason_{i}": i + 1 for i in range(7)})
+
+
+class TestNothingIsClippedAtTheCanvasEdge:
+    """matplotlib does not clip figure-level text, and with `savefig.bbox`
+    pinned to the declared canvas size anything past the edge is simply cut.
+
+    Found by looking at a rendered figure: the colour-bar caption began at
+    x=1190.7 in a 1260 pt canvas and needed ~95 pt, so "RESCALED WITHIN EACH
+    RING" — the one string that tells a reader the rings are not comparable —
+    was clipped to "RESCALED WITHIN E".
+    """
+
+    @pytest.mark.parametrize("layout", ["audit", "slide"])
+    def test_a_clean_render_clips_nothing(self, tmp_path: Path, layout: str) -> None:
+        # render() runs the assertion; reaching here is the check.
+        _render(tmp_path, layout)
+
+    @pytest.mark.parametrize("layout", ["audit", "slide"])
+    def test_the_comparability_warning_is_whole_in_the_svg(
+            self, tmp_path: Path, layout: str) -> None:
+        """Measured in the export, not in the drawing call."""
+        import xml.etree.ElementTree as ET
+        _, svg = _render(tmp_path, layout)
+        root = ET.parse(svg).getroot()
+        vb_w = float(root.get("viewBox").split()[2])
+        ns = "{http://www.w3.org/2000/svg}"
+        found = False
+        for el in root.iter(f"{ns}text"):
+            text = "".join(el.itertext())
+            if "RESCALED WITHIN EACH RING" not in text:
+                continue
+            found = True
+            tr = el.get("transform") or ""
+            m = re.match(r"translate\(([\d.-]+)", tr)
+            assert m, tr
+            x = float(m.group(1))
+            # ~0.62 em per character is a conservative width for this face.
+            size = float(re.search(r"font-size:\s*([0-9.]+)px", svg.read_text()).group(1))
+            assert x + len(text) * 0.5 * size < vb_w, (
+                f"{text!r} starts at {x:.0f} on a {vb_w:.0f}-wide canvas and would be cut")
+        assert found, "the comparability warning must be on the figure at all"
+
+    def test_the_check_would_catch_a_block_off_the_edge(self) -> None:
+        import matplotlib.pyplot as plt
+        from targetring.figure import assert_text_within_canvas
+        fig = plt.figure(figsize=(4, 4))
+        bad = fig.text(0.97, 0.5, "a long caption that runs off the right edge",
+                       ha="left")
+        with pytest.raises(AssertionError, match="runs off the edge"):
+            assert_text_within_canvas(fig, [bad])
+        plt.close(fig)

@@ -355,14 +355,19 @@ function drawerHtml(d) {
   }
 
   // --- rodent lead (COUNCIL M4) ---
-  h += `<h4>rodent phenotype lead</h4>`;
+  h += `<h4>mouse phenotype lead</h4>`;
   const mp = d.mouse_phenotypes || [];
   h += mp.length
-    ? `<div class="note warn">A lead, not a verdict, and never folded into any score.</div>
+    ? `<div class="note warn">A lead, not a verdict, and never folded into any score.
+       The ring is three states — not phenotyped / phenotyped-and-normal /
+       phenotyped-with-abnormal. The count below is context, not a score
+       (COUNCIL V9), and the source is mouse only, not rat (COUNCIL V15).</div>
        <ul class="tight">${mp.slice(0, 12).map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
        ${mp.length > 12 ? `<p class="hint">…and ${mp.length - 12} more</p>` : ""}`
     : `<p class="hint">No mouse phenotype records — not phenotyped, which is not the
-       same as “no phenotype”.</p>`;
+       same as “no phenotype”. Embryonic-lethal lines drop out of adult phenotyping,
+       which biases exactly the essential genes the safety ring flags as risky
+       (COUNCIL M5).</p>`;
 
   if (d.triage) h += triageHtml(d.triage);
   else h += `<div class="note">LLM triage of the rodent lead was not run for this gene

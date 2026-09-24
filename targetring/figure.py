@@ -362,12 +362,12 @@ class Layout:
     centre_detail: bool
 
 
-AUDIT = Layout("audit", (17.5, 14.0), 8.0, (0.265, 0.205, 0.56, 0.755),
-               True, True, 7.5, 1.0, True, 0.905, 0.040, True)
+AUDIT = Layout("audit", (17.5, 14.0), 8.0, (0.250, 0.205, 0.53, 0.755),
+               True, True, 7.5, 1.0, True, 0.872, 0.019, True)
 # 16:9. Labels at 11.5 pt in a 16 in canvas survive the 0.47 fit to a slide at
 # ~5.4 pt, against v1's 3.9; the key and the caveats leave the canvas entirely.
-SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.30, 0.075, 0.40, 0.86),
-               False, False, 0.0, 1.15, False, 0.855, 0.038, False)
+SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.295, 0.075, 0.38, 0.86),
+               False, False, 0.0, 1.15, False, 0.838, 0.020, False)
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE}
 
 
@@ -534,9 +534,10 @@ def render(
     # trusting these numbers -- see `assert_no_text_over_the_rings`.
     ax.set_position(lay.axes_box)
 
-    centre_blocks = _draw_centre(ax, region, len(genes), input_count, rendered_count,
-                                 ledger_counts, dropped_names, lay)
-    centre_blocks += _draw_headline(ax, front, n_eligible, show_diamonds, lay)
+    centre_blocks, next_y = _draw_centre(ax, region, len(genes), input_count,
+                                         rendered_count, ledger_counts,
+                                         dropped_names, lay)
+    centre_blocks += _draw_headline(ax, front, n_eligible, show_diamonds, lay, next_y)
     text_blocks = []
     text_blocks += _draw_legend(fig, rings, norms, cmap, lay)
     text_blocks += _draw_stamps(fig, weights, region, subtitle, provenance,
@@ -551,6 +552,7 @@ def render(
     # overprinted the coloured arcs; and the footer block occupied y=983-1028
     # with `CDKN2A (k=8) *` sitting at y=995 inside it. Both are geometry, so
     # both are checked geometrically instead of by eye.
+    assert_text_within_canvas(fig, text_blocks)
     assert_no_text_over_the_rings(fig, ax, text_blocks)
     # The innermost ring's inner edge, as a fraction of the plotted radius.
     hole = (r_outer - (len(rings) - 1) * band - band * 0.86) / (r_outer + 3)
@@ -631,11 +633,13 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
                        ha="center", va="top", size=7.5 * k, transform=ax.transAxes,
                        color="#8a4b00", style="italic"))
     # The centre block lives in the hole at the middle of the rings by design,
-    # so it is checked against the hole rather than against the circle.
-    return out
+    # so it is checked against the hole rather than against the circle. The
+    # next free y goes back to the caller so the V10 headline line does not
+    # print on top of the caveat.
+    return out, y - 0.022 * k
 
 
-def _draw_colourbar(fig, cmap, lay) -> None:
+def _draw_colourbar(fig, cmap, lay) -> list:
     """UX A5. v1 had no colour bar anywhere.
 
     Nothing told a reader whether purple or yellow was the high end, and — worse
@@ -653,14 +657,15 @@ def _draw_colourbar(fig, cmap, lay) -> None:
     cb.set_ticklabels(["low", "high"])
     cb.ax.tick_params(labelsize=7.5 if lay.name == "audit" else 9)
     cb.outline.set_linewidth(0.6)
-    fig.text(x + lay.cbar_gap, 0.705,
-             "RESCALED WITHIN EACH RING\nthe same colour on two rings\n"
-             "means nothing in common",
-             fontsize=7 if lay.name == "audit" else 8.5, va="top", ha="left",
-             color="#8a4b00", weight="bold")
+    # Just below the bar's top tick, so the caption does not sit on "high".
+    return [fig.text(x + lay.cbar_gap, 0.688,
+                     "RESCALED WITHIN EACH RING\nsame colour on two rings\n"
+                     "means nothing in common",
+                     fontsize=7 if lay.name == "audit" else 8.5, va="top", ha="left",
+                     color="#8a4b00", weight="bold")]
 
 
-def _draw_headline(ax, front, n_eligible, show_diamonds, lay) -> list:
+def _draw_headline(ax, front, n_eligible, show_diamonds, lay, y: float) -> list:
     """COUNCIL V10. Say how big the headline set is, as a fraction, and say that
     membership is a property of the submitted list rather than of the target.
 
@@ -676,7 +681,7 @@ def _draw_headline(ax, front, n_eligible, show_diamonds, lay) -> list:
     else:
         text = (f"\u25c6 {len(front)} of {n_eligible} eligible \u2014 membership is a "
                 f"property of\nthis list, not of the target")
-    return [ax.text(0.5, 0.398, text, ha="center", va="top", size=7 * k,
+    return [ax.text(0.5, y, text, ha="center", va="top", size=7 * k,
                     transform=ax.transAxes, color="#444444")]
 
 
@@ -699,11 +704,11 @@ def _draw_legend(fig, rings, norms, cmap, lay) -> list:
     fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.006, 0.992),
                fontsize=7.5 if lay.name == "audit" else 9,
                frameon=True, title="cell states", title_fontsize=8)
-    _draw_colourbar(fig, cmap, lay)
+    blocks = _draw_colourbar(fig, cmap, lay)
 
     if not lay.draw_key:
         # UX A4: on the slide render the ring key goes into the caption.
-        return []
+        return blocks
 
     # UX A6 + the UX review's "noise" list: the API field lists
     # (`hasLigand, hasPocket, hasSmallMoleculeBinder, …`) are provenance, not a
@@ -716,10 +721,11 @@ def _draw_legend(fig, rings, norms, cmap, lay) -> list:
         n = norms.get(spec.key)
         rng = f"[{n.vmin:.3g}, {n.vmax:.3g}]" if n else "no values"
         lines.append(f"{i}. {_short(spec.label)}  {rng}")
-    return [fig.text(0.006, 0.80,
-                     "rings, outermost first\n(sources in the caption and manifest)\n\n"
-                     + "\n".join(lines),
-                     fontsize=7.4, va="top", ha="left", color="#222222")]
+    return blocks + [fig.text(0.006, 0.80,
+                              "rings, outermost first\n"
+                              "(sources in the caption and manifest)\n\n"
+                              + "\n".join(lines),
+                              fontsize=7.4, va="top", ha="left", color="#222222")]
 
 
 def _short(label: str, limit: int = 34) -> str:
@@ -926,6 +932,33 @@ def assert_centre_fits_the_hole(fig, ax, blocks, hole_fraction: float) -> None:
             "centre text spills out of the hole and over the rings: " + "; ".join(offenders))
 
 
+def assert_text_within_canvas(fig, blocks, margin: float = 1.0) -> None:
+    """Nothing may be drawn past the edge of the canvas.
+
+    matplotlib does not clip figure-level text, and with `savefig.bbox` pinned
+    to the declared canvas size (UX A4) anything that runs off the edge is
+    simply cut. The colour-bar caption did exactly that: it began at x=1190.7 in
+    a 1260 pt canvas and needed ~95 pt, so "RESCALED WITHIN EACH RING" -- the
+    one string that tells a reader the rings are not comparable -- was clipped
+    to "RESCALED WITHIN E".
+    """
+    if not blocks:
+        return
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    w, h = fig.canvas.get_width_height()
+    offenders = []
+    for t in blocks:
+        bb = t.get_window_extent(renderer=r)
+        if bb.x0 < -margin or bb.y0 < -margin or bb.x1 > w + margin or bb.y1 > h + margin:
+            offenders.append(
+                f"{t.get_text()[:40]!r} spans ({bb.x0:.0f},{bb.y0:.0f})-"
+                f"({bb.x1:.0f},{bb.y1:.0f}) on a {w:.0f}x{h:.0f} canvas")
+    if offenders:
+        raise AssertionError(
+            "text runs off the edge of the canvas and is clipped: " + "; ".join(offenders))
+
+
 def assert_no_text_over_the_rings(fig, ax, blocks) -> None:
     """UX A6, checked geometrically rather than by eye.
 
@@ -934,9 +967,15 @@ def assert_no_text_over_the_rings(fig, ax, blocks) -> None:
     the key overprinted the coloured arcs. The footer block occupied
     y=983.3-1028.3 with the `CDKN2A (k=8) *` label at y=995.4 inside it.
 
-    The axes box is the square that bounds the circle, so a text block may sit
-    in its corner without touching any data. The check is therefore against the
-    inscribed circle, not the box.
+    Two obstacles, because there are two ways to land on the data:
+
+    * the coloured arcs. The axes box is the square that bounds the circle, so a
+      block may sit in its corner without touching anything; the check is
+      against the inscribed circle, not the box.
+    * the spoke labels, which stick out past the circle by however long the gene
+      name is. Rather than guess a margin, the label artists are measured -- so
+      moving the colour bar left until its caption fits inside the canvas cannot
+      silently put it on top of SERPINA1.
     """
     if not blocks:
         return
@@ -945,19 +984,28 @@ def assert_no_text_over_the_rings(fig, ax, blocks) -> None:
     box = ax.get_window_extent()
     cx, cy = (box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2
     radius = min(box.width, box.height) / 2
+    labels = [(t, t.get_window_extent(renderer=r)) for t in ax.texts if t.get_text()]
+
     offenders = []
     for t in blocks:
         bb = t.get_window_extent(renderer=r)
-        # Closest point of the text's bbox to the circle centre.
         dx = max(bb.x0 - cx, 0, cx - bb.x1)
         dy = max(bb.y0 - cy, 0, cy - bb.y1)
         if (dx * dx + dy * dy) ** 0.5 < radius:
             offenders.append(
                 f"{t.get_text()[:40]!r} at ({bb.x0:.0f},{bb.y0:.0f})-({bb.x1:.0f},{bb.y1:.0f}) "
                 f"overlaps the rings (centre {cx:.0f},{cy:.0f} radius {radius:.0f})")
+            continue
+        for lt, lb in labels:
+            if bb.x0 < lb.x1 and lb.x0 < bb.x1 and bb.y0 < lb.y1 and lb.y0 < bb.y1:
+                offenders.append(
+                    f"{t.get_text()[:34]!r} overlaps the spoke label "
+                    f"{lt.get_text()[:24]!r}")
+                break
     if offenders:
         raise AssertionError(
-            "text is drawn over the coloured arcs (UX A6): " + "; ".join(offenders))
+            "text is drawn over the figure's own data or labels (UX A6): "
+            + "; ".join(offenders))
 
 
 def _draw_banner(fig, failures: Sequence[str]) -> None:
@@ -1004,4 +1052,5 @@ __all__ = ["render", "RING_SPECS", "STATE_STYLE", "VALUE_CMAP", "FigureResult",
            "assert_fills_disjoint", "assert_footer_is_true", "colormap_hexes",
            "assert_greyscale_disjoint", "relative_luminance", "value_cmap", "CMAP_STOPS",
            "assert_within_domain", "ACTIVITY_PALETTE", "PARETO_MIN_ELIGIBLE",
+           "assert_text_within_canvas",
            "assert_no_text_over_the_rings", "assert_centre_fits_the_hole", "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE"]

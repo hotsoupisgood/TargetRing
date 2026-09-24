@@ -119,3 +119,7 @@ ul.tight li { margin: 2px 0; }
   text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
 }
 .linkish:hover { color: var(--ink); }
+
+/* The exported canvas is 17.5in wide; scale it to the panel rather than
+   letting the colour bar run off the right edge on a laptop. */
+#figure svg { width: 100%; height: auto; display: block; }

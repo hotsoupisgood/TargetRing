@@ -295,7 +295,10 @@ async def run_analysis(
             f"{completeness['n_ineligible']} gene(s) are ineligible for the headline "
             f"and carry no diamond; the front is a floor, not a ranking",
         ))
-    warnings.extend(f"{h} — {w}" for h, w in conditions)
+    # Deliberately NOT added to `warnings`: the conditions have their own
+    # channel now (#conditions on the page, the amber notice on the figure,
+    # `run_conditions` in the manifest). Copying them into `warnings` printed
+    # every line twice on screen.
 
     # --- render ----------------------------------------------------------
     svg_path = runs_dir / "figure.svg"
