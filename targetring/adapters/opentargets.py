@@ -231,10 +231,11 @@ NO_ABNORMAL = "no abnormal phenotype detected"
 # a key that describes chemical-probe stock, not tractability, and eligibility
 # fell 10 -> 4 (`docs/V2-REPORT.md` §v2.2, "Read this first").
 #
-# So: three dense keys carry tractability and the Pareto axis, and the sparse key
-# gets its own ring which is allowed to be hatched. Nothing is imputed to achieve
-# this -- the probe ring still refuses when the key is absent, it just no longer
-# takes the tractability cell down with it.
+# So: three dense keys carry tractability, and the sparse key gets its own ring
+# which is allowed to be hatched. Nothing is imputed to achieve this -- the probe
+# ring still refuses when the key is absent, it just no longer takes the
+# tractability cell down with it. (The Pareto axis the dense ring was split out
+# to carry is gone as of v2.5; the split is not, and the reason above is why.)
 TRACTABLE_KEYS = ("hasLigand", "hasPocket", "hasSmallMoleculeBinder")
 PROBE_KEYS = ("hasHighQualityChemicalProbes",)
 SAFETY_KEYS = ("hasSafetyEvent", "geneEssentiality", "geneticConstraint", "isCancerDriverGene")

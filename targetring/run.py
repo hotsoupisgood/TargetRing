@@ -283,8 +283,11 @@ async def run_analysis(
                 else no_data("adjusted p is exactly 0; -log10 is undefined, not infinite"))
             for g in genes
         },
-        # v2.3 item 1 (COUNCIL M7/V8): the dense three-key ring carries the
-        # Pareto axis; the sparse probe key is beside it and may be hatched.
+        # v2.3 item 1 (COUNCIL M7/V8): two rings, because an absent probe key
+        # must not take three dense keys down with it. The split was made so the
+        # dense ring could carry the Pareto axis; v2.5 removed the axis and the
+        # split still stands on its own -- "has been drugged" and "family
+        # suggests druggable" are different claims.
         "tractable": {g: tractable_cell(ot_by_gene[g]) for g in genes},
         "chemical_probe": {g: chemical_probe_cell(ot_by_gene[g]) for g in genes},
         "safety": {g: safety_cell(ot_by_gene[g]) for g in genes},
