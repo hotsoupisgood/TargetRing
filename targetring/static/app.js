@@ -27,22 +27,43 @@ async function init() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
 
   document.querySelectorAll(".tab").forEach((t) => {
-    t.onclick = () => {
-      document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
-      t.classList.add("active");
-      document.querySelectorAll(".tabpane").forEach((p) => { p.hidden = true; });
-      $("#pane-" + t.dataset.tab).hidden = false;
-    };
+    t.onclick = () => showTab(t.dataset.tab);
   });
 }
 
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((x) =>
+    x.classList.toggle("active", x.dataset.tab === name));
+  document.querySelectorAll(".tabpane").forEach((p) => { p.hidden = true; });
+  $("#pane-" + name).hidden = false;
+}
+
 // ---------- run ----------
+
+let TICKER = null;
 
 async function analyse() {
   const btn = $("#go");
   btn.disabled = true;
   $("#status").className = "";
-  $("#status").textContent = "Checking source contracts, resolving identifiers, fetching rings…";
+
+  // UX A2. v1 set one status string and left #result on screen, so for the
+  // whole of a cold run the page showed a complete, plausible, finished-looking
+  // figure of the PREVIOUS gene set, with working Download buttons. At ~4 s per
+  // gene that window is four minutes. Clearing it removes the whole risk.
+  $("#result").hidden = true;
+  RUN = null;
+
+  // UX B2. One static grey sentence for four minutes reads as "it has hung".
+  const t0 = Date.now();
+  const stage = "Checking source contracts, resolving identifiers, fetching rings…";
+  const tick = () => {
+    const s = Math.round((Date.now() - t0) / 1000);
+    $("#status").textContent = `${stage}  ·  ${s}s elapsed`;
+  };
+  tick();
+  clearInterval(TICKER);
+  TICKER = setInterval(tick, 1000);
 
   const fd = new FormData();
   fd.append("table", $("#table").value);
@@ -54,10 +75,12 @@ async function analyse() {
     res = await fetch("/api/analyse", { method: "POST", body: fd });
     body = await res.json();
   } catch (e) {
+    clearInterval(TICKER);
     fail("Request failed: " + e);
     btn.disabled = false;
     return;
   }
+  clearInterval(TICKER);
   btn.disabled = false;
 
   if (!res.ok) {
@@ -114,17 +137,29 @@ function render(b) {
 
   $("#counts").innerHTML =
     `<b>${b.counts.input}</b> genes in · <b>${b.counts.rendered}</b> rendered · ` +
-    `<span class="drop"><b>${b.counts.dropped}</b> not shown</span> · ` +
+    `<button class="drop linkish" id="show-ledger"><b>${b.counts.dropped}</b>` +
+    ` not shown — why?</button> · ` +
     `region <b>${esc(b.region)}</b> · Pareto set: <b>${b.pareto.map(esc).join(", ") || "—"}</b>` +
     (b.warnings.length ? `<div class="note warn">${b.warnings.map(esc).join("<br>")}</div>` : "");
 
   $("#dl-svg").href = b.svg_url;
+  $("#dl-png").href = b.png_url;
+  $("#dl-slide").href = b.slide_url;
   $("#dl-csv").href = b.csv_url;
+  $("#dl-ledger").href = b.ledger_url;
   $("#dl-manifest").href = b.manifest_url;
 
   renderLedger(b);
   renderInvariants(b);
   renderCaveats(b);
+
+  // UX B3: "N not shown" looked like a link and did nothing. It is the one
+  // place the user asks "why?".
+  const sl = $("#show-ledger");
+  if (sl) sl.onclick = () => showTab("ledger");
+
+  // UX B4: after a run the figure was below the fold and the scroll did not move.
+  $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
 
   fetch(b.svg_url).then((r) => r.text()).then((svg) => {
     $("#figure").innerHTML = svg;

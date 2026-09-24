@@ -18,7 +18,14 @@
   <section id="input-panel">
     <h2>1. Differential expression table</h2>
     <p class="hint">Columns: gene symbol, logFC, adjusted p. CSV or TSV.
-      Every row is either rendered or named in the drop ledger.</p>
+      Every row is either rendered or named in the drop ledger.<br>
+      <!-- UX B9: the rejection message names the accepted aliases; so should
+           the hint, before you have to fail to find out. -->
+      Accepted headers, as exported: DESeq2 <code>log2FoldChange</code>/<code>padj</code>,
+      edgeR <code>logFC</code>/<code>FDR</code>, limma <code>logFC</code>/<code>adj.P.Val</code>.
+      Positional guessing is never attempted.<br>
+      Up to <b>60</b> genes. Above that the spokes are too narrow to read, so the
+      table is capped by adjusted p and every excluded gene is named in the ledger.</p>
     <textarea id="table" rows="10" spellcheck="false"
       placeholder="gene,logFC,padj&#10;BRAF,2.41,0.0003"></textarea>
     <div class="row">
@@ -47,7 +54,14 @@
     <div class="tabpane" id="pane-figure">
       <div class="row">
         <a id="dl-svg" class="btn" download>Download SVG</a>
-        <a id="dl-csv" class="btn" download>Download CSV</a>
+        <!-- UX B8: the PNG is written on every run and was already served; it
+             just had no button. For PowerPoint it is more predictable than a
+             matplotlib SVG. -->
+        <a id="dl-png" class="btn" download>Download PNG</a>
+        <a id="dl-slide" class="btn" download>Download slide SVG (16:9)</a>
+        <a id="dl-csv" class="btn" download>Download values CSV</a>
+        <!-- UX A3 -->
+        <a id="dl-ledger" class="btn" download>Download drop ledger CSV</a>
         <a id="dl-manifest" class="btn" target="_blank">Run manifest</a>
         <span class="hint">Click a gene label or any of its cells to open the drawer.</span>
       </div>

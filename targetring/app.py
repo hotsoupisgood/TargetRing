@@ -113,6 +113,11 @@ def _summarise(r) -> dict[str, Any]:
         "svg_url": f"/api/run/{r.run_id}/figure.svg",
         "csv_url": f"/api/run/{r.run_id}/values.csv",
         "manifest_url": f"/api/run/{r.run_id}/manifest.json",
+        "png_url": f"/api/run/{r.run_id}/figure.png",
+        "slide_url": f"/api/run/{r.run_id}/figure-slide.svg",
+        "slide_png_url": f"/api/run/{r.run_id}/figure-slide.png",
+        "caption_url": f"/api/run/{r.run_id}/caption.txt",
+        "ledger_url": f"/api/run/{r.run_id}/ledger.csv",
         "gene_order": r.gene_order,
         "counts": {
             "input": m.input_row_count,
@@ -158,7 +163,9 @@ async def gene_drawer(run_id: str, gene: str) -> JSONResponse:
 
 @app.get("/api/run/{run_id}/{filename}")
 async def artefact(run_id: str, filename: str) -> FileResponse:
-    if filename not in ("figure.svg", "figure.png", "values.csv", "manifest.json"):
+    if filename not in ("figure.svg", "figure.png", "values.csv", "manifest.json",
+                        "ledger.csv", "figure-slide.svg", "figure-slide.png",
+                        "caption.txt"):
         raise HTTPException(404, "unknown artefact")
     path = RUNS_DIR / run_id / filename
     if not path.exists():
@@ -166,6 +173,8 @@ async def artefact(run_id: str, filename: str) -> FileResponse:
     media = {
         "figure.svg": "image/svg+xml", "figure.png": "image/png",
         "values.csv": "text/csv", "manifest.json": "application/json",
+        "ledger.csv": "text/csv", "figure-slide.svg": "image/svg+xml",
+        "figure-slide.png": "image/png", "caption.txt": "text/plain",
     }[filename]
     return FileResponse(path, media_type=media, filename=f"targetring-{run_id}-{filename}")
 

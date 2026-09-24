@@ -43,8 +43,16 @@ SCHEMA_VERSIONS = {
 MAX_CONCURRENCY_PER_HOST = 4
 HTTP_TIMEOUT_SECONDS = 45.0
 
-# QA B7: 5,000-row lists are neither readable nor a 60 s run.
-MAX_GENES = 500
+# UX B1. Was 500, which was neither readable nor reachable: pycirclize's
+# `Circos({...}, space=2)` raises "Too large sector space size is set!!" at
+# n >= 181 (181 sectors x 2 degrees exceeds 360), so a 200-gene table cost ~13
+# minutes of fetching and then a traceback. Long before that it is unreadable --
+# at n=120 each spoke is 8 px wide at the outer edge. Validated before any
+# network work.
+MAX_GENES = 60
+
+# The hard geometric ceiling, for the message that explains the soft one.
+CIRCOS_MAX_SECTORS = 180
 
 # AGENTS.md rule 8.
 LLM_SPEND_CAP_USD = 5.00

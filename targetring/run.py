@@ -299,20 +299,24 @@ async def run_analysis(
     csv_path = runs_dir / "values.csv"
     t = time.time()
 
-    def do_render(failures: list[str], conds: list[str] = []) -> figure.FigureResult:
+    def do_render(failures: list[str], conds: list[str] = [],
+                  layout: str = "audit", svg: Path | None = None,
+                  png: Path | None = None) -> figure.FigureResult:
         return figure.render(
             genes=gene_order,
             cells_by_ring=cells_by_ring,
             rankings=rankings,
             region=region,
-            out_svg=svg_path,
-            out_png=runs_dir / "figure.png",
+            out_svg=svg or svg_path,
+            out_png=png if png is not None else runs_dir / "figure.png",
+            layout=layout,
             input_count=parsed.input_row_count,
             rendered_count=rendered_count,
             ledger_counts={
                 s: n for s, n in
                 ((e.status, sum(1 for x in ledger if x.status == e.status)) for e in ledger)
             },
+            dropped_names=[e.input_symbol for e in dropped_entries(ledger)],
             invariant_failures=failures,
             run_conditions=conds,
             weights=DEFAULT_WEIGHTS,
@@ -360,7 +364,19 @@ async def run_analysis(
         # not look broken when it is not either.
         fig_result = do_render(banner, conds)
 
+    # UX A4: the slide render. Same data, 16:9, type that survives projection,
+    # with the ring key and the caveats moved into the caption beside it. The
+    # audit render above keeps every stamp and stays the morning artefact.
+    do_render(banner, conds, layout="slide",
+              svg=runs_dir / "figure-slide.svg", png=runs_dir / "figure-slide.png")
+    (runs_dir / "caption.txt").write_text(fig_result.caption + "\n")
+
     _write_csv(csv_path, fig_result.csv_rows, ledger, parsed)
+    # UX A3. The ledger is already appended to values.csv as a second table, but
+    # a second table below a comment line is not something a CSV parser reads --
+    # which is why the UX review concluded the dropped genes were absent from
+    # the file altogether. It is also written here as a CSV in its own right.
+    (runs_dir / "ledger.csv").write_text(ledger_csv(ledger))
 
     # --- drawers ---------------------------------------------------------
     drawers: dict[str, dict[str, Any]] = {}
