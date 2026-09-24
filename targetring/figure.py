@@ -183,8 +183,14 @@ RING_SPECS: tuple[RingSpec, ...] = (
              "OT clinicalReports (AACT rows only)",
              categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS),
     # V9: reduced to three states, so there is no count left to scale.
-    RingSpec("rodent", "Rodent phenotype lead (3 states)",
-             "OT mousePhenotypes, 'no abnormal phenotype' excluded",
+    # COUNCIL V15: the source is OT `mousePhenotypes` -- mouse only. PLAN §2
+    # retired the rodent source citing a QA finding about IMPC, but COUNCIL S6
+    # had recommended Alliance of Genome Resources (MGI *and* RGD), which is
+    # why the ring was called "rodent" in the first place. A finding about one
+    # source was used to retire a different one. Renamed to what it is;
+    # revisiting Alliance is still open.
+    RingSpec("rodent", "Mouse phenotype lead (3 states)",
+             "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat",
              domain=(0.0, 1.0)),
     RingSpec("literature", "Literature volume", "PubTator3, gene-id resolved, log10(1+n)"),
     # V13: k over external rings only, on a fixed 0..K domain.
@@ -759,11 +765,15 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
         f"Weighted score is a labelled CONVENIENCE, not the headline. Default weights "
         f"(provisional, unsigned-off): {w}. Excluded from every score: {excluded}.",
         f"Regional specificity = {region} TPM ÷ median across {n_tissues or 'the GTEx panel'}.",
-        "Rodent ring: abstract/model evidence is a LEAD, not a verdict, and is ranked nowhere "
-        "and weighted nowhere. Asserted against the weights at draw time, not just claimed.",
+        "Mouse-phenotype ring: a LEAD, not a verdict; ranked nowhere and weighted nowhere, "
+        "asserted against the weights at draw time rather than just claimed. Embryonic-lethal "
+        "lines drop out of adult phenotyping, which biases exactly the essential genes the "
+        "safety ring flags as risky (COUNCIL M5).",
         f"Missing is never imputed. k = how many of the {EXTERNAL_RING_COUNT} EXTERNAL rings "
         f"have a real measurement for that gene; your own logFC and padj are not counted.",
-        "* = this gene's top-10 place does not survive reweighting.",
+        "* = this gene's top-10 place does not survive reweighting. Spoke ORDER carries "
+        "meaning: the circle starts at 12 o'clock and runs clockwise by median available "
+        "rank, headline members first. Region affects exactly one ring (regional specificity).",
         "Pipeline: furthest phase counts only drugs indicated for a disease with mechanistic "
         "evidence linking it to THIS target. A drug that hits the target for an unrelated "
         "indication sets no phase; those genes are drawn 'not applicable', not 'low'.",
@@ -827,7 +837,9 @@ def caption(rings, norms, weights, region, provenance, gene_flags=None,
         "genetic evidence linking it to this target. A drug that hits the target for an "
         "unrelated indication sets no phase.",
         "Missing is never imputed. k = rings with a real measurement for that gene. "
-        "* = this gene's top-10 place does not survive reweighting.",
+        "* = this gene's top-10 place does not survive reweighting. Spoke ORDER carries "
+        "meaning: the circle starts at 12 o'clock and runs clockwise by median available "
+        "rank, headline members first. Region affects exactly one ring (regional specificity).",
         "This figure is internally consistent and auditable. It is not a validated "
         "ranking.",
     ]

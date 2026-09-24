@@ -329,13 +329,25 @@ function drawerHtml(d) {
   }
 
   // --- literature ---
+  // UX B5: "the drug table immediately above links out to DailyMed,
+  // ClinicalTrials.gov and TTD… 'get to a gene's papers' dead-ends at a number."
+  const ptUrl = "https://www.ncbi.nlm.nih.gov/research/pubtator3/?query=" +
+    encodeURIComponent(lit.pubtator_query || "");
+  const epmcUrl = "https://europepmc.org/search?query=" +
+    encodeURIComponent(lit.europepmc_query || "");
   h += `<h4>literature</h4><dl class="kv">
-    <dt>PubTator3 records</dt><dd>${lit.pubtator_count ?? "—"}
-      <span class="hint">gene-id resolved</span></dd>
+    <dt>PubTator3 records</dt><dd>
+      <a href="${esc(ptUrl)}" target="_blank" rel="noopener">${lit.pubtator_count ?? "—"}</a>
+      <span class="hint">gene-id resolved — opens the result list</span></dd>
     <dt>query</dt><dd><code>${esc(lit.pubtator_query || "")}</code></dd>
-    <dt>Europe PMC</dt><dd>${lit.europepmc_count ?? "—"}
+    <dt>Europe PMC</dt><dd>
+      <a href="${esc(epmcUrl)}" target="_blank" rel="noopener">${lit.europepmc_count ?? "—"}</a>
       ${lit.europepmc_error ? `<span class="hint">— ${esc(lit.europepmc_error)}</span>` : ""}
-      <br><code>${esc(lit.europepmc_query || "")}</code></dd></dl>`;
+      ${lit.europepmc_echo_live === false
+        ? `<span class="hint">— replayed from cache, not checked this run</span>` : ""}
+      <br><code>${esc(lit.europepmc_query || "")}</code>
+      <br><span class="hint">A count, not evidence: COUNCIL M6 measured it swinging 44%
+      on phrasing alone. It sets no ring value.</span></dd></dl>`;
   const years = Object.entries(lit.years || {}).sort((a, b) => b[0].localeCompare(a[0]));
   if (years.length) {
     h += `<p class="hint">by year: ${years.slice(0, 8)
