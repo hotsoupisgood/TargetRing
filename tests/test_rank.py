@@ -6,6 +6,7 @@ import pytest
 
 from targetring.rank import (
     DEFAULT_WEIGHTS,
+    pareto_eligible,
     pareto_front,
     rank_genes,
     rank_within_set,
@@ -80,33 +81,142 @@ class TestPareto:
         assert pareto_front(ranks) == {"best"}
 
     def test_a_tradeoff_keeps_both(self) -> None:
+        """Both are complete on all four axes and neither beats the other
+        everywhere, so both survive. Eligibility (V2) does not collapse the
+        front onto a single winner."""
         ranks = {
-            "druggable": {"druggability": 1.0, "safety": 0.0},
-            "safe": {"druggability": 0.0, "safety": 1.0},
+            "druggable": {"druggability": 1.0, "safety": 0.0,
+                          "regional_specificity": 1.0, "clinical_phase": 0.0},
+            "safe": {"druggability": 0.0, "safety": 1.0,
+                     "regional_specificity": 0.0, "clinical_phase": 1.0},
         }
         assert pareto_front(ranks) == {"druggable", "safe"}
 
-    def test_missing_axes_are_not_compared(self) -> None:
-        """A gene must not win an axis by having no data on it."""
+    def test_a_gene_missing_an_axis_is_not_in_the_front(self) -> None:
+        """COUNCIL V2. Eligibility is all four axes, not the shared subset."""
         ranks = {
-            "full": {"druggability": 1.0, "safety": 1.0},
+            "full": {"druggability": 1.0, "safety": 1.0,
+                     "regional_specificity": 1.0, "clinical_phase": 1.0},
             "sparse": {"druggability": 0.5},
         }
-        # `full` beats `sparse` on the only shared axis, so `sparse` is dominated.
         assert pareto_front(ranks) == {"full"}
+        assert not pareto_eligible(ranks["sparse"])
 
-    def test_no_shared_axis_means_no_domination(self) -> None:
+    def test_no_axis_at_all_is_not_a_free_pass(self) -> None:
+        """v1 returned both of these as non-dominated because they shared no axis."""
         ranks = {"a": {"druggability": 0.1}, "b": {"safety": 0.9}}
-        assert pareto_front(ranks) == {"a", "b"}
+        assert pareto_front(ranks) == set()
 
-    def test_partial_pareto_membership_is_flagged_as_provisional(self) -> None:
+    def test_ineligible_genes_are_flagged_with_what_is_missing(self) -> None:
         out = rank_genes({
             "druggability": cells(A=1.0, B=0.5),
             "safety": cells(A=1.0, B=0.5),
         })
-        assert out["A"].pareto
+        assert not out["A"].pareto
         assert out["A"].pareto_k == 2
-        assert "provisional" in out["A"].note
+        assert not out["A"].pareto_eligible
+        assert "not eligible" in out["A"].note
+        assert "regional_specificity" in out["A"].note and "clinical_phase" in out["A"].note
+
+
+class TestV2OneAxisCannotDominateFour:
+    """COUNCIL V2, reproduced from the council's own probe.
+
+    A gene whose only Pareto axis is druggability=1.0 (tied top) and whose other
+    three axes are `no_data` entered the v1 front and ejected two genes that had
+    all four axes. The note v1 printed — "fewer axes make domination harder" —
+    stated the opposite of what the code did.
+    """
+
+    def _spec(self, with_oneaxis: bool):
+        spec = {
+            "druggability": {
+                "ASGR1": value(0.8), "PCSK9": value(1.0),
+                "SERPINA1": value(0.6), "TTR": value(0.4),
+            },
+            "safety": {
+                "ASGR1": value(0.9), "PCSK9": value(0.5),
+                "SERPINA1": value(0.7), "TTR": value(1.0),
+            },
+            "regional_specificity": {
+                "ASGR1": value(0.6), "PCSK9": value(0.4),
+                "SERPINA1": value(0.8), "TTR": value(1.0),
+            },
+            "clinical_phase": {
+                "ASGR1": value(1.0), "PCSK9": value(1.0),
+                "SERPINA1": value(0.3), "TTR": value(0.7),
+            },
+        }
+        if with_oneaxis:
+            spec["druggability"]["ONEAXIS"] = value(1.0)
+            for ring in ("safety", "regional_specificity", "clinical_phase"):
+                spec[ring]["ONEAXIS"] = no_data("adapter returned nothing")
+        return spec
+
+    def test_baseline_front(self) -> None:
+        out = rank_genes(self._spec(with_oneaxis=False))
+        assert {g for g, r in out.items() if r.pareto} == {
+            "ASGR1", "PCSK9", "SERPINA1", "TTR"}
+
+    def test_one_axis_gene_neither_enters_nor_evicts(self) -> None:
+        out = rank_genes(self._spec(with_oneaxis=True))
+        front = {g for g, r in out.items() if r.pareto}
+        assert "ONEAXIS" not in front, "one measurement must not reach the headline"
+        assert front == {"ASGR1", "PCSK9", "SERPINA1", "TTR"}, \
+            "and it must not delete genes that have all four axes"
+        assert out["ONEAXIS"].pareto_k == 1
+        assert not out["ONEAXIS"].pareto_eligible
+
+    def test_the_printed_note_no_longer_contradicts_the_code(self) -> None:
+        out = rank_genes(self._spec(with_oneaxis=True))
+        note = out["ONEAXIS"].note
+        assert "harder" not in note
+        assert "not eligible" in note
+
+
+class TestV3TransientFailureCannotRewriteTheHeadline:
+    """COUNCIL V3. One `no_data` cell on a gene that is not in the front must not
+    delete other genes from it. v1: forcing APOB.safety to no_data removed ASGR1
+    and SERPINA1, because losing its own value let APOB dominate on the three
+    axes that remained."""
+
+    def _spec(self):
+        return {
+            "druggability": {g: value(v) for g, v in
+                             [("ASGR1", .8), ("PCSK9", 1.), ("SERPINA1", .6),
+                              ("TTR", .4), ("APOB", .9)]},
+            "safety": {g: value(v) for g, v in
+                       [("ASGR1", .9), ("PCSK9", .5), ("SERPINA1", .7),
+                        ("TTR", 1.), ("APOB", .1)]},
+            "regional_specificity": {g: value(v) for g, v in
+                                     [("ASGR1", .6), ("PCSK9", .4), ("SERPINA1", .8),
+                                      ("TTR", 1.), ("APOB", .5)]},
+            "clinical_phase": {g: value(v) for g, v in
+                               [("ASGR1", 1.), ("PCSK9", 1.), ("SERPINA1", .3),
+                                ("TTR", .7), ("APOB", .95)]},
+        }
+
+    @staticmethod
+    def _front(spec):
+        return {g for g, r in rank_genes(spec).items() if r.pareto}
+
+    def test_a_single_503_cannot_remove_a_gene_from_the_front(self) -> None:
+        base = self._front(self._spec())
+        for gene in ("APOB", "TTR", "PCSK9"):
+            for ring in ("safety", "regional_specificity", "druggability", "clinical_phase"):
+                spec = self._spec()
+                spec[ring][gene] = no_data("transient 503")
+                got = self._front(spec)
+                lost = (base - {gene}) - got
+                assert not lost, (
+                    f"{gene}.{ring} -> no_data removed {sorted(lost)} from the front; "
+                    f"a transient upstream failure rewrote the headline")
+
+    def test_the_only_permitted_change_is_the_failed_gene_leaving(self) -> None:
+        base = self._front(self._spec())
+        spec = self._spec()
+        spec["safety"]["APOB"] = no_data("transient 503")
+        assert self._front(spec) == base - {"APOB"}
 
 
 class TestWeightedScore:

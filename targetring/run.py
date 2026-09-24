@@ -307,6 +307,8 @@ async def run_analysis(
             "padj": row.padj,
             "k": rankings[g].k,
             "pareto": rankings[g].pareto,
+            "pareto_eligible": rankings[g].pareto_eligible,
+            "pareto_k": rankings[g].pareto_k,
             "unstable": rankings[g].unstable,
             "median_rank": rankings[g].median_rank,
             "weighted_score": rankings[g].weighted_score,

@@ -227,7 +227,9 @@ function drawerHtml(d) {
     <dt>rings available (k)</dt><dd>${d.k}</dd>
     <dt>Pareto non-dominated</dt><dd>${d.pareto
       ? "<span class='pill ok'>yes — headline set</span>"
-      : "<span class='pill grey'>no</span>"}</dd>
+      : d.pareto_eligible === false
+        ? `<span class='pill warn'>not eligible — ${d.pareto_k} of 4 axes</span>`
+        : "<span class='pill grey'>no</span>"}</dd>
     <dt>median available rank</dt><dd>${d.median_rank == null ? "—"
       : d.median_rank.toFixed(3)}</dd>
     <dt>weighted score</dt><dd>${d.weighted_score == null ? "—"

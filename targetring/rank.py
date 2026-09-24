@@ -21,6 +21,7 @@ from __future__ import annotations
 import itertools
 import statistics
 from dataclasses import dataclass, field
+from typing import Any
 
 from .states import Cell
 
@@ -69,6 +70,7 @@ class GeneRanking:
     weighted_score: float | None = None
     pareto: bool = False
     pareto_k: int = 0                                           # axes available for Pareto
+    pareto_eligible: bool = False                               # has a value on ALL axes (V2)
     unstable: bool = False
     note: str = ""
 
@@ -101,26 +103,42 @@ def rank_within_set(cells: dict[str, Cell], ring: str) -> dict[str, float]:
     return out
 
 
-def _dominates(a: dict[str, float], b: dict[str, float], axes: tuple[str, ...]) -> bool:
-    """a dominates b iff a is >= on every *shared* axis and > on at least one.
+def pareto_eligible(ranks: dict[str, float], axes: tuple[str, ...] = PARETO_AXES) -> bool:
+    """COUNCIL V2. A gene is eligible for the headline only with all axes.
 
-    Only axes where both genes have a value are compared. Comparing a gene on an
-    axis it lacks would be imputation by another name: it would let a gene win
-    by having no data.
+    v1 compared genes on their *shared* axes. Fewer shared axes means fewer
+    conditions to satisfy, so missingness made domination **easier** — a gene
+    whose only Pareto axis was druggability=1.0 entered the front on one
+    measurement and ejected two genes that had all four. That is M3's "do not
+    reward being under-measured" reappearing inside the mechanism M3 prescribed.
+
+    The v1 docstring claimed the opposite ("fewer axes make domination harder")
+    and so did the note the app printed. Both were wrong; both are fixed here.
     """
-    shared = [ax for ax in axes if ax in a and ax in b]
-    if not shared:
-        return False
-    return all(a[ax] >= b[ax] for ax in shared) and any(a[ax] > b[ax] for ax in shared)
+    return all(ax in ranks for ax in axes)
+
+
+def _dominates(a: dict[str, float], b: dict[str, float], axes: tuple[str, ...]) -> bool:
+    """a dominates b iff a is >= on every axis and > on at least one.
+
+    Only called for genes that are eligible on *every* axis, so there is no
+    shared-axis subset to choose and no way to win an axis by lacking it.
+    """
+    return all(a[ax] >= b[ax] for ax in axes) and any(a[ax] > b[ax] for ax in axes)
 
 
 def pareto_front(ranks: dict[str, dict[str, float]], axes: tuple[str, ...] = PARETO_AXES) -> set[str]:
-    genes = list(ranks)
-    front = set()
-    for g in genes:
-        if not any(_dominates(ranks[o], ranks[g], axes) for o in genes if o != g):
-            front.add(g)
-    return front
+    """The non-dominated set over the genes eligible on every axis.
+
+    Ineligible genes are neither in the front nor able to evict anything from
+    it. They are reported as "not eligible — k=n of N Pareto axes" and drawn
+    without a diamond; see COUNCIL V2 and V3.
+    """
+    genes = [g for g in ranks if pareto_eligible(ranks[g], axes)]
+    return {
+        g for g in genes
+        if not any(_dominates(ranks[o], ranks[g], axes) for o in genes if o != g)
+    }
 
 
 def weighted(ranks: dict[str, float], weights: dict[str, float]) -> float | None:
@@ -181,13 +199,16 @@ def rank_genes(
         gr.weighted_score = weighted(ranks, weights)
         gr.pareto = g in front
         gr.pareto_k = sum(1 for ax in PARETO_AXES if ax in ranks)
+        gr.pareto_eligible = pareto_eligible(ranks)
         if not ranks:
             gr.note = "no ranked ring has a value for this gene"
-        elif gr.pareto_k == 0:
-            gr.note = "no Pareto axis available; cannot be in or out of the front"
-        elif gr.pareto_k < len(PARETO_AXES):
-            gr.note = (f"Pareto membership judged on {gr.pareto_k} of {len(PARETO_AXES)} axes "
-                       f"— fewer axes make domination harder, so this is provisional")
+        elif not gr.pareto_eligible:
+            missing = ", ".join(ax for ax in PARETO_AXES if ax not in ranks)
+            gr.note = (
+                f"not eligible for the headline — {gr.pareto_k} of {len(PARETO_AXES)} "
+                f"Pareto axes (missing: {missing}). It is neither in the front nor "
+                f"able to remove anything from it."
+            )
         out[g] = gr
 
     _flag_instability(out, weights)
@@ -216,6 +237,31 @@ def _flag_instability(rankings: dict[str, GeneRanking], weights: dict[str, float
                 rankings[g].unstable = True
 
 
+def pareto_axis_completeness(rankings: dict[str, GeneRanking]) -> dict[str, Any]:
+    """COUNCIL V3: how much of the headline's input was actually retrieved.
+
+    A gene missing a Pareto axis can no longer change another gene's membership
+    (V2's eligibility rule), but it can still change the front by *withdrawing*
+    a dominator, which only ever enlarges the front. That is the safe direction
+    and it is not a data error — so it is reported as a run condition, counted
+    here and carried into the manifest and the figure's conditions notice,
+    rather than as an invariant failure. See `docs/V2-REPORT.md` §A1.
+    """
+    per_axis = {
+        ax: sum(1 for r in rankings.values() if ax not in r.ranks) for ax in PARETO_AXES
+    }
+    eligible = [g for g, r in rankings.items() if r.pareto_eligible]
+    return {
+        "n_genes": len(rankings),
+        "n_eligible": len(eligible),
+        "n_ineligible": len(rankings) - len(eligible),
+        "missing_cells_per_axis": per_axis,
+        "missing_cells_total": sum(per_axis.values()),
+        "complete": sum(per_axis.values()) == 0,
+        "ineligible_genes": sorted(g for g, r in rankings.items() if not r.pareto_eligible),
+    }
+
+
 def order_for_figure(rankings: dict[str, GeneRanking]) -> list[str]:
     """Spoke order: Pareto members first, then by median available rank.
 
@@ -238,4 +284,5 @@ def order_for_figure(rankings: dict[str, GeneRanking]) -> list[str]:
 __all__ = [
     "GeneRanking", "rank_genes", "rank_within_set", "pareto_front", "weighted",
     "order_for_figure", "DEFAULT_WEIGHTS", "PARETO_AXES", "RING_SIGN",
+    "pareto_eligible", "pareto_axis_completeness",
 ]
