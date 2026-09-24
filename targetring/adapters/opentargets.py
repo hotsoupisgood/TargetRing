@@ -658,27 +658,56 @@ def clinical_activity_cell(rec: OTRecord) -> Cell:
 
 
 def rodent_cell(rec: OTRecord) -> Cell:
-    """PLAN §2 ring 7 / QA S4. A lead, not a verdict.
+    """PLAN §2 ring 7 / QA S4 / COUNCIL M4 / COUNCIL V9. A lead, not a verdict.
 
-    'no abnormal phenotype detected' is filtered before counting and surfaced as
-    its own state -- phenotyped-but-normal is real information and is not the
-    same as never phenotyped.
+    Three states and nothing more:
+        no_data     not phenotyped -- which is not "no phenotype"
+        value 0.0   phenotyped, no abnormal phenotype detected
+        value 1.0   phenotyped, abnormal phenotype terms on record
+
+    v1 put the *count* of abnormal terms on the ring, and the council was right
+    that it cannot support that:
+
+      (i)   `RING_SIGN["rodent"] = +1`, so more abnormal phenotypes ranked
+            better. Nothing justifies that direction; a severe, pleiotropic
+            knockout is at least as plausibly a safety signal. TP53 scored 249,
+            the maximum, and was rewarded for it.
+      (ii)  the denominator was discarded: 1 abnormal term out of 1 record and
+            1 out of 50 were both 1.0.
+      (iii) linear over [1, 249] put 11 of 14 cells in one indistinguishable
+            band of dark purple.
+
+    So it is "a measure of phenotyping effort multiplied by pleiotropy, pointed
+    in an unargued direction". Reduced to the one honest statement M4 asked for.
+    The term list stays in the drawer, where the count is context rather than a
+    score, and the ring is in no score at all (V5).
+
+    The council explicitly endorsed v1's handling of the informative negative,
+    and it is kept exactly as built: `no abnormal phenotype detected` is filtered
+    before the test, and a gene whose records are *all* that returns 0.0, which
+    is distinct from never having been phenotyped.
     """
     if not rec.found:
         return no_data(f"{rec.ensembl_id} not found in Open Targets")
     rows = rec.mouse_phenotypes
     if not rows:
-        return no_data("no mouse phenotype records (not phenotyped, not 'no phenotype')")
+        return no_data("not phenotyped — no mouse phenotype records at all, which is not "
+                       "the same as 'no phenotype'")
     abnormal = [
         r for r in rows
         if NO_ABNORMAL not in str(r.get("modelPhenotypeLabel", "")).lower()
     ]
     if not abnormal:
-        return value(0.0, "phenotyped, no abnormal phenotype detected", raw=0)
-    return value(float(len(abnormal)),
-                 f"{len(abnormal)} abnormal phenotype terms "
-                 f"({len(rows) - len(abnormal)} 'no abnormal phenotype' rows excluded)",
-                 raw=len(abnormal))
+        return value(0.0,
+                     f"phenotyped, no abnormal phenotype detected "
+                     f"({len(rows)} record(s), all 'no abnormal phenotype')",
+                     raw={"state": "phenotyped_normal", "n_abnormal": 0, "n_rows": len(rows)})
+    return value(1.0,
+                 f"phenotyped, abnormal phenotype on record "
+                 f"({len(abnormal)} abnormal term(s) of {len(rows)} record(s); the count is "
+                 f"in the drawer and is deliberately NOT on the ring — COUNCIL V9)",
+                 raw={"state": "phenotyped_abnormal", "n_abnormal": len(abnormal),
+                      "n_rows": len(rows)})
 
 
 def drug_pipeline_rows(rec: OTRecord) -> list[dict[str, Any]]:
@@ -739,7 +768,14 @@ def _dominant(statuses: list[str]) -> str | None:
 
 
 def pipeline_summary(rec: OTRecord) -> str:
-    """COUNCIL D6: one line above the table answers 'is this crowded?'."""
+    """COUNCIL D6: one line above the table answers 'is this crowded?'.
+
+    COUNCIL V14: the two counts overlapped, so EPHA2 read
+    "3 agents, 3 active, 3 stopped for cause" -- three agents both running and
+    killed. `active` counts rows whose dominant status is active; `stopped`
+    counts rows with any for-cause stop anywhere in 611 trials, and those are
+    not alternatives. Phrased so the counts are read as what they are.
+    """
     if not rec.found or rec.drug_count is None:
         return "no Open Targets record"
     if rec.drug_count == 0:
@@ -747,7 +783,15 @@ def pipeline_summary(rec: OTRecord) -> str:
     rows = drug_pipeline_rows(rec)
     active = sum(1 for r in rows if r["status"] in ACTIVE_STATUSES)
     stopped = sum(1 for r in rows if any(c in FOR_CAUSE_CATEGORIES for c in r["stop_reasons"]))
-    return f"{rec.drug_count} agents, {active} active, {stopped} stopped for cause"
+    n_attr = sum(1 for row in rec.drug_rows if attributable_indications(rec, row))
+    parts = [
+        f"{rec.drug_count} agents",
+        f"{active} with an active trial",
+        f"{stopped} with \u22651 trial stopped for cause",
+    ]
+    if rec.associations is not None:
+        parts.append(f"{n_attr} indicated for a disease attributable to this target")
+    return " \u00b7 ".join(parts)
 
 
 __all__ = [

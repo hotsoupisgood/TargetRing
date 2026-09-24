@@ -23,6 +23,17 @@ from typing import Any
 
 from ..cache import Cache
 from ..config import GTEX_BASE, GTEX_DATASET
+
+# COUNCIL V7. A ratio without a level is not a specificity statement. Measured
+# in the council's liver run: GFAP (astrocyte-restricted, 0.216 TPM in liver)
+# scored 0.270 and ACTB (housekeeping, 760.4 TPM in liver) scored 0.344 --
+# adjacent cells, near-identical colour, opposite biology. Both are "about a
+# third of this gene's median tissue", and for GFAP that third is of almost
+# nothing.
+#
+# 1 TPM is the conventional floor for "expressed at all" in bulk RNA-seq. It is
+# a stated choice, not a measured threshold, and it is printed on the figure.
+REGION_TPM_FLOOR = 1.0
 from ..http import Http, json_or_raise
 from ..states import Cell, no_data, value
 
@@ -107,14 +118,26 @@ def specificity_cell(rec: GTExRecord, region: str) -> Cell:
             f"median expression across {len(rec.tissues)} tissues is {denom:g} TPM; "
             f"the specificity ratio is undefined, not high"
         )
-    ratio = rec.tissues[region] / denom
+    region_tpm = rec.tissues[region]
+    if region_tpm < REGION_TPM_FLOOR:
+        # COUNCIL V7: "not expressed here" and "expressed everywhere including
+        # here" must not land in the same place. Below the floor the ratio is
+        # arithmetically fine and biologically meaningless.
+        return no_data(
+            f"{region_tpm:.4g} TPM in {region} is below the {REGION_TPM_FLOOR:g} TPM floor "
+            f"for 'expressed at all', so the specificity ratio "
+            f"({region_tpm / denom:.3g}x the median tissue) is not a specificity statement. "
+            f"The absolute TPM is in the CSV and the drawer."
+        )
+    ratio = region_tpm / denom
     return value(
         ratio,
-        f"{rec.tissues[region]:.4g} TPM in {region} / {denom:.4g} TPM median across "
-        f"{len(rec.tissues)} GTEx tissues",
-        raw={"region_tpm": rec.tissues[region], "median_tpm": denom,
+        f"{region_tpm:.4g} TPM in {region} / {denom:.4g} TPM median across "
+        f"{len(rec.tissues)} GTEx tissues (above the {REGION_TPM_FLOOR:g} TPM floor)",
+        raw={"region_tpm": region_tpm, "median_tpm": denom,
              "n_tissues": len(rec.tissues), "uberon": rec.ontology.get(region)},
     )
 
 
-__all__ = ["GTExAdapter", "GTExRecord", "specificity_cell", "list_regions"]
+__all__ = ["GTExAdapter", "GTExRecord", "specificity_cell", "list_regions",
+           "REGION_TPM_FLOOR"]

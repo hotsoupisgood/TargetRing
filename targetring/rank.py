@@ -44,6 +44,19 @@ RING_SIGN: dict[str, int] = {
     "neg_log10_padj": +1,
 }
 
+# COUNCIL V13. k was counted over every ring, including `logfc` and
+# `neg_log10_padj`, which come from the user's own table and are therefore never
+# missing -- so every gene had k >= 2 for free, the figure's stamp read
+# "k = rings with a real measurement for that gene", and TMEM229B, a gene about
+# which essentially nothing is known, showed k=7 on a 10-ring figure whose key
+# said the range was [7, 9]. k now counts only the rings a source has to answer
+# for, and the maximum is stated on the figure.
+EXTERNAL_RINGS: tuple[str, ...] = (
+    "druggability", "safety", "regional_specificity", "clinical_phase",
+    "clinical_activity", "rodent", "literature",
+)
+EXTERNAL_RING_COUNT = len(EXTERNAL_RINGS)
+
 # PLAN §3: druggability, safety, regional specificity, and clinical/evidence.
 PARETO_AXES: tuple[str, ...] = (
     "druggability", "safety", "regional_specificity", "clinical_phase",
@@ -207,10 +220,12 @@ def rank_genes(
     for g in genes:
         ranks = by_gene[g]
         gr = GeneRanking(gene=g, ranks=ranks)
-        # k counts every ring the gene actually has, including rings outside the
-        # ranked set (PLAN §2 ring 9).
-        gr.k = sum(1 for cells in cells_by_ring.values()
-                   if g in cells and cells[g].state == "value")
+        # COUNCIL V13: external rings only. `logfc` and `neg_log10_padj` are the
+        # user's own numbers and are never missing; counting them inflated every
+        # gene's k by two and made the ring's own maximum unreachable.
+        gr.k = sum(1 for ring in EXTERNAL_RINGS
+                   if ring in cells_by_ring and g in cells_by_ring[ring]
+                   and cells_by_ring[ring][g].state == "value")
         gr.median_rank = statistics.median(ranks.values()) if ranks else None
         gr.weighted_score = weighted(ranks, weights)
         gr.pareto = g in front
@@ -301,4 +316,5 @@ __all__ = [
     "GeneRanking", "rank_genes", "rank_within_set", "pareto_front", "weighted",
     "order_for_figure", "DEFAULT_WEIGHTS", "PARETO_AXES", "RING_SIGN",
     "pareto_eligible", "pareto_axis_completeness",
+    "EXTERNAL_RINGS", "EXTERNAL_RING_COUNT", "EXCLUDED_FROM_SCORE",
 ]

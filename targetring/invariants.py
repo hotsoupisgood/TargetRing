@@ -452,15 +452,27 @@ def _i7_headline_eligibility(
             f"{axes}: {bad}. A gene must not reach the headline on the axes it "
             f"happens to have (COUNCIL V2).")
 
+    n_in = pareto_audit.get("n_eligible", 0)
+    n_out = pareto_audit.get("n_ineligible", 0)
     drawn = pareto_audit.get("diamond_genes")
+    if pareto_audit.get("diamonds_suppressed"):
+        # COUNCIL V10: on a short list almost nothing is dominated, so the
+        # diamond is not drawn. None drawn is then correct, and any drawn is not.
+        if drawn:
+            return Result("I7", "headline eligibility", "FAIL",
+                          f"the diamond is suppressed on a list this short, but the figure "
+                          f"draws one on {sorted(drawn)}")
+        return Result(
+            "I7", "headline eligibility", "PASS",
+            f"{len(front)} of {n_in} eligible gene(s) in the front, each with a real value "
+            f"on all {len(axes)} axes {axes}; {n_out} ineligible. The headline diamond is "
+            f"suppressed on a list this short (COUNCIL V10) and none is drawn.")
     if drawn is not None and sorted(drawn) != front:
         return Result(
             "I7", "headline eligibility", "FAIL",
             f"the figure draws a headline diamond on {sorted(drawn)} but the ranking's "
             f"front is {front}")
 
-    n_in = pareto_audit.get("n_eligible", 0)
-    n_out = pareto_audit.get("n_ineligible", 0)
     return Result(
         "I7", "headline eligibility", "PASS",
         f"{len(front)} of {n_in} eligible gene(s) in the front, each with a real value on "

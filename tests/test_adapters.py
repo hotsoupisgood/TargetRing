@@ -169,23 +169,117 @@ class TestClinicalActivity:
 
 
 class TestRodent:
-    def test_no_abnormal_phenotype_is_excluded_from_the_count(self) -> None:
-        """QA S4: counting rows is not counting abnormal phenotypes."""
+    """COUNCIL V9 reduced this ring to three states. The council explicitly
+    endorsed v1's handling of the informative negative and it is unchanged;
+    what changed is that the *count* no longer reaches the ring."""
+
+    def test_no_abnormal_phenotype_is_excluded_before_the_test(self) -> None:
+        """QA S4: counting rows is not counting abnormal phenotypes. A gene with
+        one 'no abnormal phenotype' record must not outrank a gene with none."""
         rec = ot(mouse_phenotypes=[
             {"modelPhenotypeLabel": "no abnormal phenotype detected"},
             {"modelPhenotypeLabel": "abnormal heart morphology"},
         ])
         c = rodent_cell(rec)
         assert c.value == 1.0
-        assert "1 'no abnormal phenotype' rows excluded" in c.detail
+        assert "1 abnormal term(s) of 2 record(s)" in c.detail
+        assert c.raw["n_abnormal"] == 1 and c.raw["n_rows"] == 2
 
     def test_phenotyped_but_normal_is_a_measured_zero(self) -> None:
         rec = ot(mouse_phenotypes=[{"modelPhenotypeLabel": "no abnormal phenotype detected"}])
         c = rodent_cell(rec)
         assert c.state == "value" and c.value == 0.0
+        assert c.raw["state"] == "phenotyped_normal"
 
     def test_never_phenotyped_is_no_data(self) -> None:
-        assert rodent_cell(ot(mouse_phenotypes=[])).state == "no_data"
+        c = rodent_cell(ot(mouse_phenotypes=[]))
+        assert c.state == "no_data"
+        assert "not the same as 'no phenotype'" in c.detail
+
+    def test_the_count_no_longer_reaches_the_ring(self) -> None:
+        """COUNCIL V9. v1 put the count on the ring, so TP53 scored 249 -- the
+        maximum -- and was *rewarded* for having the most catastrophic,
+        pleiotropic knockout in the set, on a direction nothing justified."""
+        tp53 = ot(mouse_phenotypes=[{"modelPhenotypeLabel": f"abnormal {i}"}
+                                    for i in range(249)])
+        one = ot(mouse_phenotypes=[{"modelPhenotypeLabel": "abnormal heart morphology"}])
+        assert rodent_cell(tp53).value == rodent_cell(one).value == 1.0
+        # The count is still available, in the drawer and the CSV detail.
+        assert rodent_cell(tp53).raw["n_abnormal"] == 249
+
+    def test_the_denominator_is_no_longer_thrown_away(self) -> None:
+        """v1: 1 abnormal of 1 record and 1 abnormal of 50 were both 1.0, with
+        no way to tell them apart. Both are still 'phenotyped, abnormal', but
+        the denominator now travels with the cell."""
+        thin = ot(mouse_phenotypes=[{"modelPhenotypeLabel": "abnormal x"}])
+        thick = ot(mouse_phenotypes=(
+            [{"modelPhenotypeLabel": "abnormal x"}]
+            + [{"modelPhenotypeLabel": "no abnormal phenotype detected"}] * 49))
+        assert rodent_cell(thin).raw["n_rows"] == 1
+        assert rodent_cell(thick).raw["n_rows"] == 50
+
+    def test_the_ring_is_in_no_score(self) -> None:
+        from targetring.rank import DEFAULT_WEIGHTS, EXCLUDED_FROM_SCORE
+        from targetring.run import RANKED_RINGS
+        assert "rodent" in EXCLUDED_FROM_SCORE
+        assert "rodent" not in DEFAULT_WEIGHTS and "rodent" not in RANKED_RINGS
+
+
+class TestV14PipelineSummaryReadsStraight:
+    """COUNCIL V14: EPHA2 read "3 agents, 3 active, 3 stopped for cause" -- three
+    agents both running and killed. The two counts are not alternatives."""
+
+    def test_the_counts_are_labelled_as_overlapping(self) -> None:
+        from targetring.adapters.opentargets import pipeline_summary
+        rec = ot(drug_count=3, drug_rows=[
+            {"maxClinicalStage": "APPROVAL", "drug": {"name": f"D{i}"}, "diseases": [],
+             "clinicalReports": [
+                 {"source": "AACT", "trialOverallStatus": "RECRUITING"},
+                 {"source": "AACT", "trialOverallStatus": "TERMINATED",
+                  "trialStopReasonCategories": ["Safety_Sideeffects"]}]}
+            for i in range(3)])
+        line = pipeline_summary(rec)
+        assert "3 agents" in line
+        assert "3 with an active trial" in line
+        assert "3 with ≥1 trial stopped for cause" in line
+        assert ", 3 active, 3 stopped for cause" not in line
+
+    def test_it_reports_how_many_indications_are_attributable(self) -> None:
+        from targetring.adapters.opentargets import pipeline_summary
+        rec = ot(drug_count=2, drug_rows=[
+            _row("APPROVAL", "MONDO_OWN"), _row("APPROVAL", "MONDO_OTHER")])
+        rec.associations = {"MONDO_OWN": {"genetic_association": 0.9},
+                            "MONDO_OTHER": {"clinical": 0.9}}
+        assert "1 indicated for a disease attributable to this target" \
+            in pipeline_summary(rec)
+
+
+class TestV7ExpressionFloor:
+    """COUNCIL V7: GFAP (astrocyte-restricted, 0.216 TPM in liver) scored 0.270
+    and ACTB (housekeeping, 760.4 TPM in liver) scored 0.344 — adjacent cells,
+    near-identical colour, opposite biology."""
+
+    def _rec(self, region_tpm, others):
+        return GTExRecord("ENSG1.1", {"Liver": region_tpm,
+                                      **{f"T{i}": v for i, v in enumerate(others)}})
+
+    def test_a_gene_not_expressed_here_is_no_data_not_a_ratio(self) -> None:
+        from targetring.adapters.gtex import REGION_TPM_FLOOR
+        gfap = self._rec(0.216, [0.5, 0.8, 1.0, 1.2])
+        c = specificity_cell(gfap, "Liver")
+        assert c.state == "no_data" and c.value is None
+        assert "below the" in c.detail and "floor" in c.detail
+        assert REGION_TPM_FLOOR == 1.0
+
+    def test_a_housekeeping_gene_still_gets_its_ratio(self) -> None:
+        actb = self._rec(760.4, [1000.0, 2000.0, 2500.0, 3000.0])
+        c = specificity_cell(actb, "Liver")
+        assert c.state == "value"
+        assert 0.0 < c.value < 1.0
+
+    def test_the_absolute_tpm_still_travels(self) -> None:
+        gfap = self._rec(0.216, [0.5, 0.8, 1.0, 1.2])
+        assert "0.216 TPM" in specificity_cell(gfap, "Liver").detail
 
 
 class TestGTEx:

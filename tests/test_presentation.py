@@ -164,7 +164,9 @@ class TestA6NoTextOverTheRings:
             self, tmp_path: Path, n: int) -> None:
         genes = [f"G{i:02d}" for i in range(n)]
         spec = {"logfc": {g: value(float(i)) for i, g in enumerate(genes)},
-                "druggability": {g: value(float(i % 4)) for i, g in enumerate(genes)}}
+                # inside the declared [0, 1] domain, so assert_within_domain
+                # does not fire on synthetic data
+                "druggability": {g: value((i % 4) / 3) for i, g in enumerate(genes)}}
         for layout in ("audit", "slide"):
             render(genes=genes, cells_by_ring=spec, rankings=rank_genes(spec),
                    region="Liver", out_svg=tmp_path / f"{layout}{n}.svg",

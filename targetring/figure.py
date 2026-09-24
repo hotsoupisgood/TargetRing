@@ -17,6 +17,8 @@ Design rules that are not cosmetic:
 
 from __future__ import annotations
 
+import itertools
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
@@ -26,7 +28,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.colors import Normalize, to_hex  # noqa: E402
+from matplotlib.colors import LinearSegmentedColormap, Normalize, to_hex, to_rgb  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 from pycirclize import Circos  # noqa: E402
 
@@ -47,10 +49,44 @@ SAVE_RC = {"savefig.bbox": None, "savefig.pad_inches": 0.0,
            "svg.fonttype": SVG_FONTTYPE}
 
 from .config import MAX_GENES  # noqa: E402
-from .rank import DEFAULT_WEIGHTS, EXCLUDED_FROM_SCORE, GeneRanking  # noqa: E402
+from .rank import (  # noqa: E402
+    DEFAULT_WEIGHTS,
+    EXCLUDED_FROM_SCORE,
+    EXTERNAL_RING_COUNT,
+    GeneRanking,
+)
 from .states import Cell  # noqa: E402
 
 VALUE_CMAP = "viridis"
+
+# The value ramp is viridis *truncated*, and the truncation is the fix for the
+# greyscale finding in the UX review, not a taste decision.
+#
+# Measured: full viridis spans relative luminance 0.019 to 0.783. The `no_data`
+# fill #b3b3b3 sits at 0.4508 and viridis step 192/255 (#5ec962, a real value at
+# ~0.75 of the scale) at 0.4503 -- a greyscale contrast ratio of 1.001,
+# identical, with 23 of 256 steps within 0.05 luminance of the grey. PLAN §6.2's
+# "provably distinct from every value colour" was therefore true only of the
+# colour render, and the surviving cue -- the hatch -- does not survive a washed
+# out projector, a compressed raster paste into PowerPoint, or a photocopy. In
+# any of those, "never measured here" read as a good score.
+#
+# Three reserved fills need three luminance bands outside the ramp, and a
+# full-range ramp leaves room for at most two. Truncating to [0.16, 0.92] puts
+# the ramp in [0.056, 0.663] and leaves black (0.0), near-white (0.807) and
+# white (1.0) each clear of it by >= 0.055. It costs the brightest yellow and
+# the darkest purple; it keeps the ordering, the perceptual uniformity and the
+# deuteranopia safety the review liked. Asserted by `assert_greyscale_disjoint`.
+CMAP_STOPS = (0.16, 0.92)
+GREYSCALE_MIN_DELTA = 0.05
+
+# COUNCIL V10. "Non-dominated" is not "good"; with four axes it mostly identifies
+# unusual *combinations*, including bad ones. Measured fronts: 4 of 14 on the
+# liver set, 3 of 14 on de_realistic.csv and 5 of 7 on de_broken.csv -- where 71%
+# of the figure got a headline diamond, including GAPDH, the canonical
+# housekeeping negative control. Below this many eligible genes the diamond is
+# not drawn at all, and the fraction is printed either way.
+PARETO_MIN_ELIGIBLE = 10
 
 # See the comment at the rect() call: anything but exactly 1.0 keeps each cell a
 # separate SVG element with its own id.
@@ -60,7 +96,7 @@ CELL_ZORDER = 2.0
 # range, so these cannot collide with a value colour -- and that claim is
 # asserted, not assumed.
 STATE_STYLE: dict[str, dict[str, Any]] = {
-    "no_data": {"fc": "#b3b3b3", "hatch": "////", "ec": "#4d4d4d",
+    "no_data": {"fc": "#e8e8e8", "hatch": "////", "ec": "#4d4d4d",
                 "label": "no data — never measured here"},
     "not_applicable": {"fc": "#ffffff", "hatch": "....", "ec": "#808080",
                        "label": "not applicable to this gene"},
@@ -71,29 +107,143 @@ STATE_STYLE: dict[str, dict[str, Any]] = {
 
 @dataclass(frozen=True)
 class RingSpec:
+    """COUNCIL V6, V12, V17: how a ring is scaled is part of what it means.
+
+    v1 min-max normalised every ring within the submitted set. On the
+    regional-specificity ratio, which spans five orders of magnitude, one
+    tissue-restricted gene collapsed the ring: 9 of 14 cells rendered as the
+    identical darkest purple over a 41-fold range of ratios, so HMGCR at 0.93 --
+    exactly average for liver -- was indistinguishable from KCNH2 at 0.023. On
+    the k ring the same rule spent the entire colormap on a 7-to-9 difference.
+    And on bounded rings a colour meant something different between two runs,
+    because the ends moved with whatever genes were submitted.
+
+    So:
+      scale   "log"        for ratio rings spanning orders of magnitude
+              "diverging"  for signed rings, anchored at zero (V17)
+              "linear"     otherwise
+      domain  a fixed (lo, hi) where the measure is bounded, so a colour means
+              the same thing in every run; None to fall back to the submitted
+              set's range, which is then stated in the key.
+      categorical  a {value: colour} palette drawn outside the value colormap
+              (V12), for a ring that is not continuous at all.
+    """
+
     key: str
     label: str
     source: str
+    scale: str = "linear"
+    domain: tuple[float, float] | None = None
+    categorical: dict[float, str] | None = None
+    category_labels: dict[float, str] | None = None
 
 
 # PLAN.md §2. Order is outermost-first.
+# COUNCIL V12. Three discrete states rendered on a continuous colormap, whose
+# colour depended on which *other* genes were submitted: in the liver run only
+# {0, 1} occurred, so "dormant" rendered #440154 -- the same darkest purple that
+# meant "0 drugs" on the phase ring one band away. Submit one gene with a
+# stopped-for-cause history and the same dormant gene's cell turned mid-teal
+# with no change to its data. A fixed palette, outside the value colormap.
+ACTIVITY_PALETTE: dict[float, str] = {
+    -1.0: "#8c2d04",   # stopped for cause
+    0.0: "#fdbe6f",    # dormant
+    1.0: "#08519c",    # active
+}
+ACTIVITY_LABELS: dict[float, str] = {
+    -1.0: "stopped for cause, nothing active",
+    0.0: "dormant — drugs exist, no active trial",
+    1.0: "active — recruiting or ongoing",
+}
+
 RING_SPECS: tuple[RingSpec, ...] = (
-    RingSpec("logfc", "logFC (yours)", "submitted DE table"),
+    # V17: logFC is signed and had no zero anchor, so GFAP at -3.3 rendered
+    # darkest and TTR at +3.1 brightest -- a strongly down-regulated gene read
+    # as "worst" on the one ring where dark does not mean worst.
+    RingSpec("logfc", "logFC (yours)", "submitted DE table", scale="diverging"),
     RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table"),
-    RingSpec("druggability", "Druggability (prior effort + tractability)", "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, hasHighQualityChemicalProbes"),
-    RingSpec("safety", "Safety flags & constraint — NOT evidence of safety", "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"),
-    RingSpec("regional_specificity", "Regional specificity", "GTEx v8 median TPM ratio"),
-    RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)", "OT drugAndClinicalCandidates, gated on OT target-disease mechanistic evidence"),
-    RingSpec("clinical_activity", "Pipeline: current activity", "OT clinicalReports (AACT rows only)"),
-    RingSpec("rodent", "Rodent phenotype lead", "OT mousePhenotypes, 'no abnormal phenotype' excluded"),
+    RingSpec("druggability", "Druggability (prior effort + tractability)",
+             "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, hasHighQualityChemicalProbes",
+             domain=(0.0, 1.0)),
+    RingSpec("safety", "Safety flags & constraint — NOT evidence of safety",
+             "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene",
+             domain=(-1.0, 1.0)),
+    # V6: a ratio over five orders of magnitude, so log10. Deliberately NOT a
+    # fixed domain: the ratio is unbounded above (TTR reaches 5,204x in liver)
+    # and a fixed domain would clip TTR, APOB and SERPINA1 to the same top
+    # colour -- reintroducing at the top end exactly the collapse V6 is about.
+    # The log transform is what fixes the collapse; the range is printed in the
+    # key and in the caption.
+    RingSpec("regional_specificity", "Regional specificity (log10 ratio)",
+             "GTEx v8 median TPM ratio, log10, floor applied", scale="log"),
+    RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)",
+             "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence",
+             domain=(0.0, 5.0)),
+    RingSpec("clinical_activity", "Pipeline: current activity",
+             "OT clinicalReports (AACT rows only)",
+             categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS),
+    # V9: reduced to three states, so there is no count left to scale.
+    RingSpec("rodent", "Rodent phenotype lead (3 states)",
+             "OT mousePhenotypes, 'no abnormal phenotype' excluded",
+             domain=(0.0, 1.0)),
     RingSpec("literature", "Literature volume", "PubTator3, gene-id resolved, log10(1+n)"),
-    RingSpec("completeness", "k — rings available", "derived"),
+    # V13: k over external rings only, on a fixed 0..K domain.
+    RingSpec("completeness", "k — external rings with a measurement",
+             "derived; maximum is the number of external rings",
+             domain=(0.0, float(EXTERNAL_RING_COUNT))),
 )
 
 
+def value_cmap():
+    """viridis over CMAP_STOPS. See the note at CMAP_STOPS for why it is cut."""
+    base = plt.get_cmap(VALUE_CMAP)
+    lo, hi = CMAP_STOPS
+    return LinearSegmentedColormap.from_list(
+        f"{VALUE_CMAP}_{lo}_{hi}",
+        [base(lo + (hi - lo) * i / 255) for i in range(256)],
+    )
+
+
 def colormap_hexes(n: int = 256) -> set[str]:
-    cmap = plt.get_cmap(VALUE_CMAP)
+    cmap = value_cmap()
     return {to_hex(cmap(i / (n - 1))) for i in range(n)}
+
+
+def relative_luminance(colour) -> float:
+    """WCAG relative luminance — what a colour becomes in greyscale."""
+    def channel(u: float) -> float:
+        return u / 12.92 if u <= 0.04045 else ((u + 0.055) / 1.055) ** 2.4
+    r, g, b = to_rgb(colour)
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+
+
+def assert_greyscale_disjoint(min_delta: float = GREYSCALE_MIN_DELTA) -> None:
+    """PLAN §6.2, extended to the render people actually project and photocopy.
+
+    `assert_fills_disjoint` proves the reserved fills are not *colours* the
+    colormap produces. That proof does not survive desaturation, and the UX
+    review measured the consequence: no_data and a real mid-scale value were
+    identical in greyscale at a contrast ratio of 1.001. This asserts the same
+    guarantee in luminance, against the whole ramp and between the states.
+    """
+    ramp = [relative_luminance(value_cmap()(i / 255)) for i in range(256)]
+    states = {name: relative_luminance(st["fc"]) for name, st in STATE_STYLE.items()}
+    for name, l in states.items():
+        near = min(ramp, key=lambda x: abs(x - l))
+        if abs(near - l) < min_delta:
+            raise AssertionError(
+                f"the {name!r} fill {STATE_STYLE[name]['fc']} has relative luminance "
+                f"{l:.4f}, within {abs(near - l):.4f} of a value colour at {near:.4f}. "
+                f"In greyscale -- a projector, a compressed paste, a photocopy -- "
+                f"{name!r} would be indistinguishable from a real measurement. "
+                f"Needs a gap of {min_delta}."
+            )
+    for a, b in itertools.combinations(states, 2):
+        if abs(states[a] - states[b]) < min_delta:
+            raise AssertionError(
+                f"the {a!r} and {b!r} fills are {abs(states[a] - states[b]):.4f} apart in "
+                f"luminance; they collapse into each other in greyscale"
+            )
 
 
 def assert_fills_disjoint() -> None:
@@ -112,11 +262,54 @@ def assert_fills_disjoint() -> None:
             )
 
 
-def _norm_for(ring: str, cells: dict[str, Cell]) -> Normalize | None:
-    vals = [c.value for c in cells.values() if c.state == "value"]
+def assert_within_domain(spec: RingSpec, cells: dict[str, Cell]) -> None:
+    """A value outside a declared fixed domain would be silently clipped.
+
+    A clipped cell is drawn in a colour that means a different number, which is
+    the plausible-wrong-figure failure mode. Fixed domains are declared only
+    where the measure is provably bounded -- a mean of keys in [-1, 1], a stage
+    ordinal, a count of rings -- so a value outside one means the source or the
+    reduction changed shape, and that has to be loud.
+    """
+    if spec.domain is None:
+        return
+    lo, hi = spec.domain
+    for gene, c in cells.items():
+        if c.state != "value":
+            continue
+        v = _scaled(spec, c.value)
+        if not (lo - 1e-9 <= v <= hi + 1e-9):
+            raise AssertionError(
+                f"{gene} has {spec.key}={c.value!r} (scaled {v:.4g}), outside this ring's "
+                f"declared domain [{lo:g}, {hi:g}]. It would be clipped and drawn in a "
+                f"colour that means a different number. The domain is declared because the "
+                f"measure is bounded, so this means the reduction changed shape."
+            )
+
+
+def _scaled(spec: RingSpec, v: float) -> float:
+    if spec.scale == "log":
+        return math.log10(max(v, 1e-6))
+    return v
+
+
+def _norm_for(spec: RingSpec, cells: dict[str, Cell]) -> Normalize | None:
+    """COUNCIL V6. A fixed domain where the measure has one, so a colour means
+    the same thing between two runs; the submitted set's range otherwise, and
+    then the range is printed in the key."""
+    if spec.categorical:
+        return None
+    if spec.domain is not None:
+        return Normalize(vmin=spec.domain[0], vmax=spec.domain[1])
+    vals = [_scaled(spec, c.value) for c in cells.values() if c.state == "value"]
     if not vals:
         return None
     lo, hi = min(vals), max(vals)
+    if spec.scale == "diverging":
+        # V17: anchored on zero, so up- and down-regulation are symmetric and
+        # the midpoint of the ramp is "no change".
+        m = max(abs(lo), abs(hi)) or 0.5
+        return Normalize(vmin=-m, vmax=m)
     if lo == hi:
         lo, hi = lo - 0.5, hi + 0.5
     return Normalize(vmin=lo, vmax=hi)
@@ -179,6 +372,10 @@ class FigureResult:
     cell_ids: list[str]
     n_cells: int
     caption: str = ""
+    # COUNCIL V10: below PARETO_MIN_ELIGIBLE the diamond is not drawn at all.
+    # I7 compares the drawn diamonds against the ranking's front, so it has to
+    # be told that "none drawn" was a decision rather than a disagreement.
+    diamonds_suppressed: bool = False
 
 
 def render(
@@ -203,6 +400,7 @@ def render(
     layout: str = "audit",
 ) -> FigureResult:
     assert_fills_disjoint()
+    assert_greyscale_disjoint()
     lay = LAYOUTS[layout]
     weights = weights or DEFAULT_WEIGHTS
     assert_footer_is_true(weights, ranked_rings or ())
@@ -211,8 +409,10 @@ def render(
         raise ValueError("no genes to render")
 
     rings = [r for r in RING_SPECS if r.key in cells_by_ring]
-    cmap = plt.get_cmap(VALUE_CMAP)
-    norms = {r.key: _norm_for(r.key, cells_by_ring[r.key]) for r in rings}
+    cmap = value_cmap()
+    for r in rings:
+        assert_within_domain(r, cells_by_ring[r.key])
+    norms = {r.key: _norm_for(r, cells_by_ring[r.key]) for r in rings}
 
     # UX B1: pycirclize raises "Too large sector space size is set!!" at
     # n >= 181 with space=2, which reached the user as a raw traceback after
@@ -250,8 +450,14 @@ def render(
             if cell is None:
                 cell = Cell("no_data", None, f"{spec.key} was not computed for this gene")
 
-            if cell.state == "value" and norm is not None:
-                fill = to_hex(cmap(norm(cell.value)))
+            if cell.state == "value" and spec.categorical:
+                # V12: a fixed three-colour palette, outside the value colormap,
+                # so the colour does not move with the rest of the submission.
+                fill = spec.categorical.get(
+                    round(cell.value, 6), spec.categorical[min(spec.categorical)])
+                style = {"fc": fill, "ec": "#ffffff", "lw": 0.25}
+            elif cell.state == "value" and norm is not None:
+                fill = to_hex(cmap(norm(_scaled(spec, cell.value))))
                 style = {"fc": fill, "ec": "#ffffff", "lw": 0.25}
             else:
                 st = STATE_STYLE[cell.state if cell.state in STATE_STYLE else "no_data"]
@@ -283,19 +489,28 @@ def render(
                 "source": spec.source,
             })
 
+    # COUNCIL V10: on a short list almost nothing is dominated, so the diamond
+    # stops meaning anything. Suppressed below a stated n, and the fraction is
+    # printed on the figure either way.
+    n_eligible = sum(1 for g in genes
+                     if (gr := rankings.get(g)) is not None and gr.pareto_eligible)
+    front = [g for g in genes
+             if (gr := rankings.get(g)) is not None and gr.pareto]
+    show_diamonds = n_eligible >= PARETO_MIN_ELIGIBLE
+
     # Spoke labels carry k, and mark Pareto members and unstable genes.
     for gene_i, gene in enumerate(genes):
         sector = circos.get_sector(gene)
         gr = rankings.get(gene)
         k = gr.k if gr else 0
-        mark = "◆ " if (gr and gr.pareto) else ""
+        mark = "◆ " if (gr and gr.pareto and show_diamonds) else ""
         # COUNCIL V1 (ii). Open Targets has no anti-target axis, so hERG reads as
         # druggable, clinically validated and actively trialled while its own
         # safetyLiabilities are Torsades de Pointes and Increased Mortality. The
         # marker sits where the eye already is, next to k.
         liab = "⚠ " if gene in (gene_flags or {}) else ""
         warn = " *" if (gr and gr.unstable) else ""
-        label = f"{mark}{liab}{gene} (k={k}){warn}"
+        label = f"{mark}{liab}{gene} (k={k}/{EXTERNAL_RING_COUNT}){warn}"
         size = lay.label_size * (0.82 if len(genes) > 18 else 1.0)
         sector.text(label, r=r_outer + 3, size=size,
                     orientation="vertical", color="#111111")
@@ -315,6 +530,7 @@ def render(
 
     centre_blocks = _draw_centre(ax, region, len(genes), input_count, rendered_count,
                                  ledger_counts, dropped_names, lay)
+    centre_blocks += _draw_headline(ax, front, n_eligible, show_diamonds, lay)
     text_blocks = []
     text_blocks += _draw_legend(fig, rings, norms, cmap, lay)
     text_blocks += _draw_stamps(fig, weights, region, subtitle, provenance,
@@ -349,7 +565,8 @@ def render(
     plt.close(fig)
     return FigureResult(out_svg, csv_rows, cell_ids, len(cell_ids),
                         caption=caption(rings, norms, weights, region,
-                                        provenance, gene_flags, dropped_names))
+                                        provenance, gene_flags, dropped_names),
+                        diamonds_suppressed=not show_diamonds)
 
 
 def _wrap(names, per_line: int = 5) -> str:
@@ -437,6 +654,26 @@ def _draw_colourbar(fig, cmap, lay) -> None:
              color="#8a4b00", weight="bold")
 
 
+def _draw_headline(ax, front, n_eligible, show_diamonds, lay) -> list:
+    """COUNCIL V10. Say how big the headline set is, as a fraction, and say that
+    membership is a property of the submitted list rather than of the target.
+
+    Removing PCSK9 from the council's liver list promoted DDR1 -- 0 drugs, 0.05
+    liver specificity -- into the headline. A reader will read a diamond as
+    "best target on this list"; it means "unbeaten on all four axes by anything
+    else you submitted".
+    """
+    k = (lay.centre_scale if lay else 1.0)
+    if not show_diamonds:
+        text = (f"\u25c6 not drawn \u2014 only {n_eligible} gene(s) are eligible on all "
+                f"four axes,\nand on a list this short almost nothing is dominated")
+    else:
+        text = (f"\u25c6 {len(front)} of {n_eligible} eligible \u2014 membership is a "
+                f"property of\nthis list, not of the target")
+    return [ax.text(0.5, 0.398, text, ha="center", va="top", size=7 * k,
+                    transform=ax.transAxes, color="#444444")]
+
+
 def _draw_legend(fig, rings, norms, cmap, lay) -> list:
     handles = [
         Patch(facecolor=s["fc"], hatch=s["hatch"], edgecolor=s["ec"], label=s["label"])
@@ -444,6 +681,15 @@ def _draw_legend(fig, rings, norms, cmap, lay) -> list:
     ]
     handles.append(Patch(facecolor=cmap(0.85), edgecolor="#ffffff",
                          label="value (scale is per-ring — see the bar)"))
+    # COUNCIL V12: the categorical ring is off the value colormap, so its three
+    # colours need naming or they read as values.
+    for spec in rings:
+        if not spec.categorical:
+            continue
+        for v, colour in sorted(spec.categorical.items()):
+            label = (spec.category_labels or {}).get(v, str(v))
+            handles.append(Patch(facecolor=colour, edgecolor="#ffffff",
+                                 label=f"{spec.label}: {label}"))
     fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.006, 0.992),
                fontsize=7.5 if lay.name == "audit" else 9,
                frameon=True, title="cell states", title_fontsize=8)
@@ -515,7 +761,8 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
         f"Regional specificity = {region} TPM ÷ median across {n_tissues or 'the GTEx panel'}.",
         "Rodent ring: abstract/model evidence is a LEAD, not a verdict, and is ranked nowhere "
         "and weighted nowhere. Asserted against the weights at draw time, not just claimed.",
-        "Missing is never imputed. k = rings with a real measurement for that gene.",
+        f"Missing is never imputed. k = how many of the {EXTERNAL_RING_COUNT} EXTERNAL rings "
+        f"have a real measurement for that gene; your own logFC and padj are not counted.",
         "* = this gene's top-10 place does not survive reweighting.",
         "Pipeline: furthest phase counts only drugs indicated for a disease with mechanistic "
         "evidence linking it to THIS target. A drug that hits the target for an unrelated "
@@ -743,4 +990,6 @@ def _draw_conditions(fig, conditions: Sequence[str]) -> None:
 
 __all__ = ["render", "RING_SPECS", "STATE_STYLE", "VALUE_CMAP", "FigureResult",
            "assert_fills_disjoint", "assert_footer_is_true", "colormap_hexes",
+           "assert_greyscale_disjoint", "relative_luminance", "value_cmap", "CMAP_STOPS",
+           "assert_within_domain", "ACTIVITY_PALETTE", "PARETO_MIN_ELIGIBLE",
            "assert_no_text_over_the_rings", "assert_centre_fits_the_hole", "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE"]

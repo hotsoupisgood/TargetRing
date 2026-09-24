@@ -65,7 +65,7 @@ class TestPalette:
             assert_fills_disjoint()
 
 
-def _pareto_audit(svg, rankings):
+def _pareto_audit(svg, rankings, res=None):
     """The audit I7 checks, built the way run.py builds it."""
     from targetring.invariants import diamond_genes
     from targetring.rank import PARETO_AXES, pareto_axis_completeness
@@ -76,6 +76,7 @@ def _pareto_audit(svg, rankings):
         "front_pareto_k": {g: r.pareto_k for g, r in rankings.items()},
         "n_eligible": c["n_eligible"], "n_ineligible": c["n_ineligible"],
         "diamond_genes": diamond_genes(svg),
+        "diamonds_suppressed": res.diamonds_suppressed if res is not None else False,
     }
 
 
@@ -88,7 +89,7 @@ class TestAllPassOnAGoodRender:
             regression={"ok": True, "detail": "stub"},
             literature_audit={"echo_live": 4, "echo_replayed": 0, "ncbi_checked": 4,
                               "echo_mismatches": [], "ncbi_errors": []},
-            pareto_audit=_pareto_audit(svg, rank_genes(_spec())),
+            pareto_audit=_pareto_audit(svg, rank_genes(_spec()), res),
         )
         assert rep.ok, rep.banner_lines() + rep.condition_lines()
         # I7 (COUNCIL V2/V3, headline eligibility) joins the PASS/FAIL list.
@@ -413,13 +414,38 @@ class TestI7HeadlineEligibility:
         assert rep.ok, rep.banner_lines() + rep.condition_lines()
 
     def test_the_diamond_is_readable_back_out_of_the_svg(self, tmp_path: Path) -> None:
+        """Enough eligible genes that V10 draws diamonds at all, one of which
+        also carries the ⚠ liability marker."""
+        from targetring.figure import PARETO_MIN_ELIGIBLE
+        from targetring.invariants import diamond_genes
+        from targetring.states import value as v
+        n = PARETO_MIN_ELIGIBLE + 2
+        genes = [f"G{i:02d}" for i in range(n)]
+        spec = {
+            "druggability": {g: v(i / (n - 1)) for i, g in enumerate(genes)},
+            "safety": {g: v(2 * i / (n - 1) - 1) for i, g in enumerate(genes)},
+            "regional_specificity": {g: v(1.0 + i) for i, g in enumerate(genes)},
+            "clinical_phase": {g: v(float(i % 6)) for i, g in enumerate(genes)},
+        }
+        rankings = rank_genes(spec)
+        res = render(genes=genes, cells_by_ring=spec, rankings=rankings, region="Lung",
+                     out_svg=tmp_path / "d.svg", input_count=n, rendered_count=n,
+                     ledger_counts={}, gene_flags={genes[-1]: ["Torsades de Point"]})
+        assert not res.diamonds_suppressed
+        want = sorted(g for g, r in rankings.items() if r.pareto)
+        assert want, "a strictly ordered set has exactly one non-dominated gene"
+        assert sorted(diamond_genes(tmp_path / "d.svg")) == want
+        assert genes[-1] in want, "the ⚠ liability marker must not hide the diamond"
+
+    def test_the_v10_suppressed_case(self, tmp_path: Path) -> None:
         from targetring.invariants import diamond_genes
         spec = _spec()
         rankings = rank_genes(spec)
-        rankings["AAA"].pareto = True
-        render(genes=GENES, cells_by_ring=spec, rankings=rankings, region="Lung",
-               out_svg=tmp_path / "d.svg", input_count=4, rendered_count=4,
-               ledger_counts={}, gene_flags={"AAA": ["Torsades de Point"]})
-        want = sorted(g for g, r in rankings.items() if r.pareto)
-        assert sorted(diamond_genes(tmp_path / "d.svg")) == want
-        assert "AAA" in want, "the ⚠ liability marker must not hide the diamond"
+        res = render(genes=GENES, cells_by_ring=spec, rankings=rankings, region="Lung",
+                     out_svg=tmp_path / "d.svg", input_count=4, rendered_count=4,
+                     ledger_counts={}, gene_flags={"AAA": ["Torsades de Point"]})
+        # V10 suppresses the diamond below PARETO_MIN_ELIGIBLE eligible genes,
+        # so force a set large enough for it to be drawn at all.
+        assert res.diamonds_suppressed, "4 genes is below the V10 floor"
+        drawn = diamond_genes(tmp_path / "d.svg")
+        assert drawn == [], "and none is drawn"

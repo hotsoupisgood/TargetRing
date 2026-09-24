@@ -54,6 +54,7 @@ from .invariants import InvariantReport, check_all
 from .invariants import diamond_genes
 from .rank import (
     DEFAULT_WEIGHTS,
+    EXTERNAL_RING_COUNT,
     PARETO_AXES,
     order_for_figure,
     pareto_axis_completeness,
@@ -229,7 +230,9 @@ async def run_analysis(
 
     rankings = rank_genes(cells_by_ring, DEFAULT_WEIGHTS, RANKED_RINGS)
     cells_by_ring["completeness"] = {
-        g: value(float(rankings[g].k), f"{rankings[g].k} rings with a real measurement")
+        g: value(float(rankings[g].k),
+                 f"{rankings[g].k} of {EXTERNAL_RING_COUNT} external rings have a real "
+                 f"measurement (COUNCIL V13: your own logFC and padj are not counted)")
         for g in genes
     }
     gene_order = order_for_figure(rankings)
@@ -344,6 +347,7 @@ async def run_analysis(
             "n_eligible": completeness["n_eligible"],
             "n_ineligible": completeness["n_ineligible"],
             "diamond_genes": diamond_genes(svg_path),
+            "diamonds_suppressed": fig_result.diamonds_suppressed,
         },
         conditions=conditions,
     )
