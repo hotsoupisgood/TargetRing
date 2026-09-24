@@ -51,7 +51,14 @@ from .de_input import (
 )
 from .http import Http
 from .invariants import InvariantReport, check_all
-from .rank import DEFAULT_WEIGHTS, order_for_figure, rank_genes
+from .invariants import diamond_genes
+from .rank import (
+    DEFAULT_WEIGHTS,
+    PARETO_AXES,
+    order_for_figure,
+    pareto_axis_completeness,
+    rank_genes,
+)
 from .regression import five_id_regression
 from .resolve import Resolver, ledger_reason
 from .states import Cell, no_data, value
@@ -236,36 +243,63 @@ async def run_analysis(
     }
 
     # --- literature audit for invariant 5 --------------------------------
-    echo_checked = ncbi_checked = 0
+    # COUNCIL V11: live and replayed echoes are counted separately. An echo that
+    # was asserted three days ago and read back off disk is not an echo this run
+    # checked, and I5 must not PASS on replays alone.
+    epmc_by_gene = dict(zip(genes, epmc_results))
+    echo_live = echo_replayed = ncbi_checked = 0
     echo_mismatches: list[str] = []
     unreachable: list[str] = []
     for g in genes:
         if lit_by_gene[g].error is None:
             ncbi_checked += 1
-        q, count, echo_ok, err = epmc_results[genes.index(g)]
-        if echo_ok is True:
-            echo_checked += 1
-        elif echo_ok is False:
-            echo_mismatches.append(f"{g}: {err}")
-        elif err:
-            unreachable.append(f"{g}: {err[:90]}")
-    if unreachable and echo_checked == 0:
-        warnings.append(
-            f"Europe PMC unreachable for all {len(unreachable)} genes, so invariant I5's echo "
-            f"half could not be evaluated. The PubTator ring is unaffected."
-        )
+        res = epmc_by_gene[g]
+        if res.echo_ok is True and res.live:
+            echo_live += 1
+        elif res.echo_ok is True:
+            echo_replayed += 1
+        elif res.echo_ok is False:
+            echo_mismatches.append(f"{g}: {res.error}")
+        elif res.error:
+            unreachable.append(f"{g}: {res.error[:90]}")
     lit_audit = {
-        "echo_checked": echo_checked, "ncbi_checked": ncbi_checked,
+        "echo_live": echo_live, "echo_replayed": echo_replayed,
+        # Kept for anything reading the old key; it is the sum, and it is not
+        # what I5 decides on.
+        "echo_checked": echo_live + echo_replayed,
+        "ncbi_checked": ncbi_checked,
         "echo_mismatches": echo_mismatches, "unreachable": unreachable[:10],
         "ncbi_errors": [],
     }
+
+    # --- run conditions: facts about the run that are not invariant failures --
+    # UX A1. These render amber and below the rings, never as the red
+    # DO-NOT-TRUST banner. See `figure._draw_conditions`.
+    conditions: list[tuple[str, str]] = []
+    if unreachable:
+        conditions.append((
+            f"Europe PMC unreachable for {len(unreachable)} of {len(genes)} genes",
+            "it sets no ring value (PLAN §2, COUNCIL M6); the literature ring is "
+            "PubTator3 and is unaffected",
+        ))
+    completeness = pareto_axis_completeness(rankings)
+    if not completeness["complete"]:
+        missing = ", ".join(f"{ax} {n}" for ax, n in
+                            completeness["missing_cells_per_axis"].items() if n)
+        conditions.append((
+            f"{completeness['missing_cells_total']} Pareto-axis cell(s) missing "
+            f"({missing})",
+            f"{completeness['n_ineligible']} gene(s) are ineligible for the headline "
+            f"and carry no diamond; the front is a floor, not a ranking",
+        ))
+    warnings.extend(f"{h} — {w}" for h, w in conditions)
 
     # --- render ----------------------------------------------------------
     svg_path = runs_dir / "figure.svg"
     csv_path = runs_dir / "values.csv"
     t = time.time()
 
-    def do_render(failures: list[str]) -> figure.FigureResult:
+    def do_render(failures: list[str], conds: list[str] = []) -> figure.FigureResult:
         return figure.render(
             genes=gene_order,
             cells_by_ring=cells_by_ring,
@@ -280,6 +314,7 @@ async def run_analysis(
                 ((e.status, sum(1 for x in ledger if x.status == e.status)) for e in ledger)
             },
             invariant_failures=failures,
+            run_conditions=conds,
             weights=DEFAULT_WEIGHTS,
             ranked_rings=RANKED_RINGS,
             gene_flags=severe_liability_flags,
@@ -298,14 +333,32 @@ async def run_analysis(
         ledger_count=len(dropped_entries(ledger)),
         regression=regression,
         literature_audit=lit_audit,
+        pareto_audit={
+            "axes": list(PARETO_AXES),
+            "front": [g for g in gene_order if rankings[g].pareto],
+            "front_pareto_k": {g: rankings[g].pareto_k for g in gene_order},
+            "n_eligible": completeness["n_eligible"],
+            "n_ineligible": completeness["n_ineligible"],
+            "diamond_genes": diamond_genes(svg_path),
+        },
+        conditions=conditions,
     )
 
+    # UX A1 / COUNCIL V3 / V11: two channels, because a source being down and an
+    # invariant being violated are different facts.
+    #
+    # Red, across the rings: an invariant was checked and did not hold, or a
+    # source contract failed -- the API is not the shape this build parses, so
+    # the numbers may be wrong.
     banner = invariants.banner_lines() + [
         f"source contract FAILED: {c['check']}" for c in contract_failures
     ]
-    if banner:
-        # Re-render with the banner. The figure must not look clean when it is not.
-        fig_result = do_render(banner)
+    # Amber, below the rings: a check could not be run, or a source was down.
+    conds = invariants.condition_lines()
+    if banner or conds:
+        # Re-render. The figure must not look clean when it is not -- and must
+        # not look broken when it is not either.
+        fig_result = do_render(banner, conds)
 
     _write_csv(csv_path, fig_result.csv_rows, ledger, parsed)
 
@@ -342,9 +395,10 @@ async def run_analysis(
                 "pubtator_query": lit_by_gene[g].query,
                 "years": lit_by_gene[g].years,
                 "error": lit_by_gene[g].error,
-                "europepmc_query": epmc_results[genes.index(g)][0],
-                "europepmc_count": epmc_results[genes.index(g)][1],
-                "europepmc_error": epmc_results[genes.index(g)][3],
+                "europepmc_query": epmc_by_gene[g].query,
+                "europepmc_count": epmc_by_gene[g].count,
+                "europepmc_error": epmc_by_gene[g].error,
+                "europepmc_echo_live": epmc_by_gene[g].live,
             },
             "chembl": mechanism_summary(chembl_by_gene[g]),
             "mouse_phenotypes": [
@@ -390,6 +444,10 @@ async def run_analysis(
         weights=dict(DEFAULT_WEIGHTS), llm=llm_info, timings=timings,
         sources={"gtex_region": region, "cache_hits": cache.hits, "cache_misses": cache.misses},
         warnings=warnings,
+        # COUNCIL V3: the headline is not reproducible while a Pareto axis is
+        # incomplete, so how incomplete it was is part of the audit trail.
+        pareto_completeness=completeness,
+        run_conditions=[{"condition": h, "affects": w} for h, w in conditions],
     )
     manifest_path = man.write(runs_dir / "manifest.json")
 

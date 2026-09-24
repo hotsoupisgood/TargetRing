@@ -65,18 +65,34 @@ class TestPalette:
             assert_fills_disjoint()
 
 
+def _pareto_audit(svg, rankings):
+    """The audit I7 checks, built the way run.py builds it."""
+    from targetring.invariants import diamond_genes
+    from targetring.rank import PARETO_AXES, pareto_axis_completeness
+    c = pareto_axis_completeness(rankings)
+    return {
+        "axes": list(PARETO_AXES),
+        "front": sorted(g for g, r in rankings.items() if r.pareto),
+        "front_pareto_k": {g: r.pareto_k for g, r in rankings.items()},
+        "n_eligible": c["n_eligible"], "n_ineligible": c["n_ineligible"],
+        "diamond_genes": diamond_genes(svg),
+    }
+
+
 class TestAllPassOnAGoodRender:
-    def test_i1_to_i4(self, rendered) -> None:
+    def test_i1_to_i7(self, rendered) -> None:
         res, svg = rendered
         rep = check_all(
             svg_path=svg, csv_rows=res.csv_rows, gene_order=GENES,
             input_count=6, rendered_count=4, ledger_count=2,
             regression={"ok": True, "detail": "stub"},
-            literature_audit={"echo_checked": 4, "ncbi_checked": 4,
+            literature_audit={"echo_live": 4, "echo_replayed": 0, "ncbi_checked": 4,
                               "echo_mismatches": [], "ncbi_errors": []},
+            pareto_audit=_pareto_audit(svg, rank_genes(_spec())),
         )
-        assert rep.ok, rep.banner_lines()
-        assert [r.outcome for r in rep.results] == ["PASS"] * 6
+        assert rep.ok, rep.banner_lines() + rep.condition_lines()
+        # I7 (COUNCIL V2/V3, headline eligibility) joins the PASS/FAIL list.
+        assert [r.outcome for r in rep.results] == ["PASS"] * 7
 
     def test_every_cell_reached_the_svg(self, rendered) -> None:
         """The pycirclize PatchCollection trap: un-hatched cells were being
@@ -164,7 +180,12 @@ class TestNotEvaluatedIsNotAPass:
         assert next(r for r in rep.results if r.id == "I5").outcome == "NOT_EVALUATED"
         assert next(r for r in rep.results if r.id == "I6").outcome == "NOT_EVALUATED"
         assert not rep.ok, "a check that could not run is not a check that passed"
-        assert len(rep.banner_lines()) == 2
+        # Superseded by UX A1: it is still not a pass, but it reaches the reader
+        # through the amber conditions notice, not the red DO-NOT-TRUST banner.
+        # I5, I6 and I7 all lack an input here.
+        assert rep.banner_lines() == []
+        assert rep.data_is_sound
+        assert len(rep.condition_lines()) == 3
 
     def test_unreachable_europepmc_is_not_evaluated_not_passed(self, rendered) -> None:
         res, svg = rendered
@@ -214,3 +235,191 @@ class TestDegenerateGeometry:
         for r in rep.results:
             if r.id in ("I1", "I2", "I3", "I4"):
                 assert r.outcome == "PASS", (r.id, r.detail)
+
+
+class TestA1OutageIsNotInvariantFailure:
+    """UX A1 / COUNCIL V3 / V11.
+
+    A Europe PMC outage — a source that sets no ring value at all, as the app's
+    own amber note said directly underneath — stamped a full-width
+    "INVARIANT FAILURE — DO NOT TRUST THIS FIGURE" across the middle of the
+    exported SVG. Cry wolf twice and the banner stops working the day it is
+    real. A source being down and an invariant being violated are different
+    facts and must not render identically.
+    """
+
+    @staticmethod
+    def _rep(**kw):
+        defaults = dict(
+            input_count=6, rendered_count=4, ledger_count=2,
+            regression={"ok": True, "detail": "stub"},
+            literature_audit={"echo_live": 4, "echo_replayed": 0, "ncbi_checked": 4,
+                              "echo_mismatches": [], "ncbi_errors": []},
+            pareto_audit={"axes": ["druggability", "safety", "regional_specificity",
+                                   "clinical_phase"],
+                          "front": [], "front_pareto_k": {}, "n_eligible": 0,
+                          "n_ineligible": 0, "diamond_genes": []},
+        )
+        defaults.update(kw)
+        return check_all(**defaults)
+
+    def test_an_outage_raises_conditions_and_not_the_red_banner(self, rendered) -> None:
+        res, svg = rendered
+        rep = self._rep(
+            svg_path=svg, csv_rows=res.csv_rows, gene_order=GENES,
+            literature_audit={"echo_live": 0, "echo_replayed": 0, "ncbi_checked": 4,
+                              "echo_mismatches": [], "ncbi_errors": [],
+                              "unreachable": ["AAA: HTTP 503 text/html"]},
+        )
+        assert rep.banner_lines() == [], "an outage must not say DO NOT TRUST"
+        assert rep.data_is_sound, "no invariant was checked and violated"
+        assert not rep.ok, "and it is still not a pass"
+        conds = rep.condition_lines()
+        assert len(conds) == 1 and "NOT CHECKED" in conds[0]
+        assert "sets no ring value" in conds[0], "the notice must say what it affects"
+
+    def test_a_real_invariant_failure_still_raises_the_red_banner(self, rendered) -> None:
+        res, svg = rendered
+        rep = self._rep(svg_path=svg, csv_rows=res.csv_rows, gene_order=GENES,
+                        input_count=9)
+        assert not rep.data_is_sound
+        assert any("I4" in b and "FAIL" in b for b in rep.banner_lines())
+
+    def test_the_two_reach_the_figure_differently(self, tmp_path: Path) -> None:
+        """Measured in the SVG, not on screen."""
+        spec = _spec()
+        kw = dict(genes=GENES, cells_by_ring=spec, rankings=rank_genes(spec),
+                  region="Lung", input_count=6, rendered_count=4, ledger_counts={})
+
+        render(out_svg=tmp_path / "outage.svg", run_conditions=[
+            "I5 literature query integrity: NOT CHECKED — 0 live echoes "
+            "· Europe PMC sets no ring value"], **kw)
+        outage = (tmp_path / "outage.svg").read_text()
+        assert "DO NOT TRUST THIS FIGURE" not in outage
+        assert "INVARIANT FAILURE" not in outage
+        assert "RUN CONDITIONS" in outage and "not an invariant failure" in outage
+
+        render(out_svg=tmp_path / "broken.svg",
+               invariant_failures=["I4 input == rendered + ledgered: FAIL"], **kw)
+        broken = (tmp_path / "broken.svg").read_text()
+        assert "DO NOT TRUST THIS FIGURE" in broken
+        assert "RUN CONDITIONS" not in broken
+
+    def test_the_banner_text_is_not_truncated_mid_url(self) -> None:
+        """UX A1: v1 cut the failure string at 200 characters and ended mid-URL
+        at `?query=%22S`, so the mangled text was in the source before it was
+        ever drawn."""
+        from targetring.invariants import InvariantReport, Result
+        url = ("https://www.ebi.ac.uk/europepmc/webservices/rest/search"
+               "?query=%22SERPINA1%22&format=json&pageSize=1")
+        rep = InvariantReport([Result("I5", "literature", "FAIL",
+                                      f"HTTP 503 from {url} while checking the echo")])
+        line = rep.banner_lines()[0]
+        assert "http" not in line
+        assert "%22S" not in line
+        assert "[url in the manifest]" in line
+        assert not line.endswith("…"), "short enough to need no truncation at all"
+
+    def test_a_long_detail_is_cut_on_a_word_boundary(self) -> None:
+        from targetring.invariants import InvariantReport, Result
+        rep = InvariantReport([Result("I1", "cells", "FAIL", "wordy " * 80)])
+        line = rep.banner_lines()[0]
+        assert line.endswith("…") and not line.endswith("wor …")
+
+
+class TestV11ReplayedEchoIsNotACheckedEcho:
+    """COUNCIL V11. v1 reported `I5 PASS — 14 Europe PMC echo(es) byte-identical`
+    off a warm cache while EBI was returning 503 to every live request."""
+
+    def _i5(self, audit):
+        from targetring.invariants import _i5_literature
+        return _i5_literature(audit)
+
+    def test_replays_alone_do_not_pass(self) -> None:
+        r = self._i5({"echo_live": 0, "echo_replayed": 14, "ncbi_checked": 14,
+                      "echo_mismatches": [], "ncbi_errors": [],
+                      "unreachable": ["SERPINA1: HTTP 503"]})
+        assert r.outcome == "NOT_EVALUATED"
+        assert "replayed" in r.detail and "14" in r.detail
+
+    def test_one_live_echo_is_enough_to_check(self) -> None:
+        r = self._i5({"echo_live": 1, "echo_replayed": 13, "ncbi_checked": 14,
+                      "echo_mismatches": [], "ncbi_errors": []})
+        assert r.outcome == "PASS"
+        assert "1 Europe PMC echo(es) checked live" in r.detail
+        assert "13 more replayed from cache and not counted" in r.detail
+
+    def test_a_mismatch_is_still_a_failure_however_it_arrived(self) -> None:
+        r = self._i5({"echo_live": 0, "echo_replayed": 5, "ncbi_checked": 5,
+                      "echo_mismatches": ["BRAF: reinterpreted"], "ncbi_errors": []})
+        assert r.outcome == "FAIL"
+
+
+class TestI7HeadlineEligibility:
+    """COUNCIL V2/V3, the new invariant. It would have caught the original
+    defect: a gene whose only Pareto axis was druggability=1.0 reached the front
+    and ejected two genes that had all four."""
+
+    def _audit(self, **kw):
+        base = {
+            "axes": ["druggability", "safety", "regional_specificity", "clinical_phase"],
+            "front": ["AAA"], "front_pareto_k": {"AAA": 4, "BBB": 2},
+            "n_eligible": 1, "n_ineligible": 1, "diamond_genes": ["AAA"],
+        }
+        base.update(kw)
+        return base
+
+    def _run(self, rendered, audit):
+        res, svg = rendered
+        rep = check_all(svg_path=svg, csv_rows=res.csv_rows, gene_order=GENES,
+                        input_count=6, rendered_count=4, ledger_count=2,
+                        pareto_audit=audit)
+        return next(r for r in rep.results if r.id == "I7")
+
+    def test_passes_when_every_front_member_has_every_axis(self, rendered) -> None:
+        i7 = self._run(rendered, self._audit())
+        assert i7.outcome == "PASS"
+        assert "1 gene(s) ineligible" in i7.detail
+
+    def test_fails_when_a_one_axis_gene_reaches_the_front(self, rendered) -> None:
+        i7 = self._run(rendered, self._audit(
+            front=["AAA", "ONEAXIS"],
+            front_pareto_k={"AAA": 4, "ONEAXIS": 1},
+            diamond_genes=["AAA", "ONEAXIS"]))
+        assert i7.outcome == "FAIL"
+        assert "ONEAXIS" in i7.detail and "every axis" in i7.detail
+
+    def test_fails_when_the_figure_and_the_ranking_disagree(self, rendered) -> None:
+        """Checked in the artefact, like I1-I3: a rendering bug must not be able
+        to put a headline marker on a gene the ranking says is ineligible."""
+        i7 = self._run(rendered, self._audit(diamond_genes=["AAA", "BBB"]))
+        assert i7.outcome == "FAIL"
+        assert "diamond" in i7.detail
+
+    def test_absent_audit_is_not_evaluated_not_passed(self, rendered) -> None:
+        i7 = self._run(rendered, None)
+        assert i7.outcome == "NOT_EVALUATED"
+
+    def test_i7_is_in_the_manifest_pass_fail_list(self, rendered) -> None:
+        res, svg = rendered
+        rep = check_all(svg_path=svg, csv_rows=res.csv_rows, gene_order=GENES,
+                        input_count=6, rendered_count=4, ledger_count=2,
+                        regression={"ok": True, "detail": "x"},
+                        literature_audit={"echo_live": 1, "ncbi_checked": 1,
+                                          "echo_mismatches": [], "ncbi_errors": []},
+                        pareto_audit=self._audit())
+        ids = [r["id"] for r in rep.as_json()]
+        assert ids == ["I1", "I2", "I3", "I4", "I5", "I6", "I7"]
+        assert rep.ok, rep.banner_lines() + rep.condition_lines()
+
+    def test_the_diamond_is_readable_back_out_of_the_svg(self, tmp_path: Path) -> None:
+        from targetring.invariants import diamond_genes
+        spec = _spec()
+        rankings = rank_genes(spec)
+        rankings["AAA"].pareto = True
+        render(genes=GENES, cells_by_ring=spec, rankings=rankings, region="Lung",
+               out_svg=tmp_path / "d.svg", input_count=4, rendered_count=4,
+               ledger_counts={}, gene_flags={"AAA": ["Torsades de Point"]})
+        want = sorted(g for g, r in rankings.items() if r.pareto)
+        assert sorted(diamond_genes(tmp_path / "d.svg")) == want
+        assert "AAA" in want, "the ⚠ liability marker must not hide the diamond"

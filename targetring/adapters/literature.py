@@ -154,6 +154,27 @@ def _year_list_to_dict(node: Any) -> dict[str, int]:
     return {}
 
 
+@dataclass
+class EPMCResult:
+    """COUNCIL V11: a replayed echo is not a checked echo.
+
+    v1 returned `(query, count, echo_ok, error)` with no way to tell a live
+    assertion from a cache hit, so I5 reported "14 echoes byte-identical" while
+    EBI was 503-ing every request. `live` says which it was, and invariant I5
+    will not PASS on replays alone.
+    """
+
+    query: str
+    count: int | None = None
+    echo_ok: bool | None = None
+    error: str | None = None
+    live: bool = False
+
+    def __iter__(self):
+        """Backwards-compatible with the 4-tuple v1 returned."""
+        return iter((self.query, self.count, self.echo_ok, self.error))
+
+
 class EuropePMCAdapter:
     """Context count only, with the echo assertion of QA B3 rule 1."""
 
@@ -163,7 +184,7 @@ class EuropePMCAdapter:
         self.http = http
         self.cache = cache
 
-    async def fetch_one(self, symbol: str, region: str | None = None) -> tuple[str, int | None, bool | None, str | None]:
+    async def fetch_one(self, symbol: str, region: str | None = None) -> EPMCResult:
         q = validate_query(f'"{symbol}" AND "{region}"' if region else f'"{symbol}"')
         cached = self.cache.get(self.source, q)
         if cached is None:
@@ -173,21 +194,26 @@ class EuropePMCAdapter:
                 )
                 body = json_or_raise(r)
             except Exception as e:  # noqa: BLE001
-                return q, None, None, str(e)
+                return EPMCResult(q, error=str(e))
             echo = (body.get("request") or {}).get("queryString")
             echo_ok = echo == q
             if not echo_ok:
                 # Silent reinterpretation. Hard failure per QA B3.
-                return q, None, False, (
+                return EPMCResult(q, echo_ok=False, live=True, error=(
                     f"Europe PMC echoed {echo!r} for the query {q!r}; the term was silently "
                     f"reinterpreted, so the count is not the count for this gene."
-                )
+                ))
             hit = body.get("hitCount")
             if not isinstance(hit, int):
-                return q, None, True, f"no integer hitCount (keys: {sorted(body)})"
+                return EPMCResult(q, echo_ok=True, live=True,
+                                  error=f"no integer hitCount (keys: {sorted(body)})")
             cached = {"count": hit, "echo_ok": True}
             self.cache.put(self.source, q, cached)
-        return q, cached["count"], cached["echo_ok"], None
+            # Asserted against a response that arrived in this run.
+            return EPMCResult(q, hit, True, None, live=True)
+        # Replayed from disk. The echo held when it was stored; it was not
+        # checked now, and I5 must not count it as if it had been.
+        return EPMCResult(q, cached["count"], cached["echo_ok"], None, live=False)
 
 
 def literature_cell(rec: LiteratureRecord) -> Cell:
@@ -206,6 +232,6 @@ def literature_cell(rec: LiteratureRecord) -> Cell:
 
 
 __all__ = [
-    "PubTatorAdapter", "EuropePMCAdapter", "LiteratureRecord", "literature_cell",
+    "PubTatorAdapter", "EuropePMCAdapter", "EPMCResult", "LiteratureRecord", "literature_cell",
     "validate_query", "pubtator_gene_query", "QueryRejected",
 ]

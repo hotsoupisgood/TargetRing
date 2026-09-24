@@ -81,17 +81,35 @@ function fail(msg) {
 function render(b) {
   $("#result").hidden = false;
 
-  const failing = b.invariants.filter((i) => i.outcome !== "PASS");
+  // UX A1: two channels, matching the figure. Red = an invariant was checked
+  // and did not hold, so the data is wrong. Amber = a check could not be run or
+  // a source was down, which is not the same fact and must not look the same.
+  const failed = b.invariants.filter((i) => i.outcome === "FAIL");
+  const unchecked = b.invariants.filter((i) => i.outcome === "NOT_EVALUATED");
   const contractFails = (b.contracts || []).filter((c) => !c.ok);
   const banner = $("#banner");
-  if (failing.length || contractFails.length) {
+  if (failed.length || contractFails.length) {
     banner.hidden = false;
     banner.textContent =
       "DO NOT TRUST THIS FIGURE — " +
-      failing.map((i) => `${i.id} ${i.name}: ${i.outcome}`).join(" · ") +
-      contractFails.map((c) => ` · contract ${c.check} FAILED`).join("");
+      failed.map((i) => `${i.id} ${i.name}: FAIL`).join(" · ") +
+      contractFails.map((c) => ` · source contract ${c.check} FAILED`).join("");
   } else {
     banner.hidden = true;
+  }
+
+  const conds = $("#conditions");
+  const condLines = unchecked
+    .map((i) => `${i.id} ${i.name}: not checked${i.affects ? " — " + i.affects : ""}`)
+    .concat((b.run_conditions || []).map((c) => `${c.condition} — ${c.affects}`));
+  if (condLines.length) {
+    conds.hidden = false;
+    conds.innerHTML =
+      `<b>Run conditions — not an invariant failure.</b> These checks could not be run;
+       each line says what it affects.<ul class="tight">` +
+      condLines.map((l) => `<li>${esc(l)}</li>`).join("") + `</ul>`;
+  } else {
+    conds.hidden = true;
   }
 
   $("#counts").innerHTML =

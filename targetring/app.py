@@ -121,6 +121,12 @@ def _summarise(r) -> dict[str, Any]:
         },
         "invariants": m.invariants,
         "all_invariants_pass": m.all_invariants_pass,
+        # UX A1: distinct from all_invariants_pass. A NOT_EVALUATED run is not
+        # a pass, but it is not a failure either, and the UI must not conflate
+        # the two.
+        "any_invariant_failed": m.any_invariant_failed,
+        "run_conditions": m.run_conditions,
+        "pareto_completeness": m.pareto_completeness,
         "contracts": m.contracts,
         "warnings": m.warnings,
         "ledger": m.ledger,

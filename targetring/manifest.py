@@ -66,10 +66,20 @@ class Manifest:
     not_attempted: list[str] = field(default_factory=list)
     environment: dict[str, str] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+    # COUNCIL V3 / UX A1. Run conditions are not invariant failures and are
+    # recorded separately so the two can never be confused in an audit.
+    pareto_completeness: dict[str, Any] = field(default_factory=dict)
+    run_conditions: list[dict[str, str]] = field(default_factory=list)
 
     @property
     def all_invariants_pass(self) -> bool:
         return all(i["outcome"] == "PASS" for i in self.invariants)
+
+    @property
+    def any_invariant_failed(self) -> bool:
+        """UX A1: the question the red banner answers. Distinct from
+        `all_invariants_pass`, which a NOT_EVALUATED result also makes false."""
+        return any(i["outcome"] == "FAIL" for i in self.invariants)
 
     def write(self, path: Path) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -109,6 +119,8 @@ def build(
     timings: dict[str, float],
     sources: dict[str, Any] | None = None,
     warnings: list[str] | None = None,
+    pareto_completeness: dict[str, Any] | None = None,
+    run_conditions: list[dict[str, str]] | None = None,
 ) -> Manifest:
     return Manifest(
         run_id=run_id,
@@ -134,6 +146,8 @@ def build(
             "max_concurrency_per_host": str(config.MAX_CONCURRENCY_PER_HOST),
         },
         warnings=warnings or [],
+        pareto_completeness=pareto_completeness or {},
+        run_conditions=run_conditions or [],
     )
 
 

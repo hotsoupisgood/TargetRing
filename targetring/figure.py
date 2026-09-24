@@ -125,6 +125,7 @@ def render(
     rendered_count: int,
     ledger_counts: dict[str, int],
     invariant_failures: Sequence[str] = (),
+    run_conditions: Sequence[str] = (),
     weights: dict[str, float] | None = None,
     ranked_rings: Sequence[str] = (),
     gene_flags: dict[str, list[str]] | None = None,
@@ -223,6 +224,8 @@ def render(
     _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring, gene_flags)
     if invariant_failures:
         _draw_banner(fig, invariant_failures)
+    if run_conditions:
+        _draw_conditions(fig, run_conditions)
 
     out_svg.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_svg, format="svg")
@@ -333,13 +336,43 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
 
 
 def _draw_banner(fig, failures: Sequence[str]) -> None:
-    """A failed invariant must be visible on the morning screenshot."""
+    """An invariant that was checked and did not hold. The data is wrong.
+
+    This is the loud one, and it is drawn across the rings on purpose: a figure
+    whose invariants are violated must not be readable. It fires on FAIL only --
+    see `_draw_conditions` and UX A1 for why.
+    """
     text = "INVARIANT FAILURE — DO NOT TRUST THIS FIGURE\n" + "\n".join(
         f"• {f}" for f in list(failures)[:6]
     )
     fig.text(0.5, 0.5, text, fontsize=15, ha="center", va="center", color="#ffffff",
              weight="bold", zorder=1000,
              bbox={"facecolor": "#b00020", "alpha": 0.95, "pad": 16, "edgecolor": "#000000"})
+
+
+def _draw_conditions(fig, conditions: Sequence[str]) -> None:
+    """UX A1 / COUNCIL V3 / V11 -- what could not be checked, and what it affects.
+
+    A source being down and an invariant being violated are different facts and
+    must not render identically. v1 collapsed them: a Europe PMC outage -- a
+    source that sets no ring value at all, as the app's own amber note said
+    directly underneath -- stamped INVARIANT FAILURE / DO NOT TRUST THIS FIGURE
+    across the middle of the export. Cry wolf twice and the banner stops working
+    the day it is real.
+
+    So this notice differs in every channel a reader uses: amber not red,
+    "NOT CHECKED" not "FAILURE", below the rings rather than across them, and
+    each line carries its own consequence.
+    """
+    text = (
+        "RUN CONDITIONS - not an invariant failure. These checks could not be run; "
+        "each line says what that affects.\n"
+        + "\n".join(f"\u2022 {c}" for c in list(conditions)[:6])
+    )
+    fig.text(0.5, 0.125, text, fontsize=7.5, ha="center", va="top", color="#4a3000",
+             zorder=900,
+             bbox={"facecolor": "#ffe9b8", "alpha": 0.97, "pad": 7,
+                   "edgecolor": "#c98a00", "linewidth": 1.2})
 
 
 __all__ = ["render", "RING_SPECS", "STATE_STYLE", "VALUE_CMAP", "FigureResult",
