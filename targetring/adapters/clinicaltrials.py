@@ -113,6 +113,14 @@ class CTDrug:
     n_stopped: int | None = None
     live_rows: list[dict[str, Any]] = field(default_factory=list)
     stopped_rows: list[dict[str, Any]] = field(default_factory=list)
+    # v2.3 item 2. The NCT ids behind the three counts, in the order CT.gov
+    # returned them. They come off the same page the counts are read from, so
+    # this is still one request per drug -- no extra call and no extra
+    # rate-limit exposure. They exist so the drawer can report DISTINCT TRIALS
+    # for a target instead of summing drug-trial pairs across its drugs.
+    nct_ids: list[str] = field(default_factory=list)
+    live_ids: list[str] = field(default_factory=list)
+    stopped_ids: list[str] = field(default_factory=list)
     error: str | None = None
     # False when CT.gov holds more studies for this drug than the page budget
     # read. The counts are then a floor, never a total: they can still
@@ -172,13 +180,22 @@ def intervention_query(drug: str) -> str:
 
 
 def summarise(studies: list[dict[str, Any]]) -> dict[str, Any]:
-    """Split one drug's studies into the two buckets the ring reads."""
+    """Split one drug's studies into the two buckets the ring reads.
+
+    v2.3 item 2 also carries the NCT ids out, because the drawer needs to
+    de-duplicate across a target's drugs and cannot do that from counts.
+    """
     live = [s for s in studies if s["status"] in LIVE_STATUSES]
     stopped = [s for s in studies if s["status"] in STOPPED_STATUSES]
+
+    def ids(rows: list[dict[str, Any]]) -> list[str]:
+        return [str(s["nct_id"]) for s in rows if s.get("nct_id")]
+
     return {
         "n_live": len(live), "n_stopped": len(stopped),
         "live_rows": live[:CTGOV_ROWS_PER_BUCKET],
         "stopped_rows": stopped[:CTGOV_ROWS_PER_BUCKET],
+        "nct_ids": ids(studies), "live_ids": ids(live), "stopped_ids": ids(stopped),
     }
 
 
@@ -242,6 +259,9 @@ class CTGovAdapter:
         rec.n_stopped = parsed["n_stopped"]
         rec.live_rows = parsed["live_rows"]
         rec.stopped_rows = parsed["stopped_rows"]
+        rec.nct_ids = parsed["nct_ids"]
+        rec.live_ids = parsed["live_ids"]
+        rec.stopped_ids = parsed["stopped_ids"]
         return rec
 
     async def _studies(self, query: str) -> dict[str, Any]:
@@ -358,10 +378,11 @@ def activity_cell(
     source_note = (
         f" Counted on {SOURCE_LABEL}, per drug via query.intr, NOT the AACT population "
         f"this ring used before 2026-09-24 — the two are different populations and the "
-        f"numbers are not continuous with it. Counts are drug-trial pairs summed over "
-        f"this target's drugs, not distinct NCT ids: a trial testing two of them is "
-        f"counted twice. The RING is a three-state reading and does not depend on the "
-        f"magnitude."
+        f"numbers are not continuous with it. The counts in THIS cell are drug-trial pairs "
+        f"summed over this target's drugs, not distinct NCT ids: a trial testing two of "
+        f"them is counted twice. The drawer reports both, de-duplicated to distinct NCT "
+        f"ids (v2.3 item 2). The RING is a three-state reading and does not depend on "
+        f"the magnitude."
     )
     incomplete = ""
     if broken or missing:
@@ -433,28 +454,67 @@ def activity_cell(
 
 
 def drawer_trials(drug_names: list[str], by_drug: dict[str, CTDrug]) -> dict[str, Any]:
-    """Sponsor and live status for the drawer.
+    """Sponsor and live status for the drawer, de-duplicated to distinct NCT ids.
 
     Puck's second hard condition: "sponsor plus live status must reach the
     drawer, since that is what tells the user a target is crowded." So the
     drawer gets, per drug, the exact counts and the named sponsors of the live
     trials, plus the stopped trials with their free-text reasons.
+
+    **v2.3 item 2.** Until 2026-09-24 the target-level figure a reader could
+    form from this panel was a sum of per-drug counts, i.e. drug-trial *pairs*:
+    a trial testing two of a target's drugs was counted twice, and BRAF's
+    eighteen agents overlap heavily (docs/V2-REPORT.md §v2.2, *Still open* 4).
+    The ids come off the same page as the counts, so the fix costs no extra
+    request. Both numbers are reported, because they answer different questions
+    -- "how much trial activity touches this target's drugs" and "how many
+    trials are there" -- and because the panel has already been read once with
+    only the first of them on it.
+
+    Per-drug totals are unchanged by definition: one drug's query returns one
+    row per study. `n_distinct` is carried anyway so that claim is *checked*
+    rather than assumed, and `pairs_vs_distinct` names the difference wherever
+    there is one.
     """
     rows = []
     sponsor_counts: dict[str, int] = {}
+    seen_all: list[str] = []
+    seen_live: list[str] = []
+    seen_stopped: list[str] = []
+    n_pairs = n_pairs_live = n_pairs_stopped = 0
+    truncated: list[str] = []
+    unanswered: list[str] = []
     for name in drug_names:
         rec = by_drug.get(name)
         if rec is None:
             rows.append({"drug": name, "error": "not hopped (budget or no name)"})
+            unanswered.append(name)
             continue
+        if not rec.ok:
+            unanswered.append(name)
+        if rec.ok and not rec.complete:
+            truncated.append(rec.drug)
         for s in rec.sponsors:
             sponsor_counts[s] = sponsor_counts.get(s, 0) + 1
+        n_pairs += rec.n_total or 0
+        n_pairs_live += rec.n_live or 0
+        n_pairs_stopped += rec.n_stopped or 0
+        seen_all.extend(rec.nct_ids)
+        seen_live.extend(rec.live_ids)
+        seen_stopped.extend(rec.stopped_ids)
         rows.append({
             "drug": rec.drug,
             "query": rec.query,
             "n_trials": rec.n_total,
             "n_live": rec.n_live,
             "n_stopped": rec.n_stopped,
+            # Distinct ids seen on this drug's own page. Equal to the counts
+            # unless CT.gov repeats a study, or unless the page was truncated
+            # (`complete` False), in which case the ids are a floor.
+            "n_distinct": len(set(rec.nct_ids)),
+            "n_distinct_live": len(set(rec.live_ids)),
+            "n_distinct_stopped": len(set(rec.stopped_ids)),
+            "complete": rec.complete,
             "sponsors": rec.sponsors[:6],
             "live": [
                 {"nct_id": r["nct_id"], "status": r["status"], "sponsor": r["sponsor"],
@@ -470,6 +530,23 @@ def drawer_trials(drug_names: list[str], by_drug: dict[str, CTDrug]) -> dict[str
             "error": rec.error,
         })
     rows.sort(key=lambda r: (-(r.get("n_live") or 0), -(r.get("n_trials") or 0)))
+
+    distinct = len(set(seen_all))
+    distinct_live = len(set(seen_live))
+    distinct_stopped = len(set(seen_stopped))
+    # A trial can be live for one of a target's drugs and terminated for
+    # another, so the two id sets can intersect. Reported rather than resolved:
+    # picking a winner would be a judgement this build has no basis for.
+    both = len(set(seen_live) & set(seen_stopped))
+
+    floor = ""
+    if truncated:
+        floor = (f" {len(truncated)} drug(s) returned more studies than one page holds "
+                 f"({', '.join(truncated[:3])}), so the distinct counts are a FLOOR.")
+    if unanswered:
+        floor += (f" {len(unanswered)} drug(s) did not answer, so no id list exists for "
+                  f"them: {', '.join(unanswered[:3])}.")
+
     return {
         "source": SOURCE_LABEL,
         "endpoint": CTGOV_STUDIES,
@@ -480,6 +557,28 @@ def drawer_trials(drug_names: list[str], by_drug: dict[str, CTDrug]) -> dict[str
             "`whyStopped` is free text and is NOT categorised: a stop shown here may be "
             "administrative, and 7 of 8 BRAF terminations say nothing about the target."
         ),
+        # v2.3 item 2. Stated at the top of the panel, because the panel read
+        # differently before 2026-09-24 and a reader who saw it then would
+        # otherwise think the numbers had simply changed.
+        "dedup_note": (
+            f"TARGET TOTALS ARE DISTINCT NCT IDS (new, 2026-09-24). Summing the per-drug "
+            f"rows below gives {n_pairs} drug-trial PAIRS; the same trials are "
+            f"{distinct} DISTINCT studies, because a trial testing two of this target's "
+            f"drugs appears in both rows. Live: {n_pairs_live} pairs = {distinct_live} "
+            f"distinct. Stopped early: {n_pairs_stopped} pairs = {distinct_stopped} "
+            f"distinct." + (f" {both} study/studies are live for one drug and stopped for "
+                            f"another and are counted in both." if both else "")
+            + " Per-drug rows are unchanged: one drug's query returns one row per study."
+            + floor
+        ),
+        "n_pairs": n_pairs,
+        "n_pairs_live": n_pairs_live,
+        "n_pairs_stopped": n_pairs_stopped,
+        "n_distinct_trials": distinct,
+        "n_distinct_live": distinct_live,
+        "n_distinct_stopped": distinct_stopped,
+        "n_live_and_stopped": both,
+        "distinct_is_a_floor": bool(truncated or unanswered),
         "lead_sponsors": sorted(sponsor_counts, key=lambda s: (-sponsor_counts[s], s))[:12],
         "n_lead_sponsors": len(sponsor_counts),
         "drugs": rows,

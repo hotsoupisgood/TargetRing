@@ -342,15 +342,29 @@ function drawerHtml(d) {
     h += `<h4>trials — ${esc(tr.source)}</h4>
       <p class="summary-line">${tr.n_lead_sponsors || 0} distinct lead sponsor(s)
         across this target's drugs${(tr.lead_sponsors || []).length
-          ? ": " + tr.lead_sponsors.slice(0, 6).map(esc).join(", ") : ""}.</p>
-      <div class="note">${esc(tr.note || "")}</div>`;
+          ? ": " + tr.lead_sponsors.slice(0, 6).map(esc).join(", ") : ""}.</p>`;
+    // v2.3 item 2. The target-level totals are DISTINCT NCT ids; the sum of the
+    // rows below is drug-trial pairs. Both are shown and the note says which is
+    // which, because this panel was read once with only the pair count on it.
+    if (tr.n_distinct_trials !== undefined) {
+      h += `<p class="summary-line"><b>${tr.n_distinct_trials}</b> distinct trial(s)
+        <span class="hint">(${tr.n_pairs} drug-trial pairs)</span> ·
+        <b>${tr.n_distinct_live}</b> live <span class="hint">(${tr.n_pairs_live} pairs)</span> ·
+        <b>${tr.n_distinct_stopped}</b> stopped early
+        <span class="hint">(${tr.n_pairs_stopped} pairs)</span>${
+          tr.distinct_is_a_floor ? " — <b>a floor</b>" : ""}</p>
+        <div class="note">${esc(tr.dedup_note || "")}</div>`;
+    }
+    h += `<div class="note">${esc(tr.note || "")}</div>`;
     if (trDrugs.length) {
       h += `<div class="scroll-x"><table><thead><tr><th>Drug</th><th>Trials</th>
         <th>Live</th><th>Stopped early</th><th>Lead sponsors (live)</th>
         <th>Live example</th></tr></thead><tbody>` +
         trDrugs.map((r) => `<tr>
           <td><b>${esc(r.drug)}</b><br><span class="hint"><code>${esc(r.query || "")}</code></span></td>
-          <td>${r.error ? "—" : r.n_trials}</td>
+          <td>${r.error ? "—" : r.n_trials}${
+            !r.error && r.n_distinct !== undefined && r.n_distinct !== r.n_trials
+              ? ` <span class="hint">(${r.n_distinct} distinct on the page)</span>` : ""}</td>
           <td>${r.error ? "—" : r.n_live}</td>
           <td>${r.error ? "—" : r.n_stopped}</td>
           <td>${esc((r.sponsors || []).slice(0, 3).join("; ") || "—")}</td>

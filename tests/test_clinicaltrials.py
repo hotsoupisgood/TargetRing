@@ -31,20 +31,30 @@ from targetring.config import CTGOV_STUDIES
 from targetring.http import HardFailure, Http, RateLimited
 
 
-def drug(name="DRUGA", *, live=0, stopped=0, total=None, error=None, complete=True) -> CTDrug:
+def drug(name="DRUGA", *, live=0, stopped=0, total=None, error=None, complete=True,
+         first=0) -> CTDrug:
+    """One synthetic CT.gov answer.
+
+    `first` shifts the NCT ids, so two drugs can be given overlapping or
+    disjoint trial sets — which is what v2.3 item 2's de-duplication is about.
+    Left at 0 the ids are identical between drugs, i.e. total overlap.
+    """
     rows_live = [{"nct_id": f"NCT{i:08d}", "status": "RECRUITING",
                   "sponsor": f"Sponsor {i}", "conditions": ["X"], "phases": ["PHASE2"],
-                  "why_stopped": None, "url": None} for i in range(live)]
+                  "why_stopped": None, "url": None} for i in range(first, first + live)]
     rows_stopped = [{"nct_id": f"NCT9{i:07d}", "status": "TERMINATED",
                      "sponsor": "Stopper Inc", "conditions": ["X"], "phases": ["PHASE1"],
                      "why_stopped": "slow accrual led to early closure.", "url": None}
-                    for i in range(stopped)]
+                    for i in range(first, first + stopped)]
     return CTDrug(
         name, f'"{name}"',
         n_total=(live + stopped if total is None else total) if error is None else None,
         n_live=live if error is None else None,
         n_stopped=stopped if error is None else None,
         live_rows=rows_live, stopped_rows=rows_stopped, error=error, complete=complete,
+        nct_ids=[r["nct_id"] for r in rows_live + rows_stopped],
+        live_ids=[r["nct_id"] for r in rows_live],
+        stopped_ids=[r["nct_id"] for r in rows_stopped],
     )
 
 
@@ -117,6 +127,67 @@ class TestSponsorAndLiveStatusReachTheDrawer:
     def test_the_ring_detail_also_names_sponsors(self) -> None:
         c = activity_cell(["A"], {"A": drug("A", live=2)}, drug_count=1)
         assert "lead sponsor" in c.detail and "Sponsor 0" in c.detail
+
+
+class TestDrawerCountsAreDistinctNCTIds:
+    """v2.3 item 2. The per-drug counts are drug-trial pairs, so summing them
+    over a target's drugs double-counts any trial testing two of them --
+    docs/V2-REPORT.md §v2.2, *Still open* 4. The ids come off the same page the
+    counts do, so the fix costs no extra request."""
+
+    def test_two_drugs_in_the_same_trials_count_once(self) -> None:
+        # Identical id sets: 3 live pairs + 3 live pairs, 3 distinct trials.
+        d = drawer_trials(["A", "B"], {"A": drug("A", live=3), "B": drug("B", live=3)})
+        assert d["n_pairs_live"] == 6
+        assert d["n_distinct_live"] == 3
+        assert d["n_pairs"] == 6 and d["n_distinct_trials"] == 3
+
+    def test_disjoint_trials_are_not_collapsed(self) -> None:
+        d = drawer_trials(["A", "B"],
+                          {"A": drug("A", live=3), "B": drug("B", live=3, first=100)})
+        assert d["n_pairs_live"] == d["n_distinct_live"] == 6
+
+    def test_partial_overlap_lands_between_the_two(self) -> None:
+        d = drawer_trials(["A", "B"],
+                          {"A": drug("A", live=4), "B": drug("B", live=4, first=2)})
+        assert d["n_pairs_live"] == 8
+        assert d["n_distinct_live"] == 6
+
+    def test_per_drug_rows_are_unchanged(self) -> None:
+        """One drug's query returns one row per study, so its own counts were
+        never inflated. Checked rather than assumed."""
+        d = drawer_trials(["A", "B"], {"A": drug("A", live=3), "B": drug("B", live=3)})
+        for row in d["drugs"]:
+            assert row["n_distinct"] == row["n_trials"]
+            assert row["n_distinct_live"] == row["n_live"]
+
+    def test_a_trial_live_for_one_drug_and_stopped_for_another_is_reported(self) -> None:
+        """Not resolved — picking a winner is a judgement this build cannot make."""
+        a = drug("A", live=2)
+        b = drug("B", stopped=2)
+        b.stopped_ids = list(a.live_ids)
+        d = drawer_trials(["A", "B"], {"A": a, "B": b})
+        assert d["n_live_and_stopped"] == 2
+        assert "live for one drug and stopped for another" in d["dedup_note"]
+
+    def test_the_panel_says_which_number_is_which(self) -> None:
+        """It changes numbers on a panel that has already been read."""
+        d = drawer_trials(["A", "B"], {"A": drug("A", live=3), "B": drug("B", live=3)})
+        note = d["dedup_note"]
+        assert "DISTINCT NCT IDS" in note
+        assert "6 drug-trial PAIRS" in note and "3 DISTINCT" in note
+        assert "Per-drug rows are unchanged" in note
+
+    def test_a_truncated_page_makes_the_distinct_count_a_floor(self) -> None:
+        d = drawer_trials(["A"], {"A": drug("A", live=2, total=9000, complete=False)})
+        assert d["distinct_is_a_floor"] is True
+        assert "FLOOR" in d["dedup_note"]
+
+    def test_an_unanswered_drug_makes_it_a_floor_too(self) -> None:
+        d = drawer_trials(["A", "B"],
+                          {"A": drug("A", live=2), "B": drug("B", error="boom")})
+        assert d["distinct_is_a_floor"] is True
+        assert "did not answer" in d["dedup_note"]
 
 
 class TestPartialAnswersResolveOneWay:
