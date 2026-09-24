@@ -63,8 +63,8 @@ class RingSpec:
 RING_SPECS: tuple[RingSpec, ...] = (
     RingSpec("logfc", "logFC (yours)", "submitted DE table"),
     RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table"),
-    RingSpec("druggability", "Druggability", "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, hasHighQualityChemicalProbes"),
-    RingSpec("safety", "Safety / tolerability", "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"),
+    RingSpec("druggability", "Druggability (prior effort + tractability)", "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, hasHighQualityChemicalProbes"),
+    RingSpec("safety", "Safety flags & constraint — NOT evidence of safety", "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"),
     RingSpec("regional_specificity", "Regional specificity", "GTEx v8 median TPM ratio"),
     RingSpec("clinical_phase", "Pipeline: furthest phase", "OT drugAndClinicalCandidates"),
     RingSpec("clinical_activity", "Pipeline: current activity", "OT clinicalReports (AACT rows only)"),

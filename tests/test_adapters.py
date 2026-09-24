@@ -46,15 +46,29 @@ class TestMissingIsNotLow:
             assert cell.state == "no_data"
             assert cell.value is None
 
-    def test_unscored_keys_are_not_averaged_in_as_zero(self) -> None:
+    def test_a_genuinely_unscored_key_yields_no_data_not_a_shorter_mean(self) -> None:
+        """Superseded by COUNCIL V4, and strengthened.
+
+        v1 asserted that a gene with one of four keys got `mean(1.0) = 1.0` and
+        a "1/4 keys" detail — i.e. a shorter mean. The council's V4 showed that
+        a shorter mean *is* imputation: dropping an absent key from a mean is
+        arithmetically identical to imputing it at the mean of the present ones.
+
+        The rule this test protects is unchanged — an unscored key is never
+        averaged in as zero — but the honest answer is now `no_data`, not a
+        number computed on a different denominator from every other gene's.
+        """
         full = ot(prioritisation={"hasLigand": 1.0, "hasPocket": 1.0,
                                   "hasSmallMoleculeBinder": 1.0,
                                   "hasHighQualityChemicalProbes": 1.0})
         partial = ot(prioritisation={"hasLigand": 1.0})
         assert druggability_cell(full).value == 1.0
-        # One key present, all of it positive: the mean is 1.0, not 0.25.
-        assert druggability_cell(partial).value == 1.0
-        assert "1/4 keys" in druggability_cell(partial).detail
+
+        cell = druggability_cell(partial)
+        assert cell.state == "no_data" and cell.value is None
+        assert "hasPocket" in cell.detail and "hasSmallMoleculeBinder" in cell.detail
+        # Specifically: not 0.25 (zero-filled) and not 1.0 (shorter mean).
+        assert "denominator would encode the answer" in cell.detail
 
     def test_no_keys_at_all_is_no_data(self) -> None:
         assert druggability_cell(ot(prioritisation={})).state == "no_data"
@@ -225,3 +239,129 @@ class TestChEMBLStates:
         ])
         assert len(rec.direct_mechanisms) == 2
         assert len(rec.efficacy_mechanisms) == 1
+
+
+# --- COUNCIL V4 / V8: sparse prioritisation keys ----------------------------
+
+class TestSparsePrioritisationKeys:
+    """COUNCIL V4 and V8.
+
+    `hasSafetyEvent` and `isCancerDriverGene` are emitted by Open Targets only
+    when they are negative; `hasHighQualityChemicalProbes` only when it is
+    positive. v1's `_mean_of_keys` averaged whichever keys were present, which
+    is arithmetically identical to imputing the absent ones at the mean of the
+    present ones -- so a clean gene's "Safety" ring was constraint and
+    essentiality alone, carrying no safety information, and rendered
+    indistinguishably from a real 4-key mean.
+    """
+
+    @staticmethod
+    def _rec(**prio):
+        from targetring.adapters.opentargets import OTRecord
+        return OTRecord("ENSG00000000001", found=True, prioritisation=dict(prio))
+
+    def test_the_denominator_is_always_four(self) -> None:
+        """V4's core: the denominator must stop encoding the answer."""
+        from targetring.adapters.opentargets import safety_cell
+        braf = self._rec(hasSafetyEvent=-1.0, isCancerDriverGene=-1.0,
+                         geneEssentiality=0.0, geneticConstraint=-0.93)
+        pcsk9 = self._rec(geneEssentiality=0.0, geneticConstraint=0.45)
+        for cell in (safety_cell(braf), safety_cell(pcsk9)):
+            assert cell.state == "value"
+            assert "mean of 4/4 keys" in cell.detail
+            assert len(cell.raw["keys"]) == 4
+
+    def test_a_clean_gene_no_longer_gets_a_two_key_mean(self) -> None:
+        from targetring.adapters.opentargets import safety_cell
+        pcsk9 = self._rec(geneEssentiality=0.0, geneticConstraint=0.45)
+        cell = safety_cell(pcsk9)
+        # v1: mean(0.0, 0.45) = +0.225, the constraint number wearing a safety
+        # ring's label. v2: mean(0, 0, 0, 0.45).
+        assert cell.value == pytest.approx(0.1125)
+        assert set(cell.raw["inferred_from_absence"]) == {
+            "hasSafetyEvent", "isCancerDriverGene"}
+
+    def test_the_cell_says_which_keys_were_read_and_which_inferred(self) -> None:
+        from targetring.adapters.opentargets import safety_cell
+        cell = safety_cell(self._rec(geneEssentiality=0.0, geneticConstraint=0.45))
+        assert "hasSafetyEvent=+0.00*" in cell.detail
+        assert "Absence of a record is not evidence" in cell.detail
+
+    def test_v8_the_probe_key_is_no_longer_arithmetically_inert(self) -> None:
+        """v1: BRAF mean(1,1,1,1) = 1.0 and PCSK9 mean(1,1,1) = 1.0. The one key
+        that separates a chemically-probed target from an unprobed one changed
+        nothing."""
+        from targetring.adapters.opentargets import druggability_cell
+        braf = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0,
+                         hasHighQualityChemicalProbes=1.0)
+        pcsk9 = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0)
+        assert druggability_cell(braf).value == pytest.approx(1.0)
+        assert druggability_cell(pcsk9).value == pytest.approx(0.75)
+        assert druggability_cell(braf).value > druggability_cell(pcsk9).value
+
+    def test_v8_the_probe_key_no_longer_reorders_genes_for_free(self) -> None:
+        """v1: DDR1 mean(1,0,1,1)=0.75 outranked KCNH2 mean(1,0,1)=0.667 purely
+        because DDR1's probe key existed. Both now score their own four keys."""
+        from targetring.adapters.opentargets import druggability_cell
+        ddr1 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0,
+                         hasHighQualityChemicalProbes=1.0)
+        kcnh2 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0)
+        assert druggability_cell(ddr1).value == pytest.approx(0.75)
+        assert druggability_cell(kcnh2).value == pytest.approx(0.50)
+
+    def test_no_prioritisation_record_is_no_data_not_a_default_mean(self) -> None:
+        """The sparse defaults must not manufacture a value for a target Open
+        Targets does not score at all."""
+        from targetring.adapters.opentargets import druggability_cell, safety_cell
+        empty = self._rec()
+        for cell in (safety_cell(empty), druggability_cell(empty)):
+            assert cell.state == "no_data"
+            assert "no prioritisation record" in cell.detail
+
+    def test_a_missing_dense_key_refuses_a_shorter_mean(self) -> None:
+        """If a key that is dense in the census goes absent, the denominator
+        would differ from every other gene's -- which is the V4 defect. Refuse."""
+        from targetring.adapters.opentargets import safety_cell
+        cell = safety_cell(self._rec(geneticConstraint=0.4, hasLigand=1.0))
+        assert cell.state == "no_data"
+        assert "geneEssentiality" in cell.detail
+        assert "denominator would encode the answer" in cell.detail
+
+
+@pytest.mark.live
+class TestSparseKeyCensusStillHolds:
+    """The mapping above is a claim about the live API. If Open Targets starts
+    emitting `hasSafetyEvent: 0` or `hasHighQualityChemicalProbes: 0`, the
+    absent-value mapping is no longer a measured negative and this must fail
+    rather than keep producing numbers."""
+
+    @pytest.mark.asyncio
+    async def test_sparse_keys_are_still_one_sided(self) -> None:
+        from targetring.adapters.opentargets import SPARSE_KEY_ABSENT_VALUE
+        from targetring.config import OPENTARGETS_URL
+        from targetring.http import Http, graphql
+        q = ("query P($ids:[String!]!){targets(ensemblIds:$ids)"
+             "{id prioritisation{items{key value}}}}")
+        ids = ["ENSG00000157764", "ENSG00000141510", "ENSG00000146648",
+               "ENSG00000169174", "ENSG00000055118", "ENSG00000198133",
+               "ENSG00000075624", "ENSG00000118271", "ENSG00000204580",
+               "ENSG00000113161", "ENSG00000142627", "ENSG00000012048"]
+        async with Http() as http:
+            d = await graphql(http, OPENTARGETS_URL, q, {"ids": ids})
+        seen: dict[str, set[float]] = {k: set() for k in SPARSE_KEY_ABSENT_VALUE}
+        n_present = {k: 0 for k in SPARSE_KEY_ABSENT_VALUE}
+        for t in d["targets"]:
+            prio = {i["key"]: float(i["value"])
+                    for i in (t.get("prioritisation") or {}).get("items", [])}
+            for k in seen:
+                if k in prio:
+                    seen[k].add(round(prio[k], 3))
+                    n_present[k] += 1
+        for k, absent_value in SPARSE_KEY_ABSENT_VALUE.items():
+            assert n_present[k] < len(d["targets"]), (
+                f"{k} is now dense ({n_present[k]}/{len(d['targets'])}); it is no longer a "
+                f"sparse-encoded key and SPARSE_KEY_ABSENT_VALUE must be revisited")
+            assert absent_value not in seen[k], (
+                f"Open Targets now emits {k}={absent_value} explicitly (observed "
+                f"{sorted(seen[k])}). Absence is no longer that value, so mapping it to "
+                f"{absent_value} would be imputation.")

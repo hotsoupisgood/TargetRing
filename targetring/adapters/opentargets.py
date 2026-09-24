@@ -81,6 +81,47 @@ DRUGGABILITY_KEYS = ("hasLigand", "hasPocket", "hasSmallMoleculeBinder",
                      "hasHighQualityChemicalProbes")
 SAFETY_KEYS = ("hasSafetyEvent", "geneEssentiality", "geneticConstraint", "isCancerDriverGene")
 
+# COUNCIL V4 / V8. Three prioritisation keys are emitted by Open Targets *only*
+# when the answer is one particular value. Dropping an absent key from a mean is
+# arithmetically identical to imputing it at the mean of the present keys, so
+# "never impute" held at the cell level and was broken inside the cell.
+#
+# Measured live 2026-09-24 over 24 targets (`/tmp/tr2/probe_prio.py`; the value
+# census is reproduced in `tests/test_adapters.py::TestSparsePrioritisationKeys`):
+#
+#     key                            present  absent  observed values
+#     hasSafetyEvent                       9      15  -1 x9
+#     isCancerDriverGene                   5      19  -1 x5
+#     hasHighQualityChemicalProbes         5      19  +1 x5
+#     hasLigand                           24       0   0 x11, 1 x13
+#     hasPocket                           24       0   0 x14, 1 x10
+#     hasSmallMoleculeBinder              24       0   0 x8,  1 x16
+#     geneEssentiality                    24       0  -1 x4,  0 x20
+#     geneticConstraint                   24       0  continuous
+#
+# The three sparse keys are binary fields with one end left unwritten, and that
+# end is 0.0 in every case: {-1, 0} for the two liability flags, {0, 1} for the
+# probe flag. So absence is a *measured* value, not a missing one, and is mapped
+# to 0.0 -- which makes the denominator 4 for every gene and stops it encoding
+# the answer.
+#
+# What this does NOT claim: that a gene with no `hasSafetyEvent` is safe. Open
+# Targets not holding a safety-event record is a fact about Open Targets. The
+# ring label and the cell detail say so; see COUNCIL V4 and `docs/V2-REPORT.md`.
+SPARSE_KEY_ABSENT_VALUE: dict[str, float] = {
+    "hasSafetyEvent": 0.0,          # absent  = no safety event in OT's sources
+    "isCancerDriverGene": 0.0,      # absent  = not in OT's cancer-driver list
+    "hasHighQualityChemicalProbes": 0.0,  # absent = no high-quality probe known
+}
+
+# Keys Open Targets scores for every target it has a prioritisation record for.
+# If none of these is present the gene has no prioritisation record at all, and
+# that is genuine `no_data` rather than a sparse encoding.
+DENSE_PRIORITISATION_KEYS = (
+    "geneEssentiality", "geneticConstraint", "hasLigand", "hasPocket",
+    "hasSmallMoleculeBinder", "tissueSpecificity", "tissueDistribution",
+)
+
 
 @dataclass
 class OTRecord:
@@ -186,19 +227,70 @@ def _from_payload(eid: str, payload: dict[str, Any] | None) -> OTRecord:
 # --- ring reductions --------------------------------------------------------
 
 
+def has_prioritisation_record(rec: OTRecord) -> bool:
+    """Does Open Targets score this target at all?
+
+    The discriminator between "sparsely encoded" and "nothing here". Every key in
+    DENSE_PRIORITISATION_KEYS was present for 24/24 targets in the live census,
+    so if none of them is present the target has no prioritisation record and
+    the sparse-key defaults must not be applied to it.
+    """
+    return any(k in rec.prioritisation for k in DENSE_PRIORITISATION_KEYS)
+
+
 def _mean_of_keys(rec: OTRecord, keys: tuple[str, ...], label: str) -> Cell:
+    """COUNCIL V4/V8: a 4-key mean for every gene, with absence decided per key.
+
+    v1 averaged whichever keys happened to be present. Because `hasSafetyEvent`
+    and `isCancerDriverGene` exist only when the news is bad, a clean gene's
+    "Safety" ring was the mean of essentiality and constraint alone -- a
+    constraint number carrying no safety information -- and was rendered
+    identically to a 4-key mean. On druggability the mirror image made
+    `hasHighQualityChemicalProbes` arithmetically inert: BRAF mean(1,1,1,1) and
+    PCSK9 mean(1,1,1) were both exactly 1.0.
+    """
     if not rec.found:
         return no_data(f"{rec.ensembl_id} not found in Open Targets")
-    present = [rec.prioritisation[k] for k in keys if k in rec.prioritisation]
-    if not present:
-        return no_data(f"none of the {label} prioritisation keys are scored for this gene")
-    # Stated reduction: unweighted mean of the available [-1,1] keys. Keys that
-    # are absent are absent -- they are not averaged in as zero.
+    if not has_prioritisation_record(rec):
+        return no_data(
+            f"Open Targets holds no prioritisation record for this target, so none of the "
+            f"{label} keys can be read. This is absence of a record, not a clean result."
+        )
+
+    used: dict[str, float] = {}
+    inferred: list[str] = []
+    unreadable: list[str] = []
+    for k in keys:
+        if k in rec.prioritisation:
+            used[k] = rec.prioritisation[k]
+        elif k in SPARSE_KEY_ABSENT_VALUE:
+            used[k] = SPARSE_KEY_ABSENT_VALUE[k]
+            inferred.append(k)
+        else:
+            unreadable.append(k)
+
+    if unreadable:
+        # A dense key went missing. The mean would have a different denominator
+        # from every other gene's, which is exactly the V4 defect, so refuse.
+        return no_data(
+            f"{label}: {', '.join(unreadable)} absent for this gene and not a sparse-encoded "
+            f"key, so a {len(keys)}-key mean cannot be formed. Refusing a shorter mean — the "
+            f"denominator would encode the answer (COUNCIL V4)."
+        )
+
+    detail = f"mean of {len(keys)}/{len(keys)} keys: " + ", ".join(
+        f"{k}={used[k]:+.2f}" + ("*" if k in inferred else "") for k in keys
+    )
+    if inferred:
+        detail += (
+            f" | * = key absent from the response. Open Targets emits "
+            f"{', '.join(inferred)} only at the non-zero end, so absence is that field's "
+            f"other value, not a missing measurement. Absence of a record is not evidence."
+        )
     return value(
-        sum(present) / len(present),
-        f"mean of {len(present)}/{len(keys)} keys: "
-        + ", ".join(f"{k}={rec.prioritisation[k]:+.2f}" for k in keys if k in rec.prioritisation),
-        raw={k: rec.prioritisation.get(k) for k in keys},
+        sum(used.values()) / len(keys),
+        detail,
+        raw={"keys": dict(used), "inferred_from_absence": inferred},
     )
 
 
