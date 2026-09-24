@@ -186,6 +186,16 @@ KCNH2   clinical_phase = 5.0 ⚠  4 recorded liabilities (Torsades de Point,
 BRAF    clinical_phase = 5.0    VEMURAFENIB × melanoma, genetics 0.699
 ```
 
+> **Correction, 2026-09-24 (§v2.1).** That BRAF line was not true of the code
+> when it was written, and QA-v2-retest §3 caught it. The value `5.0` is right;
+> the exemplar was not. The max-evidence tiebreak named **SORAFENIB TOSYLATE ×
+> lung cancer** — genetics 0.83 beat vemurafenib's 0.699 — and sorafenib is not
+> approved for lung cancer. That is a false clinical claim about a real drug,
+> printed by the figure that exists to prevent exactly that. It is fixed; BRAF
+> no longer names it. The exemplar BRAF prints today is not vemurafenib either.
+> See **§v2.1 Fix 2** for what it is, and for why the report was corrected
+> rather than the tiebreak.
+
 **Tests.** `TestV1IndicationAttribution` (9 tests) reproduces the council's EPHA2
 case verbatim, the sorafenib/RCC case `PLAN.md` names, the pan-cancer somatic
 floor, pathway membership, circular evidence alone, a trace-level score, and the

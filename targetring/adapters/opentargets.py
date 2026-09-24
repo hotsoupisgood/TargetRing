@@ -697,10 +697,17 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
         key=lambda t: max(t[2]["evidence"].values()),
     )
     n_drugs = len({t[1] for t in attributed})
+    n_at_top = sum(1 for t in attributed if t[0] == top)
     ev = ", ".join(f"{k} {v:.2f}" for k, v in sorted(hit["evidence"].items()))
+    # QA-v2-retest §3: the named row is an exemplar, and v2 printed it as though
+    # it were the finding. Saying how many links share the top stage stops one
+    # arbitrary winner of an evidence tiebreak from reading as "the" drug for
+    # this target.
+    example = (f", 1 of {n_at_top} attributable link(s) at this stage"
+               if n_at_top > 1 else "")
     detail = (
         f"{STAGE_LABEL[top]} for this indication — {drug} reached {STAGE_LABEL[top]} "
-        f"for {hit['name']}, which is attributable to this target ({ev}). "
+        f"for {hit['name']}, which is attributable to this target ({ev}{example}). "
         f"{n_drugs} of {rec.drug_count} candidates have an attributable indication"
     )
     if global_over_attributed > top:
