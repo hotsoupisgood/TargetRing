@@ -1,0 +1,79 @@
+# AGENTS.md — targetring
+
+A web app for target prioritisation. Input: a differential-expression result
+(gene symbol, logFC, adjusted p) plus a body region. Output: a Circos figure
+where the circle is the ranked gene set and each ring is a heatmap track;
+clicking a gene opens a drawer with its drug pipeline and its literature.
+Puck (Lucas Henry) owns it. It reproduces, automatically, a figure he used to
+build by hand at work.
+
+`PLAN.md` is the spec and the source of truth. The two reviews in
+`docs/reviews/` are binding, not advisory — they were commissioned before the
+build and every BLOCKING item in them is a build requirement.
+
+## The one rule that matters
+
+**A plausible wrong figure is the worst possible output.** It is worse than a
+crash, worse than an empty ring, worse than a slow page. Everything below is
+downstream of that.
+
+So: never impute a missing value, never zip arrays by position, never branch on
+HTTP status alone, never let a gene disappear without appearing in the drop
+ledger. When an invariant fails, render the banner on the figure — do not
+produce a clean-looking chart.
+
+## Hard rules
+
+1. **Missing is not low.** Every ring has four states: value, `no_data`,
+   `not_applicable`, `failed`. `no_data` renders as hatched grey and is never
+   filled, averaged, zeroed or imputed. Each gene carries *k* = how many rings
+   it actually has, printed on the figure.
+2. **Join by identifier, never by index.** Open Targets `targets()` drops genes
+   it cannot find and returns HTTP 200 with a shorter array, which silently
+   shifts every downstream spoke (`docs/reviews/QA-v0-plan.md` B2). Build
+   `{id: record}` and look up by requested id.
+3. **Every gene is accounted for.** `input == rendered + ledgered`, asserted in
+   code. The drop ledger names each gene and why. Counts are stamped on the
+   figure.
+4. **Verify the query came back unchanged.** Europe PMC echoes your query in
+   `request.queryString` — assert it byte-identical; one unbalanced quote
+   inflated a hit count 12× with HTTP 200. Treat an `ERROR` key anywhere in an
+   NCBI response as a hard failure whatever the status code.
+5. **Resolve identifiers once, before any ring.** Symbol → Ensembl (with the
+   exact GTEx gencode version) → UniProt → ChEMBL, with explicit `ambiguous`
+   and `no_match` states. A wrong gencode version returns empty and looks like
+   legitimate absence.
+6. **The rodent result is a lead, not a verdict.** Three levels only:
+   `asserted` / `asserted-negative` / `none found`, labelled "abstract asserts
+   target manipulation altered the phenotype (unverified)". Show the sentence
+   and the PMID. Never fold it into the score.
+7. **No weighted sum as the headline.** Rank within the submitted gene set,
+   report the Pareto non-dominated set as the headline and the weighted score
+   as a labelled convenience. Print the default weights on the figure.
+8. **Money.** The LLM triage is the only paid call. Cap $5 for this project,
+   separate from ytpt's ledger. Triage the top 10 genes or on click, never a
+   whole 200-gene list.
+9. **Rate limits are unmeasured.** Cap concurrency at 4 per host. Treat any 429
+   as a hard run failure — never a retry loop.
+10. **Nothing public.** Local only. No deploys, no public URLs, no data pushed
+    anywhere.
+
+## Every run writes a manifest
+
+UTC timestamp, git SHA, every source URL and schema version, model id and
+prompt hash, and PASS/FAIL per invariant — written next to the figure, so a
+screenshot is self-describing. A morning screenshot that cannot be audited is
+not a deliverable.
+
+## What is not claimed
+
+Overnight work produces a figure that is internally consistent and auditable.
+It does not produce a validated ranking. Triage precision is unmeasured until a
+human labels a gold set; the default weights are provisional until Puck signs
+them off. Say this on the figure, not only in the report.
+
+## Talking to Puck
+
+Brief and direct, numbers with units, uncertainty stated. Lead the report with
+what is broken, then what works. Separate "what I did" from "what you need to
+decide", each on its own line. No play-by-play.
