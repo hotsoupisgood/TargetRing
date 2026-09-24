@@ -1340,3 +1340,281 @@ is no PowerPoint, Illustrator or printer on this machine.
    panel you may already have read. *Cost: ~1 h.*
 3. Everything already in §6 and §v2.1, unchanged: the default weights, and
    licensing before any workplace use.
+
+---
+
+# v2.3 — the three changes you approved
+
+Wren II, 2026-09-24. Local only, nothing deployed, nothing pushed, no money
+spent (triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched, the
+OpenClaw gateway not restarted. Three commits, one per item.
+
+**Tests: 368 passed, 0 skipped, 0 failed** (the whole suite, live tests
+included). All seven invariants PASS on a clean cold run
+(`runs/V23-COUNCIL-COLD`) and on all six fixture × region combinations.
+
+## Read this first: the speed target is missed, and only one source matters
+
+A real cold 50-gene run is **70.5 s against PLAN §5's 60 s** — over by 10.5 s,
+18%. ClinicalTrials.gov is **48.2 s of it**, 68% of the wall clock; the other
+eight sources together come to 22 s including the render, so nothing but CT.gov
+can close the gap. Item 3 below has the breakdown and the cheapest path. It is
+not optimised: you asked for the measurement, not the fix.
+
+Nothing else is broken. Item 1 brought the headline back and item 2 changed the
+numbers you had already read; both are below.
+
+---
+
+## Item 1 — the druggability ring is two rings ✅
+
+**Commit** `e617c7b`. COUNCIL M7/V8.
+
+`tractable` = `hasLigand` / `hasPocket` / `hasSmallMoleculeBinder`, present for
+every target that has a prioritisation record at all, and it carries the Pareto
+axis, the default weight and the rank. `chemical_probe` =
+`hasHighQualityChemicalProbes` alone, drawn, allowed to be hatched, and in **no
+score, no rank and no Pareto axis**. v2.2 item 1's ruling is untouched — an
+explicit `0.0` is "looked, no probe", an absent key is `no_data` — it just no
+longer takes three dense keys down with it. **Nothing is imputed**: the probe
+cell still refuses when the key is absent, and 9 of the 14 council genes still
+show a hatched probe cell.
+
+Measured on the same cells, warm cache, `scripts/pareto_census.py`
+(`logs/census-before.json`, `logs/census-after.json`):
+
+| fixture, Liver | eligible before | eligible after | v2.1 | front after | ◆ drawn? |
+|---|---|---|---|---|---|
+| council liver set | 4 / 14 | **10 / 14** | 10 | ASGR1, PCSK9, SERPINA1, TTR | **yes** |
+| `de_realistic.csv` | 2 / 14 | **7 / 14** | 7 | EGFR, GAPDH, MARCHF1, PTEN, SEPTIN9 | no |
+
+**Eligibility is exactly back to v2.1 on both**, without imputing anything, and
+the diamond is drawn again on the council set — `5-council-list-figure.png`,
+"◆ 4 of 10 eligible". On `de_realistic.csv` it stays suppressed at 7, which is
+COUNCIL V10's floor of 10 doing what it did in v2.1; that fixture has never had
+a diamond and this change does not give it one.
+
+The missing-axis ledger says why it worked: `tractable` is missing for **0 of
+14** council genes and 1 of 14 on `de_realistic.csv`, where the old
+`druggability` was missing for 9 and 11. What still costs eligibility is
+`regional_specificity` (3 and 7) and `clinical_phase` (1 and 0) — the GTEx floor
+and the attribution gate, neither of which is new.
+
+**Ring count.** Nine external rings now, so k is drawn on 0..9 and
+`EXTERNAL_RING_COUNT` is 9. Twelve rings on the figure.
+
+**Evidence:** `TestDrugPipelineRings` and `TestSparsePrioritisationKeys` updated
+to the split (including a new
+`test_m7_the_split_is_real_in_every_structure_that_ranks`, which asserts the
+probe ring is absent from `PARETO_AXES`, `DEFAULT_WEIGHTS` and `RANKED_RINGS`),
+`TestExplicitZeroProbeKey` with a new
+`test_an_absent_probe_key_no_longer_takes_tractability_down_with_it`.
+
+### A defect the twelfth ring exposed, fixed
+
+§v2.2 *Still open* 6 said the slide geometry was "evidently close to the edge".
+It was closer than that. The extra ring reordered the spokes, put
+`⚠ KCNH2 (k=8/9) *` at the bottom of the slide render, and the footer cleared it
+by **0.3 px on a 900 px canvas**. `assert_no_text_over_the_rings` refused to
+render, which is the right outcome and the second time that assertion has earned
+its keep.
+
+Two changes, neither of them a relaxation: the slide's plotted square is 608 →
+576 px (the circle is ~5% smaller; every label still reads at 11.5 pt, and the
+bottom clearance is now 14.6 px), and the check now requires
+`LABEL_CLEARANCE_PX = 4.0` of margin rather than mere non-overlap, so the next
+near-miss fails while it is still cheap. `test_a_near_miss_is_a_collision_too`.
+
+---
+
+## Item 2 — the drawer counts distinct NCT ids ✅
+
+**Commit** `e07436e`. §v2.2 *Still open* 4.
+
+The ids are on the same page the counts are read from, so this is still **one
+request per drug** — no extra call and no extra rate-limit exposure. Both
+numbers are reported, because they answer different questions.
+
+**BRAF, before → after** (18 drugs, `logs/braf-dedup.txt`,
+`7-drawer-ctgov-sponsors.png`):
+
+| | before (drug-trial pairs) | after (distinct NCT ids) | |
+|---|---|---|---|
+| trials | 2,297 | **1,682** | −27% |
+| live | 353 | **301** | −15% |
+| stopped early | 424 | **301** | −29% |
+
+**The per-drug rows do not move, and that is now checked rather than assumed**:
+REGORAFENIB is still 366 / 100 / 48 and SORAFENIB still 885 / 66 / 163, before
+and after, because one drug's query returns one row per study. Each row carries
+`n_distinct` beside its count, so a repeat inside a single drug would show.
+
+The panel says which number is which, in its own words, above the table:
+"TARGET TOTALS ARE DISTINCT NCT IDS (new, 2026-09-24). Summing the per-drug rows
+below gives 2297 drug-trial PAIRS; the same trials are 1682 DISTINCT studies…" —
+because you had already read this panel with only the pair count on it. Where a
+page was truncated or a hop failed, the distinct count is flagged as a **floor**.
+
+One free consistency check fell out: **0** BRAF studies are live for one of its
+drugs and stopped for another, which is what you would expect if `overallStatus`
+is a property of the study rather than of the drug-study pair. Where that count
+is not zero the drawer says so and does not pick a winner.
+
+The ring is unchanged — it is a three-state reading and does not depend on the
+magnitude — and its cell detail now points at the drawer for the distinct
+figures.
+
+**Evidence:** `TestDrawerCountsAreDistinctNCTIds`, 8 tests.
+
+---
+
+## Item 3 — the cold 50-gene run, measured ❌ target missed by 10.5 s
+
+**Commit** `3a2efa5`. New `fixtures/de_50.csv` and `scripts/time_cold_50.py`.
+
+Cold means an empty cache directory; nothing was deleted. 50 genes submitted,
+**50 rendered, 0 ledgered**, all seven invariants PASS, **no 429**
+(`logs/cold50.json`, `runs/COLD50`).
+
+```
+total                    70.5 s     TARGET 60 s — MISSED by 10.5 s (18%)
+  ClinicalTrials.gov     48.2 s     68% of the run · 217 drug hops · 4.5 hops/s
+  resolve                 6.8 s
+  render                  3.4 s
+  PubTator3               3.4 s
+  Open Targets            3.1 s
+  GTEx                    1.7 s
+  Pharos                  1.6 s
+  source contracts        1.0 s
+  5-ID regression         0.9 s
+  Europe PMC probe        0.7 s
+```
+
+The adapters run concurrently, so the 51.3 s adapter phase is CT.gov plus half a
+second of everything else finishing behind it. **Deleting every other source
+would still leave a 55 s run.** v2.2 item 3 moved ChEMBL and Europe PMC off the
+render path and the dominant term simply moved with them.
+
+For continuity: the same measurement on the 15-gene council set is 49.9 s, against
+50.9 s in v2.2. The 15-gene number has not improved; the 50-gene number is what
+was never measured.
+
+**The cheapest path to 60 s, not taken.** CT.gov is throttled to 2 concurrent
+with 0.25 s of pacing after each slot — the setting that stopped the 429 this
+source returned during v2.2. At the measured 4.5 hops/s, a per-slot cycle is
+~0.44 s of which **0.25 s is pacing and ~0.19 s is the request**. Halving the
+pacing to 0.12 s puts the run at roughly 56 s on arithmetic alone, under the
+target, with no code change beyond one constant. Raising concurrency 2 → 3 would
+do more.
+
+I did not do either, and would not do either unattended: both move toward a
+boundary that is deliberately unprobed. What is known is 480 requests at 4
+concurrent → 429 in 12 s, and 160 at 2 concurrent with 0.25 s pacing → fine,
+now three times. 217 hops at the current setting is also fine. Everything
+between is guesswork, and finding out means provoking a 429 against a public
+service. **Your call**, and the third option is to move the activity ring to the
+drawer the way item 3 of v2.2 moved ChEMBL — which buys the target outright and
+costs a ring.
+
+---
+
+## The clean run
+
+`runs/V23-COUNCIL-COLD`, council liver set, region Liver, **empty cache**.
+
+```
+I1 PASS  I2 PASS  I3 PASS  I4 PASS  I5 PASS  I6 PASS  I7 PASS
+any_invariant_failed: False   all_invariants_pass: True
+15 in / 14 rendered / 1 ledgered · 160 CT.gov drug hops · 49.9 s
+I1: 168 cells across 12 rings match the CSV
+I5: 1 Europe PMC echo checked live and byte-identical; no ERROR key in 14 NCBI responses
+I7: 4 of 10 eligible genes in the front, each with a real value on all 5 axes
+RUN CONDITIONS: 4 Pareto-axis cell(s) missing (regional_specificity 3, clinical_phase 1)
+```
+
+That last line is the one to look at next to v2.2's, which read
+`13 Pareto-axis cell(s) missing (druggability 9, regional_specificity 3,
+clinical_phase 1)`.
+
+All six fixture × region combinations render with all seven PASS
+(`logs/v23-matrix.txt`):
+
+| fixture | Liver | Lung |
+|---|---|---|
+| `de_realistic.csv` (15 in / 14 / 1) | 7/7, 7 eligible | 7/7, 11 eligible |
+| `de_broken.csv` (16 in / 7 / 9) | 7/7, 5 eligible | 7/7, 6 eligible |
+| council liver set (15 in / 14 / 1) | 7/7, 10 eligible | 7/7, 10 eligible |
+
+No invariant was relaxed and no test was deleted. One check was made **stricter**
+(`LABEL_CLEARANCE_PX`). Tests that hard-coded the ring id `druggability`, eight
+external rings, or three excluded-from-score rings were updated to the new
+counts; every assertion in them is unchanged in kind.
+
+---
+
+## Screenshots
+
+`docs/screenshots/`, all 15 retaken on this code (`3a2efa5`) with the repo cache
+moved aside to `cache.v23-pre` — nothing deleted. The two worth opening:
+
+| file | shows |
+|---|---|
+| `5-council-list-figure.png` | **item 1**: the diamond is back — "◆ 4 of 10 eligible", on PCSK9, TTR, SERPINA1, ASGR1; rings 3 and 4 are the split, with the probe ring's nine hatched cells |
+| `7-drawer-ctgov-sponsors.png` | **item 2**: "1682 distinct trial(s) (2297 drug-trial pairs) · 301 live (353 pairs) · 301 stopped early (424 pairs)", with the note that says which is which |
+
+---
+
+## Still open
+
+**1. PLAN §5's 50-gene speed target is missed by 10.5 s, and the fix is a
+decision, not a defect.** Item 3 above. Nothing about the build is wrong; the
+only lever is how hard to push a public API whose limit is unmeasured.
+
+**2. CT.gov rate limits are still only partly measured.** 480 requests at 4
+concurrent → 429 in 12 s; 160 and 217 at 2 concurrent with 0.25 s pacing → fine.
+The boundary between is unprobed, on purpose. `CTGOV_MAX_DRUG_HOPS = 400` caps
+the exposure; the 50-gene fixture used 217 and never approached it.
+
+**3. The −1.0 activity state still means "stopped early, cause not
+established"**, not "stopped for cause". Unchanged from v2.2, forced by the
+source, labelled everywhere — but a v2.1 figure and a v2.3 figure still disagree
+about what a dark-orange cell asserts.
+
+**4. The slide render still carries no ring sources** (UX A4 moved the key into
+the caption). The activity ring's source reaches the slide through its
+categorical legend; Pharos's and the two new rings' do not. Worth a look if the
+slide is the artefact that matters to an audience.
+
+**5. Item 1 did not touch what item 4 of v2.2 could not fix.** Adding the Pharos
+axis still neither raises nor lowers eligibility — conjunction arithmetic — and
+that is still true. The headline came back because `tractable` is dense, not
+because there are five axes.
+
+**6. Unchanged and still not claimed:** LLM triage unbuilt ($5.00 of $5.00
+unspent); licensing (PLAN §9) is a human job before any workplace use; the
+default weights are provisional and unsigned-off (`tractable=1, safety=1,
+regional_specificity=1, literature=0.5`); the ranking is not validated biology.
+QA §11's three items — the slide in a real presentation tool, Illustrator font
+substitution, a mono laser print — are still not re-evaluated; there is no
+PowerPoint, Illustrator or printer on this machine.
+
+**7. PLAN.md §2 still describes one druggability ring of four keys.** The spec
+was not edited: the council review is binding and asked for the split, you
+approved it, and this report is the record — but the two documents now disagree
+and one of them should be corrected by you.
+
+---
+
+## What you need to decide
+
+1. **The 50-gene speed target.** Cheapest first:
+   *(a)* accept 70.5 s and drop the 60 s target — *free*, and the honest option
+   if nobody is waiting on a cold run;
+   *(b)* halve the CT.gov pacing to 0.12 s — *~10 min*, lands at roughly 56 s,
+   and moves toward a 429 boundary I have not probed;
+   *(c)* move the activity ring's fetch to the drawer as v2.2 item 3 did for
+   ChEMBL — *~1 h*, buys the target outright, costs a ring on the figure.
+   I would do (a) unless a cold 50-gene run is something you actually wait for.
+2. **PLAN.md §2's ring list**, now that the split has landed (*Still open* 7).
+3. Everything already in §6, §v2.1 and §v2.2, unchanged: the default weights,
+   and licensing before any workplace use.
