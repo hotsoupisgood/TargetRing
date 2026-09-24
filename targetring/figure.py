@@ -52,30 +52,38 @@ from .adapters.opentargets import SOURCE_LABEL as ACTIVITY_SOURCE_LABEL  # noqa:
 from .adapters.pharos import TDL_MAX  # noqa: E402
 from .config import MAX_GENES  # noqa: E402
 from .order import EXTERNAL_RING_COUNT, GeneStats  # noqa: E402
+from .palette import (  # noqa: E402
+    ACTIVITY_HEXES, DIVERGING_MID_LUM, FAMILIES, RAMP_LUM, all_value_hexes,
+    cmap_from, discrete_hexes,
+)
+from .palette import relative_luminance as _luminance  # noqa: E402
 from .states import Cell  # noqa: E402
 
-VALUE_CMAP = "viridis"
+# v2.6. Every ring used to be drawn on one ramp -- viridis, truncated to
+# [0.16, 0.92] so its luminance sat in [0.056, 0.663] and the three reserved
+# state fills had bands of their own. That truncation was the right fix for the
+# greyscale finding and the wrong shape for everything else, because one ramp
+# for twelve measurements is what UX A5 is about: "a reader would not realise
+# the rings aren't comparable". Colour now comes from `palette.py`, which builds
+# a family per ring inside the *same* luminance envelope, so the greyscale
+# guarantee generalises from one colormap to twelve instead of being relaxed.
+VALUE_CMAP = "targetring per-ring families"
 
-# The value ramp is viridis *truncated*, and the truncation is the fix for the
-# greyscale finding in the UX review, not a taste decision.
-#
-# Measured: full viridis spans relative luminance 0.019 to 0.783. The `no_data`
-# fill #b3b3b3 sits at 0.4508 and viridis step 192/255 (#5ec962, a real value at
-# ~0.75 of the scale) at 0.4503 -- a greyscale contrast ratio of 1.001,
-# identical, with 23 of 256 steps within 0.05 luminance of the grey. PLAN §6.2's
-# "provably distinct from every value colour" was therefore true only of the
-# colour render, and the surviving cue -- the hatch -- does not survive a washed
-# out projector, a compressed raster paste into PowerPoint, or a photocopy. In
-# any of those, "never measured here" read as a good score.
-#
-# Three reserved fills need three luminance bands outside the ramp, and a
-# full-range ramp leaves room for at most two. Truncating to [0.16, 0.92] puts
-# the ramp in [0.056, 0.663] and leaves black (0.0), near-white (0.807) and
-# white (1.0) each clear of it by >= 0.055. It costs the brightest yellow and
-# the darkest purple; it keeps the ordering, the perceptual uniformity and the
-# deuteranopia safety the review liked. Asserted by `assert_greyscale_disjoint`.
-CMAP_STOPS = (0.16, 0.92)
+# The luminance band every ramp occupies, and the clearance the reserved fills
+# need from it. RAMP_LUM is the generalisation of v2.5's CMAP_STOPS.
+CMAP_LUM = RAMP_LUM
 GREYSCALE_MIN_DELTA = 0.05
+
+# The separation two touching rings are *aimed* at, as OKLab Delta E x100 under
+# the worst of normal / protanopic / deuteranopic vision (Machado 2009 at
+# severity 1.0) -- the dataviz method's categorical target.
+#
+# A target, and measured rather than asserted: see
+# `assert_rings_are_distinguishable` for why twelve concentric full-range ramps
+# cannot meet it pairwise and what carries ring identity instead.
+# `scripts/hue_search.py` maximises against it and
+# `scripts/check_ring_colours.py` prints what was achieved.
+ADJACENT_RING_MIN_DELTA_E = 8.0
 
 # v2.5. Words this figure must not use about itself any more, checked at draw
 # time by `assert_footer_is_true`. Ranking is gone -- the Pareto set, the
@@ -135,15 +143,39 @@ class RingSpec:
               set's range, which is then stated in the key.
       categorical  a {value: colour} palette drawn outside the value colormap
               (V12), for a ring that is not continuous at all.
+
+    v2.6 adds the other half of the same argument. A scale says *how much*; the
+    colour family says *what kind of number this is*, and v2.5 got that wrong on
+    four rings at once by giving all twelve one sequential ramp:
+
+      family      which `palette.FAMILIES` entry the ring draws from. Rings that
+                  are genuinely comparable share one (tractability/probe,
+                  tdl/literature); rings that are not must not.
+      levels      None for a continuous ring; an integer for a ring with that
+                  many discrete steps and no meaning in between. A four-step
+                  ordinal drawn on a 256-step ramp invites a reader to read a
+                  value off a position that does not exist.
+      units       what one number on this ring *is*, printed on its scale.
+      transform   the sentence on the scale when the colour position is not the
+                  raw number. If a domain is transformed and the figure does not
+                  say so, the scale is a false claim about the data.
+      short_source  four to twelve characters naming the source, so the slide
+                  render can carry it (v2.3 Still open 4) without the full
+                  provenance string that made the v1 key overprint the arcs.
     """
 
     key: str
     label: str
     source: str
+    family: str
+    units: str
     scale: str = "linear"
     domain: tuple[float, float] | None = None
     categorical: dict[float, str] | None = None
     category_labels: dict[float, str] | None = None
+    levels: int | None = None
+    transform: str = ""
+    short_source: str = ""
 
 
 # PLAN.md §2. Order is outermost-first.
@@ -153,11 +185,13 @@ class RingSpec:
 # meant "0 drugs" on the phase ring one band away. Submit one gene with a
 # stopped-for-cause history and the same dormant gene's cell turned mid-teal
 # with no change to its data. A fixed palette, outside the value colormap.
-ACTIVITY_PALETTE: dict[float, str] = {
-    -1.0: "#8c2d04",   # stopped for cause
-    0.0: "#fdbe6f",    # dormant
-    1.0: "#08519c",    # active
-}
+# v2.6 re-steps the three colours rather than keeping v2.4's hand-picked
+# #8c2d04 / #fdbe6f / #08519c: they were chosen against one viridis ramp, and
+# with twelve families in play they have to be placed against all of them and
+# against the reserved fills. They are built in `palette.ACTIVITY_HEXES` at
+# three different luminances as well as three hues, so the ring survives
+# greyscale and both common colour-vision deficiencies.
+ACTIVITY_PALETTE: dict[float, str] = dict(ACTIVITY_HEXES)
 ACTIVITY_LABELS: dict[float, str] = {
     # v2.4 restores the categorised state. v2.2 downgraded this to "stopped
     # early — cause NOT categorised by CT.gov" because the per-drug
@@ -182,54 +216,110 @@ ACTIVITY_LABELS: dict[float, str] = {
 SAFETY_RING_CAVEAT = "NOT evidence of safety"
 
 RING_SPECS: tuple[RingSpec, ...] = (
-    # V17: logFC is signed and had no zero anchor, so GFAP at -3.3 rendered
-    # darkest and TTR at +3.1 brightest -- a strongly down-regulated gene read
-    # as "worst" on the one ring where dark does not mean worst.
-    RingSpec("logfc", "logFC (yours)", "submitted DE table", scale="diverging"),
-    RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table"),
+    # V17. logFC is signed, zero is meaningful, and up and down are opposite
+    # rather than more and less of one thing -- so a sequential ramp on it is
+    # not a presentation choice, it is the wrong encoding. v2.5 anchored the
+    # *norm* on zero, which fixed the arithmetic and left the colour saying that
+    # -3.3 was the bottom of a scale that ran up to +3.1. Diverging, blue for
+    # down and red for up, with a pale near-neutral at zero.
+    #
+    # What the figure still cannot say, and does not: whether up-regulation is
+    # the therapeutic direction. M10's question is not answerable from this
+    # data, so neither arm is drawn as the good one and the scale says so.
+    RingSpec("logfc", "logFC (yours)", "submitted DE table",
+             family="logfc", units="log2 fold change", scale="diverging",
+             transform="diverging, anchored at 0 and symmetric; "
+                       "neither direction is drawn as the good one",
+             short_source="yours"),
+    # Heavy-tailed even after the -log10: a gene at p=1e-300 and fourteen genes
+    # between p=0.05 and p=1e-5 is an ordinary DE table, and linear on that
+    # range is V6's collapse with different numbers. log10(1+x) rather than a
+    # second log10, because padj=1 gives -log10 padj = 0 and log10(0) is not a
+    # colour. The ticks on the scale are printed in raw -log10 padj.
+    RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table",
+             family="padj", units="-log10 adjusted p", scale="log1p",
+             transform="log-spaced: colour is log10(1 + x), ticks are x",
+             short_source="yours"),
     # v2.3 item 1 / COUNCIL M7/V8. One ring became two, and the labels say which
     # claim each one makes: the dense three-key ring is not the sparse probe key,
     # and a hatched probe cell must not take tractability down with it.
+    #
+    # They share a colour family on purpose. They were one ring until v2.3, they
+    # answer the same question, and "rings that are genuinely comparable may
+    # share a family" is the other half of making twelve families legible.
     RingSpec("tractable", "Tractability (family suggests druggable)",
              "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder — "
              "3 dense keys, present for every target with a prioritisation record",
-             domain=(0.0, 1.0)),
+             family="tractability", units="mean of 3 keys, each 0 or 1",
+             domain=(0.0, 1.0), transform="fixed 0–1, same colour in every run",
+             short_source="Open Targets"),
+    # Binary with absence: an explicit 0.0 is a measurement ("looked, no probe")
+    # and a missing key is no_data. Two values and nothing between them, so two
+    # swatches -- a 256-step ramp here would offer a reader positions that do
+    # not exist.
     RingSpec("chemical_probe", "Chemical probe available (prior tool-compound effort)",
              "OT prioritisation: hasHighQualityChemicalProbes — SPARSE. Explicit 0.0 = "
              "looked, no probe; key absent = no_data (hatched)",
-             domain=(0.0, 1.0)),
+             family="tractability", units="probe: no / yes",
+             domain=(0.0, 1.0), levels=2,
+             transform="binary; absent key is hatched, never 0",
+             short_source="Open Targets"),
+    # Signed with a stated bad direction, which makes it diverging and NOT the
+    # same kind of diverging as logFC: here one arm genuinely is the bad one, so
+    # it gets the warm arm and says so. The caveat stays on the label because
+    # the four keys buy comparability, not evidence of safety.
     RingSpec("safety", "Safety flags & constraint — NOT evidence of safety",
              "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene",
-             domain=(-1.0, 1.0)),
+             family="safety", units="mean of 4 keys, each in [-1, 1]",
+             domain=(-1.0, 1.0), scale="diverging",
+             transform="fixed −1…+1, diverging at 0; amber arm is the bad one",
+             short_source="Open Targets"),
     # V6: a ratio over five orders of magnitude, so log10. Deliberately NOT a
     # fixed domain: the ratio is unbounded above (TTR reaches 5,204x in liver)
     # and a fixed domain would clip TTR, APOB and SERPINA1 to the same top
     # colour -- reintroducing at the top end exactly the collapse V6 is about.
-    # The log transform is what fixes the collapse; the range is printed in the
-    # key and in the caption.
-    RingSpec("regional_specificity", "Regional specificity (log10 ratio)",
-             "GTEx v8 median TPM ratio, log10, floor applied", scale="log"),
+    # The log transform is what fixes the collapse; the range is printed on the
+    # ring's own scale, with the ticks in raw x-fold.
+    RingSpec("regional_specificity", "Regional specificity",
+             "GTEx v8 median TPM ratio, log10, floor applied",
+             family="specificity", units="× median across the GTEx panel",
+             scale="log",
+             transform="log10; ticks are the raw ratio. Range moves with the "
+                       "submitted set — unbounded above",
+             short_source="GTEx v8"),
+    # A stage ordinal with six levels and nothing between them.
     RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)",
              "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence",
-             domain=(0.0, 5.0)),
+             family="pipeline", units="0 none · 1 Ph1 · 2 Ph1/2 · 3 Ph2 · 4 Ph3 · 5 approved",
+             domain=(0.0, 5.0), levels=6,
+             transform="6 discrete stages, fixed; no value between two stages",
+             short_source="Open Targets"),
     # Puck's hard condition from v2.2 item 2 stands: the ring must state which
     # source it counted, on the figure. v2.4 changes the answer -- the per-drug
     # ClinicalTrials.gov hop is retired and these rows come from Open Targets'
     # own `clinicalReports`, in the same query as every other OT ring -- so the
     # label says that, and the cell detail names the `source` values actually
-    # seen on the gene. The source is in the ring's own *label*, which reaches
-    # the numbered key on the audit render and, through the categorical legend
-    # entries, both renders.
+    # seen on the gene. v2.6 puts it on the ring's own scale as well, which the
+    # slide render carries (v2.3 Still open 4).
     RingSpec("clinical_activity", f"Pipeline: current activity ({ACTIVITY_SOURCE_LABEL})",
              "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a "
              "trialOverallStatus — NOT by a source literal (the AACT->ClinicalTrials.gov "
              "relabelling of 2026-09-24 is what a literal filter missed)",
-             categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS),
-    # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred.
+             family="", units="three named states, no order implied by colour",
+             categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS,
+             transform="categorical — not a ramp, and not comparable to one",
+             short_source="Open Targets"),
+    # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred -- four
+    # named levels, so four swatches.
     RingSpec("tdl", "Target development level (Pharos TDL — knowledge, not a pocket)",
              "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3",
-             domain=(0.0, float(TDL_MAX))),
-    # V9: reduced to three states, so there is no count left to scale.
+             family="knowledge", units="Tdark · Tbio · Tchem · Tclin",
+             domain=(0.0, float(TDL_MAX)), levels=TDL_MAX + 1,
+             transform="4 discrete levels, fixed",
+             short_source="Pharos"),
+    # V9: reduced to three states, so there is no count left to scale. Two of
+    # the three are values (0 phenotyped-and-normal, 1 phenotyped-and-abnormal)
+    # and the third is `no_data`, hatched -- so the ring draws two swatches.
     # COUNCIL V15: the source is OT `mousePhenotypes` -- mouse only. PLAN §2
     # retired the rodent source citing a QA finding about IMPC, but COUNCIL S6
     # had recommended Alliance of Genome Resources (MGI *and* RGD), which is
@@ -238,48 +328,206 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # revisiting Alliance is still open.
     RingSpec("rodent", "Mouse phenotype lead (3 states)",
              "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat",
-             domain=(0.0, 1.0)),
-    RingSpec("literature", "Literature volume", "PubTator3, gene-id resolved, log10(1+n)"),
-    # V13: k over external rings only, on a fixed 0..K domain.
+             family="rodent", units="0 no abnormal · 1 abnormal · hatched not phenotyped",
+             domain=(0.0, 1.0), levels=2,
+             transform="binary; 'not phenotyped' is hatched, never 0",
+             short_source="Open Targets"),
+    # The adapter already stores log10(1 + n), so the ring's *value* is the
+    # transform (V6's own prescription, applied upstream in v1). The scale prints
+    # the ticks as raw PubTator3 records, which is the number a reader has.
+    RingSpec("literature", "Literature volume",
+             "PubTator3, gene-id resolved, log10(1+n)",
+             family="knowledge", units="PubTator3 records", scale="prelog1p",
+             transform="the adapter stores log10(1 + records); ticks are "
+                       "records. Range moves with the submitted set",
+             short_source="PubTator3"),
+    # V13: k over external rings only, on a fixed 0..K domain. It is a gauge and
+    # not evidence, which is why it is the one ring drawn at a third of the
+    # chroma the others use -- a deliberately muted instrument rather than a
+    # twelfth measurement. v2.5 narrowed what k means; this is what that
+    # narrowing looks like in colour.
     RingSpec("completeness", "k — external rings with a measurement",
              "derived; maximum is the number of external rings",
-             domain=(0.0, float(EXTERNAL_RING_COUNT))),
+             family="gauge", units=f"rings with a real value, of {EXTERNAL_RING_COUNT}",
+             domain=(0.0, float(EXTERNAL_RING_COUNT)),
+             levels=EXTERNAL_RING_COUNT + 1,
+             transform="a completeness gauge: it orders nothing and selects "
+                       "nothing, and is drawn muted to say so",
+             short_source="derived"),
 )
 
 
-def value_cmap():
-    """viridis over CMAP_STOPS. See the note at CMAP_STOPS for why it is cut."""
-    base = plt.get_cmap(VALUE_CMAP)
-    lo, hi = CMAP_STOPS
-    return LinearSegmentedColormap.from_list(
-        f"{VALUE_CMAP}_{lo}_{hi}",
-        [base(lo + (hi - lo) * i / 255) for i in range(256)],
-    )
+def ring_cmap(spec: RingSpec):
+    """The colormap this ring draws from — its family, at its number of levels.
+
+    A ring with `levels` gets exactly that many colours. Anything else gets the
+    family's 256-step ramp. A categorical ring has no family and no ramp at all
+    (COUNCIL V12) -- its swatches are the whole encoding, and the colormap
+    exists only so the scale column can draw them in one code path.
+    """
+    if spec.categorical:
+        return cmap_from(ring_swatches(spec), f"{spec.key}_categorical")
+    fam = FAMILIES[spec.family]
+    if spec.levels is None:
+        return fam.cmap()
+    return cmap_from(ring_swatches(spec), f"{fam.name}_{spec.levels}")
+
+
+# Where a stepped ring's swatches sit on its family's ramp. Inset from both
+# ends on purpose: a two-level ring sampled at 0.0 and 1.0 gets a near-black and
+# a near-white, and at those luminances sRGB holds so little chroma that the
+# ring loses its hue -- the one thing that says which ring it is. Inset, a
+# binary ring is still unmistakably two-tone and still recognisably its own
+# colour. The high end stops short of 1.0 for the same reason.
+SWATCH_SPAN = (0.14, 0.94)
+
+
+def ring_swatches(spec: RingSpec) -> list[str]:
+    """The discrete colours a stepped ring can paint, darkest first."""
+    if spec.categorical:
+        return [spec.categorical[v] for v in sorted(spec.categorical)]
+    fam = FAMILIES[spec.family]
+    hexes = list(fam.hexes)
+    n = spec.levels or len(hexes)
+    if n == 1:
+        return [hexes[len(hexes) // 2]]
+    lo, hi = SWATCH_SPAN
+    # Sampled from the family's own ramp, so a stepped ring and a continuous
+    # ring in the same family are the same colours at the same magnitudes.
+    return [hexes[round((lo + (hi - lo) * i / (n - 1)) * (len(hexes) - 1))]
+            for i in range(n)]
+
+
+def ring_colours(spec: RingSpec, n: int = 17) -> list[str]:
+    """The colours this ring can actually paint, sampled across its whole range.
+
+    Not an "identity colour": comparing one representative per ring answers the
+    wrong question. What a reader confuses is two *cells* -- one on each of two
+    touching rings -- and cells are confusable when they are the same
+    brightness, which is what `adjacent_ring_delta_e` pairs them on.
+    """
+    if spec.categorical or spec.levels:
+        return ring_swatches(spec)
+    hexes = FAMILIES[spec.family].hexes
+    return [hexes[round(i * (len(hexes) - 1) / (n - 1))] for i in range(n)]
+
+
+def ring_identity_colours(spec: RingSpec) -> list[str]:
+    """The colours that stand for this ring when rings are compared.
+
+    A sequential ring has one: the middle of its ramp. A *diverging* ring has
+    two -- one per arm -- and must not be represented by its middle, which is
+    near-neutral by construction and would compare as grey against everything.
+    A stepped or categorical ring is represented by the colours it paints.
+    """
+    if spec.categorical or spec.levels:
+        return ring_swatches(spec)
+    fam = FAMILIES[spec.family]
+    if fam.kind == "diverging":
+        return [fam.hexes[round(t * (len(fam.hexes) - 1))] for t in (0.18, 0.82)]
+    return [fam.hexes[len(fam.hexes) // 2]]
+
+
+def ring_identity_colour(spec: RingSpec) -> str:
+    """One colour for a legend or a report line."""
+    cols = ring_identity_colours(spec)
+    return cols[len(cols) // 2]
+
+
+# The part of the luminance band where a ring's hue is actually available.
+# Every ramp converges at its ends: at luminance 0.074 sRGB holds almost no
+# chroma at any hue, so the darkest cell of *any* ring is a near-black, and the
+# lightest is a near-white. That convergence is a property of the gamut, not of
+# this palette, and no hue assignment removes it -- which is why the check below
+# is stated over the middle of the band and the ends are reported as a known
+# limit rather than asserted away.
+IDENTITY_LUM_RANGE = (0.12, 0.58)
+
+
+def adjacent_ring_delta_e(a: RingSpec, b: RingSpec,
+                          lum_range: tuple[float, float] = IDENTITY_LUM_RANGE,
+                          lum_window: float = 0.04) -> tuple[float, str, str]:
+    """The worst confusable pair of cells across the boundary of two rings.
+
+    Two cells are confusable when they are the same brightness: at different
+    luminances a reader separates them whatever the hue, and under colour-vision
+    deficiency luminance is most of what is left. So colours are paired within
+    `lum_window` of each other and scored under the worst of normal, protanopic
+    and deuteranopic vision.
+
+    `lum_range` is the middle of the band -- see `IDENTITY_LUM_RANGE`. Passing
+    the full band measures the ends too, which `scripts/check_ring_colours.py`
+    does and prints, because a reader does meet those cells even if no palette
+    can separate them.
+    """
+    from scripts.hue_search import VISION, dE  # measurement code, not a render dep
+
+    def rgb(h: str):
+        return tuple(int(h[i:i + 2], 16) / 255 for i in (1, 3, 5))
+
+    worst, pair = 999.0, ("", "")
+    for ca in ring_colours(a):
+        la = _luminance(rgb(ca))
+        if not (lum_range[0] <= la <= lum_range[1]):
+            continue
+        for cb in ring_colours(b):
+            lb = _luminance(rgb(cb))
+            if not (lum_range[0] <= lb <= lum_range[1]) or abs(la - lb) > lum_window:
+                continue
+            d = min(dE(rgb(ca), rgb(cb), k) for k in VISION)
+            if d < worst:
+                worst, pair = d, (ca, cb)
+    return worst, pair[0], pair[1]
+
+
+def value_cmap(spec: RingSpec | None = None):
+    """The ramp for one ring.
+
+    v2.5 had a single ramp and this took no argument. It keeps working without
+    one -- returning `logfc`'s, the outermost ring -- only so a caller asking
+    "what does a value colour look like" gets one; every drawing path passes the
+    ring it is drawing.
+    """
+    return ring_cmap(spec if spec is not None else RING_SPECS[0])
 
 
 def colormap_hexes(n: int = 256) -> set[str]:
-    cmap = value_cmap()
-    return {to_hex(cmap(i / (n - 1))) for i in range(n)}
+    """Every colour any ring can paint a value cell, across all twelve families.
+
+    v2.5 returned 256 hexes from one ramp. Widening it is what keeps invariant 2
+    and `assert_fills_disjoint` honest now that there are twelve: a reserved
+    fill has to be outside *all* of them, not outside the one that happens to be
+    drawn first.
+    """
+    return all_value_hexes()
 
 
 def relative_luminance(colour) -> float:
     """WCAG relative luminance — what a colour becomes in greyscale."""
-    def channel(u: float) -> float:
-        return u / 12.92 if u <= 0.04045 else ((u + 0.055) / 1.055) ** 2.4
-    r, g, b = to_rgb(colour)
-    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    return _luminance(to_rgb(colour))
+
+
+def _all_value_luminances() -> list[float]:
+    return [_luminance(to_rgb(h)) for h in all_value_hexes()]
 
 
 def assert_greyscale_disjoint(min_delta: float = GREYSCALE_MIN_DELTA) -> None:
     """PLAN §6.2, extended to the render people actually project and photocopy.
 
-    `assert_fills_disjoint` proves the reserved fills are not *colours* the
-    colormap produces. That proof does not survive desaturation, and the UX
-    review measured the consequence: no_data and a real mid-scale value were
-    identical in greyscale at a contrast ratio of 1.001. This asserts the same
-    guarantee in luminance, against the whole ramp and between the states.
+    `assert_fills_disjoint` proves the reserved fills are not *colours* any ring
+    produces. That proof does not survive desaturation, and the UX review
+    measured the consequence: no_data and a real mid-scale value were identical
+    in greyscale at a contrast ratio of 1.001. This asserts the same guarantee
+    in luminance, against every ramp and between the states.
+
+    v2.6 is where this check earned its keep. Twelve independently chosen
+    colormaps would have twelve luminance spans, and `no_data` at 0.807 only
+    needs *one* of them to reach up that far to become a plausible value again.
+    The fix is not a bigger tolerance: `palette.RAMP_LUM` is a single luminance
+    envelope every family is built inside, so the number of families does not
+    change what this has to prove.
     """
-    ramp = [relative_luminance(value_cmap()(i / 255)) for i in range(256)]
+    ramp = _all_value_luminances()
     states = {name: relative_luminance(st["fc"]) for name, st in STATE_STYLE.items()}
     for name, l in states.items():
         near = min(ramp, key=lambda x: abs(x - l))
@@ -303,16 +551,92 @@ def assert_fills_disjoint() -> None:
     """PLAN §6 invariant 2, checked before a single cell is drawn.
 
     The SVG check is the artefact-level proof; this is the one that fires during
-    a palette change, at the moment someone edits STATE_STYLE.
+    a palette change, at the moment someone edits STATE_STYLE or adds a family.
     """
     values = colormap_hexes()
     for state, style in STATE_STYLE.items():
         fill = to_hex(style["fc"])
         if fill in values:
             raise AssertionError(
-                f"the {state!r} fill {fill} is also produced by the {VALUE_CMAP} colormap; "
-                f"missing would be indistinguishable from a value"
+                f"the {state!r} fill {fill} is also produced by the value colormaps "
+                f"({VALUE_CMAP}); missing would be indistinguishable from a value"
             )
+
+
+def assert_ramp_luminance_is_monotone() -> None:
+    """Within a ring, darker must always mean less.
+
+    Sequential ramps are monotone end to end. A diverging ramp is monotone along
+    each arm and symmetric about the middle, which is the property that makes
+    "equally far from zero" look equally far from zero -- and the property that
+    a sequential ramp on signed data (V17) does not have.
+    """
+    for name, fam in FAMILIES.items():
+        lums = [_luminance(to_rgb(h)) for h in fam.hexes]
+        if fam.kind == "diverging":
+            half = len(lums) // 2 + 1
+            arms = [lums[:half], list(reversed(lums[half - 1:]))]
+            for i, arm in enumerate(arms):
+                if not all(b >= a - 1e-6 for a, b in zip(arm, arm[1:])):
+                    raise AssertionError(
+                        f"the {name!r} family's arm {i} is not monotone in luminance; "
+                        f"on a diverging ring that makes two different distances from "
+                        f"zero look like the same distance")
+            if abs(arms[0][-1] - arms[1][-1]) > 0.02:
+                raise AssertionError(
+                    f"the {name!r} family's two arms do not meet at the same luminance "
+                    f"({arms[0][-1]:.4f} vs {arms[1][-1]:.4f}), so equal and opposite "
+                    f"values are drawn at different distances from the middle")
+        elif not all(b >= a - 1e-6 for a, b in zip(lums, lums[1:])):
+            raise AssertionError(
+                f"the {name!r} family is not monotone in luminance, so a darker cell on "
+                f"that ring does not reliably mean a smaller number")
+
+
+def assert_rings_are_distinguishable(rings: Sequence[RingSpec] | None = None) -> None:
+    """UX A5, the part that is an invariant rather than a measurement.
+
+    "A reader cannot tell that ring 3's yellow and ring 7's yellow mean
+    unrelated things." With one ramp that was true of every pair of rings, and
+    literally true: the same hex, two rings, two meanings. This asserts it is
+    now true of none -- **no colour is painted by two rings that are not
+    declared comparable.** `tractable`/`chemical_probe` and `tdl`/`literature`
+    are declared comparable, share a family on purpose, and are exempt.
+
+    Separation *beyond* identity is measured, not asserted, and
+    `scripts/check_ring_colours.py` prints it against the
+    `ADJACENT_RING_MIN_DELTA_E` target. Making it an assertion would be
+    dishonest, because it cannot be met and the reason is geometric rather than
+    fixable:
+
+    * Under protanopia or deuteranopia at a fixed luminance the hue circle
+      collapses onto one axis, where the widest separation any two hues reach is
+      about Delta E 23. Twelve rings cannot all be pairwise far apart on one
+      axis.
+    * Every ramp converges at its ends. sRGB holds almost no chroma near black
+      or near white, so the darkest cell of any two rings is two near-blacks
+      whatever their hues, and a diverging ring's middle is near-neutral by
+      construction.
+
+    What carries ring identity instead, and does so for every reader: the fixed
+    radial position, the ring number, and the labelled swatch on each ring's own
+    scale in the column beside the figure. That is the secondary encoding the
+    dataviz method requires when a pair sits in its 6-8 floor band, and it is
+    why the scale column is not optional decoration.
+    """
+    rings = list(rings if rings is not None else RING_SPECS)
+    painted: dict[str, list[str]] = {}
+    for spec in rings:
+        for hexc in (ring_swatches(spec) if (spec.levels or spec.categorical)
+                     else FAMILIES[spec.family].hexes):
+            painted.setdefault(hexc, []).append(spec.key)
+    for hexc, keys in painted.items():
+        fams = {next(r.family for r in rings if r.key == k) for k in keys}
+        if len(keys) > 1 and len(fams) > 1:
+            raise AssertionError(
+                f"{hexc} is painted by {sorted(set(keys))}, which are in different "
+                f"colour families. The same colour on two rings that are not declared "
+                f"comparable is UX A5 exactly.")
 
 
 def assert_within_domain(spec: RingSpec, cells: dict[str, Cell]) -> None:
@@ -343,6 +667,24 @@ def assert_within_domain(spec: RingSpec, cells: dict[str, Cell]) -> None:
 def _scaled(spec: RingSpec, v: float) -> float:
     if spec.scale == "log":
         return math.log10(max(v, 1e-6))
+    if spec.scale == "log1p":
+        # V6 on a quantity that is already -log10(p): a table with one gene at
+        # p=1e-300 puts every other gene in one colour. log10(1+x) rather than a
+        # second log10 because padj=1 gives x=0, and log10(0) is not a colour.
+        return math.log10(1.0 + max(v, 0.0))
+    # "prelog1p" is a ring whose *adapter* already stored log10(1+n) -- the
+    # literature ring has since v1, which is V6's own prescription applied
+    # upstream. Nothing more is done to the colour; the inverse exists so the
+    # scale can tick in the units the source counted in.
+    return v
+
+
+def _unscaled(spec: RingSpec, v: float) -> float:
+    """The raw number a scaled colour position stands for — what a tick says."""
+    if spec.scale == "log":
+        return 10.0 ** v
+    if spec.scale in ("log1p", "prelog1p"):
+        return (10.0 ** v) - 1.0
     return v
 
 
@@ -399,8 +741,21 @@ class Layout:
     # slide is the artefact you stand next to and explain. The RED banner is
     # drawn on both: you must never present a figure whose invariants failed.
     draw_conditions: bool
-    cbar_x: float
-    cbar_gap: float
+    # v2.6 / UX A5. Where the per-ring scale column lives, as
+    # (x, bottom, width, height) in figure fractions. v2.5 had one colour bar
+    # (`cbar_x`, `cbar_gap`) because there was one ramp; there are twelve scales
+    # now and they are the primary way a reader learns a ring's range, so they
+    # get a column rather than a corner. The numbered monospace key they replace
+    # is gone from both renders.
+    scale_box: tuple[float, float, float, float]
+    scale_title_size: float
+    scale_tick_size: float
+    scale_wrap: int
+    # The audit render prints each ring's transform and source under its scale;
+    # the slide prints the source only, because at 16:9 the column is shorter
+    # and a transform sentence per ring would take the type below legibility --
+    # UX A4's failure mode, reproduced in a new place.
+    scale_detail: bool
     # Whether the centre carries the per-category drop counts and the list of
     # dropped gene names. The audit render does; the slide render gives the
     # count and points at the caption, because fitting nine names plus seven
@@ -409,8 +764,15 @@ class Layout:
     centre_detail: bool
 
 
-AUDIT = Layout("audit", (17.5, 14.0), 8.0, (0.250, 0.205, 0.53, 0.755),
-               True, True, 7.5, 1.0, True, 0.872, 0.019, True)
+# v2.6 widens the audit canvas from 17.5 to 19.5 in and narrows the axes box to
+# match, so the circle is the same size it was and the 2.0 in it gained is the
+# scale column. Growing the canvas rather than shrinking the figure is the right
+# trade here: the audit render is read on a screen at full size, and UX A4's
+# argument against a big canvas was about fitting one onto a slide, which is
+# what the separate slide layout is for.
+AUDIT = Layout("audit", (19.5, 14.0), 8.0, (0.225, 0.205, 0.475, 0.755),
+               True, True, 7.5, 1.0, True, (0.762, 0.035, 0.232, 0.930),
+               7.4, 6.6, 42, True, True)
 # 16:9. A 9 in canvas fitted to a 7.5 in slide is a 0.83 scale, so an 11.5 pt
 # label lands at 9.6 pt -- against v1's 3.9, where an 18.3 x 15.2 in canvas on
 # the same slide was a 0.49 scale. The key and the caveats leave the canvas
@@ -422,8 +784,9 @@ AUDIT = Layout("audit", (17.5, 14.0), 8.0, (0.250, 0.205, 0.53, 0.755),
 # buys 16 px top and bottom. The circle is ~5% smaller on the slide and every
 # label still reads at 11.5 pt; `LABEL_CLEARANCE_PX` is what stops it drifting
 # back.
-SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.295, 0.075, 0.36, 0.86),
-               False, False, 0.0, 1.15, False, 0.838, 0.020, False)
+SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.275, 0.075, 0.345, 0.86),
+               False, False, 0.0, 1.15, False, (0.690, 0.045, 0.300, 0.855),
+               8.4, 7.6, 52, False, False)
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE}
 
 
@@ -464,6 +827,7 @@ def render(
 ) -> FigureResult:
     assert_fills_disjoint()
     assert_greyscale_disjoint()
+    assert_ramp_luminance_is_monotone()
     lay = LAYOUTS[layout]
     filter_notes = list(filter_notes)
     genes = list(genes)
@@ -471,7 +835,13 @@ def render(
         raise ValueError("no genes to render")
 
     rings = [r for r in RING_SPECS if r.key in cells_by_ring]
-    cmap = value_cmap()
+    # v2.6: one colormap per ring, chosen by the ring's data type. The check that
+    # no two rings outside a declared-comparable family can paint the same
+    # colour runs on the rings this render is actually drawing, because a render
+    # of a subset is the case where two families could end up adjacent that are
+    # not adjacent in the full twelve.
+    cmaps = {r.key: ring_cmap(r) for r in rings}
+    assert_rings_are_distinguishable(rings)
     for r in rings:
         assert_within_domain(r, cells_by_ring[r.key])
     norms = {r.key: _norm_for(r, cells_by_ring[r.key]) for r in rings}
@@ -519,7 +889,7 @@ def render(
                     round(cell.value, 6), spec.categorical[min(spec.categorical)])
                 style = {"fc": fill, "ec": "#ffffff", "lw": 0.25}
             elif cell.state == "value" and norm is not None:
-                fill = to_hex(cmap(norm(_scaled(spec, cell.value))))
+                fill = to_hex(cmaps[spec.key](norm(_scaled(spec, cell.value))))
                 style = {"fc": fill, "ec": "#ffffff", "lw": 0.25}
             else:
                 st = STATE_STYLE[cell.state if cell.state in STATE_STYLE else "no_data"]
@@ -600,7 +970,7 @@ def render(
     centre_blocks += _draw_ordering_and_filters(ax, ordering_note, filter_notes,
                                                 stats, lay, next_y)
     text_blocks = []
-    text_blocks += _draw_legend(fig, rings, norms, cmap, lay)
+    text_blocks += _draw_legend(fig, rings, norms, cmaps, lay)
     text_blocks += _draw_stamps(fig, notes, provenance, lay,
                                 slide_line(ordering_note, filter_notes))
     if invariant_failures:
@@ -702,30 +1072,175 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
     return out, y
 
 
-def _draw_colourbar(fig, cmap, lay) -> list:
-    """UX A5. v1 had no colour bar anywhere.
+def _fmt(x: float) -> str:
+    """A tick label a reader can act on: no scientific notation for ordinary
+    numbers, no fifteen digits for a ratio."""
+    ax = abs(x)
+    if ax >= 1e5 or (0 < ax < 1e-3):
+        return f"{x:.0e}".replace("e+0", "e").replace("e-0", "e-")
+    if ax >= 100:
+        return f"{x:,.0f}"
+    if ax >= 10:
+        return f"{x:.0f}"
+    if ax >= 1:
+        return f"{x:.2g}"
+    return f"{x:.3g}"
 
-    Nothing told a reader whether purple or yellow was the high end, and — worse
-    — because `_norm_for` min-max normalises within each ring, *every* ring
-    always contains a full-saturation yellow and a full purple whatever the
-    underlying values are. The natural reading of a Circos plot is radial, down
-    a spoke, and that reading is invalid here: a gene brightest on literature
-    volume looks exactly as good as a gene brightest on tractability. The bar
-    says so, in the place the reader looks to decode a colour.
+
+def _scale_ticks(spec: RingSpec, norm) -> list[tuple[float, str]]:
+    """(position in 0..1, label) for one ring's scale, in the ring's own units.
+
+    The position is where the colour sits; the label is the *raw* number, which
+    is not the same thing on a transformed ring and is the reason V6 asks for
+    the transform to be printed. `regional_specificity` is drawn on log10 and
+    ticked in x-fold; `neg_log10_padj` is drawn on log10(1+x) and ticked in
+    -log10 padj.
     """
-    x = lay.cbar_x
-    cax = fig.add_axes((x, 0.40, 0.012, 0.30))
-    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, 1), cmap=cmap), cax=cax)
-    cb.set_ticks([0, 1])
-    cb.set_ticklabels(["low", "high"])
-    cb.ax.tick_params(labelsize=7.5 if lay.name == "audit" else 9)
-    cb.outline.set_linewidth(0.6)
-    # Just below the bar's top tick, so the caption does not sit on "high".
-    return [fig.text(x + lay.cbar_gap, 0.688,
-                     "RESCALED WITHIN EACH RING\nsame colour on two rings\n"
-                     "means nothing in common",
-                     fontsize=7 if lay.name == "audit" else 8.5, va="top", ha="left",
-                     color="#8a4b00", weight="bold")]
+    if spec.categorical:
+        # COUNCIL V12 again, on the scale this time: a categorical ring has no
+        # Normalize, and v2.5's key printed "no values" for it beside a ring
+        # full of drawn cells. Its levels are the labels.
+        vals = sorted(spec.categorical)
+        return [((i + 0.5) / len(vals), _fmt(v)) for i, v in enumerate(vals)]
+    if norm is None:
+        return []
+    lo, hi = float(norm.vmin), float(norm.vmax)
+    if spec.levels and spec.domain:
+        # Centred on each swatch, because that is where the colour is. A tick at
+        # the join between two swatches labels neither.
+        n = spec.levels
+        return [((i + 0.5) / n, _fmt(spec.domain[0] + (spec.domain[1] - spec.domain[0])
+                                     * i / (n - 1))) for i in range(n)]
+    stops = [0.0, 1.0]
+    if spec.scale == "diverging" and lo < 0 < hi:
+        # Zero is the whole point of a diverging ring; it gets a tick.
+        stops = [0.0, (0.0 - lo) / (hi - lo), 1.0]
+    return [(t, _fmt(_unscaled(spec, lo + (hi - lo) * t))) for t in stops]
+
+
+def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
+    """UX A5, and the reason it was "the one that gets a question you can't
+    answer": there was no colour bar anywhere, and the only statement of a
+    ring's range was 6.6 pt monospace in the left margin -- 3.3 pt on a slide.
+
+    One scale per ring, in the ring's own domain and units, in a column beside
+    the circle. The figure centre is at its geometric limit
+    (`assert_centre_fits_the_hole` refused to render during v2.5), so the hole
+    was never a candidate.
+
+    Each row says four things, and they are four different claims:
+      * which ring it is -- the number and the name, matching the radial order;
+      * what the colours are -- the ring's own ramp or its own swatches, so a
+        reader decodes a cell against the ring it came from and nothing else;
+      * what the numbers are -- ticks in the units the ring measures in;
+      * what was done to the domain, and by whom -- the transform sentence and
+        the source. The slide render carries the source too, which is §v2.3
+        Still open 4.
+    """
+    import textwrap
+
+    x0, y0, w, h = lay.scale_box
+    n = len(rings)
+    ts, tk = lay.scale_title_size, lay.scale_tick_size
+    # Figure-fraction height of one line of type, from points.
+    line = lambda pt: pt * 1.35 / (fig.get_figheight() * 72.0)  # noqa: E731
+    bar_h = min(0.011, h / n * 0.20)
+
+    def _title(i, spec):
+        return "\n".join(l.rstrip() for l in
+                          _key_lines(f"{i}. ", spec.label, "", limit=lay.scale_wrap))
+
+    def _note(spec):
+        lines = textwrap.wrap(f"{spec.units} \u00b7 {spec.short_source}",
+                              lay.scale_wrap + 6) or [""]
+        if lay.scale_detail and spec.transform:
+            lines += textwrap.wrap(spec.transform, lay.scale_wrap + 6)
+        return "\n".join(lines)
+
+    titles = {sp.key: _title(i, sp) for i, sp in enumerate(rings, start=1)}
+    notes = {sp.key: _note(sp) for sp in rings}
+
+    # A ring's label is as long as its caveat and its units are as long as its
+    # source, so how tall a row needs to be is not knowable when the font sizes
+    # are chosen. Rows are laid out end to end and the type is fitted to the
+    # column, the same way the centre block is fitted to the hole -- and for the
+    # same reason: v2.5's slide render is where UX A4 was found, and a column
+    # that silently overprints itself is that finding in a new place.
+    scale = 1.0
+    for _ in range(14):
+        need = sum((titles[sp.key].count("\n") + 1) * line(ts * scale)
+                   + (notes[sp.key].count("\n") + 2) * line(tk * scale)
+                   + bar_h + line(ts * scale) * 0.65 for sp in rings)
+        if need <= h:
+            break
+        scale *= 0.94
+    ts, tk = ts * scale, tk * scale
+    blocks = []
+
+    # The one sentence that replaces v2.5's "RESCALED WITHIN EACH RING". It is a
+    # stronger claim now and it needs to be: the rings no longer merely have
+    # different ranges, they have different colours and, on five of them, a
+    # different kind of scale.
+    blocks.append(fig.text(
+        x0, y0 + h + line(ts) * 0.5,
+        textwrap.fill("EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS \u2014 "
+                      "a colour means nothing outside its own ring",
+                      lay.scale_wrap + 4),
+        fontsize=ts * 0.95, va="bottom", ha="left", color="#8a4b00", weight="bold"))
+
+    top = y0 + h
+    for i, spec in enumerate(rings, start=1):
+        # QA-v2-retest §5's mechanism, reused rather than reinvented: a ring
+        # label whose tail is a caveat ("\u2014 NOT evidence of safety") wraps
+        # onto a continuation line. Truncation is never the answer for a caveat,
+        # and the scale column is the second place that would have been tempted.
+        title = titles[spec.key]
+        blocks.append(fig.text(x0, top, title, fontsize=ts, va="top", ha="left",
+                               color="#111111"))
+        y = top - line(ts) * (title.count("\n") + 1) - line(ts) * 0.2
+
+        # The bar. A stepped ring gets its swatches with a gap between them, so
+        # "four levels" is visible as four things rather than read as a ramp
+        # somebody chose to render coarsely.
+        cax = fig.add_axes((x0, y - bar_h, w * 0.62, bar_h))
+        cax.set_xticks([])
+        cax.set_yticks([])
+        if spec.levels or spec.categorical:
+            sw = ring_swatches(spec)
+            cax.set_xlim(0, len(sw))
+            cax.set_ylim(0, 1)
+            for j, colour in enumerate(sw):
+                cax.add_patch(plt.Rectangle((j + 0.06, 0), 0.88, 1,
+                                            facecolor=colour, edgecolor="none"))
+            cax.set_facecolor("none")
+            for side in cax.spines.values():
+                side.set_visible(False)
+        else:
+            cax.imshow([list(range(256))], aspect="auto",
+                       cmap=cmaps[spec.key], extent=(0, 1, 0, 1))
+            for side in cax.spines.values():
+                side.set_linewidth(0.5)
+                side.set_color("#666666")
+
+        ticks = _scale_ticks(spec, norms.get(spec.key))
+        y -= bar_h + line(tk) * 0.1
+        if ticks:
+            # Ends are anchored to the ends of the bar; anything between is
+            # centred on its own position, which is where the colour is.
+            for t, label in ticks:
+                ha = "left" if t <= 0.01 else "right" if t >= 0.99 else "center"
+                blocks.append(fig.text(x0 + w * 0.62 * t, y, label, fontsize=tk,
+                                       va="top", ha=ha, color="#333333"))
+        else:
+            blocks.append(fig.text(x0, y, "no values in this run", fontsize=tk,
+                                   va="top", ha="left", color="#333333"))
+        y -= line(tk) * 1.05
+
+        note = notes[spec.key]
+        blocks.append(fig.text(x0, y, note, fontsize=tk, va="top", ha="left",
+                               color="#666666"))
+        top = y - line(tk) * (note.count("\n") + 1) - line(ts) * 0.45
+    return blocks
 
 
 def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[str],
@@ -766,15 +1281,26 @@ def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[st
     return out
 
 
-def _draw_legend(fig, rings, norms, cmap, lay) -> list:
+def _draw_legend(fig, rings, norms, cmaps, lay) -> list:
+    """The four cell states, the three categorical states, and the scale column.
+
+    v2.5 also drew a numbered monospace ring key in the left margin and a single
+    colour bar. Both are gone: the key's job -- "which ring is this and what is
+    its range" -- is what each ring's own scale now does, beside its own
+    colours, and the single bar was only ever honest because every ring shared
+    one ramp. Keeping either would leave two places on the figure claiming to
+    tell a reader how to decode a cell.
+    """
     handles = [
         Patch(facecolor=s["fc"], hatch=s["hatch"], edgecolor=s["ec"], label=s["label"])
         for s in STATE_STYLE.values()
     ]
-    handles.append(Patch(facecolor=cmap(0.85), edgecolor="#ffffff",
-                         label="value (scale is per-ring — see the bar)"))
-    # COUNCIL V12: the categorical ring is off the value colormap, so its three
-    # colours need naming or they read as values.
+    # One swatch per ring would just duplicate the column, so the value entry
+    # points at it instead.
+    handles.append(Patch(facecolor="#ffffff", edgecolor="#666666",
+                         label="value — decode it against THIS ring's scale, right"))
+    # COUNCIL V12: the categorical ring is off every ramp, so its three colours
+    # need naming or they read as positions on one.
     for spec in rings:
         if not spec.categorical:
             continue
@@ -785,28 +1311,7 @@ def _draw_legend(fig, rings, norms, cmap, lay) -> list:
     fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.006, 0.992),
                fontsize=7.5 if lay.name == "audit" else 9,
                frameon=True, title="cell states", title_fontsize=8)
-    blocks = _draw_colourbar(fig, cmap, lay)
-
-    if not lay.draw_key:
-        # UX A4: on the slide render the ring key goes into the caption.
-        return blocks
-
-    # UX A6 + the UX review's "noise" list: the API field lists
-    # (`hasLigand, hasPocket, hasSmallMoleculeBinder, …`) are provenance, not a
-    # reading aid, and they are what made this block 393 px wide and overprint
-    # the coloured arcs. They live in the manifest and the caption now. The
-    # numbered ring names and their ranges stay, set in the same sans as
-    # everything else rather than monospace.
-    lines = []
-    for i, spec in enumerate(rings, start=1):
-        n = norms.get(spec.key)
-        rng = _range_label(spec, n)
-        lines.extend(_key_lines(f"{i}. ", spec.label, rng))
-    return blocks + [fig.text(0.006, 0.80,
-                              "rings, outermost first\n"
-                              "(sources in the caption and manifest)\n\n"
-                              + "\n".join(lines),
-                              fontsize=7.4, va="top", ha="left", color="#222222")]
+    return _draw_ring_scales(fig, rings, norms, cmaps, lay)
 
 
 def _range_label(spec: RingSpec, n) -> str:
@@ -1020,7 +1525,13 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
     for i, spec in enumerate(rings, start=1):
         n = norms.get(spec.key)
         rng = _range_label(spec, n)
-        lines.append(f"  {i}. {spec.label} {rng} \u2014 {spec.source}")
+        # v2.6: the units and the transform travel with the range, because a
+        # range without them is a pair of numbers a reader cannot act on -- and
+        # on a transformed ring it is a pair of numbers in units nobody
+        # measured in.
+        lines.append(f"  {i}. {spec.label} {rng} {spec.units} \u2014 {spec.source}")
+        if spec.transform:
+            lines.append(f"       scale: {spec.transform}")
     lines += [
         "",
         "Pipeline: furthest phase counts only drugs indicated for a disease with human "
@@ -1244,9 +1755,14 @@ def _draw_conditions(fig, conditions: Sequence[str]) -> None:
                    "edgecolor": "#c98a00", "linewidth": 1.2})
 
 
-__all__ = ["render", "RING_SPECS", "STATE_STYLE", "VALUE_CMAP", "FigureResult",
-           "assert_fills_disjoint", "assert_footer_is_true", "colormap_hexes",
-           "assert_greyscale_disjoint", "relative_luminance", "value_cmap", "CMAP_STOPS",
+__all__ = ["render", "RING_SPECS", "RingSpec", "STATE_STYLE", "VALUE_CMAP",
+           "FigureResult", "assert_fills_disjoint", "assert_footer_is_true",
+           "colormap_hexes", "assert_greyscale_disjoint", "relative_luminance",
+           "value_cmap", "ring_cmap", "ring_swatches", "ring_identity_colour",
+           "ring_identity_colours", "ring_colours", "adjacent_ring_delta_e",
+           "CMAP_LUM", "GREYSCALE_MIN_DELTA", "ADJACENT_RING_MIN_DELTA_E",
+           "assert_ramp_luminance_is_monotone", "assert_rings_are_distinguishable",
            "assert_within_domain", "ACTIVITY_PALETTE", "RETIRED_CLAIM_WORDS",
            "slide_line", "assert_text_within_canvas",
-           "assert_no_text_over_the_rings", "assert_centre_fits_the_hole", "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE"]
+           "assert_no_text_over_the_rings", "assert_centre_fits_the_hole",
+           "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE"]
