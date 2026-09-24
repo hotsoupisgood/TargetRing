@@ -262,3 +262,51 @@ class TestStabilityFlag:
         }
         out = rank_genes(spec)
         assert any(r.unstable for r in out.values())
+
+
+class TestV5TheFooterMustNotContradictTheCode:
+    """COUNCIL V5. The rendered footer said 'Rodent ring: … Never folded into any
+    score' one line below 'Default weights … rodent=0.5', and `rodent` was in
+    RANKED_RINGS too, so it was in the weighted score *and* the median available
+    rank. Removing `rodent` from the weights moved TP53 #7 -> #9 and BRAF #4 -> #6.
+    """
+
+    def test_rodent_and_clinical_phase_are_in_no_score(self) -> None:
+        from targetring.rank import EXCLUDED_FROM_SCORE
+        from targetring.run import RANKED_RINGS
+        assert set(EXCLUDED_FROM_SCORE) == {"rodent", "clinical_phase"}
+        for ring in EXCLUDED_FROM_SCORE:
+            assert ring not in DEFAULT_WEIGHTS
+        assert "rodent" not in RANKED_RINGS
+        # clinical_phase stays ranked: it is a Pareto axis, just not a score term.
+        assert "clinical_phase" in RANKED_RINGS
+
+    def test_the_rodent_ring_reaches_no_rank(self) -> None:
+        from targetring.run import RANKED_RINGS
+        spec = {
+            "druggability": cells(A=1.0, B=0.0),
+            "rodent": cells(A=0.0, B=249.0),
+        }
+        out = rank_genes(spec, DEFAULT_WEIGHTS, RANKED_RINGS)
+        assert "rodent" not in out["A"].ranks and "rodent" not in out["B"].ranks
+        # B's 249 mouse-phenotype terms buy it nothing.
+        assert out["A"].median_rank > out["B"].median_rank
+
+    def test_putting_rodent_back_in_the_weights_fails_the_render(self) -> None:
+        """The claim is checked against the structure it describes, so the two
+        cannot drift apart again."""
+        from targetring.figure import assert_footer_is_true
+        with pytest.raises(AssertionError, match="never folded into any score"):
+            assert_footer_is_true({**DEFAULT_WEIGHTS, "rodent": 0.5}, ("druggability",))
+        with pytest.raises(AssertionError, match="never folded into any score"):
+            assert_footer_is_true({**DEFAULT_WEIGHTS, "clinical_phase": 1.0}, ())
+
+    def test_putting_rodent_back_in_ranked_rings_fails_the_render(self) -> None:
+        from targetring.figure import assert_footer_is_true
+        with pytest.raises(AssertionError, match="median available rank"):
+            assert_footer_is_true(DEFAULT_WEIGHTS, ("druggability", "rodent"))
+
+    def test_a_clean_configuration_passes(self) -> None:
+        from targetring.figure import assert_footer_is_true
+        from targetring.run import RANKED_RINGS
+        assert_footer_is_true(DEFAULT_WEIGHTS, RANKED_RINGS)

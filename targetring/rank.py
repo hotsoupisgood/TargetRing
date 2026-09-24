@@ -51,13 +51,29 @@ PARETO_AXES: tuple[str, ...] = (
 
 # Provisional. AGENTS.md: the defaults are a scientific choice, not a QA item,
 # and stay provisional until Puck signs them off. Printed on the figure.
+#
+# COUNCIL V5. Two rings were removed from this dict in v2:
+#   * `rodent` — M4 says the rodent result is a lead, never folded into a score,
+#     and the figure's own footer said so while `rodent=0.5` sat in the weights
+#     one line above it. It moved TP53 two places and BRAF two places. The gene
+#     it flattered most was TP53, whose 249 abnormal mouse-phenotype terms
+#     measure how catastrophic its knockout is (V9).
+#   * `clinical_phase` — D7 asked for the clinical ring to stay out of the
+#     weighted sum. It is still a Pareto axis; it is no longer a score term.
+# If either is ever put back, `_draw_stamps` must lose the sentence that denies
+# it. A figure must not make a false claim about its own method.
 DEFAULT_WEIGHTS: dict[str, float] = {
     "druggability": 1.0,
     "safety": 1.0,
     "regional_specificity": 1.0,
-    "clinical_phase": 1.0,
     "literature": 0.5,
-    "rodent": 0.5,
+}
+
+# Rings that are drawn and ranked but deliberately excluded from every score.
+# Kept as data so the figure and the tests read the same list.
+EXCLUDED_FROM_SCORE: dict[str, str] = {
+    "rodent": "COUNCIL M4/V5 — a lead, not a verdict; never folded into any score",
+    "clinical_phase": "COUNCIL D7/V5 — a Pareto axis, deliberately not a score term",
 }
 
 

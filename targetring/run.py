@@ -59,9 +59,14 @@ DEFAULT_REGION = "Lung"
 
 # Rings that feed the ranking. The user's own logFC/padj and k are drawn but not
 # ranked against each other -- they are his measurement, not a target property.
+#
+# COUNCIL V5: `rodent` is gone from here as well as from DEFAULT_WEIGHTS. It was
+# in both the weighted score and the median available rank while the figure's
+# footer asserted it was "never folded into any score". It is now drawn, read in
+# the drawer, and ranked nowhere -- which is what M4 asked for.
 RANKED_RINGS = (
     "druggability", "safety", "regional_specificity",
-    "clinical_phase", "clinical_activity", "rodent", "literature",
+    "clinical_phase", "clinical_activity", "literature",
 )
 
 
@@ -264,6 +269,7 @@ async def run_analysis(
             },
             invariant_failures=failures,
             weights=DEFAULT_WEIGHTS,
+            ranked_rings=RANKED_RINGS,
             provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
         )
 

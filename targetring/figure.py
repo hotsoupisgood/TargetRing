@@ -30,7 +30,7 @@ from matplotlib.colors import Normalize, to_hex  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 from pycirclize import Circos  # noqa: E402
 
-from .rank import DEFAULT_WEIGHTS, GeneRanking  # noqa: E402
+from .rank import DEFAULT_WEIGHTS, EXCLUDED_FROM_SCORE, GeneRanking  # noqa: E402
 from .states import Cell  # noqa: E402
 
 VALUE_CMAP = "viridis"
@@ -126,11 +126,13 @@ def render(
     ledger_counts: dict[str, int],
     invariant_failures: Sequence[str] = (),
     weights: dict[str, float] | None = None,
+    ranked_rings: Sequence[str] = (),
     subtitle: str = "",
     provenance: str = "",
 ) -> FigureResult:
     assert_fills_disjoint()
     weights = weights or DEFAULT_WEIGHTS
+    assert_footer_is_true(weights, ranked_rings or ())
     genes = list(genes)
     if not genes:
         raise ValueError("no genes to render")
@@ -262,6 +264,29 @@ def _draw_legend(fig, rings, norms, cmap) -> None:
              fontsize=6.6, va="top", ha="left", color="#222222", family="monospace")
 
 
+def assert_footer_is_true(weights: dict[str, float], ranked_rings: Sequence[str]) -> None:
+    """COUNCIL V5: the figure must not make a false claim about its own method.
+
+    v1's footer read "Rodent ring: … Never folded into any score" one line below
+    "Default weights … rodent=0.5", and `rodent` was in RANKED_RINGS too, so it
+    was in the weighted score *and* the median available rank. Rather than trust
+    a comment to keep the two in step, the claim is checked against the data
+    structures it describes, every time the figure is drawn.
+    """
+    for ring, why in EXCLUDED_FROM_SCORE.items():
+        if ring in weights:
+            raise AssertionError(
+                f"the figure's footer says {ring!r} is never folded into any score, but it "
+                f"is in the default weights ({ring}={weights[ring]:g}). {why}. "
+                f"Either remove the weight or delete the footer sentence."
+            )
+        if ring in ranked_rings and ring == "rodent":
+            raise AssertionError(
+                f"{ring!r} is in RANKED_RINGS, so it contributes to the median available "
+                f"rank, while the footer says it is never folded into any score. {why}."
+            )
+
+
 def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring) -> None:
     w = ", ".join(f"{k}={v:g}" for k, v in sorted(weights.items()))
     n_tissues = ""
@@ -269,14 +294,16 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring) -> N
         if c.state == "value" and isinstance(c.raw, dict) and c.raw.get("n_tissues"):
             n_tissues = f"{c.raw['n_tissues']} GTEx tissues"
             break
+    excluded = ", ".join(sorted(EXCLUDED_FROM_SCORE))
     notes = [
         "HEADLINE = Pareto non-dominated set (◆), over druggability, safety, regional "
-        "specificity, furthest clinical phase.",
+        "specificity, furthest clinical phase. A gene needs a real value on ALL FOUR to be "
+        "eligible; genes with fewer are neither in the set nor able to remove anything from it.",
         f"Weighted score is a labelled CONVENIENCE, not the headline. Default weights "
-        f"(provisional, unsigned-off): {w}.",
+        f"(provisional, unsigned-off): {w}. Excluded from every score: {excluded}.",
         f"Regional specificity = {region} TPM ÷ median across {n_tissues or 'the GTEx panel'}.",
-        "Rodent ring: abstract/model evidence is a LEAD, not a verdict. Never folded into "
-        "any score.",
+        "Rodent ring: abstract/model evidence is a LEAD, not a verdict, and is ranked nowhere "
+        "and weighted nowhere. Asserted against the weights at draw time, not just claimed.",
         "Missing is never imputed. k = rings with a real measurement for that gene.",
         "* = this gene's top-10 place does not survive reweighting.",
     ]
@@ -300,4 +327,4 @@ def _draw_banner(fig, failures: Sequence[str]) -> None:
 
 
 __all__ = ["render", "RING_SPECS", "STATE_STYLE", "VALUE_CMAP", "FigureResult",
-           "assert_fills_disjoint", "colormap_hexes"]
+           "assert_fills_disjoint", "assert_footer_is_true", "colormap_hexes"]
