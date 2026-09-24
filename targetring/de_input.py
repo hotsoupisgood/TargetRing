@@ -326,12 +326,27 @@ def dedupe_on_resolved(
     return [best[k] for k in order] + passthrough, drops
 
 
+def dropped_entries(ledger: list[LedgerEntry]) -> list[LedgerEntry]:
+    """Ledger entries for genes that are *not* on the figure.
+
+    The ledger carries two kinds of entry, and conflating them breaks the
+    accounting in both directions. `renamed` and `possible_mouse` genes are
+    rendered *and* listed, because the user needs to see that SEPT9 became
+    SEPTIN9 on a figure that shows SEPTIN9. Everything else is a gene that is
+    not there.
+    """
+    return [e for e in ledger if not e.rendered]
+
+
 def assert_accounted(input_rows: int, rendered: int, ledger: list[LedgerEntry]) -> None:
     """AGENTS.md rule 3 / QA B7. The run aborts rather than render a figure that
     has quietly lost a gene."""
-    ledgered = len(ledger)
-    if input_rows != rendered + ledgered:
+    dropped = len(dropped_entries(ledger))
+    if input_rows != rendered + dropped:
+        flagged = len(ledger) - dropped
         raise AssertionError(
             f"gene accounting broken: {input_rows} input rows != {rendered} rendered "
-            f"+ {ledgered} ledgered. Every input row must be one or the other."
+            f"+ {dropped} dropped. Every input row must be one or the other. "
+            f"({flagged} further ledger entries flag rendered genes and must not be "
+            f"counted as drops.)"
         )
