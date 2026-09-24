@@ -45,6 +45,7 @@ TARGET_QUERY = """query TargetRings($ids:[String!]!){
         clinicalReports{
           trialPhase clinicalStage trialOverallStatus trialStartDate
           trialStopReasonCategories source url
+          diseases{diseaseFromSource disease{id name}}
         }
       }
     }
@@ -486,6 +487,52 @@ def attributable_indications(rec: OTRecord, row: dict[str, Any]) -> list[dict[st
     return out
 
 
+def per_indication_stages(row: dict[str, Any]) -> tuple[dict[str, int], set[str]]:
+    """The furthest stage reached *per indication* in one drug row.
+
+    QA-v2-retest §2, and the structural half of the V1 defect. In the Open
+    Targets payload `drugAndClinicalCandidates.rows[]` is **one row per drug**
+    and its `maxClinicalStage` is that drug's *global* maximum across every
+    indication on the row -- for regorafenib, ~25 of them, every one of which
+    carries `APPROVAL` while regorafenib is approved for three. Reading the row
+    stage therefore reports a stage belonging to a different disease from the
+    one the attribution gate approved. FRK rendered "Approved" on
+    REGORAFENIB x age-related macular degeneration that way.
+
+    `clinicalReports[]` is one row per *trial or label*, and it carries both its
+    own `clinicalStage` and its own `diseases`. Reducing it by disease id gives
+    the quantity the ring claims to show. Regorafenib, measured live 2026-09-24:
+
+        colorectal cancer (MONDO_0005575)              APPROVAL  (DailyMed, PMDA)
+        gastrointestinal stromal tumor (MONDO_0011719) PHASE_3
+        age-related macular degeneration (MONDO_0005150) PHASE_2  <- the FRK case
+
+    `clinicalStage` is used rather than `trialPhase`: it is non-null, and it is
+    the same vocabulary as `maxClinicalStage`, so one ordinal table serves both.
+    `trialPhase` is a second vocabulary ("PHASE1", "PHASE1/PHASE2") and a second
+    mapping table is a second place to be wrong.
+
+    Returns `({disease_id: ordinal}, {stage strings seen but not mapped})`.
+    Stages this build does not map (`EARLY_PHASE_1`, `UNKNOWN`, `WITHDRAWAL`)
+    are returned as the second element and never guessed at: an unmapped stage
+    is a fact we do not have, not a low one.
+    """
+    stages: dict[str, int] = {}
+    unmapped: set[str] = set()
+    for report in row.get("clinicalReports") or []:
+        raw = report.get("clinicalStage") or report.get("trialPhase")
+        ordinal = CLINICAL_STAGE_ORDINAL.get(str(raw or ""))
+        if ordinal is None:
+            if raw:
+                unmapped.add(str(raw))
+            continue
+        for d in report.get("diseases") or []:
+            did = (d.get("disease") or {}).get("id")
+            if did:
+                stages[did] = max(stages.get(did, 0), ordinal)
+    return stages, unmapped
+
+
 def severe_liabilities(rec: OTRecord) -> list[dict[str, str]]:
     """COUNCIL V1 (ii). Cardiac / mortality safety liabilities on record.
 
@@ -519,6 +566,19 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
     target. A target whose drugs are all unattributed is `not_applicable`: a
     distinct state, hatched and off-colormap, not a lower number that would read
     as "less validated" on the same scale.
+
+    QA-v2-retest §2 -- the gate was right and the *quantity* was wrong. Having
+    established that a drug-target-indication link is genuine, v2 then reported
+    `maxClinicalStage`, which is the drug's global maximum over every indication
+    on the row. FRK rendered 5.0, "Approved", on REGORAFENIB x age-related
+    macular degeneration: the attribution is real (genetic_association 0.41) and
+    regorafenib is approved -- for colorectal cancer. The number belonged to a
+    different disease. That is the V1 defect surviving the V1 fix.
+
+    The phase reported is now the phase **for the attributed indication**, read
+    off `clinicalReports` by disease id (`per_indication_stages`). Where no
+    per-indication stage can be established for any attributed link, the cell is
+    `no_data` -- never the drug's global number, which is a borrowed one.
     """
     if not rec.found:
         return no_data(f"{rec.ensembl_id} not found in Open Targets")
@@ -542,7 +602,8 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
         )
 
     staged = [r for r in rec.drug_rows
-              if (r.get("maxClinicalStage") or "") in CLINICAL_STAGE_ORDINAL]
+              if (r.get("maxClinicalStage") or "") in CLINICAL_STAGE_ORDINAL
+              or per_indication_stages(r)[0]]
     if not staged:
         # v1 returned value(1.0) — "preclinical" — here, which quietly absorbed
         # any new enum value Open Targets might introduce. An unmapped stage is
@@ -554,17 +615,52 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
             f"{sorted(CLINICAL_STAGE_ORDINAL)}."
         )
 
+    # (stage-for-that-indication, drug, indication). One entry per attributed
+    # drug-indication *pair*, because that pair is what the ring claims about.
     attributed: list[tuple[int, str, dict[str, Any]]] = []
+    # Attributed links whose per-indication stage could not be established.
+    # These must not fall back to the drug's global stage (QA-v2-retest §2).
+    unstaged: list[tuple[str, str]] = []
+    unmapped_seen: set[str] = set()
     unattributed_top = 0
+    # The drug's own global maximum, where that exceeds what it reached for the
+    # indication we credited it with. FRK x regorafenib: 5 vs 3.
+    global_over_attributed = 0
     for row in staged:
-        stage = CLINICAL_STAGE_ORDINAL.get(row.get("maxClinicalStage") or "")
-        if stage is None:
-            continue
+        drug = (row.get("drug") or {}).get("name") or "?"
+        stage = CLINICAL_STAGE_ORDINAL.get(row.get("maxClinicalStage") or "") or 0
+        per, unmapped = per_indication_stages(row)
+        unmapped_seen |= unmapped
         hits = attributable_indications(rec, row)
-        if hits:
-            attributed.append((stage, (row.get("drug") or {}).get("name") or "?", hits[0]))
-        else:
-            unattributed_top = max(unattributed_top, stage)
+        if not hits:
+            # Nothing on this row is attributable, so its furthest reach is
+            # reported only as the excluded finding, never as the ring.
+            unattributed_top = max(unattributed_top, stage, *per.values(), 0)
+            continue
+        for hit in hits:
+            own = per.get(hit["id"])
+            if own is None:
+                unstaged.append((drug, str(hit["name"])))
+            else:
+                attributed.append((own, drug, hit))
+                if stage > own:
+                    global_over_attributed = max(global_over_attributed, stage)
+
+    if not attributed and unstaged:
+        # The gate opened on a genuine association and there is no per-indication
+        # stage behind it. Reporting the drug's global stage here is exactly the
+        # FRK defect, so the honest answer is that we could not establish one.
+        pairs = "; ".join(f"{d} × {i}" for d, i in unstaged[:4])
+        return no_data(
+            f"{rec.drug_count} candidates, {len(unstaged)} with an attributable indication "
+            f"({pairs}), but Open Targets' clinicalReports carry no stage this build maps "
+            f"for that indication, so there is no phase FOR THE ATTRIBUTED INDICATION to "
+            f"report. The drug's global maxClinicalStage is deliberately NOT used: it is the "
+            f"drug's maximum across every disease it was ever trialled for and belongs to a "
+            f"different indication (QA-v2-retest §2)."
+            + (f" Stage values seen but unmapped: {sorted(unmapped_seen)[:6]}."
+               if unmapped_seen else "")
+        )
 
     if not attributed:
         names = [(r.get("drug") or {}).get("name") for r in rec.drug_rows[:3]]
@@ -582,27 +678,52 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
             raw={"unattributed_max_stage": unattributed_top, "attributed": 0},
         )
 
-    # Report the strongest-evidence row among those tied at the top stage. Ties
+    # Report the strongest-evidence pair among those tied at the top stage. Ties
     # at stage 5 are common (BRAF has 18 approved candidates) and picking the
     # first would name a weak exemplar for a well-attributed ring.
+    #
+    # QA-v2-retest §3: this tiebreak named SORAFENIB TOSYLATE x lung cancer for
+    # BRAF, because its 0.83 beat VEMURAFENIB x melanoma's 0.699 -- and sorafenib
+    # is not approved for lung cancer. It named the exact drug the V1 fix exists
+    # to reject. It no longer can: the candidates are now ranked on the stage
+    # reached *for that indication*, and sorafenib x lung cancer is Phase 2
+    # (measured live), so it never reaches the stage-5 tie that vemurafenib x
+    # melanoma (APPROVAL, DailyMed/EMA) is in. Among genuine ties -- links that
+    # all reached the same stage for their own indication -- strongest evidence
+    # is still the exemplar worth naming.
     top = max(t[0] for t in attributed)
     _, drug, hit = max(
         (t for t in attributed if t[0] == top),
         key=lambda t: max(t[2]["evidence"].values()),
     )
+    n_drugs = len({t[1] for t in attributed})
     ev = ", ".join(f"{k} {v:.2f}" for k, v in sorted(hit["evidence"].items()))
     detail = (
-        f"{STAGE_LABEL[top]} — {drug} for {hit['name']}, attributable to this target "
-        f"({ev}). {len(attributed)} of {rec.drug_count} candidates have an attributable "
-        f"indication"
+        f"{STAGE_LABEL[top]} for this indication — {drug} reached {STAGE_LABEL[top]} "
+        f"for {hit['name']}, which is attributable to this target ({ev}). "
+        f"{n_drugs} of {rec.drug_count} candidates have an attributable indication"
     )
+    if global_over_attributed > top:
+        detail += (
+            f"; the drug's own global maxClinicalStage reaches "
+            f"{STAGE_LABEL[global_over_attributed]} for a DIFFERENT indication and is "
+            f"excluded — this ring is the phase for the attributed indication only"
+        )
     if unattributed_top > top:
         detail += (
             f"; {STAGE_LABEL[unattributed_top]} was reached by a candidate whose indication "
             f"is NOT attributable and is excluded from this ring"
         )
+    if unstaged:
+        detail += (
+            f"; {len(unstaged)} further attributable link(s) carry no mapped per-indication "
+            f"stage and set nothing"
+        )
     return value(float(top), detail,
-                 raw={"stage": top, "n_attributed": len(attributed),
+                 raw={"stage": top, "n_attributed": n_drugs,
+                      "n_attributed_links": len(attributed),
+                      "attributed_indication": hit["id"],
+                      "global_stage_excluded": global_over_attributed or None,
                       "unattributed_max_stage": unattributed_top})
 
 
@@ -802,5 +923,6 @@ __all__ = [
     "druggability_cell", "safety_cell", "clinical_phase_cell", "clinical_activity_cell",
     "rodent_cell", "drug_pipeline_rows", "pipeline_summary", "failed",
     "attributable_indications", "mechanistic_evidence", "severe_liabilities",
+    "per_indication_stages",
     "has_prioritisation_record",
 ]

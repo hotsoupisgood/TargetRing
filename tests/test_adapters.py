@@ -25,6 +25,7 @@ from targetring.adapters.opentargets import (
     clinical_activity_cell,
     clinical_phase_cell,
     druggability_cell,
+    per_indication_stages,
     rodent_cell,
     safety_cell,
     severe_liabilities,
@@ -75,13 +76,30 @@ class TestMissingIsNotLow:
         assert druggability_cell(ot(prioritisation={})).state == "no_data"
 
 
-def _row(stage, *disease_ids, drug="DRUG"):
-    """One drugAndClinicalCandidates row with its indications."""
+def _row(stage, *disease_ids, drug="DRUG", per_indication=None):
+    """One drugAndClinicalCandidates row with its indications.
+
+    `maxClinicalStage` is the drug's *global* maximum across every indication on
+    the row; the stage reached for one particular indication lives in
+    `clinicalReports` (QA-v2-retest §2). By default every listed indication gets
+    a report at the row's own stage -- the case where the two agree. Pass
+    `per_indication={disease_id: STAGE_OR_None}` for the case where they do not,
+    which is the FRK x REGORAFENIB defect.
+    """
+    reports = []
+    for d in disease_ids:
+        own = (per_indication or {}).get(d, stage)
+        if own is None:
+            continue
+        reports.append({
+            "clinicalStage": own, "trialPhase": None, "source": "ClinicalTrials.gov",
+            "diseases": [{"disease": {"id": d, "name": d.lower()}}],
+        })
     return {
         "maxClinicalStage": stage,
         "drug": {"id": "CHEMBL1", "name": drug},
         "diseases": [{"disease": {"id": d, "name": d.lower()}} for d in disease_ids],
-        "clinicalReports": [],
+        "clinicalReports": reports,
     }
 
 
@@ -634,6 +652,127 @@ class TestV1IndicationAttribution:
         rec.associations = {}
         c = clinical_phase_cell(rec)
         assert c.state == "value" and c.value == 0.0
+
+
+class TestV1PerIndicationPhase:
+    """QA-v2-retest §2. The V1 fix held as a mechanism and failed as an outcome.
+
+    `maxClinicalStage` is the *drug's* global maximum across every indication on
+    its row -- ~25 of them for a promiscuous drug -- so once the attribution gate
+    opened on a genuine target-disease link, the stage reported belonged to a
+    different disease. FRK rendered 5.0, "Approved", brightest fill, on
+    REGORAFENIB x age-related macular degeneration. FRK has no approved drug and
+    regorafenib is not approved for AMD.
+
+    The phase must be the phase FOR THE ATTRIBUTED INDICATION, or no number.
+    """
+
+    # Measured live from Open Targets, 2026-09-24, ENSG00000111816 (`FRK`):
+    # regorafenib's row carries maxClinicalStage = PHASE_4 and 134 indications.
+    # Per indication, off `clinicalReports`:
+    #     colorectal cancer  MONDO_0005575  APPROVAL  (DailyMed, PMDA)
+    #     GIST               MONDO_0011719  PHASE_3
+    #     AMD                MONDO_0005150  PHASE_2   <- the one FRK is credited with
+    FRK_AMD = "MONDO_0005150"
+    FRK_CRC = "MONDO_0005575"
+
+    def _frk(self):
+        rec = ot(ensembl_id="ENSG00000111816", drug_count=6, drug_rows=[
+            _row("PHASE_4", self.FRK_CRC, self.FRK_AMD, drug="REGORAFENIB",
+                 per_indication={self.FRK_CRC: "APPROVAL", self.FRK_AMD: "PHASE_2"}),
+        ])
+        # Live: FRK x AMD carries genetic_association 0.41, so the attribution
+        # gate correctly opens. FRK x colorectal carries no genetics at all.
+        rec.associations = {
+            self.FRK_AMD: {"genetic_association": 0.41, "literature": 0.22},
+            self.FRK_CRC: {"literature": 0.31, "clinical": 0.94},
+        }
+        return rec
+
+    def test_frk_does_not_render_approved_on_regorafenib_for_amd(self) -> None:
+        c = clinical_phase_cell(self._frk())
+        assert c.value != 5.0, "FRK has no approved drug; 'Approved' is the defect"
+        assert c.state == "value" and c.value == 3.0, "Phase 2 — what AMD reached"
+        assert "age-related" in c.detail.lower() or self.FRK_AMD.lower() in c.detail.lower()
+
+    def test_the_borrowed_approval_is_named_as_excluded_not_silently_dropped(self) -> None:
+        """The drug really did reach Approved — for another disease. Saying so is
+        the difference between a correction and a disappearance."""
+        c = clinical_phase_cell(self._frk())
+        assert "DIFFERENT indication" in c.detail
+        assert c.raw["global_stage_excluded"] == 5
+
+    def test_per_indication_stages_reads_the_reports_not_the_row(self) -> None:
+        row = self._frk().drug_rows[0]
+        stages, unmapped = per_indication_stages(row)
+        assert stages[self.FRK_CRC] == 5 and stages[self.FRK_AMD] == 3
+        assert row["maxClinicalStage"] == "PHASE_4", "the global stage is still 5 on the row"
+        assert not unmapped
+
+    def test_an_unmapped_report_stage_is_never_guessed_at(self) -> None:
+        """Open Targets emits EARLY_PHASE_1, UNKNOWN and WITHDRAWAL, which this
+        build does not map. They must not become a low number or a high one."""
+        row = _row("PHASE_2", "MONDO_X", per_indication={"MONDO_X": "UNKNOWN"})
+        stages, unmapped = per_indication_stages(row)
+        assert stages == {} and unmapped == {"UNKNOWN"}
+
+    def test_attributed_but_unstageable_is_no_data_not_the_global_stage(self) -> None:
+        """The whole point: with no per-indication stage behind a genuine
+        attribution, the answer is 'we could not establish one' — never the
+        drug's global number."""
+        rec = ot(drug_count=4, drug_rows=[
+            _row("APPROVAL", "MONDO_OWN", drug="PROMISCUOUS",
+                 per_indication={"MONDO_OWN": None}),
+        ])
+        rec.associations = {"MONDO_OWN": {"genetic_association": 0.8}}
+        c = clinical_phase_cell(rec)
+        assert c.state == "no_data" and c.value is None
+        assert "PROMISCUOUS" in c.detail and "global maxClinicalStage" in c.detail
+
+    def test_the_councils_epha2_case_still_holds_at_the_stage_level_too(self) -> None:
+        """COUNCIL V1's original: EPHA2, "Approved (3 candidates)", on
+        vandetanib, dasatinib and regorafenib. The gate closes on the score —
+        but the fixture now also carries the per-indication stages, so the test
+        pins BOTH halves: nothing is attributable, AND the APPROVAL on the row
+        belongs to colorectal cancer, not to anything EPHA2 is credited with."""
+        rec = ot(drug_count=3, drug_rows=[
+            _row("APPROVAL", "MONDO_0015277", drug="VANDETANIB"),
+            _row("APPROVAL", "MONDO_0011996", drug="DASATINIB"),
+            _row("PHASE_4", "MONDO_0005575", "MONDO_0005150", drug="REGORAFENIB",
+                 per_indication={"MONDO_0005575": "APPROVAL", "MONDO_0005150": "PHASE_2"}),
+        ])
+        rec.associations = {
+            "MONDO_0005575": {"literature": 0.781, "rna_expression": 0.033,
+                              "clinical": 0.937},
+            "MONDO_0005150": {"literature": 0.104},
+            "MONDO_0011996": {"literature": 0.135, "clinical": 0.948},
+            "MONDO_0015277": {"clinical": 0.892},
+        }
+        c = clinical_phase_cell(rec)
+        assert c.state == "not_applicable" and c.value is None
+        assert c.raw["unattributed_max_stage"] == 5
+
+    def test_braf_names_vemurafenib_not_sorafenib(self) -> None:
+        """QA-v2-retest §3. The max-evidence tiebreak named SORAFENIB TOSYLATE x
+        lung cancer (genetics 0.83) over VEMURAFENIB x melanoma (0.699) — the
+        exact drug the V1 fix exists to reject, and it is not approved for lung
+        cancer. Measured live: sorafenib reaches PHASE_2 for lung cancer while
+        vemurafenib reaches APPROVAL for melanoma, so ranking on the stage
+        reached FOR THAT INDICATION removes the tie the tiebreak was losing."""
+        rec = ot(drug_count=18, drug_rows=[
+            _row("PHASE_4", "MONDO_0005105", drug="VEMURAFENIB",
+                 per_indication={"MONDO_0005105": "APPROVAL"}),
+            _row("APPROVAL", "MONDO_0008903", drug="SORAFENIB TOSYLATE",
+                 per_indication={"MONDO_0008903": "PHASE_2"}),
+        ])
+        rec.associations = {
+            "MONDO_0005105": {"genetic_association": 0.699, "somatic_mutation": 0.796},
+            "MONDO_0008903": {"genetic_association": 0.83},
+        }
+        c = clinical_phase_cell(rec)
+        assert c.value == 5.0
+        assert "VEMURAFENIB" in c.detail
+        assert "SORAFENIB" not in c.detail
 
 
 class TestV1SevereLiabilityFlag:

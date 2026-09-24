@@ -30,7 +30,11 @@ GTEX_DATASET = "gtex_v8"
 # (QA N4: gene+source alone serves stale values across a schema change).
 SCHEMA_VERSIONS = {
     "opentargets.resolve": "1",
-    "opentargets.target": "1",
+    # v2: the pinned TARGET_QUERY now asks for `clinicalReports.diseases`, so the
+    # phase ring can report a stage *for the attributed indication* rather than
+    # the drug's global maximum (QA-v2-retest §2). A v1 payload carries no
+    # per-indication stage and would read as "cannot be established".
+    "opentargets.target": "2",
     "gtex.gene": "1",
     "gtex.median_expression": "1",
     "pubtator.count": "1",
