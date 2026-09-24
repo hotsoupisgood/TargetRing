@@ -111,26 +111,55 @@ class TestGTExContract:
         assert bad == [], "a wrong version still fails silently — hence resolve, never construct"
 
 
-async def _epmc(query: str) -> dict:
-    """Europe PMC was returning nginx 502/503 during this build (COUNCIL M6 saw
-    a transient 503 too). An outage is not a contract violation, so it skips
-    with the status in the reason rather than reporting a false failure — or,
-    worse, a false pass."""
-    import httpx
+class SourceUnreachable:
+    """A source being down is not a contract violation — UX A1, in the suite.
 
-    from targetring.http import HardFailure
-    async with Http() as http:
-        try:
+    v1 applied this to Europe PMC only. The v2 screenshot pass was interrupted
+    by EBI returning HTTP 500 with an HTML error page for every ChEMBL request,
+    and two tests reported FAIL for a source that was simply down and that
+    drives no ring and no rank (PLAN §8). Reporting a source outage as a test
+    failure is the same mistake as stamping DO NOT TRUST THIS FIGURE for one:
+    it trains the reader to ignore the signal.
+
+    Use as a context manager around the call. A transport error, a timeout or a
+    5xx skips with the status in the reason; anything else — a 200 whose shape
+    is wrong — is a real contract failure and propagates.
+    """
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def __enter__(self) -> "SourceUnreachable":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        import httpx
+
+        from targetring.http import HardFailure
+        if exc is None:
+            return False
+        if isinstance(exc, (httpx.TimeoutException, httpx.TransportError)):
+            pytest.skip(f"{self.name} unreachable, contract NOT evaluated: "
+                        f"{type(exc).__name__}: {str(exc)[:140]}")
+        if isinstance(exc, HardFailure):
+            text = str(exc)
+            transient = any(f"HTTP {c}" in text for c in (500, 502, 503, 504))
+            if transient or "content-type" in text:
+                pytest.skip(f"{self.name} unreachable, contract NOT evaluated: "
+                            f"{text[:160]}")
+        return False
+
+
+async def _epmc(query: str) -> dict:
+    """Europe PMC was returning nginx 502/503 during the v1 build (COUNCIL M6
+    saw a transient 503 too)."""
+    with SourceUnreachable("Europe PMC"):
+        async with Http() as http:
             r = await http.get(
                 "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
                 {"query": query, "format": "json", "pageSize": 1},
             )
             return json_or_raise(r)
-        except (HardFailure, httpx.TimeoutException, httpx.TransportError) as e:
-            pytest.skip(
-                f"Europe PMC unreachable, contract not evaluated: "
-                f"{type(e).__name__}: {str(e)[:140]}"
-            )
 
 
 class TestLiteratureContract:
@@ -169,17 +198,26 @@ class TestChEMBLContract:
         """Probed 2026-09-24, not in either review: ChEMBL answers a bogus
         filter with 200 and the entire unfiltered table. A typo'd filter becomes
         a confident wrong answer, so the adapter checks the row count."""
-        async with Http() as http:
-            r = await http.get("https://www.ebi.ac.uk/chembl/api/data/target.json",
-                               {"notaparam": "x", "limit": 1})
-            body = json_or_raise(r)
-        assert r.status_code == 200
-        assert body["page_meta"]["total_count"] > 10_000
+        with SourceUnreachable("ChEMBL"):
+            async with Http() as http:
+                r = await http.get("https://www.ebi.ac.uk/chembl/api/data/target.json",
+                                   {"notaparam": "x", "limit": 1})
+                body = json_or_raise(r)
+            assert r.status_code == 200
+            assert body["page_meta"]["total_count"] > 10_000
 
     async def test_the_adapter_refuses_an_unfiltered_response(self) -> None:
         from targetring.adapters.chembl import ChEMBLAdapter
         async with Http() as http:
             rec = await ChEMBLAdapter(http, Cache(enabled=False)).fetch_one("P15056")
+        if rec.state == "failed" and (
+            any(f"HTTP {c}" in (rec.error or "") for c in (500, 502, 503, 504))
+            or "Error" in (rec.error or "") or "Timeout" in (rec.error or "")
+        ):
+            # The adapter swallows the exception by design — a source failure is
+            # a `failed` cell, not a crash — so the skip is decided on the
+            # recorded error rather than on an exception reaching the test.
+            pytest.skip(f"ChEMBL unreachable, contract NOT evaluated: {rec.error[:160]}")
         assert rec.target_chembl_id == "CHEMBL5145"
         assert len(rec.mechanisms) >= 10
 

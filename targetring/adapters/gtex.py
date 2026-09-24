@@ -23,6 +23,8 @@ from typing import Any
 
 from ..cache import Cache
 from ..config import GTEX_BASE, GTEX_DATASET
+from ..http import Http, describe, json_or_raise
+from ..states import Cell, no_data, value
 
 # COUNCIL V7. A ratio without a level is not a specificity statement. Measured
 # in the council's liver run: GFAP (astrocyte-restricted, 0.216 TPM in liver)
@@ -34,8 +36,6 @@ from ..config import GTEX_BASE, GTEX_DATASET
 # 1 TPM is the conventional floor for "expressed at all" in bulk RNA-seq. It is
 # a stated choice, not a measured threshold, and it is printed on the figure.
 REGION_TPM_FLOOR = 1.0
-from ..http import Http, json_or_raise
-from ..states import Cell, no_data, value
 
 
 @dataclass
@@ -66,7 +66,7 @@ class GTExAdapter:
                 )
                 body = json_or_raise(r)
             except Exception as e:  # noqa: BLE001
-                return GTExRecord(gencode_id, error=str(e))
+                return GTExRecord(gencode_id, error=describe(e))
             rows = body.get("data") or []
             cached = [
                 {

@@ -678,3 +678,52 @@ class TestV1SevereLiabilityFlag:
         assert "⚠ KCNH2" in svg or "KCNH2" in svg
         assert "cardiac-conduction, cardiotoxicity or mortality" in svg
         assert "never a safety one" in svg
+
+
+class TestAFailureAlwaysCarriesAReason:
+    """Found while EBI was returning HTTP 500 for every ChEMBL request during
+    the v2 screenshot pass: several httpx exceptions carry no message, so
+    `str(e)` was `''` and a `failed` record's reason was the empty string.
+
+    The legend promises "call FAILED — not the same as absent". A failure with
+    no reason keeps the distinction and throws away the only thing that makes it
+    actionable — and it is what made the ChEMBL contract test report FAIL for a
+    source that was simply down.
+    """
+
+    def test_describe_is_never_empty(self) -> None:
+        import httpx
+
+        from targetring.http import describe
+        for e in (httpx.ReadError(""), httpx.ConnectError(""), RuntimeError(),
+                  httpx.TimeoutException(""), ValueError("")):
+            got = describe(e)
+            assert got.strip(), f"{type(e).__name__} produced an empty reason"
+            assert type(e).__name__ in got
+
+    def test_a_message_is_kept_when_there_is_one(self) -> None:
+        from targetring.http import describe
+        got = describe(RuntimeError("HTTP 500 from ebi.ac.uk"))
+        assert "HTTP 500 from ebi.ac.uk" in got and "RuntimeError" in got
+
+    def test_no_adapter_records_a_bare_str_of_an_exception(self) -> None:
+        """The whole class of defect, not just the one instance.
+
+        Scoped to the adapters and the contract checks, where the exception
+        comes off a network call and its type is arbitrary. `app.py` is excluded
+        on purpose: it stringifies exceptions this codebase raises itself
+        (InputRejected, HardFailure, the accounting AssertionError), all of which
+        carry a written message, and the API response names the class in its own
+        `error` key.
+        """
+        import pathlib
+        root = pathlib.Path(__file__).resolve().parent.parent / "targetring"
+        files = list((root / "adapters").rglob("*.py")) + [root / "contract.py"]
+        offenders = []
+        for f in files:
+            for i, line in enumerate(f.read_text().splitlines(), 1):
+                if "str(e)" in line and "describe" not in line:
+                    offenders.append(f"{f.name}:{i}: {line.strip()}")
+        assert not offenders, (
+            "record failures with `describe(e)`, which always names the exception "
+            "type: " + "; ".join(offenders))

@@ -18,7 +18,7 @@ from typing import Any
 
 from ..cache import Cache
 from ..config import OPENTARGETS_URL
-from ..http import Http, graphql
+from ..http import Http, describe, graphql
 from ..states import Cell, failed, no_data, not_applicable, value
 
 # --- the pinned production query -------------------------------------------
@@ -274,9 +274,9 @@ class OpenTargetsAdapter:
             try:
                 data = await graphql(self.http, OPENTARGETS_URL, TARGET_QUERY, {"ids": pending})
             except Exception as e:  # noqa: BLE001 -- recorded, then surfaced as `failed`
-                self.failure = str(e)
+                self.failure = describe(e)
                 for eid in pending:
-                    out[eid] = OTRecord(eid, found=False, error=str(e))
+                    out[eid] = OTRecord(eid, found=False, error=describe(e))
                 return {eid: out[eid] for eid in wanted}
 
             returned = data["targets"]
@@ -326,7 +326,7 @@ class OpenTargetsAdapter:
                         {"ids": [eid], "bs": bs, "size": min(len(bs) + 5, 500)},
                     )
                 except Exception as e:  # noqa: BLE001
-                    rec.associations_error = str(e)
+                    rec.associations_error = describe(e)
                     return
                 rows = (data["targets"][0]["associatedDiseases"]["rows"]
                         if data.get("targets") else [])

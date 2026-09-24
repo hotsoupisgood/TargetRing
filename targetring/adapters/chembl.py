@@ -26,7 +26,7 @@ from typing import Any
 
 from ..cache import Cache
 from ..config import CHEMBL_BASE
-from ..http import Http, HardFailure, json_or_raise
+from ..http import HardFailure, Http, describe, json_or_raise
 
 
 @dataclass
@@ -64,7 +64,7 @@ class ChEMBLAdapter:
         try:
             tid = await self._target_id(uniprot)
         except Exception as e:  # noqa: BLE001
-            rec.state, rec.error = "failed", str(e)
+            rec.state, rec.error = "failed", describe(e)
             return rec
         if tid is None:
             rec.state = "no_target_record"
@@ -73,7 +73,7 @@ class ChEMBLAdapter:
         try:
             rec.mechanisms = await self._mechanisms(tid)
         except Exception as e:  # noqa: BLE001
-            rec.state, rec.error = "failed", str(e)
+            rec.state, rec.error = "failed", describe(e)
             return rec
         rec.state = "mechanisms" if rec.mechanisms else "undrugged"
         return rec

@@ -30,6 +30,19 @@ class HardFailure(RuntimeError):
     """Abort the run. Never caught to produce an empty ring."""
 
 
+def describe(e: BaseException) -> str:
+    """The reason a call failed, in a form that is never empty.
+
+    Found while ChEMBL was 500-ing during the v2 screenshot pass: several
+    httpx exceptions carry no message, so `str(e)` is `''` and a `failed` cell
+    recorded its reason as the empty string. The legend promises "call FAILED —
+    not the same as absent"; a failure with no reason keeps the distinction and
+    throws away the only thing that makes it actionable.
+    """
+    text = str(e).strip()
+    return f"{type(e).__name__}: {text}" if text else type(e).__name__
+
+
 class RateLimited(HardFailure):
     """A 429. AGENTS.md rule 9: never a retry loop, always a run failure."""
 

@@ -15,7 +15,7 @@ from typing import Any
 
 from .adapters.opentargets import DRUGGABILITY_KEYS, SAFETY_KEYS, TARGET_QUERY
 from .config import GTEX_BASE, GTEX_DATASET, OPENTARGETS_URL
-from .http import Http, graphql, json_or_raise
+from .http import Http, describe, graphql, json_or_raise
 
 # Introspected 2026-09-24. Only the fields v1 actually reads.
 FIELD_SNAPSHOT: frozenset[str] = frozenset({
@@ -66,7 +66,7 @@ async def check_contracts(http: Http) -> list[dict[str, Any]]:
                "every key a ring reads is present" if not absent
                else f"rings would be empty for: {sorted(absent)}")
     except Exception as e:  # noqa: BLE001
-        record("opentargets.production_query", False, str(e))
+        record("opentargets.production_query", False, describe(e))
 
     # 2. Field snapshot diff.
     try:
@@ -76,7 +76,7 @@ async def check_contracts(http: Http) -> list[dict[str, Any]]:
                "schema matches the checked-in snapshot" if not gone
                else f"fields removed from Target: {sorted(gone)}")
     except Exception as e:  # noqa: BLE001
-        record("opentargets.field_snapshot", False, str(e))
+        record("opentargets.field_snapshot", False, describe(e))
 
     # 3. The batch-drop premise behind the B2 regression test.
     try:
@@ -89,7 +89,7 @@ async def check_contracts(http: Http) -> list[dict[str, Any]]:
         record("opentargets.batch_drop", returned == [BRAF],
                f"nonexistent id still dropped, not nulled (returned {returned})")
     except Exception as e:  # noqa: BLE001
-        record("opentargets.batch_drop", False, str(e))
+        record("opentargets.batch_drop", False, describe(e))
 
     # 4. GTEx version coupling.
     try:
@@ -102,7 +102,7 @@ async def check_contracts(http: Http) -> list[dict[str, Any]]:
         record("gtex.version_coupling", n > 40,
                f"{gid} ({GTEX_DATASET}) returns {n} tissues")
     except Exception as e:  # noqa: BLE001
-        record("gtex.version_coupling", False, str(e))
+        record("gtex.version_coupling", False, describe(e))
 
     return out
 

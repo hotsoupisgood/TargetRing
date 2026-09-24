@@ -27,7 +27,7 @@ from typing import Any
 
 from ..cache import Cache
 from ..config import EUROPEPMC_SEARCH, PUBTATOR_SEARCH
-from ..http import Http, HardFailure, check_no_ncbi_error, json_or_raise
+from ..http import HardFailure, Http, check_no_ncbi_error, describe, json_or_raise
 from ..states import Cell, failed, no_data, value
 
 
@@ -112,7 +112,7 @@ class PubTatorAdapter:
                 # the status code. Verified: db=notadb gives 200 + ERROR body.
                 check_no_ncbi_error(body, "PubTator3")
             except Exception as e:  # noqa: BLE001
-                rec.error = str(e)
+                rec.error = describe(e)
                 return rec
             if not isinstance(body.get("count"), int):
                 rec.error = f"PubTator3 returned no integer `count` (keys: {sorted(body)})"
@@ -194,7 +194,7 @@ class EuropePMCAdapter:
                 )
                 body = json_or_raise(r)
             except Exception as e:  # noqa: BLE001
-                return EPMCResult(q, error=str(e))
+                return EPMCResult(q, error=describe(e))
             echo = (body.get("request") or {}).get("queryString")
             echo_ok = echo == q
             if not echo_ok:
