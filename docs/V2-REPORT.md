@@ -1946,3 +1946,308 @@ neither raises nor lowers eligibility) are untouched.
    spec.
 3. Everything already in §6, §v2.1, §v2.2 and §v2.3, unchanged: the default
    weights, and licensing before any workplace use.
+
+---
+
+# v2.5 — ranking deleted, threshold filters added
+
+Wren II, 2026-09-24. Local only, nothing deployed, nothing pushed, no money
+spent (triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched, the
+OpenClaw gateway not restarted. Four commits — one per item, plus one for a gap
+the work exposed — and this report.
+
+**Tests: 410 passed, 0 skipped, 0 failed** (the whole suite, live tests
+included; 375 before). All seven invariants PASS on a clean cold run
+(`runs/V25-COUNCIL-COLD`), on all six fixture × region combinations, on a
+seventh filtered combination, and on the cold 50-gene run.
+
+**Cold 50 genes: 23.8 s against a 60 s target** (27.2 s in v2.4). I am not
+claiming the 3.4 s as a speedup: ranking never appeared as its own term in any
+measurement I have, the run is network-dominated, and one cold run against a
+live API is not a before-and-after. Read it as "still comfortably under target".
+
+## Read this first: nothing broke, three things are newly uncertain
+
+**1. I rewrote a hard rule in `AGENTS.md`, and that is yours to check.** Rule 7
+read "No weighted sum as the headline. Rank within the submitted gene set,
+report the Pareto non-dominated set as the headline…". Your decision makes it
+false, and a hard rule that mandates a deleted feature is a trap for whoever
+reads it next. It now says there is no ranking, states the spoke-order rule in
+its place, and keeps the old text visible so the change is legible rather than
+silent. **If you would rather AGENTS.md stayed exactly as you wrote it, say so
+and I will revert that one hunk** — nothing in the code depends on it.
+
+**2. `k`'s meaning is narrower than it was, and the figure now says so.** It
+used to be two things: a completeness gauge, and the denominator of the median
+available rank. It is only the gauge now — it orders nothing and selects
+nothing. That is not a defect, but a reader who knew the old figure will assume
+`k=9/9` still buys a gene something. It buys nothing. The stamp and the drawer
+both say "completeness only". COUNCIL V13's fix (external rings only, maximum
+printed) is untouched.
+
+**3. The centre of the figure is close to its geometric limit again.** With two
+filters active, the hole holds the counts, the dropped-gene names, the ordering
+sentence and the filter block. `assert_centre_fits_the_hole` refused to render
+once during this work — a filter on `Target development level (Pharos TDL —
+knowledge, not a pocket)` overran by 14 px — and the fix was to wrap the block
+at 32 characters rather than to relax the check. Three or four filters with long
+ring labels will hit it again. The assertion is correct and will stop the
+figure rather than clip it; what is unknown is where the ceiling is. Same
+neighbourhood as §v2.2 *Still open* 6 and §v2.3's near-miss.
+
+## Item 1 — ranking removed entirely ✅
+
+**Commit** `8d76d88`. `targetring/rank.py` (367 lines) is deleted.
+
+Out, with every figure element, footer sentence, caption line, manifest field,
+CSV column, drawer field, UI panel and test that existed only to serve them:
+
+| gone | where it showed |
+|---|---|
+| Pareto non-dominated set, `_dominates`, `pareto_front` | the ◆ headline and its centre line |
+| eligibility, `PARETO_AXES`, `PARETO_MIN_ELIGIBLE` | "◆ 4 of 10 eligible", COUNCIL V10's floor |
+| weighted score, `DEFAULT_WEIGHTS`, `EXCLUDED_FROM_SCORE` | two footer lines, the caption, `manifest.weights`, the UI's weights panel |
+| rank within the submitted set, median available rank | the drawer, the spoke order |
+| reweighting-stability flag | the `*` on spoke labels |
+| `RANKED_RINGS`, `pareto_axis_completeness` | `manifest.pareto_completeness`, a run condition |
+
+Also out: the caveats that existed **only because ranking did** — "ranking is
+provisional and not validated" from the centre of the audit render, from the
+slide's one honest line, and from the UI header and caveats tab. A caveat about
+a thing the figure no longer does is not honesty, it is noise. What stays is
+every caveat about something the figure still does: "NOT evidence of safety",
+"RESCALED WITHIN EACH RING", the mouse-phenotype lead, the attribution gate,
+"missing is never imputed".
+
+**No dead code behind a flag.** There is no `if ENABLE_RANKING`. The module is
+gone and `RETIRED_CLAIM_WORDS` fails the render on any surviving sentence that
+promises a Pareto set, a score, a weight, eligibility, a headline or
+reweighting — checked against the stamps and the caption on every draw, which
+is how the ring labels got caught still saying "— Pareto axis".
+
+### Gene order around the circle
+
+Default: **the order of the submitted DE table, unchanged.** Your reasoning,
+implemented literally — you have usually already sorted it, and it is your
+measurement rather than a composite we invented.
+
+Both alternatives were cheap and are in: **alphabetical**, and **by a single
+ring** (`ring:<key>`, best first, on any of the eleven filterable rings). A
+single ring is one source's own number rather than a composite, which is the
+whole reason it is allowed where a ranking is not — it orders spokes and
+combines nothing, so M3's incommensurability cannot come back through it. Genes
+with no value on that ring go last as a visible block, in submitted order, never
+interleaved and never treated as the lowest value.
+
+**The rule is stated on the figure** — in the hole, in the footer, on the slide's
+one line, in the caption, in the manifest and on the counts line in the app —
+and an ordering this figure cannot honour is rejected rather than silently
+swapped for another while the figure prints the first.
+
+### What depended on ranking, checked before deleting
+
+- **`k` (rings available).** Computed by `rank_genes` but never part of the
+  ranking. Moved to `order.gene_stats` unchanged, still external rings only
+  (COUNCIL V13), still drawn on 0..9 with the maximum printed. Its meaning
+  narrows — see *Read this first* 2.
+- **The data-completeness ring.** Derived from `k`, so it moved with it.
+  Unchanged on the figure. It is deliberately **not** filterable: filtering on
+  `k` would filter on how much anybody has studied a gene, which is M3's bias
+  with a slider on it.
+- **The invariants.** I1–I6 never touched ranking. **I7 did, and was not
+  dropped.** Its first assertion (every front member has a value on every Pareto
+  axis, COUNCIL V2) was a ranking check and went with the feature. Its second
+  (the diamonds drawn on the figure are exactly the front, checked in the
+  artefact) was a *figure-honesty* check — the drawn artefact must not assert
+  what the run cannot support — and that outlives the feature it was written
+  for. I7 keeps its id, its name is now "the figure states what it did", and it
+  asserts against the rendered SVG: no ◆ survives anywhere, the ordering rule is
+  printed, the printed rule is the one used, the spokes are genuinely in that
+  order, and every active filter is named. **Seven invariants, none relaxed.**
+- **`assert_footer_is_true`** (COUNCIL V5) re-pointed the same way: same
+  function, same job, new claims.
+
+**Evidence:** `tests/test_order.py` (24), which carries the three groups from
+`test_rank.py` that were never about ranking — `TestNeverImpute`, COUNCIL V5's
+footer check, and the drawer-only cost alarm — re-pointed rather than deleted.
+`tests/test_invariants.py::TestI7TheFigureStatesWhatItDid` (11).
+
+## Item 2 — manual threshold filters, per data source ✅
+
+**Commit** `e100c03`, plus `547a334`.
+
+One filter per ring per comparison, `ring >= n` or `ring <= n`, on eleven rings
+including your own logFC and adjusted p. Compared against **the ring's own raw
+value** — the number in `values.csv`, in the units the label states — never
+against a rank or a scaled colour position. `regional_specificity >= 5` means
+five-fold; `neg_log10_padj >= 3` means p ≤ 0.001.
+
+**Both rules hold, and are asserted rather than described.**
+
+*Rule 1 — a threshold never silently drops a gene with no data on that ring.*
+Measured live on a 5-gene table with `tdl >= 1`, where MIR29B2CHG (a lncRNA
+Pharos has no record for) is the no-data case:
+
+```
+tdl >= 1                  5 in / 5 rendered / 0 ledgered   MIR29B2CHG kept, marked ~
+tdl >= 1 drop_no_data     5 in / 4 rendered / 1 ledgered   MIR29B2CHG → filtered_no_data
+```
+
+The kept gene is marked in four places: `~` after its spoke label, a line in the
+hole, a run condition, and a note in its drawer naming the ring and saying why.
+The toggle is per filter, not global, and off unless asked for — one threshold
+may be a hard requirement and another a preference.
+
+*Rule 2 — filtered genes go in the drop ledger.* Two statuses, not one:
+`filtered` (a measurement missed the threshold) and `filtered_no_data` (there
+was nothing to measure), disjoint from the parse and resolution statuses and
+from the rendered-and-listed ones. One ledger row per gene however many filters
+it failed, naming each. `assert_accounted` runs a **second time** after
+filtering: a gene removed by a slider is as missing from the figure as one that
+failed to resolve. On the council list with two filters: 15 in / 7 rendered /
+8 ledgered (7 filtered + 1 ambiguous), I4 PASS.
+
+**Reproducible from the artefacts.** `ordering`, `ordering_note`, `filters` and
+`filter_counts` (including which genes were kept unevaluated, and on which
+rings) go in `manifest.json`; `values.csv` gains a spoke-order line, a filter
+table and a kept-not-filtered table, all after the value rows so the CSV still
+parses on its own.
+
+**Visible on the figure, not only in the app.** The hole carries "FILTERED — n
+active, this is not your whole submitted set" with each filter's labelled
+expression; the footer repeats it with the no-data rule; the caption lists them;
+and the slide render puts them on its own first line — at 10 pt across 1600 px
+the filters and the standing caveats do not fit side by side, and
+`assert_text_within_canvas` said so rather than shipping a sentence clipped at
+"not the whole".
+
+**Evidence:** `tests/test_filters.py` (39), the first two classes being the two
+rules. `runs/V25-FILTERED`.
+
+## Item 3 — PLAN.md corrected ✅
+
+**Commit** `9ea4aee`. Each correction marked `[changed, vN]` against the version
+that made it so, so the spec reads as a history rather than as a set of claims
+that are quietly false.
+
+- **§1** said "the circle is the gene set ordered by rank". It is the submitted
+  set in a stated order.
+- **§2** listed nine rings; the build draws **twelve, nine external**. Added the
+  mapping table: the druggability split (v2.3), Pharos TDL (v2.2), the rodent
+  rename (COUNCIL V15), logFC/padj as two rings, k over external rings only.
+- **§2 ring 5** carried v1's stop-reason counts. Re-measured live over BRAF's
+  1,433 clinical reports: `Business_Administrative 50 → 51`, `Negative 19 → 17`,
+  and seven more categories the old line did not list. **This is the second
+  report to flag these as stale** (§v2.4 *Still open* 2, §v2.3 *Still open* 7);
+  they are corrected now rather than flagged again.
+- **§2 ring 5 and §5** still described the retired ClinicalTrials.gov hop. §2
+  now records that rows are selected by carrying a `trialOverallStatus` and
+  never by a source literal, what the hop cost (217 requests, 48.2 s of 70.5 s,
+  one live 429), and the check that now exists. §5 gains the measured cold-50
+  numbers and the current source list.
+- **§3 "Ranking"** is now **"Gene order, and filters"**: what was deleted and
+  why, the three orderings, and the two binding filter rules.
+- **§6** documents I7 and says plainly it was re-pointed, not dropped.
+- **§8** drops the two out-of-scope entries that declined to claim something
+  that no longer exists.
+
+## The clean run
+
+`runs/V25-COUNCIL-COLD`, council liver set, region Liver, **empty cache**.
+
+```
+I1 PASS  I2 PASS  I3 PASS  I4 PASS  I5 PASS  I6 PASS  I7 PASS
+any_invariant_failed: False   all_invariants_pass: True
+15 in / 14 rendered / 1 ledgered · 11.3 s
+I1: 168 cells across 12 rings match the CSV
+I5: 1 Europe PMC echo checked live and byte-identical; no ERROR key in 14 NCBI responses
+I7: no headline marker survives the ranking; the spoke order is printed on the
+    figure (spoke order: the order of your submitted DE table (unchanged)) and
+    the spokes follow it; no threshold filter was active
+RUN CONDITIONS: none
+```
+
+The `RUN CONDITIONS` line is empty for the first time since v2.1: the line that
+used to be there was "4 Pareto-axis cell(s) missing", which was a fact about a
+headline that no longer exists. The missing cells are still there and still
+hatched — `regional_specificity` for 3 genes, `clinical_phase` for 1 — they
+simply cost nothing now.
+
+| fixture | Liver | Lung |
+|---|---|---|
+| `de_realistic.csv` (15 in / 14 / 1) | 7/7, 13.4 s | 7/7, 9.6 s |
+| `de_broken.csv` (16 in / 7 / 9) | 7/7, 6.6 s | 7/7, 7.7 s |
+| council liver set (15 in / 14 / 1) | 7/7, 11.3 s | 7/7, 11.4 s |
+| `de_realistic.csv` **filtered** (15 in / 7 / 8) | 7/7, 11.3 s | — |
+
+Cold 50 genes, empty cache, 50 rendered / 0 ledgered, no 429
+(`logs/cold50-v25.json`, `runs/COLD50-V25`):
+
+```
+total                    23.8 s     TARGET 60 s — MET, 60% under
+  resolve                  7.1 s
+  adapters (concurrent)    7.3 s   of which PubTator3 3.6, Open Targets 3.7,
+                                   GTEx 1.9, Pharos 0.4, EPMC probe 0.8
+  render                   3.6 s
+  source contracts         1.3 s
+  5-ID regression          1.1 s
+```
+
+## Screenshots
+
+`docs/screenshots/`, retaken on this code with the repo cache moved aside to
+`cache.v25-pre` — nothing deleted. Three new:
+
+| file | shows |
+|---|---|
+| `8-filtered-figure.png` | the council list under `literature >= 2` and `regional_specificity >= 0.5`: the amber "Filtered — this is not your whole submitted set" with both expressions, 4 filtered and 2 kept-and-marked, the filter block in the hole, and `GFAP (k=6/9) ~` and `⚠ KCNH2 (k=8/9) ~` on the rim |
+| `8b-filtered-ledger.png` | the ledger with `filtered` rows sorted after the parse failures and before the rendered-and-listed ones |
+| `8c-drawer-kept-not-filtered.png` | KCNH2's drawer: "rings with a real value (k) 8 of 9 — completeness only, k orders nothing and selects nothing", and the ~ note naming `regional_specificity` and why dropping it would delete under-studied genes |
+
+Every other shot is retaken on this code. `5-council-list-figure.png` is the one
+to compare with yesterday's: same genes, same rings, no diamond, no weights
+footer, and a spoke-order sentence where the headline used to be.
+
+## Still open
+
+**1. Ordering by a single ring is built and tested but unexercised on a real
+submission.** The unit tests cover ties, no-data blocks and the sign; the six
+matrix runs all use the default. If you use it and the last block of "no value
+here" genes reads badly, that is a design question I have not had a real opinion
+tested against.
+
+**2. A threshold on `clinical_activity` is a threshold on a three-state
+ordinal.** `clinical_activity >= 0` means "not stopped for cause", which is
+correct and easy to misread as "has a live trial" (that is `>= 1`). The ring is
+filterable because excluding it would be arbitrary; the legend names the three
+states on both renders, and the filter's printed label carries the ring's full
+name. Worth knowing before you use it.
+
+**3. The filtered figure is not in the cold-50 measurement.** 23.8 s is the
+unfiltered path. Filtering happens after every ring is fetched — it removes
+genes from the plot, not from the run — so it can only be faster, but the number
+above is not evidence of that.
+
+**4. §v2.4 *Still open* 1 is now true twice over.** BRAF's drawer numbers moved
+between v2.3 and v2.4, and today the whole headline vanished. Anyone holding a
+screenshot from before this morning has a figure this build will not reproduce,
+and nothing in the app explains why. That is this report's job and it does not
+travel with the figure.
+
+**5. Unchanged and still not claimed:** LLM triage unbuilt ($5.00 of $5.00
+unspent); licensing (PLAN §9) is a human job before any workplace use. QA §11's
+three items — the slide in a real presentation tool, Illustrator font
+substitution, a mono laser print — are still not re-evaluated; there is no
+PowerPoint, Illustrator or printer on this machine. §v2.3 *Still open* 4 (the
+slide render carries no ring sources) is untouched. Two entries drop off this
+list permanently: the default weights, and "the ranking is not validated
+biology" — there are no weights and there is no ranking.
+
+## What you need to decide
+
+1. **`AGENTS.md` rule 7** — I rewrote it because it mandated the feature you
+   deleted. Revert that hunk or keep it. *See the top of this section.*
+2. **Whether the single-ring ordering earns its place** once you have used it.
+   Removing it is ten minutes; the default and alphabetical stand either way.
+3. Everything already in §6, §v2.1–§v2.4, unchanged: licensing before any
+   workplace use.
