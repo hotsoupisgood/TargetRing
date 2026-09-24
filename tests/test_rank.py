@@ -310,3 +310,29 @@ class TestV5TheFooterMustNotContradictTheCode:
         from targetring.figure import assert_footer_is_true
         from targetring.run import RANKED_RINGS
         assert_footer_is_true(DEFAULT_WEIGHTS, RANKED_RINGS)
+
+
+class TestDrawerOnlySourceCostIsReported:
+    """A source that drives no ring must not dominate a run silently.
+
+    v1 reported one `adapters_s` number, so "Europe PMC is 52 s of a 50-gene
+    run" had to be measured by hand afterwards — and nothing noticed when ChEMBL
+    started costing 177 s of a 192 s 15-gene run while EBI was 500-ing. Failures
+    are deliberately never cached, so every run re-pays it.
+    """
+
+    def test_the_sources_that_drive_no_ring_are_named(self) -> None:
+        from targetring.run import DRAWER_ONLY_SOURCES, RANKED_RINGS
+        from targetring.figure import RING_SPECS
+        ring_keys = {s.key for s in RING_SPECS}
+        for source in DRAWER_ONLY_SOURCES:
+            assert source not in ring_keys
+            assert source not in RANKED_RINGS
+
+    def test_chembl_drives_no_ring_and_no_rank(self) -> None:
+        """PLAN §8, and the council verified it in v1. It must stay true."""
+        from targetring.figure import RING_SPECS
+        from targetring.run import RANKED_RINGS
+        sources = " ".join(s.source for s in RING_SPECS).lower()
+        assert "chembl" not in sources
+        assert not any("chembl" in r for r in RANKED_RINGS)

@@ -66,6 +66,12 @@ from .states import Cell, no_data, value
 
 DEFAULT_REGION = "Lung"
 
+# Sources whose values reach the drawer and never a ring or a rank.
+DRAWER_ONLY_SOURCES = ("chembl", "europepmc")
+# Above this share of the time spent on sources, a drawer-only source is
+# reported as a run condition.
+COST_SHARE_WARN = 0.40
+
 # Rings that feed the ranking. The user's own logFC/padj and k are drawn but not
 # ranked against each other -- they are his measurement, not a target property.
 #
@@ -182,11 +188,29 @@ async def run_analysis(
         # COUNCIL V1: the indication-attribution query needs the drug rows, so it
         # runs after the main fetch and only for targets that have drugs.
         await ot_adapter.fetch_attribution(ot_records)
+        timings["opentargets_s"] = round(time.time() - t, 2)
+
+        # Per-source timings. v1 reported one `adapters_s` number, which is why
+        # "Europe PMC is 52 s of a 50-gene run" had to be measured by hand
+        # afterwards -- and why nothing noticed when ChEMBL started costing
+        # 177 s of a 15-gene run. A source that drives no ring must not be able
+        # to dominate the clock invisibly.
+        async def timed(name: str, coro):
+            t0 = time.time()
+            try:
+                return await coro
+            finally:
+                timings[f"{name}_s"] = round(time.time() - t0, 2)
+
         gtex_records, lit_records, chembl_records, epmc_results = await asyncio.gather(
-            asyncio.gather(*(gtex.fetch_one(res.gencode_id) for _, _, res in live)),
-            asyncio.gather(*(pubtator.fetch_one(d, None) for d, _, _ in live)),
-            asyncio.gather(*(chembl.fetch_one(res.uniprot) for _, _, res in live)),
-            asyncio.gather(*(epmc.fetch_one(d, None) for d, _, _ in live)),
+            timed("gtex", asyncio.gather(*(gtex.fetch_one(res.gencode_id)
+                                           for _, _, res in live))),
+            timed("pubtator", asyncio.gather(*(pubtator.fetch_one(d, None)
+                                               for d, _, _ in live))),
+            timed("chembl", asyncio.gather(*(chembl.fetch_one(res.uniprot)
+                                             for _, _, res in live))),
+            timed("europepmc", asyncio.gather(*(epmc.fetch_one(d, None)
+                                                for d, _, _ in live))),
         )
         timings["adapters_s"] = round(time.time() - t, 2)
 
@@ -285,6 +309,23 @@ async def run_analysis(
             "it sets no ring value (PLAN §2, COUNCIL M6); the literature ring is "
             "PubTator3 and is unaffected",
         ))
+    # A source that drives no ring should not be able to dominate a run without
+    # saying so. ChEMBL is drawer evidence only (PLAN §8) and was measured at
+    # 177 s of a 192 s 15-gene run while EBI was 500-ing; failures are
+    # deliberately never cached, so every run re-pays it. Reported as a run
+    # condition, which is what it is -- not an invariant failure, and not
+    # something to silently work around.
+    for source in DRAWER_ONLY_SOURCES:
+        spent = timings.get(f"{source}_s", 0.0)
+        total = max(timings.get("adapters_s", 0.0), 1e-9)
+        if spent > COST_SHARE_WARN * total and spent > 10:
+            conditions.append((
+                f"{source} took {spent:.0f}s of the {total:.0f}s spent on sources "
+                f"({spent / total:.0%})",
+                "it drives no ring and no rank (PLAN §8), so this is pure cost on the "
+                "render path; failures are never cached, so every run re-pays it",
+            ))
+
     completeness = pareto_axis_completeness(rankings)
     if not completeness["complete"]:
         missing = ", ".join(f"{ax} {n}" for ax, n in
