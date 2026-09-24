@@ -171,7 +171,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
     RingSpec("logfc", "logFC (yours)", "submitted DE table", scale="diverging"),
     RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table"),
     RingSpec("druggability", "Druggability (prior effort + tractability)",
-             "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, hasHighQualityChemicalProbes",
+             "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, "
+             "hasHighQualityChemicalProbes (explicit 0.0 = looked, no probe; key absent = no_data)",
              domain=(0.0, 1.0)),
     RingSpec("safety", "Safety flags & constraint — NOT evidence of safety",
              "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene",

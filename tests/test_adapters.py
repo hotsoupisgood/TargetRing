@@ -422,11 +422,16 @@ class TestSparsePrioritisationKeys:
     def test_v8_the_probe_key_is_no_longer_arithmetically_inert(self) -> None:
         """v1: BRAF mean(1,1,1,1) = 1.0 and PCSK9 mean(1,1,1) = 1.0. The one key
         that separates a chemically-probed target from an unprobed one changed
-        nothing."""
+        nothing.
+
+        v2.2 item 1: Open Targets now writes the probe key explicitly as 0.0, so
+        this compares two *stated* values rather than a stated one and a silence.
+        """
         from targetring.adapters.opentargets import druggability_cell
         braf = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0,
                          hasHighQualityChemicalProbes=1.0)
-        pcsk9 = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0)
+        pcsk9 = self._rec(hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0,
+                          hasHighQualityChemicalProbes=0.0)
         assert druggability_cell(braf).value == pytest.approx(1.0)
         assert druggability_cell(pcsk9).value == pytest.approx(0.75)
         assert druggability_cell(braf).value > druggability_cell(pcsk9).value
@@ -437,7 +442,8 @@ class TestSparsePrioritisationKeys:
         from targetring.adapters.opentargets import druggability_cell
         ddr1 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0,
                          hasHighQualityChemicalProbes=1.0)
-        kcnh2 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0)
+        kcnh2 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0,
+                          hasHighQualityChemicalProbes=0.0)
         assert druggability_cell(ddr1).value == pytest.approx(0.75)
         assert druggability_cell(kcnh2).value == pytest.approx(0.50)
 
@@ -460,43 +466,150 @@ class TestSparsePrioritisationKeys:
         assert "denominator would encode the answer" in cell.detail
 
 
+class TestExplicitZeroProbeKey:
+    """v2.2 item 1 — `hasHighQualityChemicalProbes` stopped being one-sided.
+
+    Open Targets used to omit the key when a target had no high-quality probe.
+    It now also writes `0.0` explicitly, so absence and a measured zero coexist
+    and the V4/V8 mapping of absence to 0.0 became imputation. Puck's decision,
+    2026-09-24: an explicit 0.0 is a real value meaning "looked, none exists";
+    a genuinely absent key is `no_data`.
+    """
+
+    @staticmethod
+    def _rec(**prio):
+        from targetring.adapters.opentargets import OTRecord
+        return OTRecord("ENSG00000000001", found=True, prioritisation=dict(prio))
+
+    def test_the_key_is_not_inferred_from_absence_any_more(self) -> None:
+        from targetring.adapters.opentargets import (
+            EXPLICIT_ZERO_KEYS,
+            SPARSE_KEY_ABSENT_VALUE,
+        )
+        assert "hasHighQualityChemicalProbes" not in SPARSE_KEY_ABSENT_VALUE, (
+            "mapping absence to 0.0 while Open Targets also writes 0.0 explicitly is "
+            "imputation; that is what the census test caught")
+        assert "hasHighQualityChemicalProbes" in EXPLICIT_ZERO_KEYS
+
+    def test_an_explicit_zero_is_a_real_value(self) -> None:
+        """'Looked, none exists' is information, and it does arithmetic work."""
+        from targetring.adapters.opentargets import druggability_cell
+        cell = druggability_cell(self._rec(
+            hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0,
+            hasHighQualityChemicalProbes=0.0))
+        assert cell.state == "value"
+        assert cell.value == pytest.approx(0.75)
+        assert "mean of 4/4 keys" in cell.detail
+        assert cell.raw["inferred_from_absence"] == [], "read, not inferred"
+        assert "hasHighQualityChemicalProbes=+0.00" in cell.detail
+        assert "hasHighQualityChemicalProbes=+0.00*" not in cell.detail, (
+            "the * marks a key inferred from absence; this one was stated")
+
+    def test_an_absent_key_is_no_data_and_says_why(self) -> None:
+        """The other half of the decision. A shorter mean is the V4 defect and a
+        substituted 0.0 is the imputation, so the cell refuses both."""
+        from targetring.adapters.opentargets import druggability_cell
+        cell = druggability_cell(self._rec(
+            hasLigand=1.0, hasPocket=1.0, hasSmallMoleculeBinder=1.0))
+        assert cell.state == "no_data"
+        assert cell.value is None
+        assert "hasHighQualityChemicalProbes" in cell.detail
+        assert "imputation" in cell.detail
+        assert "denominator would encode the answer" in cell.detail
+
+    def test_the_two_liability_keys_are_still_inferred_from_absence(self) -> None:
+        """The decision is about one key. `hasSafetyEvent` and
+        `isCancerDriverGene` are still emitted only at the -1.0 end (live census
+        2026-09-24), so absence there is still a measured negative."""
+        from targetring.adapters.opentargets import safety_cell
+        cell = safety_cell(self._rec(geneEssentiality=0.0, geneticConstraint=0.45))
+        assert cell.state == "value"
+        assert set(cell.raw["inferred_from_absence"]) == {
+            "hasSafetyEvent", "isCancerDriverGene"}
+
+
 @pytest.mark.live
 class TestSparseKeyCensusStillHolds:
-    """The mapping above is a claim about the live API. If Open Targets starts
-    emitting `hasSafetyEvent: 0` or `hasHighQualityChemicalProbes: 0`, the
-    absent-value mapping is no longer a measured negative and this must fail
-    rather than keep producing numbers."""
+    """The mapping is a claim about the live API, and the claim broke once.
 
-    @pytest.mark.asyncio
-    async def test_sparse_keys_are_still_one_sided(self) -> None:
-        from targetring.adapters.opentargets import SPARSE_KEY_ABSENT_VALUE
+    v2 checked only the keys in SPARSE_KEY_ABSENT_VALUE, so it caught
+    `hasHighQualityChemicalProbes` acquiring an explicit 0.0 — but only because
+    that key happened to be mapped. The census now walks **every** prioritisation
+    key Open Targets emits, so a key acquiring the same behaviour is caught
+    whether or not this build currently reads it.
+    """
+
+    KEY_IDS = ["ENSG00000157764", "ENSG00000141510", "ENSG00000146648",
+               "ENSG00000169174", "ENSG00000055118", "ENSG00000198133",
+               "ENSG00000075624", "ENSG00000118271", "ENSG00000204580",
+               "ENSG00000113161", "ENSG00000142627", "ENSG00000012048"]
+
+    @staticmethod
+    async def _census(ids):
         from targetring.config import OPENTARGETS_URL
         from targetring.http import Http, graphql
         q = ("query P($ids:[String!]!){targets(ensemblIds:$ids)"
              "{id prioritisation{items{key value}}}}")
-        ids = ["ENSG00000157764", "ENSG00000141510", "ENSG00000146648",
-               "ENSG00000169174", "ENSG00000055118", "ENSG00000198133",
-               "ENSG00000075624", "ENSG00000118271", "ENSG00000204580",
-               "ENSG00000113161", "ENSG00000142627", "ENSG00000012048"]
         async with Http() as http:
             d = await graphql(http, OPENTARGETS_URL, q, {"ids": ids})
-        seen: dict[str, set[float]] = {k: set() for k in SPARSE_KEY_ABSENT_VALUE}
-        n_present = {k: 0 for k in SPARSE_KEY_ABSENT_VALUE}
+        seen: dict[str, set[float]] = {}
+        n_present: dict[str, int] = {}
         for t in d["targets"]:
             prio = {i["key"]: float(i["value"])
                     for i in (t.get("prioritisation") or {}).get("items", [])}
-            for k in seen:
-                if k in prio:
-                    seen[k].add(round(prio[k], 3))
-                    n_present[k] += 1
+            for k, v in prio.items():
+                seen.setdefault(k, set()).add(round(v, 3))
+                n_present[k] = n_present.get(k, 0) + 1
+        return len(d["targets"]), seen, n_present
+
+    @pytest.mark.asyncio
+    async def test_mapped_sparse_keys_are_still_one_sided(self) -> None:
+        """If Open Targets starts emitting `hasSafetyEvent: 0`, absence there is
+        no longer a measured negative and the mapping becomes imputation."""
+        from targetring.adapters.opentargets import SPARSE_KEY_ABSENT_VALUE
+        n, seen, n_present = await self._census(self.KEY_IDS)
         for k, absent_value in SPARSE_KEY_ABSENT_VALUE.items():
-            assert n_present[k] < len(d["targets"]), (
-                f"{k} is now dense ({n_present[k]}/{len(d['targets'])}); it is no longer a "
+            assert n_present.get(k, 0) < n, (
+                f"{k} is now dense ({n_present.get(k, 0)}/{n}); it is no longer a "
                 f"sparse-encoded key and SPARSE_KEY_ABSENT_VALUE must be revisited")
-            assert absent_value not in seen[k], (
+            assert absent_value not in seen.get(k, set()), (
                 f"Open Targets now emits {k}={absent_value} explicitly (observed "
-                f"{sorted(seen[k])}). Absence is no longer that value, so mapping it to "
-                f"{absent_value} would be imputation.")
+                f"{sorted(seen.get(k, set()))}). Absence is no longer that value, so "
+                f"mapping it to {absent_value} would be imputation.")
+
+    @pytest.mark.asyncio
+    async def test_the_probe_key_really_does_carry_an_explicit_zero(self) -> None:
+        """The premise of v2.2 item 1, asserted against the source rather than
+        remembered. If Open Targets goes back to omitting the key the decision
+        needs revisiting, and this says so instead of going quiet."""
+        n, seen, n_present = await self._census(self.KEY_IDS)
+        k = "hasHighQualityChemicalProbes"
+        assert 0.0 in seen.get(k, set()), (
+            f"{k} no longer carries an explicit 0.0 (observed {sorted(seen.get(k, set()))}); "
+            f"the 'explicit 0.0 means looked-and-none' reading rests on it")
+        assert n_present.get(k, 0) < n, (
+            f"{k} is now dense ({n_present.get(k, 0)}/{n}); absence is no longer a state "
+            f"the ring has to handle and the no_data branch is dead code")
+
+    @pytest.mark.asyncio
+    async def test_no_other_key_has_quietly_acquired_an_explicit_zero(self) -> None:
+        """The generalisation. A sparse key that also emits 0.0 explicitly can no
+        longer have its absence read as a zero — whoever reads it. Any key that
+        is not already accounted for is a new finding and fails here."""
+        from targetring.adapters.opentargets import (
+            EXPLICIT_ZERO_KEYS,
+            EXPLICIT_ZERO_KEYS_NOT_READ,
+        )
+        n, seen, n_present = await self._census(self.KEY_IDS)
+        known = set(EXPLICIT_ZERO_KEYS) | set(EXPLICIT_ZERO_KEYS_NOT_READ)
+        surprises = {
+            k: sorted(vals) for k, vals in seen.items()
+            if 0.0 in vals and n_present[k] < n and k not in known
+        }
+        assert not surprises, (
+            f"these prioritisation keys are sparse AND emit an explicit 0.0, which is the "
+            f"hasHighQualityChemicalProbes situation on a new key: {surprises}. Absence in "
+            f"them can no longer be read as a zero; decide per key what absence means.")
 
 
 # --- COUNCIL V1: polypharmacology must not set the ring to Approved ---------

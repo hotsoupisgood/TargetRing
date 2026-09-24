@@ -167,7 +167,7 @@ DRUGGABILITY_KEYS = ("hasLigand", "hasPocket", "hasSmallMoleculeBinder",
                      "hasHighQualityChemicalProbes")
 SAFETY_KEYS = ("hasSafetyEvent", "geneEssentiality", "geneticConstraint", "isCancerDriverGene")
 
-# COUNCIL V4 / V8. Three prioritisation keys are emitted by Open Targets *only*
+# COUNCIL V4 / V8. Some prioritisation keys are emitted by Open Targets *only*
 # when the answer is one particular value. Dropping an absent key from a mean is
 # arithmetically identical to imputing it at the mean of the present keys, so
 # "never impute" held at the cell level and was broken inside the cell.
@@ -185,11 +185,10 @@ SAFETY_KEYS = ("hasSafetyEvent", "geneEssentiality", "geneticConstraint", "isCan
 #     geneEssentiality                    24       0  -1 x4,  0 x20
 #     geneticConstraint                   24       0  continuous
 #
-# The three sparse keys are binary fields with one end left unwritten, and that
-# end is 0.0 in every case: {-1, 0} for the two liability flags, {0, 1} for the
-# probe flag. So absence is a *measured* value, not a missing one, and is mapped
-# to 0.0 -- which makes the denominator 4 for every gene and stops it encoding
-# the answer.
+# A sparse key is a binary field with one end left unwritten, and that end is
+# 0.0: {-1, 0} for the two liability flags. So absence is a *measured* value,
+# not a missing one, and is mapped to 0.0 -- which makes the denominator 4 for
+# every gene and stops it encoding the answer.
 #
 # What this does NOT claim: that a gene with no `hasSafetyEvent` is safe. Open
 # Targets not holding a safety-event record is a fact about Open Targets. The
@@ -197,8 +196,50 @@ SAFETY_KEYS = ("hasSafetyEvent", "geneEssentiality", "geneticConstraint", "isCan
 SPARSE_KEY_ABSENT_VALUE: dict[str, float] = {
     "hasSafetyEvent": 0.0,          # absent  = no safety event in OT's sources
     "isCancerDriverGene": 0.0,      # absent  = not in OT's cancer-driver list
-    "hasHighQualityChemicalProbes": 0.0,  # absent = no high-quality probe known
 }
+
+# --- v2.2 item 1: the key that stopped being one-sided ----------------------
+# `hasHighQualityChemicalProbes` was in the mapping above until 2026-09-24,
+# when `TestSparseKeyCensusStillHolds` went red against the live API: Open
+# Targets now writes the key *explicitly as 0.0* as well as omitting it, so
+# absence and an explicit zero coexist and mapping absence to 0.0 became
+# imputation of exactly the kind AGENTS.md rule 1 forbids.
+#
+# Puck's decision, 2026-09-24: an explicit 0.0 is a real value meaning **"Open
+# Targets looked and there is no high-quality probe"**, and a genuinely absent
+# key stays `no_data`. An explicit zero therefore does arithmetic work on the
+# druggability ring (it is what separates a probed-and-empty target from a
+# probed-and-stocked one); an absent key refuses the mean, because a 3-key mean
+# next to a 4-key mean is the V4 defect and a 0.0 substituted for silence is the
+# imputation the census test caught.
+#
+# Re-measured live 2026-09-24 over 23 targets (`/tmp/tr22/probe_prio.py`), every
+# prioritisation key, looking for any *other* key that has quietly acquired the
+# same explicit-zero behaviour while still being sparse:
+#
+#     key                                 present absent  emits 0.0 explicitly
+#     hasHighQualityChemicalProbes              8     15  YES  <- this decision
+#     hasSafetyEvent                           12     11  no   (only -1.0)
+#     isCancerDriverGene                        5     18  no   (only -1.0)
+#     maxClinicalStage                         17      6   no   (0.7, 1.0)
+#     mouseKOScore                             21      2   no
+#     mouseOrthologMaxIdentityPercentage       22      1  YES  (unused by any ring)
+#     paralogMaxIdentityPercentage             20      3  YES  (unused by any ring)
+#     every other key                          23      0   n/a (dense)
+#
+# So: no key this build *reads* has acquired the behaviour except the one Puck
+# ruled on. The two that have are not in DRUGGABILITY_KEYS or SAFETY_KEYS and
+# feed nothing, and they are listed here so the next census has a baseline.
+# `TestSparseKeyCensusStillHolds` now checks the whole key set rather than only
+# the mapped ones, so a future key acquiring it fails loudly instead of quietly
+# becoming imputation.
+EXPLICIT_ZERO_KEYS: frozenset[str] = frozenset({"hasHighQualityChemicalProbes"})
+
+# Keys Open Targets is observed to emit an explicit 0.0 for but which no ring
+# reads. Recorded so the census test can tell "new" from "known".
+EXPLICIT_ZERO_KEYS_NOT_READ: frozenset[str] = frozenset({
+    "mouseOrthologMaxIdentityPercentage", "paralogMaxIdentityPercentage",
+})
 
 # Keys Open Targets scores for every target it has a prioritisation record for.
 # If none of these is present the gene has no prioritisation record at all, and
@@ -429,12 +470,27 @@ def _mean_of_keys(rec: OTRecord, keys: tuple[str, ...], label: str) -> Cell:
             unreadable.append(k)
 
     if unreadable:
-        # A dense key went missing. The mean would have a different denominator
-        # from every other gene's, which is exactly the V4 defect, so refuse.
+        # A key we cannot read went missing. The mean would have a different
+        # denominator from every other gene's, which is exactly the V4 defect,
+        # so refuse. Two reasons land here and they are not the same fact, so
+        # they do not get the same sentence.
+        explicit_zero = [k for k in unreadable if k in EXPLICIT_ZERO_KEYS]
+        dense = [k for k in unreadable if k not in EXPLICIT_ZERO_KEYS]
+        why = []
+        if explicit_zero:
+            why.append(
+                f"{', '.join(explicit_zero)} is absent, and Open Targets now also writes this "
+                f"key explicitly as 0.0 — so absence is silence, not a measured zero, and "
+                f"filling it with 0.0 would be imputation (v2.2 item 1). An explicit 0.0 "
+                f"would have been read as a real value meaning 'looked, none exists'"
+            )
+        if dense:
+            why.append(
+                f"{', '.join(dense)} absent for this gene and not a sparse-encoded key"
+            )
         return no_data(
-            f"{label}: {', '.join(unreadable)} absent for this gene and not a sparse-encoded "
-            f"key, so a {len(keys)}-key mean cannot be formed. Refusing a shorter mean — the "
-            f"denominator would encode the answer (COUNCIL V4)."
+            f"{label}: " + "; ".join(why) + f". A {len(keys)}-key mean cannot be formed. "
+            f"Refusing a shorter mean — the denominator would encode the answer (COUNCIL V4)."
         )
 
     detail = f"mean of {len(keys)}/{len(keys)} keys: " + ", ".join(
@@ -941,7 +997,8 @@ __all__ = [
     "OpenTargetsAdapter", "OTRecord", "TARGET_QUERY", "CLINICAL_STAGE_ORDINAL",
     "ASSOCIATION_QUERY", "MECHANISTIC_DATATYPES", "ATTRIBUTION_MIN_SCORE",
     "GENETIC_ATTRIBUTION_DATATYPES",
-    "SPARSE_KEY_ABSENT_VALUE", "DENSE_PRIORITISATION_KEYS", "SEVERE_LIABILITY_TERMS",
+    "SPARSE_KEY_ABSENT_VALUE", "EXPLICIT_ZERO_KEYS", "EXPLICIT_ZERO_KEYS_NOT_READ",
+    "DENSE_PRIORITISATION_KEYS", "SEVERE_LIABILITY_TERMS",
     "druggability_cell", "safety_cell", "clinical_phase_cell", "clinical_activity_cell",
     "rodent_cell", "drug_pipeline_rows", "pipeline_summary", "failed",
     "attributable_indications", "mechanistic_evidence", "severe_liabilities",
