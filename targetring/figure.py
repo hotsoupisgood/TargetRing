@@ -759,13 +759,29 @@ def _draw_legend(fig, rings, norms, cmap, lay) -> list:
     lines = []
     for i, spec in enumerate(rings, start=1):
         n = norms.get(spec.key)
-        rng = f"[{n.vmin:.3g}, {n.vmax:.3g}]" if n else "no values"
+        rng = _range_label(spec, n)
         lines.extend(_key_lines(f"{i}. ", spec.label, rng))
     return blocks + [fig.text(0.006, 0.80,
                               "rings, outermost first\n"
                               "(sources in the caption and manifest)\n\n"
                               + "\n".join(lines),
                               fontsize=7.4, va="top", ha="left", color="#222222")]
+
+
+def _range_label(spec: RingSpec, n) -> str:
+    """What the numbers beside a ring name mean.
+
+    A categorical ring has no `Normalize`, and printing "no values" for it is a
+    false statement about the figure's own data: the activity ring has three
+    stated states and they are named in the legend. Caught on the v2.2 retake,
+    where the CT.gov ring read "Pipeline: current activity
+    (ClinicalTrials.gov v2) no values" beside a ring full of drawn cells.
+    """
+    if n is not None:
+        return f"[{n.vmin:.3g}, {n.vmax:.3g}]"
+    if spec.categorical:
+        return f"{len(spec.categorical)} states — see the legend"
+    return "no values"
 
 
 def _short(label: str, limit: int = 34) -> str:
@@ -900,7 +916,7 @@ def caption(rings, norms, weights, region, provenance, gene_flags=None,
                  "between two rings):")
     for i, spec in enumerate(rings, start=1):
         n = norms.get(spec.key)
-        rng = f"[{n.vmin:.3g}, {n.vmax:.3g}]" if n else "no values"
+        rng = _range_label(spec, n)
         lines.append(f"  {i}. {spec.label} {rng} \u2014 {spec.source}")
     w = ", ".join(f"{k}={v:g}" for k, v in sorted(weights.items()))
     excluded = ", ".join(sorted(EXCLUDED_FROM_SCORE))

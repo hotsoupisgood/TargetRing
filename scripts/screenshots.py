@@ -133,6 +133,28 @@ def main() -> int:
         shot(page, "5d-drawer-kcnh2-liability.png")
         page.click("#drawer-close")
 
+        # 3b. v2.2 item 2: the CT.gov panel — sponsor and live status, which is
+        #     what says whether a target is crowded.
+        print("5b/10 BRAF — ClinicalTrials.gov sponsors and live status")
+        page.evaluate("openDrawer('BRAF')")
+        page.wait_for_selector("#drawer:not([hidden])")
+        page.wait_for_timeout(1500)
+        page.evaluate(
+            "[...document.querySelectorAll('#drawer h4')]"
+            ".find(e => e.textContent.startsWith('trials'))"
+            "?.scrollIntoView({block:'start'})"
+        )
+        page.wait_for_timeout(600)
+        shot(page, "7-drawer-ctgov-sponsors.png")
+
+        # 3c. v2.2 items 1 and 4: the ring key naming the activity ring's source
+        #     and the new TDL ring, and the hatched druggability cells.
+        print("5c/10 the ring key — CT.gov named, TDL added")
+        page.click("#drawer-close")
+        top(page)
+        page.wait_for_timeout(400)
+        shot(page, "7b-ring-key-sources.png")
+
         # 4. The deliberately broken input: counts + drop ledger.
         print("6/8 broken input, drop ledger")
         run_table(page, "broken", "Liver")

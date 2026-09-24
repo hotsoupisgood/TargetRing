@@ -504,6 +504,8 @@ async def run_analysis(
             "pareto": rankings[g].pareto,
             "pareto_eligible": rankings[g].pareto_eligible,
             "pareto_k": rankings[g].pareto_k,
+            # v2.2 item 4: the drawer said "n of 4 axes" in a template literal.
+            "n_pareto_axes": len(PARETO_AXES),
             "unstable": rankings[g].unstable,
             "median_rank": rankings[g].median_rank,
             "weighted_score": rankings[g].weighted_score,

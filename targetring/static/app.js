@@ -263,6 +263,8 @@ function drawerHtml(d) {
   const drugs = d.drugs || [];
   const lit = d.literature || {};
   const ch = d.chembl || {};
+  // v2.2 item 3: ChEMBL and Europe PMC are fetched when this drawer opens, not
+  // on the render path. `null` means not fetched yet, never "nothing there".
 
   let h = `<h3>${esc(d.gene)}</h3>
     <p class="hint">${esc(d.ensembl_id || "")}${d.uniprot
@@ -281,12 +283,15 @@ function drawerHtml(d) {
     <dt>Pareto non-dominated</dt><dd>${d.pareto
       ? "<span class='pill ok'>yes — headline set</span>"
       : d.pareto_eligible === false
-        ? `<span class='pill warn'>not eligible — ${d.pareto_k} of 4 axes</span>`
+        ? `<span class='pill warn'>not eligible — ${d.pareto_k} of ${d.n_pareto_axes ?? "?"} axes</span>`
         : "<span class='pill grey'>no</span>"}</dd>
     <dt>median available rank</dt><dd>${d.median_rank == null ? "—"
       : d.median_rank.toFixed(3)}</dd>
     <dt>weighted score</dt><dd>${d.weighted_score == null ? "—"
       : d.weighted_score.toFixed(3)} <span class="hint">(convenience only)</span></dd>
+    <dt>Pharos TDL</dt><dd>${d.tdl && d.tdl.state === "value"
+      ? `<b>${esc((d.tdl.raw || {}).tdl || "")}</b> <span class="hint">development level, not a pocket</span>`
+      : `<span class='pill grey'>${esc((d.tdl || {}).state || "—")}</span>`}</dd>
     <dt>reweighting-stable</dt><dd>${d.unstable
       ? "<span class='pill warn'>no — top-10 place moves</span>"
       : "<span class='pill ok'>yes</span>"}</dd></dl>`;
@@ -326,6 +331,44 @@ function drawerHtml(d) {
           .map(([k, v]) => `${k} ${v}`).join(", ") || "—")}</td>
         <td>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">open</a>` : "—"}</td>
       </tr>`).join("") + `</tbody></table></div>`;
+  }
+
+  // --- v2.2 item 2: ClinicalTrials.gov, sponsor and live status ---
+  // "sponsor plus live status must reach the drawer, since that is what tells
+  // the user a target is crowded."
+  const tr = d.trials || {};
+  const trDrugs = (tr.drugs || []).filter((r) => (r.n_trials || 0) > 0 || r.error);
+  if (tr.source) {
+    h += `<h4>trials — ${esc(tr.source)}</h4>
+      <p class="summary-line">${tr.n_lead_sponsors || 0} distinct lead sponsor(s)
+        across this target's drugs${(tr.lead_sponsors || []).length
+          ? ": " + tr.lead_sponsors.slice(0, 6).map(esc).join(", ") : ""}.</p>
+      <div class="note">${esc(tr.note || "")}</div>`;
+    if (trDrugs.length) {
+      h += `<div class="scroll-x"><table><thead><tr><th>Drug</th><th>Trials</th>
+        <th>Live</th><th>Stopped early</th><th>Lead sponsors (live)</th>
+        <th>Live example</th></tr></thead><tbody>` +
+        trDrugs.map((r) => `<tr>
+          <td><b>${esc(r.drug)}</b><br><span class="hint"><code>${esc(r.query || "")}</code></span></td>
+          <td>${r.error ? "—" : r.n_trials}</td>
+          <td>${r.error ? "—" : r.n_live}</td>
+          <td>${r.error ? "—" : r.n_stopped}</td>
+          <td>${esc((r.sponsors || []).slice(0, 3).join("; ") || "—")}</td>
+          <td>${(r.live || []).length
+            ? `<a href="${esc(r.live[0].url || "#")}" target="_blank" rel="noopener">${
+                esc(r.live[0].nct_id)}</a> ${esc(r.live[0].status)}
+               <span class="hint">${esc((r.live[0].conditions || []).join(", "))}</span>`
+            : r.error ? `<span class="hint">${esc(r.error)}</span>` : "—"}</td>
+        </tr>`).join("") + `</tbody></table></div>`;
+      const stopped = trDrugs.flatMap((r) => (r.stopped || []).map((s) => ({...s, drug: r.drug})))
+        .filter((s) => s.why_stopped).slice(0, 6);
+      if (stopped.length) {
+        h += `<p class="summary-line">Stated reasons for stopping — free text from the
+          sponsor, <b>not categorised</b>, shown verbatim:</p><ul class="reason">` +
+          stopped.map((s) => `<li><code>${esc(s.nct_id)}</code> ${esc(s.drug)}:
+            “${esc(s.why_stopped)}”</li>`).join("") + `</ul>`;
+      }
+    }
   }
 
   // --- literature ---

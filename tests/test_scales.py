@@ -339,3 +339,31 @@ class TestGreyscaleDisjointness:
         """Truncating must not have broken the thing that makes viridis readable."""
         ramp = [relative_luminance(value_cmap()(i / 255)) for i in range(256)]
         assert all(b >= a - 1e-6 for a, b in zip(ramp, ramp[1:]))
+
+
+class TestTheKeyDoesNotMisstateItsOwnRings:
+    """Caught on the v2.2 screenshot retake: the categorical activity ring has
+    no Normalize, so the key printed "Pipeline: current activity
+    (ClinicalTrials.gov v2) no values" beside a ring full of drawn cells. A
+    figure must not make a false claim about its own data."""
+
+    def test_a_categorical_ring_names_its_states_not_no_values(self) -> None:
+        from targetring.figure import _range_label
+        spec = next(r for r in RING_SPECS if r.key == "clinical_activity")
+        label = _range_label(spec, None)
+        assert "no values" not in label
+        assert str(len(spec.categorical)) in label
+
+    def test_a_continuous_ring_with_nothing_drawn_still_says_no_values(self) -> None:
+        from targetring.figure import _range_label
+        spec = next(r for r in RING_SPECS if r.key == "tdl")
+        assert _range_label(spec, None) == "no values"
+
+    def test_the_rendered_key_says_it(self, tmp_path: Path) -> None:
+        spec = {"logfc": {g: value(1.0 * i) for i, g in enumerate("ABC")},
+                "clinical_activity": {"A": value(-1.0), "B": value(0.0), "C": value(1.0)}}
+        render(genes=list("ABC"), cells_by_ring=spec, rankings=rank_genes(spec),
+               region="Liver", out_svg=tmp_path / "k2.svg", input_count=3,
+               rendered_count=3, ledger_counts={})
+        body = (tmp_path / "k2.svg").read_text()
+        assert "3 states" in body
