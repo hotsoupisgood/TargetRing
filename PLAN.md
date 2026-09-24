@@ -145,8 +145,14 @@ drugs and papers.**
 ### 3.1 Gene order around the circle
 
 The order carries meaning, so it is **decided, stated on the figure, and checked
-in the artefact** (invariant 7). The circle starts at 12 o'clock and runs
-clockwise.
+in the artefact** (invariant 7). The circle runs clockwise from the ring-name
+gap at 12 o'clock. v2.7 reserves a fixed 26° wedge there on the audit render and
+names each ring inside it, at that ring's own radius, so 12 o'clock is now the
+middle of the gap and the first spoke begins 13° clockwise of it. The gap does
+not shrink as genes are added — the spokes carry the cost and the figure prints
+what it cost. The slide render reserves no wedge: its circle is half as wide, so
+twelve names inside it would overlap each other, and its ring names stay on the
+scales in the column.
 
 - **Default: the order of the submitted DE table, unchanged.** It is usually
   already sorted, and it is his measurement rather than a composite this build

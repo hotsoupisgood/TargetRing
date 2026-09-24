@@ -2558,3 +2558,154 @@ drops off this list: the slide carries the ring sources now.
 3. **Whether the muted gauge reads as muted or as broken.** *Still open 4.*
 4. Everything already in §6, §v2.1–§v2.5, unchanged: licensing before any
    workplace use, and whether the single-ring ordering earns its place.
+
+---
+
+# v2.7 — the ring names move into the circle
+
+Your words: *"also in the top middle of the circlos. make space and put what
+each ring means in the actual circle. i was able to do this with a python
+circlos software i used."*
+
+Done on the audit render. **Not** done on the slide render, and that is the one
+thing in here you may want to push back on — the reason is measured and it is
+below.
+
+## Read this first
+
+**1. The gap is fixed at 26° and it never shrinks.** You asked what happens if
+it has to narrow at large gene counts. It does not: `Layout.wedge_deg` is a
+constant, the spokes absorb the whole cost, and the figure prints what that
+cost was on this render. At 50 genes — the thin case — each spoke is **4.72°
+against the 5.20° a full circle gives, −9.2%**. At 14 genes it is 22.00°
+against 23.71°, −7.2%. A gap that narrowed with the gene count would make the
+innermost ring's label size a function of how many genes somebody submitted,
+which is COUNCIL V6's defect wearing a different hat.
+
+**2. The slide render does not get the wedge, and no angle would fix it.** The
+constraint is radial, not angular. The slide's plotted square is 552 px, so
+twelve rings span 134 px of radius — 11.2 px a ring — against 13.0 px for one
+line of 8.4 pt type. The names would overlap *each other* long before they came
+near a sector edge. The only cures are type below legibility, which is UX A4
+and the entire reason the slide layout exists, or a smaller circle on the
+render that already has the smaller one. A 40° wedge there would have cost 15%
+of every spoke and bought nothing. The slide keeps its scale column, and its
+footer line says so with the measurement rather than leaving you to wonder why
+the two renders differ. **If you would rather have the names on the slide and
+fewer rings, that is a real trade and it is yours** — it is not one I would make
+for you.
+
+**3. The name goes in the gap; the scale stays in the column.** You asked
+whether both fit. They do not, and the number is not close. At the innermost
+ring the gap is 42 px of half-width; the colour bar alone is 280 px. So: name
+at the ring's own radius inside the circle, scale beside the circle, and the
+figure says which holds which. The monospace ring key stayed retired — v2.6
+already removed it, and the wedge is what now does its job.
+
+**4. Five ring names are shorter than they were yesterday**, because a name has
+to fit at its own radius and the innermost radius is the tightest. The one
+worth your eye: `safety` reads **"Safety flags ≠ safety"** in the wedge. Its
+full label — *"Safety flags & constraint — NOT evidence of safety"* — is
+unchanged on its scale in the column and unchanged on the slide line. The wedge
+never truncates: it wraps, then shrinks to a floor, then refuses to render.
+QA-v2-retest §5 is the record of what truncating that particular label does.
+
+**5. One sentence on the figure was quietly false the moment the gap existed**
+and is corrected: *"The circle starts at 12 o'clock"*. 12 o'clock is the middle
+of the gap now, and the first spoke begins 13° clockwise of it. It reads *"runs
+clockwise from the ring-name gap at 12 o'clock"*. COUNCIL V5 is exactly this —
+a figure describing a geometry it no longer has.
+
+## What was built
+
+**Commit trail** below. `targetring/figure.py` only; no adapter, no data path
+and no invariant semantics were touched.
+
+| piece | what it does |
+|---|---|
+| `Layout.wedge_deg` | 26.0 audit, 0.0 slide. Per layout, because the budget is pixels and the two circles are 926 px and 552 px across |
+| `Layout.wedge_label_size` | 7.4 pt audit, 8.4 pt slide |
+| `RingSpec.short_label` | the name drawn in the gap — a separate field, never a truncation of `label` |
+| `Circos(start=w/2, end=360-w/2, endspace=False)` | reserves the gap. `endspace=False` is load-bearing: with the default the last sector gets a trailing gap too and the visible wedge is 28°, not 26°, so the printed angle would be wrong |
+| `fit_wedge_labels` | wraps a name onto more lines while the band has room, *then* shrinks type to a 0.80 floor |
+| `assert_wedge_labels_fit` | new invariant-style check: inside the gap, clear of the spoke labels and the centre block, and clear of the ring name above it |
+| `wedge_note` / `slide_line` | the rule and its cost, on the figure and in the caption |
+
+### The two constraints pull opposite ways, which is why wrapping comes first
+
+The **width** budget is `2·r·tan(13° − 1.5°)` and is tightest on the innermost
+ring. The **height** budget is the band, `(r_outer − r_inner)/n`, and is widest
+when there are fewest rings. So a six-ring render puts a name at a small radius
+with a 37 px band around it, where a second line is free; a twelve-ring render
+has 18.7 px of band and no room for one. That is not hypothetical —
+`clinical_phase` is ring 7 of 12 in a real run and the *innermost* ring of the
+invariants fixture, and it was the first thing to fail. Measured at 12 rings on
+the audit canvas:
+
+| ring | mid-radius | half-width budget | name |
+|---|---|---|---|
+| 1 `logfc` | 95.2 | 84 px | logFC (yours) |
+| 5 `safety` | 78.2 | 69 px | Safety flags ≠ safety |
+| 8 `clinical_activity` | 65.4 | 58 px | Pipeline: activity now |
+| 12 `completeness` | 48.4 | 42 px | k (completeness) |
+
+### `assert_no_text_over_the_rings` was told about the gap rather than left to assume
+
+You asked for this specifically. It had two obstacles — the inscribed circle and
+the spoke labels — and a name inside the circle fails the first test by design.
+It now takes the wedge labels explicitly and does two things with them: exempts
+them from the radius test, because the wedge is not a ring but the absence of
+one, and drops them from the *obstacle* list, because they are not spoke labels
+and leaving them in made every ring name an obstacle to the one above it. The
+thing that actually matters for them — is the angular span they occupy empty —
+is checked by `assert_wedge_labels_fit`, at each name's own radius, against the
+same geometry the sectors were built from.
+
+`tests/test_presentation.py::TestWedge::test_text_in_the_wedge_is_not_text_over_the_rings`
+pins both halves: the same label at r=76 raises "overlaps the rings" from the
+old check and passes the new one, and the same label swung out of the gap to
+90° raises "overhangs the 26° gap".
+
+## Verification
+
+- **Full suite: 444 passed** (429 before; 15 new in `TestWedge`, plus a second
+  sector-ceiling case for the zero-wedge layout).
+- **Clean cold council run + the 6-combination matrix: 7/7 invariants PASS on
+  all seven runs** (`logs/v27-matrix.json`). Counts unchanged from v2.6:
+  15 in / 14 rendered / 1 ledgered on the council list, 16 in / 7 rendered /
+  9 ledgered on the broken fixture.
+- **Cold 50-gene run: 28.5 s, 50/50 rendered, 7/7 PASS** (`logs/cold50-v27.json`),
+  against PLAN §5's 60 s target. This is the run the wedge is measured on.
+- **Screenshots retaken** against a restarted app on the new code.
+  `docs/screenshots/10-ring-names-in-the-wedge.png` is the crop worth looking
+  at: the gap at 50 genes, at 1:1, located from the cells' own SVG ids rather
+  than by hand (`scripts/wedge_crop.py`).
+- The seven invariants, `assert_within_domain`, `assert_greyscale_disjoint`,
+  `assert_ramp_luminance_is_monotone`, `assert_rings_are_distinguishable`,
+  `assert_centre_fits_the_hole`, `assert_text_within_canvas` and
+  `assert_no_text_over_the_rings` all still hold. No colour, domain, transform
+  or cell state changed in v2.7.
+
+## Still open
+
+1. **The slide render has no ring names inside the circle.** *Read this first
+   2.* Measured, not chosen — but the trade (fewer rings, or names on the
+   slide) is available if you want it.
+2. **Five short labels are my wording, not yours.** They are in `RING_SPECS`
+   as `short_label` and are a one-line change each. `Safety flags ≠ safety` is
+   the one I would most expect you to rewrite.
+3. **The wedge is horizontal text, not curved.** Some Circos tools set ring
+   names along the arc. At these radii horizontal is more legible and it is what
+   your screenshot showed; saying so in case the tool you used did the other
+   thing.
+4. Everything in §v2.6 *Still open* stands unchanged: the Delta E gate, the
+   `neg_log10_padj` domain, the muted gauge, licensing, LLM triage unbuilt
+   ($5.00 of $5.00 unspent).
+
+## What you need to decide
+
+1. **Whether the slide should carry ring names at the cost of rings.** *Read
+   this first 2 / Still open 1.*
+2. **Whether `Safety flags ≠ safety` is the right compression of that caveat.**
+   *Read this first 4.*
+3. Everything already in §v2.6 and §v2.1–§v2.5, unchanged.

@@ -108,6 +108,31 @@ CELL_ZORDER = 2.0
 # turns "we got away with it" into a failure you can see coming.
 LABEL_CLEARANCE_PX = 4.0
 
+# v2.7, Puck's decision. The ring names move into the circle: an angular wedge at
+# 12 o'clock is left empty and each ring is named inside it, at that ring's own
+# radius. It is the standard Circos idiom and it beats a numbered list beside the
+# figure for one reason -- a name sitting on the band it names cannot be
+# mis-paired, and the numbered key could be (UX called it noise).
+#
+# The width is a constant and it is deliberately a constant. The wedge costs
+# angular space, so every spoke narrows; the alternative -- shrinking the wedge
+# as the gene count grows -- makes the innermost ring's label a function of how
+# many genes somebody submitted, which is the kind of silent rescaling v2.6 spent
+# its whole budget removing. So the gap never moves, the cost is stated on the
+# figure (`wedge_note`), and `assert_wedge_labels_fit` proves the labels fit it
+# at every gene count rather than trusting this number.
+#
+# 26 deg is not a guess either: the binding case is the *innermost* ring, whose
+# radius is smallest and whose half-width budget is therefore tightest. At 12
+# rings that band's mid-radius is ~48 of 100 plotted units, and
+# 48 * tan(26/2 - 1.5) = 9.8 units ~ 52 px of half-width on the audit canvas,
+# against the ~44 px the longest short label needs at 7.4 pt. Measured in
+# `TestWedge`, not asserted here.
+WEDGE_DEG = 26.0
+# The label must clear the first and last sector edge, not merely land inside the
+# wedge: a glyph that touches the arc it labels is UX A6 from the inside.
+WEDGE_TEXT_MARGIN_DEG = 1.5
+
 # Deliberately neutral / achromatic. Viridis is saturated across its whole
 # range, so these cannot collide with a value colour -- and that claim is
 # asserted, not assumed.
@@ -162,6 +187,17 @@ class RingSpec:
       short_source  four to twelve characters naming the source, so the slide
                   render can carry it (v2.3 Still open 4) without the full
                   provenance string that made the v1 key overprint the arcs.
+
+    v2.7 adds one more, for the wedge:
+
+      short_label  the name drawn inside the 12 o'clock gap, at this ring's own
+                  radius. It is a *separate field* rather than a truncation of
+                  `label`, because QA-v2-retest §5 is the record of what
+                  truncating a ring label does: "Safety flags & constraint —
+                  NOT evidence of safety" clipped to "…NOT e…" and the figure
+                  then overstated its data. A short label has to be written to
+                  stand alone at its length; the full label, caveat included,
+                  stays on the scale in the side column.
     """
 
     key: str
@@ -176,6 +212,13 @@ class RingSpec:
     levels: int | None = None
     transform: str = ""
     short_source: str = ""
+    short_label: str = ""
+
+    @property
+    def wedge_label(self) -> str:
+        """What the wedge draws. Falls back to the full label, and then the fit
+        assertion is what refuses the render -- never a silent truncation."""
+        return self.short_label or self.label
 
 
 # PLAN.md §2. Order is outermost-first.
@@ -230,7 +273,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="logfc", units="log2 fold change", scale="diverging",
              transform="diverging, anchored at 0 and symmetric; "
                        "neither direction is drawn as the good one",
-             short_source="yours"),
+             short_source="yours",
+             short_label="logFC (yours)"),
     # Heavy-tailed even after the -log10: a gene at p=1e-300 and fourteen genes
     # between p=0.05 and p=1e-5 is an ordinary DE table, and linear on that
     # range is V6's collapse with different numbers. log10(1+x) rather than a
@@ -239,7 +283,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
     RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table",
              family="padj", units="-log10 adjusted p", scale="log1p",
              transform="log-spaced: colour is log10(1 + x), ticks are x",
-             short_source="yours"),
+             short_source="yours",
+             short_label="−log10 padj (yours)"),
     # v2.3 item 1 / COUNCIL M7/V8. One ring became two, and the labels say which
     # claim each one makes: the dense three-key ring is not the sparse probe key,
     # and a hatched probe cell must not take tractability down with it.
@@ -252,7 +297,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              "3 dense keys, present for every target with a prioritisation record",
              family="tractability", units="mean of 3 keys, each 0 or 1",
              domain=(0.0, 1.0), transform="fixed 0–1, same colour in every run",
-             short_source="Open Targets"),
+             short_source="Open Targets",
+             short_label="Tractability"),
     # Binary with absence: an explicit 0.0 is a measurement ("looked, no probe")
     # and a missing key is no_data. Two values and nothing between them, so two
     # swatches -- a 256-step ramp here would offer a reader positions that do
@@ -263,7 +309,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="tractability", units="probe: no / yes",
              domain=(0.0, 1.0), levels=2,
              transform="binary; absent key is hatched, never 0",
-             short_source="Open Targets"),
+             short_source="Open Targets",
+             short_label="Chemical probe"),
     # Signed with a stated bad direction, which makes it diverging and NOT the
     # same kind of diverging as logFC: here one arm genuinely is the bad one, so
     # it gets the warm arm and says so. The caveat stays on the label because
@@ -273,7 +320,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="safety", units="mean of 4 keys, each in [-1, 1]",
              domain=(-1.0, 1.0), scale="diverging",
              transform="fixed −1…+1, diverging at 0; amber arm is the bad one",
-             short_source="Open Targets"),
+             short_source="Open Targets",
+             short_label="Safety flags ≠ safety"),
     # V6: a ratio over five orders of magnitude, so log10. Deliberately NOT a
     # fixed domain: the ratio is unbounded above (TTR reaches 5,204x in liver)
     # and a fixed domain would clip TTR, APOB and SERPINA1 to the same top
@@ -286,14 +334,16 @@ RING_SPECS: tuple[RingSpec, ...] = (
              scale="log",
              transform="log10; ticks are the raw ratio. Range moves with the "
                        "submitted set — unbounded above",
-             short_source="GTEx v8"),
+             short_source="GTEx v8",
+             short_label="Regional specificity"),
     # A stage ordinal with six levels and nothing between them.
     RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)",
              "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence",
              family="pipeline", units="0 none · 1 Ph1 · 2 Ph1/2 · 3 Ph2 · 4 Ph3 · 5 approved",
              domain=(0.0, 5.0), levels=6,
              transform="6 discrete stages, fixed; no value between two stages",
-             short_source="Open Targets"),
+             short_source="Open Targets",
+             short_label="Pipeline: furthest phase"),
     # Puck's hard condition from v2.2 item 2 stands: the ring must state which
     # source it counted, on the figure. v2.4 changes the answer -- the per-drug
     # ClinicalTrials.gov hop is retired and these rows come from Open Targets'
@@ -308,7 +358,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="", units="three named states, no order implied by colour",
              categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS,
              transform="categorical — not a ramp, and not comparable to one",
-             short_source="Open Targets"),
+             short_source="Open Targets",
+             short_label="Pipeline: activity now"),
     # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred -- four
     # named levels, so four swatches.
     RingSpec("tdl", "Target development level (Pharos TDL — knowledge, not a pocket)",
@@ -316,7 +367,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="knowledge", units="Tdark · Tbio · Tchem · Tclin",
              domain=(0.0, float(TDL_MAX)), levels=TDL_MAX + 1,
              transform="4 discrete levels, fixed",
-             short_source="Pharos"),
+             short_source="Pharos",
+             short_label="TDL (knowledge)"),
     # V9: reduced to three states, so there is no count left to scale. Two of
     # the three are values (0 phenotyped-and-normal, 1 phenotyped-and-abnormal)
     # and the third is `no_data`, hatched -- so the ring draws two swatches.
@@ -331,7 +383,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="rodent", units="0 no abnormal · 1 abnormal · hatched not phenotyped",
              domain=(0.0, 1.0), levels=2,
              transform="binary; 'not phenotyped' is hatched, never 0",
-             short_source="Open Targets"),
+             short_source="Open Targets",
+             short_label="Mouse phenotype"),
     # The adapter already stores log10(1 + n), so the ring's *value* is the
     # transform (V6's own prescription, applied upstream in v1). The scale prints
     # the ticks as raw PubTator3 records, which is the number a reader has.
@@ -340,7 +393,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="knowledge", units="PubTator3 records", scale="prelog1p",
              transform="the adapter stores log10(1 + records); ticks are "
                        "records. Range moves with the submitted set",
-             short_source="PubTator3"),
+             short_source="PubTator3",
+             short_label="Literature volume"),
     # V13: k over external rings only, on a fixed 0..K domain. It is a gauge and
     # not evidence, which is why it is the one ring drawn at a third of the
     # chroma the others use -- a deliberately muted instrument rather than a
@@ -353,7 +407,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              levels=EXTERNAL_RING_COUNT + 1,
              transform="a completeness gauge: it orders nothing and selects "
                        "nothing, and is drawn muted to say so",
-             short_source="derived"),
+             short_source="derived",
+             short_label="k (completeness)"),
 )
 
 
@@ -762,6 +817,22 @@ class Layout:
     # category counts into the hole shrinks all of it past legibility -- which
     # is UX A4 reappearing in the middle of the figure.
     centre_detail: bool
+    # v2.7. The angular gap at 12 o'clock, in degrees, and the type size of the
+    # ring names drawn in it.
+    #
+    # Per layout, not one constant, because the budget for a horizontal label at
+    # radius r is `2 * r * tan(wedge/2)` in *pixels* and the two renders draw the
+    # same circle at very different sizes: the audit's plotted square is 1057 px
+    # and the slide's is 552. Measured at 12 rings, where the innermost band's
+    # mid-radius is 0.48 of the plotted radius: 26 deg buys the audit ~52 px of
+    # half-width and the slide ~27 px, against the ~44 px `k — rings with data`
+    # needs at 7.4 pt. One constant therefore either wastes the audit's space or
+    # drops the slide's inner names to ~5 pt, which is UX A4 reappearing at the
+    # centre of the figure. The two renders already differ in canvas, type and
+    # stamps; invariant 7 checks the spoke *order*, which is identical, and
+    # nothing claims the two put a gene at the same angle.
+    wedge_deg: float = WEDGE_DEG
+    wedge_label_size: float = 7.4
 
 
 # v2.6 widens the audit canvas from 17.5 to 19.5 in and narrows the axes box to
@@ -772,7 +843,8 @@ class Layout:
 # what the separate slide layout is for.
 AUDIT = Layout("audit", (19.5, 14.0), 8.0, (0.225, 0.205, 0.475, 0.755),
                True, True, 7.5, 1.0, True, (0.762, 0.035, 0.232, 0.930),
-               7.4, 6.6, 42, True, True)
+               7.4, 6.6, 42, True, True,
+               wedge_deg=26.0, wedge_label_size=7.4)
 # 16:9. A 9 in canvas fitted to a 7.5 in slide is a 0.83 scale, so an 11.5 pt
 # label lands at 9.6 pt -- against v1's 3.9, where an 18.3 x 15.2 in canvas on
 # the same slide was a 0.49 scale. The key and the caveats leave the canvas
@@ -784,9 +856,24 @@ AUDIT = Layout("audit", (19.5, 14.0), 8.0, (0.225, 0.205, 0.475, 0.755),
 # buys 16 px top and bottom. The circle is ~5% smaller on the slide and every
 # label still reads at 11.5 pt; `LABEL_CLEARANCE_PX` is what stops it drifting
 # back.
+# v2.7: the slide gets NO wedge, and the reason is measured rather than argued.
+# The obstacle is radial, not angular, so no wedge angle fixes it. The slide's
+# plotted square is 552 px, so twelve rings span (97-46)/105 * 276 = 134 px of
+# radius -- 11.2 px per band -- against one line of 8.4 pt type at 13.0 px tall.
+# The ring names would overlap each *other* before they came near a sector edge,
+# and the only cures are type below legibility (UX A4, which is the whole reason
+# the slide layout exists) or a smaller circle on the render that already has the
+# smaller circle. A 40 deg wedge would take 15% of every spoke's width and buy
+# nothing.
+#
+# So the slide keeps v2.6's arrangement: a full 360 deg of sectors, and the ring
+# names on their own scales in the column, where the type is 7.6 pt and has room.
+# The figure says which one it is doing -- `wedge_note`'s zero-wedge branch
+# prints the measurement, not a preference.
 SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.075, 0.345, 0.86),
                False, False, 0.0, 1.15, False, (0.700, 0.045, 0.290, 0.855),
-               8.4, 7.6, 52, False, False)
+               8.4, 7.6, 52, False, False,
+               wedge_deg=0.0, wedge_label_size=8.4)
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE}
 
 
@@ -851,13 +938,32 @@ def render(
     # ~13 minutes of fetching. `MAX_GENES` stops it before any network work;
     # this stops a direct render() call with a message that says what happened.
     space = 2 if len(genes) > 2 else 8
-    if len(genes) * space >= 360:
+    # v2.7: the budget is no longer the whole circle. The wedge is reserved
+    # first, so the guard has to subtract it -- otherwise the failure mode it
+    # exists to prevent returns `lay.wedge_deg` degrees earlier than it used to.
+    wedge = lay.wedge_deg
+    if (len(genes) - 1) * space >= 360 - wedge:
+        budget = (f"the {360 - wedge:g} degrees left after the {wedge:g} degree ring-name "
+                  f"gap at 12 o'clock" if wedge > 0 else "the 360 degrees of a circle")
         raise ValueError(
-            f"{len(genes)} genes x {space} degrees of spacing exceeds the 360 degrees of a "
-            f"circle, so the figure cannot be drawn. The input cap is {MAX_GENES} genes "
+            f"{len(genes)} genes x {space} degrees of spacing exceeds {budget}, so the "
+            f"figure cannot be drawn. The input cap is {MAX_GENES} genes "
             f"(config.MAX_GENES); above about 60 spokes the figure is unreadable anyway."
         )
-    circos = Circos({g: 1 for g in genes}, space=space)
+    if wedge > 0:
+        # The sectors no longer span 360 deg: `start`/`end` leave `wedge` degrees
+        # empty, centred on 12 o'clock, and the ring names go in it.
+        # `endspace=False` is what makes the empty span exactly `wedge` -- with
+        # the default the last sector gets a trailing gap too, the visible wedge
+        # is `wedge + space`, and the angle `wedge_note` prints is then wrong by
+        # two degrees.
+        circos = Circos({g: 1 for g in genes}, start=wedge / 2, end=360 - wedge / 2,
+                        space=space, endspace=False)
+    else:
+        # A layout that declares no wedge is drawn exactly as v2.6 drew it, down
+        # to `endspace`, so a v2.6 slide and a v2.7 slide differ only in where
+        # the rings are named and not in where a gene sits.
+        circos = Circos({g: 1 for g in genes}, space=space)
 
     # r_inner is the radius of the hole in the middle. It holds the counts, the
     # dropped-gene names (UX A3) and the "not validated" caveat, and v1's 33 was
@@ -868,10 +974,17 @@ def render(
     band = (r_outer - r_inner) / len(rings)
     csv_rows: list[dict[str, Any]] = []
     cell_ids: list[str] = []
+    # Each ring's own mid-radius, kept so the wedge can put the name at exactly
+    # the radius of the band it names. That correspondence is the whole argument
+    # for the wedge over a numbered key, so it is read off the same numbers the
+    # cells are drawn from rather than recomputed from a formula that could
+    # drift.
+    ring_mid_r: dict[str, float] = {}
 
     for ring_i, spec in enumerate(rings):
         hi = r_outer - ring_i * band
         lo = hi - band * 0.86
+        ring_mid_r[spec.key] = (lo + hi) / 2
         cells = cells_by_ring[spec.key]
         norm = norms[spec.key]
 
@@ -955,14 +1068,44 @@ def render(
     # trusting these numbers -- see `assert_no_text_over_the_rings`.
     ax.set_position(lay.axes_box)
 
+    # v2.7, Puck's layout. Each ring is named inside the wedge, at its own
+    # radius. Drawn on the polar axes directly rather than through
+    # `circos.text`, which defers its `ax.text` call into `plotfig` and hands
+    # back nothing: the artists have to be in hand here, because the type size
+    # is fitted to the wedge by measurement and then the fit is asserted.
+    #
+    # deg=0 is 12 o'clock, which is the middle of the gap by construction
+    # (sectors run from wedge/2 to 360-wedge/2).
+    wedge_labels = [
+        ax.text(0.0, ring_mid_r[spec.key], spec.wedge_label,
+                size=lay.wedge_label_size, ha="center", va="center",
+                color="#111111", zorder=CELL_ZORDER + 1)
+        for spec in rings
+    ] if wedge > 0 else []
+    if wedge_labels:
+        # The band, in pixels, is the vertical room a name has before it crowds
+        # the name on the ring above it. Read off the axes' own transform rather
+        # than computed from `band` and a remembered r-limit: pycirclize sets the
+        # polar axes to (0, 105), not (0, 100), and that 5% is the difference
+        # between a check that holds and one that is slightly wrong everywhere.
+        y0 = ax.transData.transform((0.0, 0.0))[1]
+        band_px = abs(ax.transData.transform((0.0, band))[1] - y0)
+        fit_wedge_labels(fig, ax, wedge_labels, wedge, band_px)
+    # The assertion waits until the centre block has been fitted to the hole, at
+    # the foot of this function: the innermost ring name sits about two plotted
+    # units above the hole's edge, so the centre block is one of its obstacles
+    # and it is not its final size yet.
+
     # COUNCIL V5, re-pointed by v2.5: the figure must not make a false claim
     # about its own method. Every sentence it is about to draw is checked against
     # what this render is actually doing, before any of it reaches the canvas.
+    wnote, clock = wedge_note(lay, len(genes), space), clock_phrase(lay)
     notes = _stamp_notes(ordering_note, filter_notes, region, cells_by_ring,
-                         gene_flags, subtitle)
+                         gene_flags, subtitle, wnote, clock)
     cap = caption(rings, norms, region, provenance, ordering_note, filter_notes,
-                  gene_flags, dropped_names)
-    assert_footer_is_true(notes + cap.splitlines(), ordering_note, filter_notes)
+                  gene_flags, dropped_names, wnote, clock)
+    assert_footer_is_true(notes + cap.splitlines(), ordering_note, filter_notes,
+                          wnote)
 
     centre_blocks, next_y = _draw_centre(ax, region, len(genes), input_count,
                                          rendered_count, ledger_counts,
@@ -972,7 +1115,8 @@ def render(
     text_blocks = []
     text_blocks += _draw_legend(fig, rings, norms, cmaps, lay)
     text_blocks += _draw_stamps(fig, notes, provenance, lay,
-                                slide_line(ordering_note, filter_notes))
+                                slide_line(ordering_note, filter_notes,
+                                           wedge_note(lay, len(genes), space, short=True)))
     if invariant_failures:
         _draw_banner(fig, invariant_failures)
     if run_conditions and lay.draw_conditions:
@@ -984,11 +1128,18 @@ def render(
     # with `CDKN2A (k=8) *` sitting at y=995 inside it. Both are geometry, so
     # both are checked geometrically instead of by eye.
     assert_text_within_canvas(fig, text_blocks)
-    assert_no_text_over_the_rings(fig, ax, text_blocks)
+    assert_no_text_over_the_rings(fig, ax, text_blocks, wedge_labels)
     # The innermost ring's inner edge, as a fraction of the plotted radius.
     hole = (r_outer - (len(rings) - 1) * band - band * 0.86) / (r_outer + 3)
     fit_centre_to_the_hole(fig, ax, centre_blocks, hole)
     assert_centre_fits_the_hole(fig, ax, centre_blocks, hole)
+    # v2.7, last because the centre block is one of the obstacles and has only
+    # just reached its final size. Two claims: every ring name is inside the
+    # empty wedge, and none of them has landed on the counts in the hole or on
+    # the first or last gene's spoke label.
+    assert_wedge_labels_fit(fig, ax, wedge_labels, wedge,
+                            obstacles=[t for t in ax.texts
+                                       if t.get_text() and t not in wedge_labels])
 
     out_svg.parent.mkdir(parents=True, exist_ok=True)
     # `bbox_inches=None` is not enough: matplotlib resolves a None kwarg from
@@ -1379,7 +1530,7 @@ def _key_lines(prefix: str, label: str, rng: str, limit: int = 34) -> list[str]:
 
 
 def assert_footer_is_true(lines: Sequence[str], ordering_note: str,
-                          filter_notes: Sequence[str]) -> None:
+                          filter_notes: Sequence[str], wedge: str = "") -> None:
     """COUNCIL V5: the figure must not make a false claim about its own method.
 
     v1's footer read "Rodent ring: … Never folded into any score" one line below
@@ -1401,6 +1552,11 @@ def assert_footer_is_true(lines: Sequence[str], ordering_note: str,
       3. **Every active filter is printed.** A reader must not mistake a
          filtered plot for the whole submitted set, so each active filter's own
          label has to appear in the text the figure draws.
+      4. **The wedge rule is printed** (v2.7). The gap at 12 o'clock narrows
+         every spoke, and Puck's condition on it was that the rule be stated
+         rather than applied quietly. A figure that reserves the gap and does
+         not say what it cost is the V5 defect by omission: the reader sees a
+         geometry and is given no way to know it was chosen.
     """
     body = "\n".join(lines)
     low = body.lower()
@@ -1430,10 +1586,87 @@ def assert_footer_is_true(lines: Sequence[str], ordering_note: str,
                 f"say so. A filtered figure that does not name its filters reads as the "
                 f"whole submitted set."
             )
+    if wedge and wedge not in body:
+        raise AssertionError(
+            "this figure reserves an angular gap for the ring names and does not state "
+            "the rule. The gap narrows every spoke; say so, and say what it cost, rather "
+            "than scaling the geometry silently."
+        )
+
+
+def clock_phrase(lay) -> str:
+    """How the figure describes where its first spoke is.
+
+    v2.7 made the old wording -- "starts at 12 o'clock" -- false on the audit
+    render and left it true on the slide, because only one of the two reserves a
+    gap there. COUNCIL V5 is a figure describing a geometry it does not have, so
+    the sentence is derived from the layout instead of written down twice.
+    """
+    if lay.wedge_deg > 0:
+        return "runs clockwise from the ring-name gap at 12 o'clock"
+    return "starts at 12 o'clock and runs clockwise"
+
+
+def wedge_note(lay, n_genes: int, space: float, short: bool = False) -> str:
+    """What the 12 o'clock gap costs this figure, in the figure's own numbers.
+
+    Puck's condition on the wedge was explicit: if the gap has to shrink at large
+    gene counts, say the rule on the figure rather than scaling silently. The
+    rule is that it does *not* shrink -- `Layout.wedge_deg` is a constant, the
+    spokes absorb the whole cost, and a colour or an angle therefore means the
+    same thing whether the submission held 8 genes or 50. A gap that narrowed as
+    genes were added would make the innermost ring's label size a function of
+    somebody's gene count, which is COUNCIL V6's defect wearing a different hat.
+
+    So the sentence states the constant, the spoke width it produces, and the
+    spoke width a full circle would have produced. All three, because "26°" on
+    its own does not tell a reader what it cost and the point of printing it is
+    that they can see the trade rather than take it on trust.
+    """
+    if not n_genes:
+        return ""
+    if lay.wedge_deg <= 0:
+        # The slide. Not a preference and not an omission: the constraint is
+        # radial and no wedge angle fixes it, so the figure states the
+        # measurement that decided it rather than leaving a reader to wonder why
+        # the two renders differ.
+        if short:
+            return ("ring names are on their own scales in the column, right, not inside "
+                    "the circle — at this size a ring band is 11 px and the names would "
+                    "overlap each other")
+        return (
+            "Ring names are in the column beside the circle, not inside it. On this "
+            "render the twelve rings span 134 px of radius — 11 px a ring — against 13 px "
+            "for one line of legible type, so names at their own radii would overlap each "
+            "other. The audit render, whose circle is twice as wide, puts them in a gap at "
+            "12 o'clock instead."
+        )
+    got = (360.0 - lay.wedge_deg - (n_genes - 1) * space) / n_genes
+    full = (360.0 - n_genes * space) / n_genes
+    if short:
+        # UX A4's rule for the slide: one line, and it has to carry the claim
+        # rather than point at a caption somebody has to be handed. The three
+        # numbers survive; the reasoning goes to the caption.
+        return (f"ring names are inside the circle, in a FIXED {lay.wedge_deg:g}° gap at 12 "
+                f"o'clock — so spokes are {got:.2f}°, not the {full:.2f}° of a full circle; "
+                f"each ring's scale is in the column, right")
+    # Two lines, not one. The footer block is centred and the other five notes
+    # already run most of the canvas width; measured at 14 genes this sentence
+    # reached x=1903 of 1950 as a single line, i.e. 46 px from the clip
+    # `assert_text_within_canvas` exists to catch.
+    return (
+        f"Ring names are inside the circle, in a {lay.wedge_deg:g}° gap at 12 o'clock, each at "
+        f"its own ring's radius. The gap is FIXED — it does not shrink as genes are added — "
+        f"so the spokes carry the cost:\n"
+        f"{n_genes} spokes at {got:.2f}° against the {full:.2f}° a full circle would give "
+        f"({(got / full - 1) * 100:+.1f}%). Each ring's SCALE, range and source stay in the "
+        f"column beside the circle: at the inner radii the gap is too narrow for a colour bar."
+    )
 
 
 def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
-                 cells_by_ring, gene_flags=None, subtitle: str = "") -> list[str]:
+                 cells_by_ring, gene_flags=None, subtitle: str = "",
+                 wedge: str = "", clock: str = "") -> list[str]:
     """The footer's sentences, built once so `assert_footer_is_true` checks
     exactly the text that gets drawn rather than a copy of it."""
     n_tissues = ""
@@ -1454,12 +1687,19 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
         f"Missing is never imputed. k = how many of the {EXTERNAL_RING_COUNT} EXTERNAL rings "
         f"have a real measurement for that gene; your own logFC and padj are not counted. It "
         f"is a completeness gauge: it orders nothing and selects nothing.",
-        f"The circle starts at 12 o'clock and runs clockwise — {ordering_note}. Region "
-        f"affects exactly one ring (regional specificity).",
+        # v2.7. This used to read "starts at 12 o'clock". 12 o'clock is now the
+        # middle of the ring-name gap and the first spoke begins half a wedge
+        # clockwise of it. COUNCIL V5 is about exactly this -- a figure
+        # describing a geometry it no longer has -- so the words move with the
+        # layout.
+        f"The circle {clock or clock_phrase(AUDIT)} — {ordering_note}. "
+        f"Region affects exactly one ring (regional specificity).",
         "Pipeline: furthest phase counts only drugs indicated for a disease with mechanistic "
         "evidence linking it to THIS target. A drug that hits the target for an unrelated "
         "indication sets no phase; those genes are drawn 'not applicable', not 'low'.",
     ]
+    if wedge:
+        notes.append(wedge)
     if filter_notes:
         # v2.5 item 2. On the figure, in the footer, and in the caption: three
         # places, because a reader who has only one of them must still know the
@@ -1481,7 +1721,8 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
     return notes
 
 
-def slide_line(ordering_note: str, filter_notes: Sequence[str]) -> str:
+def slide_line(ordering_note: str, filter_notes: Sequence[str],
+               wedge_short: str = "") -> str:
     """UX A4: the one line the slide render carries instead of the footer block.
 
     The filters are on it, first, when there are any. A slide is the artefact
@@ -1493,6 +1734,13 @@ def slide_line(ordering_note: str, filter_notes: Sequence[str]) -> str:
                            ordering_note,
                            "rings are scaled independently of one another",
                            "see the caption"])
+    # v2.7. Its own line rather than a fifth clause: at 10 pt on a 1600 px canvas
+    # the four clauses already run to ~900 px and `assert_text_within_canvas` is
+    # what caught the last sentence that was appended to a line that was full
+    # (UX A4). The wedge rule is a claim about the geometry the reader is looking
+    # at, so it stays on the slide rather than going to the caption alone.
+    if wedge_short:
+        base = base + "\n" + wedge_short
     if not filter_notes:
         return base
     # Its own line, above the rest. At 10 pt across a 1600 px canvas the two do
@@ -1530,7 +1778,7 @@ def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
 
 
 def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
-            gene_flags=None, dropped_names=()) -> str:
+            gene_flags=None, dropped_names=(), wedge="", clock="") -> str:
     """UX A4. Everything the slide render drops, as text to paste underneath.
 
     The full audit stamps stay on the audit render, which is the right artefact
@@ -1556,11 +1804,13 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
         "unrelated indication sets no phase.",
         f"Missing is never imputed. k = external rings with a real measurement for that "
         f"gene; it is a completeness gauge and orders nothing. Spoke ORDER: the circle "
-        f"starts at 12 o'clock and runs clockwise \u2014 {ordering_note}. Region affects exactly "
-        f"one ring (regional specificity).",
+        f"{clock or clock_phrase(AUDIT)} \u2014 {ordering_note}. Region affects exactly one "
+        f"ring (regional specificity).",
         "This figure is internally consistent and auditable. Nothing on it is ranked or "
         "scored: it is your gene set, the evidence rings, and a drawer per gene.",
     ]
+    if wedge:
+        lines += ["", wedge]
     if filter_notes:
         lines += [
             "",
@@ -1597,6 +1847,186 @@ def _reach(t, r, cx, cy) -> float:
     bb = t.get_window_extent(renderer=r)
     return max(((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
                for x, y in ((bb.x0, bb.y0), (bb.x0, bb.y1), (bb.x1, bb.y0), (bb.x1, bb.y1)))
+
+
+def _wedge_geometry(fig, ax, wedge_deg: float):
+    """Centre, plotted radius, and the half-angle a label may actually occupy.
+
+    The usable half-angle is the wedge's own half-angle less
+    `WEDGE_TEXT_MARGIN_DEG`, so a label stops short of the sector edge rather
+    than touching the first and last arc.
+    """
+    fig.canvas.draw()
+    box = ax.get_window_extent()
+    return (
+        fig.canvas.get_renderer(),
+        (box.x0 + box.x1) / 2,
+        (box.y0 + box.y1) / 2,
+        min(box.width, box.height) / 2,
+        math.tan(math.radians(max(wedge_deg / 2 - WEDGE_TEXT_MARGIN_DEG, 0.0))),
+    )
+
+
+def _wedge_overhang(t, r, cx, cy, tan_half) -> float:
+    """How far this label sticks out of the wedge, in px. <= 0 means it fits.
+
+    The wedge opens upward from the centre, so the two *bottom* corners bind:
+    they have the least vertical distance and therefore the least room. A label
+    drawn below the centre is not in the wedge at all and is reported as such,
+    by its full half-width.
+    """
+    bb = t.get_window_extent(renderer=r)
+    worst = -1e9
+    for x, y in ((bb.x0, bb.y0), (bb.x1, bb.y0), (bb.x0, bb.y1), (bb.x1, bb.y1)):
+        dy = y - cy
+        allowed = dy * tan_half if dy > 0 else -1.0
+        worst = max(worst, abs(x - cx) - allowed)
+    return worst
+
+
+WEDGE_MIN_SCALE = 0.80
+
+
+def _wedge_wrapped(text: str, lines: int) -> str:
+    """`text` broken at word boundaries onto at most `lines` lines.
+
+    Balanced rather than greedy: a ring name wrapped to "Pipeline:" over
+    "furthest phase" is a label with a hanging word, and the point of wrapping
+    here is to halve the *widest* line.
+    """
+    import textwrap
+
+    words = text.split()
+    if lines <= 1 or len(words) < lines:
+        return text
+    width = max(len(text) // lines + 1, max(len(w) for w in words))
+    out = textwrap.wrap(text, width)
+    while len(out) > lines:
+        width += 1
+        out = textwrap.wrap(text, width)
+    return "\n".join(out)
+
+
+def fit_wedge_labels(fig, ax, labels, wedge_deg: float, band_px: float) -> float:
+    """Shrink the ring names until every one fits inside the 12 o'clock gap.
+
+    The budget is `2 * r * tan(wedge/2 - margin)` and `r` is the ring's own
+    radius, so the innermost ring binds and how tight it binds depends on the
+    layout (the audit's circle is 926 px across, the slide's 552) and on how
+    many rings this render is drawing. None of that is knowable where the font
+    size is chosen, so it is measured -- the same argument as
+    `fit_centre_to_the_hole`, applied to the other end of the radius.
+
+    Two knobs, and they are tried in this order for a reason.
+
+    **Wrap first.** The two constraints pull opposite ways: the *width* budget
+    is tightest on the innermost ring, and the *height* budget -- the band,
+    `(r_outer - r_inner) / n` -- is widest when there are fewest rings. A
+    six-ring render is exactly the case where a name lands at a small radius
+    with a 37 px band around it, so a second line is free there and costs
+    nothing anywhere else. This is not hypothetical: `clinical_phase` is ring 7
+    of 12 in a full run and the innermost ring of the invariants fixture.
+
+    **Then shrink**, down to a floor that is tighter than the hole's (0.80
+    against 0.62) on purpose. The centre block is a caveat you lean in to read;
+    a ring name is the label you read at a glance, and at 0.62 of 7.4 pt it is
+    UX A4 again. If both knobs run out, `assert_wedge_labels_fit` raises and the
+    render refuses -- which is correct, because the alternatives are a name
+    printed over the arcs or a name truncated past its caveat (QA-v2-retest §5).
+    """
+    if not labels:
+        return 1.0
+    sizes = [t.get_fontsize() for t in labels]
+    texts = [t.get_text() for t in labels]
+    scale = 1.0
+    for _ in range(18):
+        r, cx, cy, _radius, tan_half = _wedge_geometry(fig, ax, wedge_deg)
+        over = [i for i, t in enumerate(labels)
+                if _wedge_overhang(t, r, cx, cy, tan_half) > 0]
+        if not over:
+            break
+        wrapped_one = False
+        for i in over:
+            t = labels[i]
+            cand = _wedge_wrapped(texts[i], t.get_text().count("\n") + 2)
+            if cand == t.get_text():
+                continue
+            was = t.get_text()
+            t.set_text(cand)
+            fig.canvas.draw()
+            if (t.get_window_extent(renderer=fig.canvas.get_renderer()).height
+                    + LABEL_CLEARANCE_PX > band_px):
+                t.set_text(was)          # the extra line does not fit the band
+            else:
+                wrapped_one = True
+        if wrapped_one:
+            continue
+        if scale <= WEDGE_MIN_SCALE:
+            break
+        scale = max(scale * 0.96, WEDGE_MIN_SCALE)
+        for t, size in zip(labels, sizes):
+            t.set_fontsize(size * scale)
+    return scale
+
+
+def assert_wedge_labels_fit(fig, ax, labels, wedge_deg: float, obstacles=()) -> None:
+    """Every ring name is inside the gap, clear of the first and last sector.
+
+    This is the inward-facing half of UX A6. `assert_no_text_over_the_rings`
+    stops text outside the circle from landing on the arcs; the wedge puts text
+    *inside* the circle deliberately, and the thing that makes that legitimate
+    rather than a violation is that the angular span it occupies is empty. So
+    the span is checked, at each label's own radius, against the same geometry
+    the sectors were built from.
+
+    `obstacles` is the rest of the text on the polar axes -- the spoke labels and
+    the centre block. The innermost ring name sits about two plotted units above
+    the hole's edge, so "inside the wedge" is necessary and not sufficient: the
+    counts in the hole grow with the drop ledger, and a seven-category ledger is
+    an ordinary input (`assert_centre_fits_the_hole`'s own broken fixture).
+    """
+    if not labels:
+        return
+    r, cx, cy, _radius, tan_half = _wedge_geometry(fig, ax, wedge_deg)
+    offenders = [
+        f"{t.get_text()[:44]!r} at {t.get_fontsize():.1f} pt overhangs the "
+        f"{wedge_deg:g}° gap by {_wedge_overhang(t, r, cx, cy, tan_half):.1f} px"
+        for t in labels if _wedge_overhang(t, r, cx, cy, tan_half) > 0
+    ]
+    # Ring names must also clear each *other*. This is the radial constraint, and
+    # it is the one that decided the slide render: bands are (r_outer-r_inner)/n
+    # apart and a line of type has a height that does not shrink with them, so a
+    # circle small enough or a ring count high enough makes the wedge impossible
+    # at any angle. Checked rather than assumed, because `RING_SPECS` growing by
+    # one is exactly how it would first go wrong.
+    boxes = [(t, t.get_window_extent(renderer=r)) for t in obstacles]
+    ordered = sorted(labels, key=lambda t: t.get_window_extent(renderer=r).y0)
+    for lower, upper in zip(ordered, ordered[1:]):
+        lb, ub = (x.get_window_extent(renderer=r) for x in (lower, upper))
+        if ub.y0 - lb.y1 < LABEL_CLEARANCE_PX:
+            offenders.append(
+                f"the ring names {lower.get_text()[:24]!r} and {upper.get_text()[:24]!r} are "
+                f"{ub.y0 - lb.y1:.1f} px apart, under the {LABEL_CLEARANCE_PX:g} px required — "
+                f"the bands are too close together at this circle size to name from inside")
+    for t in labels:
+        bb = t.get_window_extent(renderer=r)
+        for ot, ob in boxes:
+            if (bb.x0 - LABEL_CLEARANCE_PX < ob.x1 and ob.x0 < bb.x1 + LABEL_CLEARANCE_PX
+                    and bb.y0 - LABEL_CLEARANCE_PX < ob.y1
+                    and ob.y0 < bb.y1 + LABEL_CLEARANCE_PX):
+                offenders.append(
+                    f"the ring name {t.get_text()[:30]!r} comes within "
+                    f"{LABEL_CLEARANCE_PX:g} px of {ot.get_text()[:30]!r}")
+                break
+    if offenders:
+        raise AssertionError(
+            "a ring name does not fit the 12 o'clock gap and would be drawn over the "
+            "first or last spoke: " + "; ".join(offenders)
+            + ". `fit_wedge_labels` has already tried wrapping it onto more lines and "
+              "shrinking the type to its floor. Shorten the ring's `short_label` or widen "
+              "`Layout.wedge_deg` — and if you widen it, the spoke cost changes and "
+              "`wedge_note` must change with it."
+        )
 
 
 CENTRE_MIN_SCALE = 0.62
@@ -1680,7 +2110,7 @@ def assert_text_within_canvas(fig, blocks, margin: float = 1.0) -> None:
             "text runs off the edge of the canvas and is clipped: " + "; ".join(offenders))
 
 
-def assert_no_text_over_the_rings(fig, ax, blocks) -> None:
+def assert_no_text_over_the_rings(fig, ax, blocks, wedge_labels=()) -> None:
     """UX A6, checked geometrically rather than by eye.
 
     Measured in v1's SVG: the monospace ring key started at x=36 and its longest
@@ -1697,6 +2127,15 @@ def assert_no_text_over_the_rings(fig, ax, blocks) -> None:
       name is. Rather than guess a margin, the label artists are measured -- so
       moving the colour bar left until its caption fits inside the canvas cannot
       silently put it on top of SERPINA1.
+
+    v2.7: the ring names now sit *inside* the circle, in the empty wedge at 12
+    o'clock. They would fail the radius test, and they should not -- the wedge
+    is not a ring, it is the absence of one. The assertion is told about them
+    rather than left to assume full sectors: they are checked by
+    `assert_wedge_labels_fit` against the angular span that is actually empty,
+    and they are dropped from the obstacle list here, because they are not
+    spoke labels and leaving them in made every ring name an obstacle to the
+    ring name above it.
     """
     if not blocks:
         return
@@ -1705,10 +2144,14 @@ def assert_no_text_over_the_rings(fig, ax, blocks) -> None:
     box = ax.get_window_extent()
     cx, cy = (box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2
     radius = min(box.width, box.height) / 2
-    labels = [(t, t.get_window_extent(renderer=r)) for t in ax.texts if t.get_text()]
+    inside = {id(t) for t in wedge_labels}
+    labels = [(t, t.get_window_extent(renderer=r)) for t in ax.texts
+              if t.get_text() and id(t) not in inside]
 
     offenders = []
     for t in blocks:
+        if id(t) in inside:
+            continue
         bb = t.get_window_extent(renderer=r)
         dx = max(bb.x0 - cx, 0, cx - bb.x1)
         dy = max(bb.y0 - cy, 0, cy - bb.y1)
@@ -1780,6 +2223,8 @@ __all__ = ["render", "RING_SPECS", "RingSpec", "STATE_STYLE", "VALUE_CMAP",
            "CMAP_LUM", "GREYSCALE_MIN_DELTA", "ADJACENT_RING_MIN_DELTA_E",
            "assert_ramp_luminance_is_monotone", "assert_rings_are_distinguishable",
            "assert_within_domain", "ACTIVITY_PALETTE", "RETIRED_CLAIM_WORDS",
-           "slide_line", "assert_text_within_canvas",
+           "slide_line", "assert_text_within_canvas", "WEDGE_DEG", "clock_phrase",
+           "WEDGE_TEXT_MARGIN_DEG", "WEDGE_MIN_SCALE", "wedge_note",
+           "fit_wedge_labels", "assert_wedge_labels_fit",
            "assert_no_text_over_the_rings", "assert_centre_fits_the_hole",
            "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE"]

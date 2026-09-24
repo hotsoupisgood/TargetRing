@@ -250,6 +250,221 @@ class TestA6NoTextOverTheRings:
         plt.close(fig)
 
 
+def _full_ring_spec(genes):
+    """Every one of the twelve rings, in range, so the wedge is measured at the
+    band spacing a real run actually produces rather than at a six-ring fixture's
+    much roomier one."""
+    from targetring.figure import RING_SPECS
+    out = {}
+    for s in RING_SPECS:
+        if s.categorical:
+            levels = sorted(s.categorical)
+            out[s.key] = {g: value(levels[i % len(levels)]) for i, g in enumerate(genes)}
+        elif s.domain:
+            lo, hi = s.domain
+            out[s.key] = {g: value(lo + (hi - lo) * (i % 5) / 4.0)
+                          for i, g in enumerate(genes)}
+        else:
+            out[s.key] = {g: value(1.0 + i * 0.3) for i, g in enumerate(genes)}
+    return out
+
+
+class TestWedge:
+    """v2.7, Puck's layout: an angular gap at 12 o'clock with each ring named
+    inside it, at that ring's own radius."""
+
+    def _render_n(self, tmp_path: Path, n: int, layout: str):
+        genes = [f"GENE{i:03d}" for i in range(n)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / f"{layout}{n}.svg"
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Liver", out_svg=out, input_count=n, rendered_count=n,
+                     ledger_counts={}, ordering_note=ORDER_NOTE, layout=layout,
+                     provenance="run X · abc123")
+        return res, out
+
+    @pytest.mark.parametrize("n", [3, 14, 50])
+    def test_every_ring_is_named_inside_the_circle_on_the_audit_render(
+            self, tmp_path: Path, n: int) -> None:
+        """The whole point of the wedge over a numbered key: the name is on the
+        figure, at the radius of the band it names."""
+        from targetring.figure import RING_SPECS
+        _, svg = self._render_n(tmp_path, n, "audit")
+        body = svg.read_text()
+        for spec in RING_SPECS:
+            # `fit_wedge_labels` may have wrapped a name onto a second line, so
+            # the words are checked rather than the joined string.
+            for word in spec.wedge_label.split():
+                assert word in body, f"{spec.key}: {word!r} missing from the audit SVG"
+
+    @pytest.mark.parametrize("n", [3, 14, 50])
+    def test_the_gap_does_not_move_with_the_gene_count(
+            self, tmp_path: Path, n: int) -> None:
+        """Puck's condition. A gap that narrowed as genes were added would make
+        the innermost ring's label size a function of somebody's submission."""
+        from targetring.figure import AUDIT
+        _, svg = self._render_n(tmp_path, n, "audit")
+        assert f"in a {AUDIT.wedge_deg:g}° gap at 12 o'clock" in svg.read_text()
+
+    def test_the_figure_states_what_the_gap_cost_the_spokes(
+            self, tmp_path: Path) -> None:
+        """At 50 genes the spokes are the thin case, so the number is printed
+        rather than absorbed: 4.72° against a full circle's 5.20°."""
+        _, svg = self._render_n(tmp_path, 50, "audit")
+        body = svg.read_text()
+        assert "50 spokes at 4.72°" in body
+        assert "5.20° a full circle would give" in body
+        assert "(-9.2%)" in body or "(−9.2%)" in body
+
+    def test_the_gap_is_reserved_and_the_first_spoke_starts_after_it(self) -> None:
+        """Measured on the sectors, not on the sentence: the empty span is
+        exactly `wedge_deg`, which is what `endspace=False` buys."""
+        from pycirclize import Circos
+
+        from targetring.figure import AUDIT
+        w = AUDIT.wedge_deg
+        c = Circos({f"G{i}": 1 for i in range(50)}, start=w / 2, end=360 - w / 2,
+                   space=2, endspace=False)
+        first, last = c.sectors[0], c.sectors[-1]
+        assert first.deg_lim[0] == pytest.approx(w / 2)
+        assert 360 - last.deg_lim[1] == pytest.approx(w / 2)
+        assert first.deg_size == pytest.approx(4.72, abs=0.01)
+
+    def test_the_slide_names_its_rings_in_the_column_and_says_why(
+            self, tmp_path: Path) -> None:
+        """The constraint on the slide is radial, so no wedge angle fixes it:
+        twelve bands over 134 px of radius against 13 px of legible type. The
+        render says so rather than silently differing from the audit."""
+        from targetring.figure import SLIDE
+        assert SLIDE.wedge_deg == 0
+        _, svg = self._render_n(tmp_path, 14, "slide")
+        body = svg.read_text()
+        assert "gap at 12 o'clock" not in body
+        assert "a ring band is 11 px" in body
+
+    def test_text_in_the_wedge_is_not_text_over_the_rings(self, tmp_path: Path) -> None:
+        """The assertion has to understand the gap rather than assume full
+        sectors: a name at r=76 fails the radius test and passes the wedge
+        test, and both are correct."""
+        import math
+
+        import matplotlib.pyplot as plt
+        from pycirclize import Circos
+
+        from targetring.figure import (
+            AUDIT,
+            assert_wedge_labels_fit,
+        )
+        w = AUDIT.wedge_deg
+        c = Circos({f"G{i}": 1 for i in range(6)}, start=w / 2, end=360 - w / 2,
+                   space=8, endspace=False)
+        for g in (f"G{i}" for i in range(6)):
+            c.get_sector(g).add_track((72.0, 80.0)).rect(0, 1, fc="#dddddd")
+        fig = c.plotfig(figsize=AUDIT.figsize, dpi=100)
+        ax = fig.axes[0]
+        fig.set_layout_engine("none")
+        ax.set_position(AUDIT.axes_box)
+        good = ax.text(0.0, 76.0, "Tractability", size=AUDIT.wedge_label_size,
+                       ha="center", va="center")
+        # Inside the circle, so the old check calls it a collision...
+        with pytest.raises(AssertionError, match="overlaps the rings"):
+            assert_no_text_over_the_rings(fig, ax, [good])
+        # ...and told about the wedge, it is exempt and passes its own check.
+        assert_no_text_over_the_rings(fig, ax, [good], [good])
+        assert_wedge_labels_fit(fig, ax, [good], w)
+
+        # A name the same distance out but swung clear of the gap is over a
+        # sector, and the wedge check is what catches it.
+        bad = ax.text(math.radians(90.0), 76.0, "Tractability",
+                      size=AUDIT.wedge_label_size, ha="center", va="center")
+        with pytest.raises(AssertionError, match="overhangs the 26° gap"):
+            assert_wedge_labels_fit(fig, ax, [bad], w)
+        plt.close(fig)
+
+    def test_a_name_too_long_for_its_radius_refuses_rather_than_overprints(
+            self, tmp_path: Path) -> None:
+        """QA-v2-retest §5 is the record of what truncating a ring label does.
+        The wedge never truncates: it wraps, then shrinks to a floor, then
+        refuses."""
+        import matplotlib.pyplot as plt
+        from pycirclize import Circos
+
+        from targetring.figure import AUDIT, assert_wedge_labels_fit
+        w = AUDIT.wedge_deg
+        c = Circos({f"G{i}": 1 for i in range(6)}, start=w / 2, end=360 - w / 2,
+                   space=8, endspace=False)
+        fig = c.plotfig(figsize=AUDIT.figsize, dpi=100)
+        ax = fig.axes[0]
+        fig.set_layout_engine("none")
+        ax.set_position(AUDIT.axes_box)
+        t = ax.text(0.0, 50.0, "an unbroken ring name far too long for the inner radius",
+                    size=AUDIT.wedge_label_size, ha="center", va="center")
+        with pytest.raises(AssertionError, match="does not fit the 12 o'clock gap"):
+            assert_wedge_labels_fit(fig, ax, [t], w)
+        plt.close(fig)
+
+    def test_two_ring_names_that_would_touch_are_a_failure(self) -> None:
+        """The radial constraint, checked rather than assumed — it is what
+        decided the slide render, and `RING_SPECS` growing by one is how it
+        would first go wrong on the audit render too."""
+        import matplotlib.pyplot as plt
+        from pycirclize import Circos
+
+        from targetring.figure import AUDIT, assert_wedge_labels_fit
+        w = AUDIT.wedge_deg
+        c = Circos({f"G{i}": 1 for i in range(6)}, start=w / 2, end=360 - w / 2,
+                   space=8, endspace=False)
+        fig = c.plotfig(figsize=AUDIT.figsize, dpi=100)
+        ax = fig.axes[0]
+        fig.set_layout_engine("none")
+        ax.set_position(AUDIT.axes_box)
+        a = ax.text(0.0, 80.0, "TDL", size=AUDIT.wedge_label_size,
+                    ha="center", va="center")
+        b = ax.text(0.0, 80.4, "k", size=AUDIT.wedge_label_size,
+                    ha="center", va="center")
+        with pytest.raises(AssertionError, match="px apart, under the"):
+            assert_wedge_labels_fit(fig, ax, [a, b], w)
+        plt.close(fig)
+
+    def test_the_footer_no_longer_claims_the_circle_starts_at_12_oclock(
+            self, tmp_path: Path) -> None:
+        """COUNCIL V5. 12 o'clock is the middle of the gap now and the first
+        spoke begins half a wedge clockwise of it."""
+        _, svg = self._render_n(tmp_path, 14, "audit")
+        body = svg.read_text()
+        assert "starts at 12 o'clock" not in body
+        assert "runs clockwise from the ring-name gap at 12 o'clock" in body
+
+    def test_each_renders_caption_describes_that_render(self, tmp_path: Path) -> None:
+        """`caption.txt` is the slide's artefact — text to paste underneath it —
+        and `run.py` writes the slide render's. Until v2.7 the two captions were
+        word for word identical; now each states its own geometry, and pasting
+        the audit's gap sentence under a slide that has no gap would be COUNCIL
+        V5 in the one file that is read beside the figure."""
+        audit, _ = self._render_n(tmp_path, 14, "audit")
+        slide, _ = self._render_n(tmp_path, 14, "slide")
+        assert "26° gap at 12 o'clock" in audit.caption
+        assert "runs clockwise from the ring-name gap" in audit.caption
+        # The slide reserves no gap, so its first spoke really is at 12 o'clock
+        # and its caption says the old sentence, which is true there and only
+        # there. It may still *refer* to the audit's gap; what it may not do is
+        # claim one of its own.
+        assert "starts at 12 o'clock and runs clockwise" in slide.caption
+        assert "runs clockwise from the ring-name gap" not in slide.caption
+        assert "in the column beside the circle, not inside it" in slide.caption
+
+    def test_the_scales_stay_in_the_column_and_the_figure_says_why(
+            self, tmp_path: Path) -> None:
+        """Name in the wedge, scale in the column. Measured: the innermost band
+        has ~42 px of half-width in the gap, against the 280 px the colour bar
+        alone occupies — so the two cannot share one place, and the figure says
+        which holds which."""
+        _, svg = self._render_n(tmp_path, 14, "audit")
+        body = svg.read_text()
+        assert "the gap is too narrow for a colour bar" in body
+        assert "EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS" in body
+
+
 class TestB1SectorCeiling:
     """B1: `Circos({...}, space=2)` raises "Too large sector space size is set!!"
     for n >= 181, which reached the user as a raw traceback after ~13 minutes of
@@ -261,11 +476,27 @@ class TestB1SectorCeiling:
         assert MAX_GENES * 2 < 360
 
     def test_an_over_large_render_says_what_happened(self, tmp_path: Path) -> None:
+        """v2.7: the budget the message quotes is 360 minus the ring-name gap,
+        not 360. The gap is reserved before any sector is placed, so a guard
+        that still tested against a full circle would let 26 degrees' worth of
+        genes through into the traceback this exists to prevent."""
         genes = [f"G{i}" for i in range(200)]
         spec = {"logfc": {g: value(1.0) for g in genes}}
-        with pytest.raises(ValueError, match="exceeds the 360 degrees"):
+        with pytest.raises(ValueError, match=r"exceeds the 334 degrees left after the 26"):
             render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
                    region="Liver", out_svg=tmp_path / "big.svg",
+                   input_count=200, rendered_count=200, ledger_counts={},
+                   ordering_note=ORDER_NOTE)
+
+    def test_the_slide_guard_quotes_the_full_circle_it_actually_uses(
+            self, tmp_path: Path) -> None:
+        """The slide declares no wedge, so its budget really is 360 degrees and
+        the message must not invent a gap the render does not reserve."""
+        genes = [f"G{i}" for i in range(200)]
+        spec = {"logfc": {g: value(1.0) for g in genes}}
+        with pytest.raises(ValueError, match=r"exceeds the 360 degrees of a circle"):
+            render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                   region="Liver", out_svg=tmp_path / "big.svg", layout="slide",
                    input_count=200, rendered_count=200, ledger_counts={},
                    ordering_note=ORDER_NOTE)
 

@@ -536,9 +536,18 @@ async def run_analysis(
     # UX A4: the slide render. Same data, 16:9, type that survives projection,
     # with the ring key and the caveats moved into the caption beside it. The
     # audit render above keeps every stamp and stays the morning artefact.
-    do_render(banner, conds, layout="slide",
-              svg=runs_dir / "figure-slide.svg", png=runs_dir / "figure-slide.png")
-    (runs_dir / "caption.txt").write_text(fig_result.caption + "\n")
+    slide_result = do_render(banner, conds, layout="slide",
+                             svg=runs_dir / "figure-slide.svg",
+                             png=runs_dir / "figure-slide.png")
+    # v2.7: the caption is the SLIDE's caption, not the audit's. It always was
+    # the slide's artefact -- "everything the slide render drops, as text to
+    # paste underneath" -- and until now the two were word for word identical,
+    # so taking the audit's cost nothing. They are not identical any more: the
+    # audit reserves a 26 degree gap for its ring names and the slide does not,
+    # and each render's caption states its own geometry. The audit's sentence
+    # pasted under the slide is COUNCIL V5 in the one file that exists to be
+    # read beside the figure.
+    (runs_dir / "caption.txt").write_text(slide_result.caption + "\n")
 
     _write_csv(csv_path, fig_result.csv_rows, ledger, parsed,
                ordering_note, active_filters, outcome.kept_unevaluated)
