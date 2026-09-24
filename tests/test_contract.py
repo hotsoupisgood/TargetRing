@@ -116,6 +116,8 @@ async def _epmc(query: str) -> dict:
     a transient 503 too). An outage is not a contract violation, so it skips
     with the status in the reason rather than reporting a false failure — or,
     worse, a false pass."""
+    import httpx
+
     from targetring.http import HardFailure
     async with Http() as http:
         try:
@@ -124,8 +126,11 @@ async def _epmc(query: str) -> dict:
                 {"query": query, "format": "json", "pageSize": 1},
             )
             return json_or_raise(r)
-        except HardFailure as e:
-            pytest.skip(f"Europe PMC unreachable, contract not evaluated: {str(e)[:160]}")
+        except (HardFailure, httpx.TimeoutException, httpx.TransportError) as e:
+            pytest.skip(
+                f"Europe PMC unreachable, contract not evaluated: "
+                f"{type(e).__name__}: {str(e)[:140]}"
+            )
 
 
 class TestLiteratureContract:
