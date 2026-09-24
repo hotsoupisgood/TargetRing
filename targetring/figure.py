@@ -1308,10 +1308,14 @@ def _draw_legend(fig, rings, norms, cmaps, lay) -> list:
         Patch(facecolor=s["fc"], hatch=s["hatch"], edgecolor=s["ec"], label=s["label"])
         for s in STATE_STYLE.values()
     ]
-    # One swatch per ring would just duplicate the column, so the value entry
-    # points at it instead.
-    handles.append(Patch(facecolor="#ffffff", edgecolor="#666666",
-                         label="value — decode it against THIS ring's scale, right"))
+    # One swatch per ring would duplicate the column, and any single colour
+    # would say the thing v2.6 exists to stop saying -- that one colour means
+    # "a value". So the entry is an empty dashed box that points at the column
+    # instead. Dashed and unfilled rather than white-filled, because a white
+    # patch beside `not_applicable`'s white-with-dots is two states told apart
+    # by a hatch alone.
+    handles.append(Patch(facecolor="none", edgecolor="#111111", linestyle="--",
+                         label="value — decode it against THIS ring's own scale, right"))
     # COUNCIL V12: the categorical ring is off every ramp, so its three colours
     # need naming or they read as positions on one.
     for spec in rings:

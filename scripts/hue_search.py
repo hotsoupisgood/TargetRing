@@ -130,6 +130,11 @@ RING_SLOTS: list[tuple[str, object]] = [
     ("completeness", [10]),
 ]
 
+# 6.3 rather than the 7.9 ceiling, and rather than 7.0. Raising it to 7.0 was
+# tried (`logs/v26-hue-search-7.txt`): it buys 0.7 on the worst pair anywhere
+# and costs 0.2 on the worst pair that actually touches, and it gives up
+# blue-down / orange-up on logFC for a purple/green pair. The pairs that touch
+# are the ones a reader compares without meaning to, so they win.
 ALL_PAIRS_MIN = 6.3
 ARM_MIN_DELTA_E = 20.0
 COOL = (180.0, 330.0)

@@ -39,6 +39,7 @@ def main() -> int:
     bad = []
     worst_touching = [999.0]
     worst_cells = [999.0]
+    scored = [0, 0]
 
     print("touching rings — worst pair of equally-bright cells across the boundary,\n"
           "under the worst of normal / protan / deutan")
@@ -56,6 +57,8 @@ def main() -> int:
         cell, ca, cb = adjacent_ring_delta_e(a, b)
         flag = "" if d >= ADJACENT_TARGET else "   <-- under target"
         worst_touching[0] = min(worst_touching[0], d)
+        scored[0] += 1
+        scored[1] += 1 if d >= ADJACENT_TARGET else 0
         if cell < 900:
             worst_cells[0] = min(worst_cells[0], cell)
         cellstr = "no equally-bright mid-band pair" if cell > 900 else (
@@ -97,10 +100,11 @@ def main() -> int:
 
     print(f"\nworst touching-ring pair anywhere on the two ramps: "
           f"dE {worst_touching[0]:.1f}, against a target of {ADJACENT_TARGET:g}.")
-    print("Seven of the ten scored boundaries clear the target; the three that do\n"
-          "not are pale-meets-pale or dark-meets-dark, which is the gamut ceiling\n"
-          "described in figure.assert_rings_are_distinguishable, not a fixable\n"
-          "assignment. Ring identity is carried by position, number and the scale\n"
+    print(f"{scored[1]} of the {scored[0]} scored boundaries clear it; the "
+          f"{scored[0] - scored[1]} that do not are\npale-meets-pale or "
+          "dark-meets-dark, which is the gamut ceiling described in\n"
+          "figure.assert_rings_are_distinguishable, not a fixable assignment. Ring\n"
+          "identity is also carried by radial position, ring number and the scale\n"
           "column; this is the number that says why those are not optional.")
     print("FAILED: " + "; ".join(bad) if bad else
           "no colour is shared between rings in different families, and the "
