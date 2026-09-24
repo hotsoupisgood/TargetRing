@@ -943,3 +943,400 @@ PowerPoint, no Illustrator, no printer on this machine.
    or leave the activity ring dark? *(Newly open 2.)*
 3. Everything already in §6, unchanged: ChEMBL and Europe PMC on the render
    path, the weights, the M7 druggability split.
+
+---
+
+# v2.2 — the four changes you approved
+
+Wren II, 2026-09-24. Local only, nothing deployed, nothing pushed, no money
+spent (triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched, the
+OpenClaw gateway not restarted. Six commits, one per change plus two for
+defects the changes exposed.
+
+**Tests: 354 passed, 0 skipped.** All seven invariants PASS on a clean cold run
+(`runs/V22-COUNCIL-COLD`), and on all six fixture × region combinations.
+
+---
+
+## Read this first: item 1 removed the headline, and item 4 did not bring it back
+
+Two of your four changes pull hard against each other, and the net effect on
+`de_realistic.csv` and on the council's liver set is that **the Pareto headline
+is no longer drawn at all**. Measured, same gene set, same day:
+
+| build | Pareto axes | eligible / 14 | front | ◆ drawn? |
+|---|---|---|---|---|
+| v2.1 (yesterday) | 4 | **10** | EGFR, PCSK9, TTR, SERPINA1, ASGR1 | **yes** |
+| + item 1 only | 4 | **4** | EGFR, DDR1 | no |
+| + item 1 + item 4 (HEAD) | 5 | **4** | EGFR, DDR1 | no |
+
+(Council liver set, region Liver. `de_realistic.csv` in Liver: 7 → 2 → 2
+eligible; the diamond was already suppressed there at 7.)
+
+**Item 1 is the cause, and it is your decision working as specified.**
+`hasHighQualityChemicalProbes` is absent for **9 of 14** council targets and
+**11 of 14** on `de_realistic.csv`. Absent now means `no_data` for the whole
+druggability cell — a shorter mean is the V4 defect and a substituted 0.0 is the
+imputation the census test caught — so those genes lose a Pareto axis and become
+ineligible. Nine hatched cells appeared on the druggability ring; one cell (the
+single council target Open Targets writes an explicit `0.0` for) gained a
+meaning it did not have before.
+
+**Item 4 cannot offset it, and the arithmetic says so.** Eligibility is a
+conjunction over the axes (COUNCIL V2), so *adding* an axis can only hold
+eligibility level or lower it. Pharos held a record for every gene that was
+already eligible, so it lowered nothing — and it raised nothing either. Measured
+on identical cells with only the axis list varied:
+
+```
+de_realistic   4 axes: 2 eligible, front {EGFR}          ◆ not drawn
+               5 axes: 2 eligible, front {EGFR}          ◆ not drawn
+council-liver  4 axes: 4 eligible, front {DDR1, EGFR}    ◆ not drawn
+               5 axes: 4 eligible, front {DDR1, EGFR}    ◆ not drawn
+```
+
+S1's claim — "the only axis with zero missing values" — is true, and it is not
+the same claim as "this will make more genes eligible". §1.4 asked why the
+headline keeps not appearing; the answer today is the probe key, not the number
+of axes. **Your call**, and the two options I can see are in *What you need to
+decide* below.
+
+---
+
+## Item 1 — `hasHighQualityChemicalProbes` semantics ✅
+
+**Commit** `7cbf9a9`. The red test is green, fixed rather than deleted.
+
+Your decision, implemented literally: an explicit `0.0` is a real value meaning
+*"Open Targets looked and there is no high-quality probe"* and does arithmetic
+work in the 4-key mean; a genuinely absent key is `no_data` and the cell refuses
+the mean. The key left `SPARSE_KEY_ABSENT_VALUE` and joined a new
+`EXPLICIT_ZERO_KEYS`. The refusal names which of the two reasons applied, so a
+hatched druggability cell is diagnosable at the cell.
+
+**No other key this build reads has acquired the behaviour.** Live census,
+2026-09-24, 23 targets, every prioritisation key:
+
+| key | present | absent | emits an explicit 0.0 |
+|---|---|---|---|
+| `hasHighQualityChemicalProbes` | 8 | 15 | **yes** — your decision |
+| `hasSafetyEvent` | 12 | 11 | no (only −1.0) |
+| `isCancerDriverGene` | 5 | 18 | no (only −1.0) |
+| `mouseOrthologMaxIdentityPercentage` | 22 | 1 | **yes** — read by no ring |
+| `paralogMaxIdentityPercentage` | 20 | 3 | **yes** — read by no ring |
+| every other key | 23 | 0 | dense, so absence never arises |
+
+So the two that have acquired it feed nothing, and the two liability keys this
+build still infers from absence are still one-sided. Both are recorded so the
+next census has a baseline.
+
+**The test was fixed and generalised.** v2 checked only the keys in the mapping,
+which is why it caught this one *by luck of it being mapped*. It now walks every
+prioritisation key Open Targets emits and fails on any sparse key that also
+writes an explicit zero, whether or not this build reads it. Two more live tests
+assert the premise itself: that the probe key really does carry a 0.0 (if Open
+Targets reverts, the decision needs revisiting and the suite says so), and that
+it is still sparse.
+
+**Evidence:** `TestExplicitZeroProbeKey` (4), `TestSparseKeyCensusStillHolds` (3,
+live), `TestSparsePrioritisationKeys` (7, fixtures updated to stated zeros).
+
+---
+
+## Item 2 — the activity ring is ClinicalTrials.gov, and says so ✅
+
+**Commits** `395ba11`, `303dddb`. New `targetring/adapters/clinicaltrials.py`.
+
+Drug names come from Open Targets' rows and the hop is per drug, because COUNCIL
+D3 measured that CT.gov cannot be keyed on a gene. Both of your hard conditions
+are met, and both are visible in the artefacts:
+
+- **The ring states its source on the figure.** `ClinicalTrials.gov v2` is in
+  the ring's own *label*, so it reaches the numbered ring key on the audit render
+  **and** the three categorical legend entries, which are drawn on the slide
+  render too. Every cell detail also says, in words, that this is *not* the AACT
+  population and that the numbers are not continuous with yesterday's.
+  `7b-ring-key-sources.png`, and the legend in `1-figure.png`.
+- **Sponsor and live status reach the drawer.** Per drug: total trials, live
+  count, stopped-early count, the named lead sponsors of the live trials, and a
+  linked live NCT example. BRAF, live: *81 distinct lead sponsors* across 18
+  drugs — M.D. Anderson, NCI, Sun Yat-sen, Bayer, Exelixis — with REGORAFENIB at
+  366 trials / 100 live / 48 stopped and SORAFENIB at 885 / 66 / 163.
+  `7-drawer-ctgov-sponsors.png`.
+
+**What I changed about the ring's meaning, because the source forced it.** The
+−1.0 state was "stopped **for cause**", which Open Targets could support because
+it categorises `trialStopReasonCategories`. CT.gov gives free-text `whyStopped`
+and no category, so the state is now *"stopped early — cause NOT categorised by
+CT.gov"* in the legend, in the cell detail and in the drawer. COUNCIL D4's
+measurement is the reason: 7 of every 8 BRAF terminations say nothing about the
+target, so inferring cause from free text would mislead on most of them. The
+free text is shown verbatim in the drawer for a human to read
+(`"Administrative change"`, `"slow accrual led to early closure."`).
+
+**The query form is a decision, and it is recorded.** CT.gov concept-expands the
+intervention search, heavily:
+
+```
+query.intr                              totalCount
+SORAFENIB                                      885
+"SORAFENIB"                                    885
+EXPANSION[None]"SORAFENIB"                       9
+SORAFENIB TOSYLATE                             167   (an AND of two terms)
+"SORAFENIB TOSYLATE"                           525
+```
+
+The drug name is sent as a quoted phrase — identical to the council's verified
+form on a single-token name, and phrase-safe rather than an accidental AND on a
+multi-token one. The exact string sent travels with every record into the drawer.
+
+**A 429 happened, and it is why the design changed.** The first implementation
+made three calls per drug so that every count came from `countTotal` rather than
+from the size of a page. On a cold 15-gene council run that is 480 requests and
+**ClinicalTrials.gov returned HTTP 429 after 12 s**. Rule 9 held — the run failed
+hard, nothing was retried — which was correct and useless. Now: one request per
+drug with `pageSize=1000` against a measured maximum of 885, `totalCount` still
+read and still checked against the page, so counts are exact *because the page is
+the whole set*. A drug with more studies than one page holds sets
+`complete=False` and its counts become a floor — enough to establish a live
+trial, never enough to establish the absence of one, so that cell is `failed`
+rather than "dormant". `http.py` also throttles this one host to 2 concurrent
+with 0.25 s of pacing, below rule 9's ceiling of 4. Throttling is not a retry:
+nothing is re-sent.
+
+**Two things I will not claim.** The counts are drug-trial pairs summed over a
+target's drugs, not distinct NCT ids — a trial testing two of a target's drugs is
+counted twice, and the detail says so. And the concept expansion means the
+population is not a literal name match. Neither affects the ring, which is a
+three-state reading, but both affect the numbers in the drawer.
+
+**Evidence:** `tests/test_clinicaltrials.py` (29), incl. a 429 propagating
+without a retry, an unknown overall status being a hard failure rather than a
+trial counted in neither bucket, a page/total disagreement being refused, and
+the live re-assertion of COUNCIL D3's own measurements.
+
+---
+
+## Item 3 — ChEMBL and Europe PMC off the render path ✅
+
+**Commit** `395ba11`. Both are fetched in `gene_drawer` now. Their four-state
+semantics are unchanged (`mechanism_summary` still distinguishes `no_uniprot` /
+`no_target_record` / `undrugged` / `mechanisms` / `failed`), and failures are
+still never cached — not in `Cache`, and not on the drawer either: an errored
+fetch is re-attempted on the next click and only a successful one is kept.
+
+**Before / after, cold cache, same gene set, same hour.**
+
+| | before (`7cbf9a9`) | after (HEAD) |
+|---|---|---|
+| ChEMBL | **14.6 s** | 0 — on click |
+| Europe PMC | **5.0 s** | **2.0 s** (one integrity probe, see below) |
+| GTEx + PubTator3 + Pharos | 1.7 s | 2.5 s |
+| **source phase excluding CT.gov** | **16.9 s** | **≈1.5 s** |
+| ClinicalTrials.gov (new, item 2) | — | 36.6 s |
+| **total run** | **30.6 s** | **50.9 s** |
+
+Council liver set, region Liver, empty cache both times.
+
+**On the outage, because you asked me not to let it flatter the number.** EBI
+*was* degraded earlier tonight — ChEMBL returned HTTP 500 with an HTML error page
+and two contract tests skipped on it at 03:40. It had **recovered** by the time
+these were measured (ChEMBL 200 in 1.5 s, Europe PMC 200 in 0.2 s), and both
+columns above were measured with EBI healthy. So the comparison is the
+conservative one: 14.6 s is ChEMBL's *good* day. v2 measured it at 125 s of a
+126 s run during the outage, and because failures are never cached, every run
+re-paid it.
+
+**The honest headline is that the run got slower, not faster.** Item 3 removed
+~15 s and item 2 added ~37 s for a source that actually drives a ring. PLAN §5's
+target — cold 50 genes under 60 s — is still unproven and now has a new dominant
+term.
+
+**I did not let I5 stop being evaluated.** Europe PMC's echo is invariant I5
+(PLAN §6.5), and moving the source off the render path would have made I5 read
+`NOT_EVALUATED` on every run for ever — which is relaxing an invariant by
+attrition, and is exactly the cry-wolf failure UX A1 is about. One query stays on
+the render path, cache bypassed so it is live by construction, and its echo is
+what I5 asserts. **What that narrows, stated because it is real:** v2 asserted the
+echo for all 14 genes' queries; this asserts one. A reinterpretation affecting
+only some symbols could be missed at render time. It is still caught on the
+drawer fetch for that gene, which is where the count is actually used.
+
+**Evidence:** `tests/test_render_path.py` (11), incl. structural checks that the
+render path constructs neither adapter, that a replayed echo is still not a
+checked echo, and that a failed drawer fetch is marked for retry rather than kept.
+
+---
+
+## Item 4 — Pharos TDL as a fifth Pareto axis ✅ (and see the top of this section)
+
+**Commit** `395ba11`. New `targetring/adapters/pharos.py`. One batched POST using
+GraphQL aliases, so the alias *is* the join key and a target Pharos does not hold
+comes back as `gN: null` in its own slot rather than shortening an array
+(AGENTS.md rule 2, for free).
+
+**The ordinal is stated, never inferred**, as you required:
+`Tdark 0 · Tbio 1 · Tchem 2 · Tclin 3`. A level this build does not map is
+`no_data` naming the string — the same rule `CLINICAL_STAGE_ORDINAL` follows and
+the same defect it exists to prevent. A live test re-asserts S1's facet
+measurement (Tbio 12303 + Tdark 5501 + Tchem 1904 + Tclin 704 = 20,412 = the
+whole target count) and fails if Pharos ever introduces a fifth level.
+
+**Absence is not Tdark.** Tdark means "nobody has looked at a target we do hold";
+a gene Pharos has no record for is `no_data`. Pharos covers 20,412 human targets
+against Open Targets' ~62,000 genes, so this is a real state: `MIR29B2CHG`, a
+lncRNA, has no TDL on `de_realistic.csv`.
+
+**A UniProt second attempt was necessary, and it is measured.** Pharos returned
+`null` for `SEPTIN9` and `MARCHF1` — the **current** HGNC symbols for SEPT9 and
+MARCH1, which are the two genes PLAN §4 names as Excel's date-corruption cases.
+Pharos still holds them under the superseded symbols. A symbol-only lookup would
+have made exactly those two genes ineligible for the headline for a naming
+reason. Resolution already produces a UniProt accession before any ring
+(AGENTS.md rule 5), so the fallback is one extra batched call and the cell says
+which key answered: *"Pharos holds this target as SEPT9, matched on
+uniprot=Q9UHD8"*.
+
+**It is a Pareto axis and not a score term**, by D7's argument applied to it:
+Tclin is defined by an approved drug existing, which druggability and the phase
+ring already weigh, so weighting TDL would count prior effort three times. It is
+in `EXCLUDED_FROM_SCORE`, which `assert_footer_is_true` checks on every render.
+
+**Three places on the figure said "four axes" in prose.** They are derived from
+`PARETO_AXES` now, so the next axis cannot leave a stale number behind — the same
+discipline V5 imposed on the weights footer.
+
+**Evidence:** `tests/test_pharos.py` (17), incl. the null-slot join test and the
+live UniProt-fallback test.
+
+---
+
+## Two defects the work exposed, both fixed
+
+1. **The per-host concurrency gate was bound to one event loop.** `bfc0dab`. An
+   `asyncio.Semaphore` binds to the loop that first blocks on it, so the
+   module-level per-host map raised
+   `RuntimeError: <Semaphore ...> is bound to a different event loop` on the
+   second `asyncio.run()` in a process. Latent while every host was capped at 4
+   and contention was rare; **certain** once clinicaltrials.gov was throttled to
+   2, and the council run died on it. The loop is part of the key now and closed
+   loops are dropped. Two regression tests.
+
+2. **The ring key called a categorical ring "no values".** `13a95d8`. Found on
+   the screenshot retake: the key read *"Pipeline: current activity
+   (ClinicalTrials.gov v2) no values"* beside a ring full of drawn cells, because
+   a categorical ring has no `Normalize`. It names its three states now. Small,
+   but it is a figure making a false claim about its own data.
+
+---
+
+## The clean run
+
+`runs/V22-COUNCIL-COLD`, council liver set, region Liver, **empty cache**.
+
+```
+I1 PASS  I2 PASS  I3 PASS  I4 PASS  I5 PASS  I6 PASS  I7 PASS
+any_invariant_failed: False   all_invariants_pass: True
+15 in / 14 rendered / 1 ledgered · 160 CT.gov drug hops · 50.9 s
+I5: 1 Europe PMC echo checked live and byte-identical
+RUN CONDITIONS: 13 Pareto-axis cell(s) missing (druggability 9,
+                regional_specificity 3, clinical_phase 1)
+```
+
+All six fixture × region combinations render with all seven PASS:
+
+| fixture | Liver | Lung |
+|---|---|---|
+| `de_realistic.csv` | 7/7 | 7/7 |
+| `de_broken.csv` (16 in / 7 rendered / 9 ledgered) | 7/7 | 7/7 |
+| council liver set | 7/7 | 7/7 |
+
+No invariant was relaxed and no test was deleted. Fixtures that hard-coded four
+Pareto axes or seven external rings were updated to the new counts — the
+assertions are unchanged — and `test_every_pareto_axis_is_required` was added so
+a future axis cannot be quietly optional.
+
+---
+
+## Screenshots
+
+`docs/screenshots/`, all 15 retaken on this code against a cleared cache. Two
+are new:
+
+| file | shows |
+|---|---|
+| `7-drawer-ctgov-sponsors.png` | **item 2**: 81 lead sponsors on BRAF, per-drug live/stopped counts, linked NCT ids, and the uncategorised stop reasons verbatim |
+| `7b-ring-key-sources.png` | **items 1, 2, 4**: the key naming ClinicalTrials.gov v2 on the activity ring, the new TDL ring, and the hatched druggability cells |
+
+The other 13 are as described in §9, re-rendered with 11 rings.
+
+---
+
+## Still open
+
+**1. The headline is gone on both fixtures, and that is item 1 working as
+specified.** The top of this section has the numbers. Until you rule on it, a
+typical submission gets no Pareto diamond.
+
+**2. Item 4 did not address §1.4 and, on the arithmetic, could not have.** A
+conjunctive eligibility rule cannot be loosened by adding a term. The axis is in,
+it is honest, and it is doing nothing for the problem it was chosen for.
+
+**3. ClinicalTrials.gov rate limits are now partly measured, and the margin is
+unknown.** 480 requests at 4 concurrent → 429 in 12 s. 160 requests at 2
+concurrent with 0.25 s pacing → fine, twice. Where the boundary is between those,
+I did not probe, because probing it means deliberately provoking a 429 against a
+public service. A 60-gene table can carry several hundred drugs; the hop budget
+(`CTGOV_MAX_DRUG_HOPS = 400`) caps it and genes past the budget render `no_data`
+naming the budget, never a partial count. Untested at that size.
+
+**4. The CT.gov counts are drug-trial pairs, not distinct trials**, and the
+search is concept-expanded rather than a literal name match. Stated in every cell
+detail and in the drawer. The ring is unaffected; the drawer numbers are inflated
+by the overlap.
+
+**5. The −1.0 activity state changed meaning** from "stopped for cause" to
+"stopped early, cause not established". That is forced by the source and is
+labelled everywhere, but it means a v2.1 figure and a v2.2 figure disagree about
+what a dark-orange cell asserts.
+
+**6. A slide-render layout collision exists in the neighbourhood.** At the
+intermediate commit `7cbf9a9`, `de_realistic.csv` in Liver failed
+`assert_no_text_over_the_rings` — the slide footer overlapped a spoke label. It
+does **not** reproduce at HEAD on any of the six combinations, and the assertion
+did its job: it refused to render rather than shipping a colliding figure. The
+geometry is evidently close to the edge at some ring counts.
+
+**7. The slide render still carries no ring sources**, by the UX A4 design that
+moved the ring key into the caption. The activity ring's source reaches the slide
+anyway, through the categorical legend; Pharos's does not. If the slide is the
+artefact that matters for a given audience, that is worth a look.
+
+**8. Unchanged and still not claimed:** LLM triage unbuilt ($5.00 of $5.00
+unspent); PLAN §5's 50-gene speed target unproven and now dominated by CT.gov;
+licensing (PLAN §9) a human job; the default weights provisional; the ranking not
+validated biology. QA §11's three items — the slide in a real presentation tool,
+Illustrator font substitution, a mono laser print — still not re-evaluated; there
+is no PowerPoint, Illustrator or printer on this machine.
+
+---
+
+## What you need to decide
+
+1. **The druggability ring, now that item 1 has landed.** Two options I can see,
+   and I am not choosing between them unattended because both change what the
+   headline means:
+   *(a)* accept it — the ring is honest, the headline appears only for genes Open
+   Targets has actually probed, and §1.4's conservatism becomes the norm;
+   *(b)* split druggability into two rings as COUNCIL M7/V8 asked — a dense
+   "tractable" ring from `hasLigand` / `hasPocket` / `hasSmallMoleculeBinder`,
+   which no gene is missing, and a separate probe ring that is allowed to be
+   hatched. Then the Pareto axis is the dense one and eligibility goes back to
+   roughly v2.1 levels without imputing anything. *Cost: ~2 h.* This is the one I
+   would do.
+2. **Whether the CT.gov drug-trial-pair counts should be deduplicated to distinct
+   NCT ids** in the drawer. It needs the id lists rather than counts, which is
+   the same one call per drug, so it is cheap — but it changes the numbers on a
+   panel you may already have read. *Cost: ~1 h.*
+3. Everything already in §6 and §v2.1, unchanged: the default weights, and
+   licensing before any workplace use.
