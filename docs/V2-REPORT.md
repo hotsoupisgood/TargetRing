@@ -670,3 +670,276 @@ Nothing. `~/.openclaw/openclaw.json` still carries v1's one-line
 `browser.ssrfPolicy.allowedHostnames` addition; the gateway was not restarted
 and `~/ytpt` was not touched. Screenshots went through the separate Chrome on
 CDP 18800, as in v1.
+
+---
+
+# v2.1 — the four defects QA found in the re-test
+
+Wren II, 2026-09-24, overnight, against `docs/reviews/QA-v2-retest.md` at
+`1dd3659`. Local only, nothing deployed, nothing pushed, no money spent
+(triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched, the
+OpenClaw gateway not restarted. One commit per fix.
+
+QA's verdict was that the five council BLOCKING fixes hold as mechanisms and
+V1 does not hold as an outcome. That is right, and the cause was the one QA
+named: the gate tested the right thing and the ring then reported the wrong
+quantity.
+
+**Tests: 286 passed, 1 failed, 0 skipped.** The failure is not one of these
+four and is not mine — see *Newly open*, item 1. The seven invariants are
+PASS on a clean run (`runs/V21-LIVER`), and `manifest.json` now says so in
+one field.
+
+---
+
+## Fix 1 — the phase ring reports the phase for the attributed indication ✅
+
+**Commit** `8ea8197`.
+
+**What was wrong.** `drugAndClinicalCandidates.rows[]` is one row per *drug*,
+and its `maxClinicalStage` is that drug's global maximum across every
+indication on the row — 134 of them for regorafenib. So once the V1
+attribution gate correctly established that FRK × age-related macular
+degeneration is a genuine link (`genetic_association` 0.40), the ring reported
+a stage belonging to colorectal cancer. FRK rendered **5.0, "Approved",
+brightest fill**, on a drug with no approval for the disease it was credited
+with, and the drawer stated it as fact. QA is right that this is structural
+and is the same failure as the council's EPHA2 case.
+
+**What changed.** `clinicalReports[]` is one row per trial or label and carries
+its own `clinicalStage` and its own `diseases`. New `per_indication_stages()`
+reduces it by disease id; `clinical_phase_cell` now ranks attributed
+drug–*indication pairs* on the stage that pair reached. Where a genuine
+attribution has no establishable per-indication stage the cell is `no_data`,
+naming the drug and the indication and saying explicitly that the global stage
+was refused. Never a borrowed number.
+
+`clinicalStage` is used rather than `trialPhase`: it is non-null and it is the
+same vocabulary as `maxClinicalStage`, so one ordinal table serves both.
+`trialPhase` is a second vocabulary (`PHASE1`, `PHASE1/PHASE2`) and a second
+table is a second place to be wrong. Stages this build does not map
+(`EARLY_PHASE_1`, `UNKNOWN`, `WITHDRAWAL`) are carried into the detail and
+never guessed at.
+
+**Evidence — FRK, live, through `OpenTargetsAdapter.fetch` → `fetch_attribution`
+→ `clinical_phase_cell`:**
+
+```
+before   5.0   "Approved — REGORAFENIB for age-related macular degeneration"
+after    3.0   "Phase 2 for this indication — REGORAFENIB reached Phase 2 for
+                age-related macular degeneration, which is attributable to this
+                target (genetic_association 0.40). 2 of 6 candidates have an
+                attributable indication; the drug's own global maxClinicalStage
+                reaches Approved for a DIFFERENT indication and is excluded —
+                this ring is the phase for the attributed indication only"
+```
+
+Regorafenib per indication, measured: colorectal `APPROVAL` (DailyMed, PMDA),
+GIST `PHASE_3`, AMD `PHASE_2`. The excluded approval is **named, not dropped** —
+the drug really did reach it, for another disease, and saying so is the
+difference between a correction and a disappearance.
+
+**Re-checked, live: the ten targets in §2.1 and the seventeen QA probed.**
+
+| set | result |
+|---|---|
+| QA §1.1 — the 11 true positives incl. the 5 "most likely to break" | **all still 5.0. Zero new false negatives.** |
+| QA §1.2 — the 11 polypharmacology saves (ABCB1, LCK, FYN, CYP3A4, SRC, YES1, HCK, AXL, EPHB4, PTK6, EPHA2) | **all still `not_applicable`** |
+| QA §1.3 — NQO2 `value(0.0)`, MAPK14 `value(3.0)` | unchanged |
+| §2.1's calibration set (EPHA2, BRAF, EGFR, KCNH2, PCSK9, HMGCR) | EPHA2 `not_applicable`; the other five still 5.0 |
+| FRK | **5.0 → 3.0** |
+
+So the fix costs nothing on 27 targets and removes the defect on the one that
+had it. Two targets moved from the drug's global stage to a lower
+per-indication stage (FRK, and ASGR1 to Phase 2 on VUPANORSEN × inherited lipid
+metabolism disorder — correct, vupanorsen is not approved).
+
+**Tests.** `TestV1PerIndicationPhase` (8): FRK × regorafenib is not "Approved"
+and *is* Phase 2; the borrowed approval is named as excluded; `per_indication_stages`
+reads the reports and not the row; an unmapped report stage is never guessed at;
+an attributed-but-unstageable link is `no_data` and not the global stage; the
+council's EPHA2 case with per-indication stages in the fixture; and the BRAF
+tiebreak (Fix 2). The existing `TestV1IndicationAttribution` (12) is unchanged
+in its assertions — its `_row` fixture now carries `clinicalReports`, because a
+fixture that cannot express the defect cannot test the fix.
+
+---
+
+## Fix 2 — the report's BRAF evidence line ✅ (report corrected, not the tiebreak)
+
+**Commit** `7cb57d1`. **I corrected the report.** Here is why, and what changed
+in the code anyway.
+
+QA §3 is right twice over: the printed claim was false, and a document
+describing behaviour the code does not have is the same class of defect as a
+figure overstating its data. The tiebreak named **SORAFENIB TOSYLATE × lung
+cancer** (genetics 0.83 over vemurafenib's 0.699); sorafenib is not approved
+for lung cancer and is the exact drug the V1 fix exists to reject.
+
+**The false claim is gone, as a consequence of Fix 1.** Measured live,
+sorafenib reaches `PHASE_2` for lung cancer while vemurafenib reaches
+`APPROVAL` for melanoma. Ranking on the stage reached *for that indication*
+removes sorafenib × lung cancer from the top tie entirely, so the tiebreak can
+no longer reach it. Every claim the ring prints for BRAF is now a true one.
+
+**But it does not name vemurafenib, and I did not force it to.** BRAF today:
+
+```
+BRAF  5.0  "Approved for this indication — REGORAFENIB reached Approved for
+            colorectal cancer, which is attributable to this target
+            (genetic_association 0.77, genetic_literature 0.30, 1 of 9
+            attributable link(s) at this stage). 17 of 18 candidates have an
+            attributable indication"
+```
+
+Regorafenib *is* approved for colorectal cancer, and BRAF × colorectal carries
+`genetic_association` 0.77. Both halves are true. To name vemurafenib instead I
+would need a tiebreak that prefers the on-mechanism drug, and **Open Targets
+gives me nothing to build one from**: every row in `drugAndClinicalCandidates`
+is mechanism-annotated to this target by construction, so "does this drug act
+through BRAF" does not discriminate between vemurafenib and regorafenib. A
+tiebreak invented to make one documented sentence come true would be tuning to
+the report, which is how the original claim got written.
+
+So: the code's behaviour is defensible and the sentence was not. §2.1 now
+carries an inline correction naming what the line said, what the code did, and
+that it was false. The cell detail also now says *how many* attributable links
+share the top stage, so one winner of an evidence tiebreak reads as an example
+rather than as "the drug for this target".
+
+**Still open, and I want your eye on it:** the exemplar named among genuine ties
+is the strongest-evidence one, and that can be a generic parent term — BTK names
+`neoplasm` at 0.19, ALK names `cancer` at 0.54. QA §2 flagged the same thinness.
+The *value* is right in both cases (pirtobrutinib and lorlatinib are genuinely
+approved on-mechanism); it is the printed exemplar that is uninformative.
+
+---
+
+## Fix 3 — `any_invariant_failed` is in `manifest.json`, and tested ✅
+
+**Commit** `964d65b`. QA §4 is exactly right including the diagnosis:
+`Manifest.write()` serialised with `asdict()`, which drops `@property`.
+
+`Manifest.as_dict()` writes both `any_invariant_failed` and
+`all_invariants_pass`. They stay properties too, so there is one definition of
+each and the file cannot drift from the object. From `runs/V21-LIVER/manifest.json`:
+
+```
+any_invariant_failed: False
+all_invariants_pass : True
+```
+
+**Tests.** `TestManifestCarriesTheRedBannerQuestion` (4): both keys are written;
+a FAIL shows in the one field; **`NOT_EVALUATED` is not a FAIL** — which is the
+UX A1 distinction the two keys exist to keep separate, and the reason
+`all_invariants_pass` alone was never enough; and the file matches the object.
+
+---
+
+## Fix 4 — "NOT evidence of safety" renders on both figures ✅
+
+**Commit** `c1500ce`. QA §5 is right that this is the AGENTS.md failure mode —
+the fix was real in the data and invisible in the picture.
+
+- **Audit render.** The ring key truncated at 34 characters, which is how the
+  caveat became `— NOT e…`. `_key_lines` now wraps a long label onto an
+  indented continuation line. Truncation is never the answer for a caveat. The
+  block stays inside the width `assert_no_text_over_the_rings` measures, and
+  that assertion still holds at n = 2, 6, 40 and 60.
+- **Slide render.** The slide's single honest footer line now leads with it:
+  *"the safety ring is NOT evidence of safety · ranking is provisional and not
+  validated · …"*, at 10 pt — not in the caption, because a caveat you have to
+  be handed separately is not on the figure.
+
+`SAFETY_RING_CAVEAT` is one string in one place. In `5-council-list-figure.png`
+the key now reads `4. Safety flags & constraint — NOT / evidence of safety
+[−1, 1]`.
+
+**Tests.** `TestTheSafetyCaveatReachesBothRenders` (5). The assertion reads the
+drawn `<text>` elements out of the exported SVG and collapses whitespace across
+them, so a caveat that **wraps** passes and one that is **elided** fails — it
+has to be able to tell those apart. Parametrised over both layouts, plus the
+specific v2 artefact (`"NOT e…"` must not appear), plus the caption, plus the
+wrapping helper in isolation.
+
+---
+
+## The re-run
+
+`runs/V21-LIVER`, the council's liver set, Liver, cold Europe PMC. EBI has
+recovered since QA's night (Europe PMC 200 in 1.6 s, ChEMBL 200 in 3.3 s), so
+this is a healthy-source run and not comparable to QA's timings.
+
+```
+I1 PASS  I2 PASS  I3 PASS  I4 PASS  I5 PASS  I6 PASS  I7 PASS
+15 in / 14 rendered / 1 ledgered      any_invariant_failed: False
+I5: 14 Europe PMC echo(es) checked live and byte-identical
+```
+
+Screenshots retaken on this code: all 13 in `docs/screenshots/`.
+
+**Test suite: 286 passed, 1 failed, 0 skipped.** QA's two ChEMBL skips now run
+and pass, because ChEMBL is answering — so ChEMBL's response contract is
+verified for the first time since the retest. The one failure is below.
+
+---
+
+## Newly open — read this first
+
+**1. A live test is failing, and it is a real upstream change, not an outage.**
+
+```
+tests/test_adapters.py::TestSparseKeyCensusStillHolds::test_sparse_keys_are_still_one_sided
+  Open Targets now emits hasHighQualityChemicalProbes=0.0 explicitly
+  (observed [0.0, 1.0]). Absence is no longer that value, so mapping it to 0.0
+  would be imputation.
+```
+
+This is not mine: it fails identically on `0ef53ca` with my changes stashed,
+and it is a 200 with data, not a 500. The test is doing its job. It means
+`SPARSE_KEY_ABSENT_VALUE["hasHighQualityChemicalProbes"] = 0.0` — one of the
+three decisions the V4/V8 fix rests on — no longer has the evidence behind it,
+because absence and an explicit 0.0 now coexist. **I did not relax it and I did
+not change the mapping.** What absence of that key now means is a judgement
+about the source, it moves the druggability ring, and it is yours. Until it is
+made, the druggability ring may be treating "not stated" as "no probe" on
+targets where Open Targets would have said 0.0 explicitly.
+
+**2. The `clinical_activity` ring is empty for every gene.** Commit `90381e1`.
+Open Targets no longer emits `AACT` as a `clinicalReports` source and labels
+the same trials `ClinicalTrials.gov`: 0 AACT rows across 109 targets today
+against 4,195 in the previous night's cache. The ring reads AACT only, so it is
+`no_data` throughout — visible on the figure as hatched cells and a lower `k`,
+never imputed. I made the detail name the sources it *did* find, so the rename
+is diagnosable instead of mute, and I did **not** change what the ring counts:
+whether ClinicalTrials.gov rows are the population AACT was is a
+source-semantics decision and not one to take unattended. QA's §2 FRK
+transcript shows "2 with an active trial"; that line now reads 0 for the same
+reason.
+
+This is also why the cache schema bump mattered: the warm v1 cache was serving
+last night's AACT rows and hiding the change.
+
+**3. The exemplar among genuine ties can be a generic parent term** — Fix 2
+above. Value right, exemplar uninformative.
+
+**4. QA §6(c), not done.** §1.4 still does not say that the headline also
+vanishes on a single transient failure when `n_eligible` sits on the
+`PARETO_MIN_ELIGIBLE` threshold, as it does on the council's own liver set.
+QA is right; it is a documentation line and I ran out of night before the
+four defects were done. On `V21-LIVER` the set is again exactly at 10.
+
+**5. Not re-evaluated, unchanged from QA §11:** the slide in a real
+presentation tool, Illustrator font substitution, a mono laser print. No
+PowerPoint, no Illustrator, no printer on this machine.
+
+---
+
+## What you need to decide
+
+1. **`hasHighQualityChemicalProbes`** — what does absence mean now that Open
+   Targets also writes 0.0? Until you say, that test stays red. *(Newly open 1.)*
+2. **The trial-status source** — accept `ClinicalTrials.gov` in place of `AACT`,
+   or leave the activity ring dark? *(Newly open 2.)*
+3. Everything already in §6, unchanged: ChEMBL and Europe PMC on the render
+   path, the weights, the M7 druggability split.
