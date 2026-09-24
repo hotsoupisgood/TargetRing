@@ -13,6 +13,7 @@ up by requested id; anything absent becomes an explicit `missing` record.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -43,8 +44,9 @@ TARGET_QUERY = """query TargetRings($ids:[String!]!){
         drug{id name drugType maximumClinicalStage}
         diseases{diseaseFromSource disease{id name}}
         clinicalReports{
-          trialPhase clinicalStage trialOverallStatus trialStartDate
-          trialStopReasonCategories source url
+          id trialPhase clinicalStage trialOverallStatus trialStartDate
+          trialStopReasonCategories trialWhyStopped source url
+          trialSponsor{name}
           diseases{diseaseFromSource disease{id name}}
         }
       }
@@ -150,11 +152,66 @@ SEVERE_LIABILITY_TERMS: tuple[str, ...] = (
     "atrial fibrillation", "ventricular fibrillation", "ventricular tachycardia",
 )
 
-# COUNCIL D4 Ring B. Only AACT rows carry status; TTD / EMA rows have
-# trialOverallStatus None and would read as inactive.
-ACTIVE_STATUSES = {"RECRUITING", "ACTIVE_NOT_RECRUITING", "NOT_YET_RECRUITING", "AVAILABLE"}
+# --- COUNCIL D4 Ring B: the trial rows, read off the gene query -------------
+#
+# **v2.4, and this is the whole point of the change.** Until 2026-09-24 this
+# build selected trial rows with `source == "AACT"`. On that day Open Targets
+# relabelled the same rows `ClinicalTrials.gov`; the literal matched nothing,
+# the ring went dark for every gene, and the conclusion drawn was that the data
+# had been dropped. It had not. A per-drug hop to ClinicalTrials.gov was built
+# to replace data that was already in the response — 217 HTTP calls on a 50-gene
+# run, 48.2 s of a 70.5 s cold run, and one live 429 (`docs/V2-REPORT.md` §v2.2
+# item 2, §v2.3 item 3). It is retired.
+#
+# So no single source literal selects rows any more. **What selects a row is
+# that it carries a `trialOverallStatus`**, which is a property of the thing
+# this ring counts rather than of who labelled it. The distinct `source` values
+# actually seen travel in the cell's `raw`, the drawer panel and the manifest,
+# so the *next* relabelling is visible in the artefacts instead of silent.
+#
+# Live census, BRAF (`ENSG00000157764`), 2026-09-24, 1,433 reports on 18 drug
+# rows: `ClinicalTrials.gov` 1381, TTD 23, EMA Human Drugs 8, PMDA 6, ATC 5,
+# DailyMed 4, USAN 3, FDA 2, INN 1. Exactly 52 reports carry no status, and
+# they are exactly the 52 non-ClinicalTrials.gov rows — which is COUNCIL D1
+# gap (ii) ("TTD / EMA rows have no status and would read as inactive") holding
+# under the new labelling without naming any label.
+#
+# Statuses are classified exhaustively. A status in none of the three sets is
+# counted in neither bucket, which on a three-state ring silently reads as
+# "dormant", so it is a loud `failed` cell instead.
+LIVE_STATUSES: tuple[str, ...] = (
+    "RECRUITING", "ACTIVE_NOT_RECRUITING", "NOT_YET_RECRUITING",
+    "ENROLLING_BY_INVITATION", "AVAILABLE",
+)
+STOPPED_STATUSES: tuple[str, ...] = ("TERMINATED", "SUSPENDED", "WITHDRAWN")
+INERT_STATUSES: tuple[str, ...] = (
+    "COMPLETED", "UNKNOWN", "NO_LONGER_AVAILABLE", "TEMPORARILY_NOT_AVAILABLE",
+    "APPROVED_FOR_MARKETING", "WITHHELD",
+)
+# Kept under the old name: `ACTIVE_STATUSES` is what v1 called this set.
+ACTIVE_STATUSES = set(LIVE_STATUSES)
+
+# **v2.4 restores this.** Open Targets categorises why a trial stopped, which
+# ClinicalTrials.gov does not, so the -1.0 state can go back to meaning "stopped
+# **for cause**" instead of v2.2's "stopped early — cause NOT categorised".
+# That distinction is the reason this is a second ring at all: COUNCIL D4
+# measured that roughly 7 of 8 terminations say nothing about the target, and a
+# single ordinal with a "discontinued" marker would mislead on every one of
+# them. BRAF's live categories, 2026-09-24: Insufficient_Enrollment 108,
+# Business_Administrative 51, Negative 17, Study_Design 13, Safety_Sideeffects
+# 13, Logistics_Resources 12, Invalid_Reason 9, Another_Study 5,
+# Study_Staff_Moved 4, Regulatory 3, No_Context 2, Uncategorised 1 — so 30 of
+# 238 categorised stops are for cause, and the other 208 are not.
 FOR_CAUSE_CATEGORIES = {"Negative", "Safety_Sideeffects"}
-STATUS_SOURCE = "AACT"
+# Categories that exist but assert nothing. A row carrying only one of these is
+# categorised in name only and must not count as evidence either way.
+UNINFORMATIVE_CATEGORIES = {"Invalid_Reason", "No_Context", "Uncategorised"}
+
+SOURCE_LABEL = "Open Targets clinicalReports"
+
+# An NCT id and nothing else. Open Targets emits them lower case (`nct00405587`)
+# and mixes other registries' ids into the same field.
+_NCT_ID = re.compile(r"^NCT\d{4,}$")
 
 # QA S4: BRAF's mousePhenotypes includes this label. Counting rows is not
 # counting abnormal phenotypes, and a gene with one such record would otherwise
@@ -873,70 +930,328 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
                       "unattributed_max_stage": unattributed_top})
 
 
-def clinical_activity_cell(rec: OTRecord) -> Cell:
-    """COUNCIL D4 Ring B -- current activity, three states, AACT rows only.
+def classify_status(status: str | None) -> str | None:
+    """`live` / `stopped` / `inert`, or None for a status this build does not know.
 
-    Encoded 0=dormant, 1=active, -1=stopped for cause. Kept separate from Ring A
-    because only ~13% of stop events say anything about the target: a single
-    ordinal with a 'discontinued' marker misleads on seven of every eight
-    terminations.
+    None is the interesting return: a status in none of the three sets would be
+    counted in neither bucket, and on a three-state ring that reads as
+    "dormant". It is a loud failure instead, at the cell.
+    """
+    if not status:
+        return None
+    s = str(status)
+    if s in LIVE_STATUSES:
+        return "live"
+    if s in STOPPED_STATUSES:
+        return "stopped"
+    if s in INERT_STATUSES:
+        return "inert"
+    return None
+
+
+def nct_id(report: dict[str, Any]) -> str | None:
+    """The NCT id on a `clinicalReports` row, or None if it is not one.
+
+    Open Targets puts a registry id in `clinicalReports.id` and it is not always
+    a trial: BRAF's 1,433 reports carry 1,381 `nct…` ids and 52 others (`eme…`
+    for EMA, `l01…` for ATC, DailyMed set ids, …). Measured 2026-09-24, those 52
+    are exactly the rows with no `trialOverallStatus`. Normalised to upper case
+    because Open Targets emits them lower case and NCT ids are conventionally
+    upper; a distinct count over mixed case would double-count.
+    """
+    raw = str(report.get("id") or "").strip().upper()
+    return raw if _NCT_ID.match(raw) else None
+
+
+def trial_reports(rec: OTRecord) -> list[dict[str, Any]]:
+    """Every `clinicalReports` row that carries a trial status, flattened.
+
+    One row per (drug, report) pair — a *drug-trial pair*, which is why the
+    distinct-NCT de-duplication below exists. Free text (`trialWhyStopped`,
+    sponsor names, condition strings) is carried as data and never interpreted
+    (AGENTS.md rule 5).
+    """
+    out: list[dict[str, Any]] = []
+    for row in rec.drug_rows:
+        drug = (row.get("drug") or {}).get("name")
+        for r in row.get("clinicalReports") or []:
+            status = r.get("trialOverallStatus")
+            if not status:
+                continue
+            cats = [str(c) for c in (r.get("trialStopReasonCategories") or [])]
+            conditions = [
+                (d.get("disease") or {}).get("name") or d.get("diseaseFromSource")
+                for d in (r.get("diseases") or [])
+            ]
+            nid = nct_id(r)
+            out.append({
+                "drug": str(drug) if drug else None,
+                "nct_id": nid,
+                "report_id": str(r.get("id")) if r.get("id") else None,
+                "source": str(r.get("source")) if r.get("source") else None,
+                "status": str(status),
+                "bucket": classify_status(status),
+                "sponsor": (r.get("trialSponsor") or {}).get("name"),
+                "why_stopped": r.get("trialWhyStopped"),
+                "stop_categories": cats,
+                "for_cause": bool(FOR_CAUSE_CATEGORIES & set(cats)),
+                "phase": r.get("trialPhase") or r.get("clinicalStage"),
+                "start": r.get("trialStartDate"),
+                "conditions": [str(c) for c in conditions if c][:4],
+                "url": r.get("url") or (
+                    f"https://clinicaltrials.gov/study/{nid}" if nid else None),
+            })
+    return out
+
+
+def source_counts(rec: OTRecord) -> dict[str, int]:
+    """Distinct `clinicalReports.source` values on this target, with counts.
+
+    Requirement 1 of v2.4 and the reason the relabelling is not allowed to be
+    silent again: whatever Open Targets calls these rows, what it called them on
+    the day the figure was drawn is in the cell, the drawer and the manifest.
+    """
+    counts: dict[str, int] = {}
+    for row in rec.drug_rows:
+        for r in row.get("clinicalReports") or []:
+            s = str(r.get("source") or "—")
+            counts[s] = counts.get(s, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def clinical_activity_cell(rec: OTRecord) -> Cell:
+    """COUNCIL D4 Ring B — current activity, three states, off the gene query.
+
+    Encoded 0 = dormant, 1 = live, -1 = **stopped for cause**. Kept separate
+    from Ring A because only ~13% of stop events say anything about the target:
+    a single ordinal with a "discontinued" marker misleads on seven of every
+    eight terminations.
+
+    **v2.4.** The -1.0 state means "stopped for cause" again. v2.2 downgraded it
+    to "stopped early, cause NOT categorised" because the per-drug
+    ClinicalTrials.gov hop that replaced this function could only see free text.
+    Open Targets categorises the same stops (`trialStopReasonCategories`), and
+    that categorisation is the entire justification for splitting this ring off
+    Ring A, so it comes back. The free text (`trialWhyStopped`) still travels to
+    the drawer for a human to read.
+
+    Rows are selected by *carrying a status*, never by a source literal — see
+    the constants above for why that distinction cost a night.
+
+    Precedence is unchanged from v1 and stated there: a live trial outranks a
+    historical stop, because for-cause-first labels BRAF "stopped" while ten of
+    its eighteen agents are recruiting.
     """
     if not rec.found:
         return no_data(f"{rec.ensembl_id} not found in Open Targets")
     if not rec.drug_count:
         return not_applicable("no drugs, so there is no activity to report")
 
-    statuses: list[str] = []
-    for_cause = 0
-    with_status = 0
-    for row in rec.drug_rows:
-        for cr in row.get("clinicalReports") or []:
-            if cr.get("source") != STATUS_SOURCE:
-                continue  # COUNCIL D1 gap (ii): TTD/EMA rows have no status
-            with_status += 1
-            if st := cr.get("trialOverallStatus"):
-                statuses.append(st)
-            cats = cr.get("trialStopReasonCategories") or []
-            if any(c in FOR_CAUSE_CATEGORIES for c in cats):
-                for_cause += 1
-
-    if with_status == 0:
+    reports = trial_reports(rec)
+    sources = source_counts(rec)
+    if not reports:
         # Naming what WAS there is the difference between a ring that is blank
-        # and a ring that is diagnosable. Found 2026-09-24: Open Targets stopped
-        # emitting `AACT` and now labels the same trials `ClinicalTrials.gov`
-        # (0 AACT rows across 109 targets today, 4,195 in last night's cache),
-        # which empties this ring for every gene. Whether ClinicalTrials.gov
-        # rows are the same population AACT was is a source-semantics question
-        # and Puck's call, not one to answer unattended -- but the figure must
-        # say which source it looked for and what it found instead.
-        seen = sorted({str(r.get("source")) for row in rec.drug_rows
-                       for r in (row.get("clinicalReports") or []) if r.get("source")})
+        # and a ring that is diagnosable — and on 2026-09-24 it is what made the
+        # AACT relabelling visible at all. Kept, with the source literal gone.
         return no_data(
-            f"{rec.drug_count} candidates but no {STATUS_SOURCE}-sourced trial status. "
-            f"Trial-report sources present for this target: {seen[:6] or 'none'}. "
-            f"This build reads trial status from {STATUS_SOURCE} only (COUNCIL D1 gap (ii): "
-            f"TTD/EMA/label rows carry no status and would read as inactive)."
+            f"{rec.drug_count} candidate(s) in Open Targets, but not one of their "
+            f"clinicalReports rows carries a trialOverallStatus. Report sources present "
+            f"for this target: {', '.join(f'{k} {v}' for k, v in list(sources.items())[:6]) or 'none'}. "
+            f"A row with no status is a label or registry entry, not a trial (COUNCIL D1 "
+            f"gap (ii)), and counting it would read as inactive."
         )
 
-    active = sum(1 for s in statuses if s in ACTIVE_STATUSES)
-    raw = {"active": active, "for_cause": for_cause, "n_status_rows": with_status}
+    unknown = sorted({r["status"] for r in reports if r["bucket"] is None})
+    if unknown:
+        return failed(
+            f"Open Targets returned trial statuses this build does not classify: "
+            f"{unknown[:6]}. Counting them as neither live nor stopped would silently drop "
+            f"them from a three-state ring, which reads as 'dormant'."
+        )
 
-    # COUNCIL D4's three states overlap and the review gives no precedence.
-    # Taking 'stopped for cause' first labels BRAF stopped-for-cause on 31
-    # for-cause stops out of 1382 trials, while 10 of its 18 agents are actively
-    # recruiting -- a plainly wrong reading of a ring called "current activity".
-    # Current activity therefore wins, and the for-cause count travels in the
-    # detail and the drawer rather than overriding it. Flagged in V1-REPORT.
-    if active:
-        detail = f"active ({active} of {with_status} {STATUS_SOURCE} trials recruiting or ongoing)"
+    live = [r for r in reports if r["bucket"] == "live"]
+    stopped = [r for r in reports if r["bucket"] == "stopped"]
+    for_cause = [r for r in stopped if r["for_cause"]]
+    distinct = len({r["nct_id"] for r in reports if r["nct_id"]})
+    no_id = sum(1 for r in reports if not r["nct_id"])
+
+    cats: dict[str, int] = {}
+    for r in stopped:
+        for c in r["stop_categories"]:
+            cats[c] = cats.get(c, 0) + 1
+    top_cats = ", ".join(f"{k} {v}" for k, v in
+                         sorted(cats.items(), key=lambda kv: (-kv[1], kv[0]))[:4])
+
+    raw = {
+        "source": SOURCE_LABEL,
+        "sources_seen": sources,
+        "n_status_rows": len(reports),
+        "n_distinct_trials": distinct,
+        "n_rows_without_an_nct_id": no_id,
+        "live": len(live), "active": len(live),
+        "stopped": len(stopped), "for_cause": len(for_cause),
+        "stop_categories": cats,
+    }
+    provenance = (
+        f" Read from {SOURCE_LABEL} in the gene query — no per-drug hop (v2.4). "
+        f"Source labels on this target's rows: "
+        f"{', '.join(f'{k} {v}' for k, v in list(sources.items())[:4])}. "
+        f"Counts here are drug-trial pairs over {len(rec.drug_rows)} drug row(s); "
+        f"{distinct} distinct NCT id(s) are in the drawer."
+    )
+
+    if live:
+        detail = (f"live trial — {len(live)} of {len(reports)} trial row(s) recruiting or "
+                  f"ongoing, on {len({r['drug'] for r in live if r['drug']})} of "
+                  f"{len(rec.drug_rows)} drug(s)")
         if for_cause:
-            detail += f"; also {for_cause} trials stopped for cause — see the drawer"
-        return value(1.0, detail, raw=raw)
+            detail += (f"; also {len(for_cause)} stopped for cause "
+                       f"(Negative / Safety_Sideeffects) — see the drawer")
+        return value(1.0, detail + provenance, raw=raw)
     if for_cause:
         return value(-1.0,
-                     f"stopped for cause, nothing active ({for_cause} of {with_status} trials "
-                     f"stopped Negative / Safety_Sideeffects)", raw=raw)
-    return value(0.0, f"dormant (drugs exist, none of {with_status} trials active)", raw=raw)
+                     f"stopped for cause, nothing live — {len(for_cause)} of {len(stopped)} "
+                     f"stop(s) categorised Negative or Safety_Sideeffects by Open Targets "
+                     f"({len(reports)} trial row(s) in total)"
+                     + (f"; all stop categories: {top_cats}" if top_cats else "")
+                     + provenance, raw=raw)
+    detail = f"dormant — drugs exist, none of {len(reports)} trial row(s) live"
+    if stopped:
+        detail += (f"; {len(stopped)} stopped early but NONE for cause "
+                   f"({top_cats or 'no category given'}), which is why this is dormant "
+                   f"rather than -1 (COUNCIL D4: ~7 of 8 terminations say nothing about "
+                   f"the target)")
+    return value(0.0, detail + provenance, raw=raw)
+
+
+def trials_panel(rec: OTRecord) -> dict[str, Any]:
+    """The drawer's trial panel: sponsors, live status, stops, distinct NCT ids.
+
+    Puck's two conditions from v2.2 item 2, unchanged and now met without a
+    second API: "the ring must say which source it counted" and "sponsor plus
+    live status must reach the drawer, since that is what tells the user a
+    target is crowded".
+
+    **v2.3 item 2 is kept exactly**: the target-level totals are *distinct NCT
+    ids*, not drug-trial pairs. A trial testing two of a target's drugs appears
+    on both drug rows, and BRAF's eighteen agents overlap heavily. Both numbers
+    are reported, because they answer different questions, and the panel says
+    which is which — it was read once with only the pair count on it.
+
+    What is new is that a row can now be a stop **with a category**, so the
+    stopped list carries the Open Targets category beside the sponsor's free
+    text rather than the free text alone.
+    """
+    reports = trial_reports(rec)
+    sources = source_counts(rec)
+    by_drug: dict[str, list[dict[str, Any]]] = {}
+    for r in reports:
+        by_drug.setdefault(r["drug"] or "—", []).append(r)
+
+    rows = []
+    sponsor_counts: dict[str, int] = {}
+    for drug, rs in by_drug.items():
+        live = [r for r in rs if r["bucket"] == "live"]
+        stopped = [r for r in rs if r["bucket"] == "stopped"]
+        drug_sponsors: dict[str, int] = {}
+        for r in live:
+            if s := r["sponsor"]:
+                drug_sponsors[s] = drug_sponsors.get(s, 0) + 1
+        for s in drug_sponsors:
+            sponsor_counts[s] = sponsor_counts.get(s, 0) + 1
+        rows.append({
+            "drug": drug,
+            "n_trials": len(rs),
+            "n_live": len(live),
+            "n_stopped": len(stopped),
+            "n_for_cause": sum(1 for r in stopped if r["for_cause"]),
+            # Distinct ids on this drug's own rows. Unlike the retired per-drug
+            # hop, Open Targets can repeat an NCT id within one drug row, so
+            # this is a real check rather than a restatement of the count.
+            "n_distinct": len({r["nct_id"] for r in rs if r["nct_id"]}),
+            "n_distinct_live": len({r["nct_id"] for r in live if r["nct_id"]}),
+            "n_distinct_stopped": len({r["nct_id"] for r in stopped if r["nct_id"]}),
+            "sponsors": sorted(drug_sponsors, key=lambda s: (-drug_sponsors[s], s))[:6],
+            "live": [
+                {"nct_id": r["nct_id"], "status": r["status"], "sponsor": r["sponsor"],
+                 "phases": [str(r["phase"])] if r["phase"] else [],
+                 "conditions": r["conditions"], "url": r["url"]}
+                for r in live[:8]
+            ],
+            "stopped": [
+                {"nct_id": r["nct_id"], "status": r["status"], "sponsor": r["sponsor"],
+                 "why_stopped": r["why_stopped"],
+                 # v2.4: Open Targets' own categorisation, beside the free text.
+                 "categories": r["stop_categories"], "for_cause": r["for_cause"],
+                 "conditions": r["conditions"], "url": r["url"]}
+                for r in stopped[:8]
+            ],
+            "error": None,
+        })
+    rows.sort(key=lambda r: (-(r["n_live"] or 0), -(r["n_trials"] or 0)))
+
+    live_all = [r for r in reports if r["bucket"] == "live"]
+    stopped_all = [r for r in reports if r["bucket"] == "stopped"]
+    ids = {r["nct_id"] for r in reports if r["nct_id"]}
+    live_ids = {r["nct_id"] for r in live_all if r["nct_id"]}
+    stopped_ids = {r["nct_id"] for r in stopped_all if r["nct_id"]}
+    both = len(live_ids & stopped_ids)
+    no_id = sum(1 for r in reports if not r["nct_id"])
+
+    cats: dict[str, int] = {}
+    for r in stopped_all:
+        for c in r["stop_categories"]:
+            cats[c] = cats.get(c, 0) + 1
+    cats = dict(sorted(cats.items(), key=lambda kv: (-kv[1], kv[0])))
+    n_for_cause = sum(1 for r in stopped_all if r["for_cause"])
+
+    floor = ""
+    if no_id:
+        floor = (f" {no_id} trial row(s) carry a status but no NCT id, so they are in the "
+                 f"pair counts and cannot be in the distinct ones: the distinct figures are "
+                 f"a FLOOR.")
+
+    return {
+        "source": SOURCE_LABEL,
+        "endpoint": OPENTARGETS_URL,
+        "note": (
+            "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene "
+            "query that draws every other Open Targets ring — no per-drug hop (v2.4). Rows "
+            "are selected by carrying a `trialOverallStatus`, NOT by a source literal: on "
+            "2026-09-24 Open Targets relabelled these rows from `AACT` to "
+            "`ClinicalTrials.gov`, a literal match on the old name returned nothing, and "
+            "the data was wrongly declared gone. The labels actually seen on this target "
+            "are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's "
+            "free text is shown beside the category, never in place of it."
+        ),
+        "sources_seen": sources,
+        "dedup_note": (
+            f"TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug "
+            f"rows below gives {len(reports)} drug-trial PAIRS; the same trials are "
+            f"{len(ids)} DISTINCT studies, because a trial testing two of this target's "
+            f"drugs appears in both rows. Live: {len(live_all)} pairs = {len(live_ids)} "
+            f"distinct. Stopped early: {len(stopped_all)} pairs = {len(stopped_ids)} "
+            f"distinct, of which {n_for_cause} pair(s) are categorised FOR CAUSE "
+            f"(Negative / Safety_Sideeffects)."
+            + (f" {both} study/studies are live for one drug and stopped for another and "
+               f"are counted in both." if both else "")
+            + floor
+        ),
+        "n_pairs": len(reports),
+        "n_pairs_live": len(live_all),
+        "n_pairs_stopped": len(stopped_all),
+        "n_pairs_for_cause": n_for_cause,
+        "n_distinct_trials": len(ids),
+        "n_distinct_live": len(live_ids),
+        "n_distinct_stopped": len(stopped_ids),
+        "n_live_and_stopped": both,
+        "n_rows_without_an_nct_id": no_id,
+        "distinct_is_a_floor": bool(no_id),
+        "stop_categories": cats,
+        "lead_sponsors": sorted(sponsor_counts, key=lambda s: (-sponsor_counts[s], s))[:12],
+        "n_lead_sponsors": len(sponsor_counts),
+        "drugs": rows,
+    }
 
 
 def rodent_cell(rec: OTRecord) -> Cell:
@@ -1004,11 +1319,13 @@ def drug_pipeline_rows(rec: OTRecord) -> list[dict[str, Any]]:
     for row in rec.drug_rows:
         drug = row.get("drug") or {}
         reports = row.get("clinicalReports") or []
-        aact = [r for r in reports if r.get("source") == STATUS_SOURCE]
-        statuses = [r.get("trialOverallStatus") for r in aact if r.get("trialOverallStatus")]
-        dates = sorted(r["trialStartDate"] for r in aact if r.get("trialStartDate"))
+        # v2.4: rows are selected by carrying a status, not by a source literal.
+        # A row with no status is a label or registry entry, not a trial.
+        with_status = [r for r in reports if r.get("trialOverallStatus")]
+        statuses = [r["trialOverallStatus"] for r in with_status]
+        dates = sorted(r["trialStartDate"] for r in with_status if r.get("trialStartDate"))
         stop_cats: dict[str, int] = {}
-        for r in aact:
+        for r in with_status:
             for c in r.get("trialStopReasonCategories") or []:
                 stop_cats[c] = stop_cats.get(c, 0) + 1
         indications = []
@@ -1025,7 +1342,7 @@ def drug_pipeline_rows(rec: OTRecord) -> list[dict[str, Any]]:
             "phase_ordinal": CLINICAL_STAGE_ORDINAL.get(row.get("maxClinicalStage") or "", 0),
             "status": _dominant(statuses),
             "n_trials": len(reports),
-            "n_with_status": len(aact),
+            "n_with_status": len(with_status),
             "indications": indications[:6],
             "latest_start": dates[-1] if dates else None,
             "stop_reasons": stop_cats,
@@ -1089,4 +1406,8 @@ __all__ = [
     "attributable_indications", "mechanistic_evidence", "severe_liabilities",
     "per_indication_stages",
     "has_prioritisation_record",
+    # v2.4: the trial rows, read off the gene query instead of a per-drug hop.
+    "SOURCE_LABEL", "LIVE_STATUSES", "STOPPED_STATUSES", "INERT_STATUSES",
+    "ACTIVE_STATUSES", "FOR_CAUSE_CATEGORIES", "UNINFORMATIVE_CATEGORIES",
+    "classify_status", "nct_id", "trial_reports", "source_counts", "trials_panel",
 ]

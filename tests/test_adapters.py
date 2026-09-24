@@ -1030,22 +1030,34 @@ class TestTheActivityRingSaysWhatItLookedFor:
     in the previous night's cache. `clinical_activity` reads AACT only, so the
     whole ring went to `no_data` for every gene.
 
-    That is honest (hatched, off-colormap, never imputed) but it was mute: the
-    detail named the source it wanted and not the ones it got, so a reader
-    could not tell an upstream rename from a target with no trials. Changing
-    what the ring counts is a source-semantics decision and not one to take
-    unattended; saying what happened is not.
+    The v2.1 fix made the ring *say* what it found instead of only what it
+    wanted, which is how the rename was diagnosed at all. **v2.4 fixes the
+    cause**: no source literal selects rows any more, so the relabelled rows
+    count, and the labels seen are still named -- both halves, rather than one
+    traded for the other.
     """
 
-    def test_the_detail_names_the_sources_that_were_there(self) -> None:
+    def test_a_relabelled_source_is_counted_not_refused(self) -> None:
+        """The exact payload that emptied this ring in v2.1. It renders now."""
         rec = ot(drug_count=2, drug_rows=[{"clinicalReports": [
             {"source": "ClinicalTrials.gov", "trialOverallStatus": "RECRUITING"},
             {"source": "DailyMed", "trialOverallStatus": None},
         ]}])
         c = clinical_activity_cell(rec)
+        assert c.value == 1.0, "a rename of the source label emptied this ring once"
+        assert "ClinicalTrials.gov" in c.detail, "the labels seen are still named"
+
+    def test_the_detail_names_the_sources_that_were_there(self) -> None:
+        """Kept from v2.1: when nothing carries a status, say what WAS there.
+        A reader must be able to tell an upstream rename from a target with no
+        trials, and this is the sentence that lets them."""
+        rec = ot(drug_count=2, drug_rows=[{"clinicalReports": [
+            {"source": "TTD", "trialOverallStatus": None},
+            {"source": "DailyMed", "trialOverallStatus": None},
+        ]}])
+        c = clinical_activity_cell(rec)
         assert c.state == "no_data" and c.value is None
-        assert "ClinicalTrials.gov" in c.detail and "DailyMed" in c.detail
-        assert "AACT" in c.detail, "and which source it was looking for"
+        assert "TTD" in c.detail and "DailyMed" in c.detail
 
     def test_a_target_with_no_reports_at_all_still_reads_cleanly(self) -> None:
         rec = ot(drug_count=1, drug_rows=[{"clinicalReports": []}])

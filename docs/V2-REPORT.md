@@ -1043,7 +1043,18 @@ live), `TestSparsePrioritisationKeys` (7, fixtures updated to stated zeros).
 
 ---
 
-## Item 2 — the activity ring is ClinicalTrials.gov, and says so ✅
+## Item 2 — the activity ring is ClinicalTrials.gov, and says so ✅ — **RETIRED, see §v2.4**
+
+> **CORRECTION, 2026-09-24 (§v2.4).** This item is wrong at its root and the
+> code it describes is deleted. Open Targets did **not** drop its trial data: it
+> relabelled `clinicalReports.source` from `AACT` to `ClinicalTrials.gov`. This
+> build filtered on the old literal, matched nothing, and concluded the data was
+> gone. Everything the per-drug hop below goes and fetches — NCT id, overall
+> status, lead sponsor, stop reason — was already in the gene query this build
+> issues anyway, **and the stop reason there is categorised**. The hop cost 217
+> requests on a 50-gene run, 48.2 s of a 70.5 s cold run and one live 429. Every
+> claim below about what ClinicalTrials.gov can and cannot do is true of
+> ClinicalTrials.gov and no longer bears on this build.
 
 **Commits** `395ba11`, `303dddb`. New `targetring/adapters/clinicaltrials.py`.
 
@@ -1073,6 +1084,17 @@ measurement is the reason: 7 of every 8 BRAF terminations say nothing about the
 target, so inferring cause from free text would mislead on most of them. The
 free text is shown verbatim in the drawer for a human to read
 (`"Administrative change"`, `"slow accrual led to early closure."`).
+
+> **CORRECTION (§v2.4).** "The source forced it" is the sentence to disbelieve.
+> Nothing forced it: the categorised stop reason never left
+> `clinicalReports.trialStopReasonCategories`, and the paragraph above is a true
+> statement about ClinicalTrials.gov standing in for a false one about this
+> build. Measured live on BRAF, 2026-09-24: Insufficient_Enrollment 108,
+> Business_Administrative 51, Negative 17, Study_Design 13, Safety_Sideeffects
+> 13, Logistics_Resources 12 — 30 of 238 categorised stops are for cause. That
+> is COUNCIL D4's 7-of-8 ratio, *categorised*, which is exactly what this ring
+> was split off Ring A to show. The −1.0 state says "stopped for cause" again
+> as of v2.4, and the free text is still in the drawer beside the category.
 
 **The query form is a decision, and it is recorded.** CT.gov concept-expands the
 intervention search, heavily:
@@ -1299,6 +1321,10 @@ by the overlap.
 "stopped early, cause not established". That is forced by the source and is
 labelled everywhere, but it means a v2.1 figure and a v2.2 figure disagree about
 what a dark-orange cell asserts.
+
+> **CORRECTION (§v2.4).** Not forced — self-inflicted, and reverted. The
+> categorised reason was in the gene query the whole time. A v2.4 figure and a
+> v2.1 figure agree again; a v2.2/v2.3 figure is the odd one out.
 
 **6. A slide-render layout collision exists in the neighbourhood.** At the
 intermediate commit `7cbf9a9`, `de_realistic.csv` in Liver failed
@@ -1570,15 +1596,25 @@ moved aside to `cache.v23-pre` — nothing deleted. The two worth opening:
 decision, not a defect.** Item 3 above. Nothing about the build is wrong; the
 only lever is how hard to push a public API whose limit is unmeasured.
 
+> **CLOSED (§v2.4).** "Nothing about the build is wrong" was wrong. The
+> dominant term was a request for data the build already had. Deleting it puts
+> a cold 50-gene run at **27.2 s against the 60 s target**, and none of the
+> three options offered here was taken.
+
 **2. CT.gov rate limits are still only partly measured.** 480 requests at 4
 concurrent → 429 in 12 s; 160 and 217 at 2 concurrent with 0.25 s pacing → fine.
 The boundary between is unprobed, on purpose. `CTGOV_MAX_DRUG_HOPS = 400` caps
 the exposure; the 50-gene fixture used 217 and never approached it.
 
+> **CLOSED (§v2.4).** Moot: this build no longer calls that host. The unprobed
+> boundary stays unprobed, which was always the point.
+
 **3. The −1.0 activity state still means "stopped early, cause not
 established"**, not "stopped for cause". Unchanged from v2.2, forced by the
 source, labelled everywhere — but a v2.1 figure and a v2.3 figure still disagree
 about what a dark-orange cell asserts.
+
+> **CLOSED (§v2.4).** The categorised state is back. v2.1 and v2.4 agree.
 
 **4. The slide render still carries no ring sources** (UX A4 moved the key into
 the caption). The activity ring's source reaches the slide through its
@@ -1615,6 +1651,298 @@ and one of them should be corrected by you.
    *(c)* move the activity ring's fetch to the drawer as v2.2 item 3 did for
    ChEMBL — *~1 h*, buys the target outright, costs a ring on the figure.
    I would do (a) unless a cold 50-gene run is something you actually wait for.
+
+   > **WITHDRAWN (§v2.4).** All three options traded something real for the
+   > target. There was a fourth — stop fetching data the build already had —
+   > and it was invisible because I had accepted the premise that the data was
+   > gone. 27.2 s, no ring lost, no boundary probed.
 2. **PLAN.md §2's ring list**, now that the split has landed (*Still open* 7).
 3. Everything already in §6, §v2.1 and §v2.2, unchanged: the default weights,
    and licensing before any workplace use.
+
+---
+
+# v2.4 — the ClinicalTrials.gov hop, deleted
+
+Wren II, 2026-09-24. Local only, nothing deployed, nothing pushed, no money
+spent (triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched, the
+OpenClaw gateway not restarted.
+
+**Tests: 375 passed, 0 skipped, 0 failed** (the whole suite, live tests
+included; 368 before). All seven invariants PASS on a clean cold run
+(`runs/V24-COUNCIL-COLD`) and on all six fixture × region combinations.
+
+## Read this first: what it cost and what it recovered
+
+**The cost.** On 2026-09-24 Open Targets relabelled `clinicalReports.source`
+from `AACT` to `ClinicalTrials.gov`. This build selected trial rows with
+`source == "AACT"`, matched nothing, and I concluded the data had been dropped.
+It had not moved. On that conclusion I built a per-drug hop to
+ClinicalTrials.gov v2 (§v2.2 item 2) and then spent §v2.3 item 3 measuring how
+slow it was and §v2.3's *Still open* 1–2 explaining why the speed target could
+not be met without pushing a public API harder. The bill:
+
+| | |
+|---|---|
+| requests on a cold 50-gene run | **217**, none of them necessary |
+| wall clock on that run | **48.2 s of 70.5 s** — 68% |
+| live HTTP 429 from a public service | **1** (during v2.2, at 4 concurrent) |
+| a state the ring stopped being able to assert | **"stopped for cause"** |
+| decisions put to you that did not need making | **3** (§v2.3, *decide* 1a/b/c) |
+
+**What came back.** Everything the hop fetched was one selection away in the
+response this build already parses. Measured live on BRAF (`ENSG00000157764`),
+18 drug rows, **1,433 clinical reports**:
+
+```
+source labels   ClinicalTrials.gov 1381 · TTD 23 · EMA Human Drugs 8 · PMDA 6
+                ATC 5 · DailyMed 4 · USAN 3 · FDA 2 · INN 1
+with a status   1381  (exactly the 1381 ClinicalTrials.gov rows)
+with an NCT id  1381  (the other 52 are eme…/l01…/DailyMed set ids)
+with a sponsor  1381
+stop categories Insufficient_Enrollment 108 · Business_Administrative 51
+                Negative 17 · Study_Design 13 · Safety_Sideeffects 13
+                Logistics_Resources 12 · Invalid_Reason 9 · Another_Study 5
+                Study_Staff_Moved 4 · Regulatory 3 · No_Context 2 · Uncategorised 1
+```
+
+Three things follow, and the third is the one that matters scientifically.
+There is nothing the hop could see that the gene query cannot. The 52 rows with
+no status are exactly the non-trial registry rows, which is COUNCIL D1 gap (ii)
+holding without naming a label. And **Open Targets categorises why a trial
+stopped**, so the −1.0 state means "stopped for cause" again rather than v2.2's
+"stopped early — cause NOT categorised": 30 of BRAF's 238 categorised stops are
+Negative or Safety_Sideeffects, which is COUNCIL D4's 7-of-8 measurement made
+legible instead of asserted.
+
+**Cold 50 genes: 70.5 s → 27.2 s, against a 60 s target.** Breakdown below.
+
+---
+
+## Item 1 — the ring reads `clinicalReports`, and no source literal selects rows ✅
+
+The defect was not the AACT string; it was that *a string owned by a third
+party* decided whether a ring had data. What selects a row now is that it
+carries a `trialOverallStatus` — a property of the thing being counted. A
+relabelling cannot empty the ring, and a test asserts exactly that on three
+labels including one nobody has ever emitted
+(`test_a_relabelled_source_still_counts`).
+
+The labels seen are not discarded. `source_counts()` travels into the cell's
+`raw`, into the cell detail on the figure, into the drawer panel and into the
+manifest, so the *next* relabelling is a visible change in the artefacts rather
+than a silent one. The v2.1 diagnostic that made this findable at all — when
+nothing carries a status, name what *was* there — is kept and tested.
+
+The drug table (`drug_pipeline_rows`) read the same literal and is fixed with
+it; its "no AACT status" hint now says "no trial row carries a status".
+
+**Evidence:** `tests/test_clinical_activity.py::TestNoSourceLiteralSelectsRows`
+(4), `TestTheActivityRingSaysWhatItLookedFor` in `test_adapters.py` rewritten —
+the payload that emptied the ring in v2.1 is now asserted to render.
+
+## Item 2 — "stopped for cause" is a claim this build can make again ✅
+
+v2.2 downgraded −1.0 to "stopped early — cause NOT categorised by CT.gov" and
+called it forced by the source. It was not forced; the categorisation never
+left `trialStopReasonCategories`.
+
+Restored, with the precedence unchanged from v1 (a live trial outranks a
+historical stop — for-cause-first labels BRAF "stopped" while ten of its
+eighteen agents are recruiting):
+
+| cell | means |
+|---|---|
+| **1.0** | a live trial — recruiting or ongoing |
+| **0.0** | dormant: drugs exist, nothing live, **and no for-cause stop** |
+| **−1.0** | nothing live, and Open Targets categorised ≥1 stop Negative or Safety_Sideeffects |
+
+The seven-of-eight case lands on 0.0, not −1.0, and the cell says so in words:
+a target whose eight terminations are all `Insufficient_Enrollment` reads
+*"dormant — … 8 stopped early but NONE for cause (Insufficient_Enrollment 8),
+which is why this is dormant rather than −1"*. `Invalid_Reason`, `No_Context`
+and `Uncategorised` are categorised in name only and count as neither.
+
+The sponsor's free text is still in the drawer, verbatim (AGENTS.md rule 5) —
+now **beside** Open Targets' category rather than in place of it, which is the
+arrangement that lets a human check the categorisation rather than trust it.
+
+**Evidence:** `TestTheStopStateIsCategorisedAgain` (7), plus a live test that
+fails if the for-cause share of categorised stops ever rises above 25% — if it
+does, the case for two rings instead of one has changed and the suite says so.
+
+## Item 3 — what was retired, and what was kept ✅
+
+**Deleted:** `targetring/adapters/clinicaltrials.py` (593 lines), its cache
+schema entry, `CTGOV_STUDIES`, `CTGOV_MAX_DRUG_HOPS`, `CTGOV_ROWS_PER_BUCKET`,
+and the `clinicaltrials.gov` entries in `HOST_CONCURRENCY` (2 concurrent) and
+`HOST_PACING_SECONDS` (0.25 s).
+
+**Kept, and why** — the answer to "if any part is still used, say which":
+
+- **The 429 → `RateLimited` → hard failure path in `http.py`.** It is global,
+  every adapter depends on it, and it is AGENTS.md rule 9 itself. Not
+  CT.gov-specific and not touched.
+- **The per-host throttle mechanism**, with both maps now empty. It is how rule
+  9 gets enforced on the next host that answers 429, and deleting the mechanism
+  because its one user left would mean rebuilding it under pressure. The tests
+  that exercised it were re-pointed at a host of their own
+  (`throttled.invalid`) rather than deleted, because the bug they cover is in
+  the gate, not in the host, and one of them — the event-loop-keyed semaphore,
+  which killed a six-fixture run — is still live for every source.
+- **`clinicaltrials.gov/study/<NCT id>` as a link target** in the drawer. A URL
+  is not a request.
+
+A new structural test (`test_no_render_path_source_is_clinicaltrials_gov_any_more`)
+fails if anything under `targetring/` ever names that API host again.
+
+**Nothing else used the adapter.** `OTRecord.drug_names()` survives — it is read
+by the attribution gate — but nothing hops on it.
+
+## Item 4 — BRAF's numbers, before and after ✅
+
+v2.3 item 2's distinct-NCT de-duplication is kept exactly: target totals are
+distinct NCT ids, per-drug rows are pairs, and the panel says which is which.
+The numbers move because the *population* moved — CT.gov's concept-expanded
+intervention search against Open Targets' curated drug-trial links — not
+because the de-duplication changed.
+
+| BRAF, 18 drugs | v2.3 pairs → distinct | v2.4 pairs → distinct |
+|---|---|---|
+| trials | 2,297 → 1,682 | **1,381 → 1,343** |
+| live | 353 → 301 | **239 → 227** |
+| stopped early | 424 → 301 | **262 → 254** |
+| of which **for cause** | not knowable | **29** |
+| distinct lead sponsors | 81 | **131** |
+| studies live for one drug and stopped for another | 0 | **0** |
+| trial rows with no NCT id | — | **0**, so no floor |
+
+The v2.4 population is smaller and that is expected: CT.gov's default
+expansion on `query.intr="SORAFENIB"` returned 885 studies against Open
+Targets' 588 curated sorafenib links, and §v2.2 recorded at the time that "the
+concept expansion means the population is not a literal name match". Which
+population is the right one for a *target pipeline* ring is now decidable
+rather than assumed — these are the trials Open Targets links to a drug that
+hits this target.
+
+Pair-vs-distinct de-duplication still matters and still fires: 1,381 → 1,343 on
+the target total, 239 → 227 live. The per-drug `n_distinct` check earns its keep
+here in a way it could not before — one CT.gov query could not repeat a study,
+one Open Targets drug row can.
+
+## Item 5 — the cold 50-gene run, re-measured ✅ **target met**
+
+Empty cache directory, nothing deleted, 50 submitted / **50 rendered / 0
+ledgered**, all seven invariants PASS, no 429 (`logs/cold50-v24.json`,
+`runs/COLD50`).
+
+```
+total                    27.2 s     TARGET 60 s — MET, with 32.8 s to spare
+  resolve                 6.4 s
+  Open Targets            4.0 s     (the trial rows are in here now, for free)
+  render                  3.7 s
+  PubTator3               3.7 s
+  GTEx                    1.9 s
+  5-ID regression         1.5 s
+  source contracts        1.3 s
+  Europe PMC probe        0.8 s
+  Pharos                  0.5 s
+  ClinicalTrials.gov      —         retired
+```
+
+Against v2.3's 70.5 s: **−43.3 s, −61%**. The adapter phase is 7.7 s against
+51.3 s. Open Targets went 3.1 s → 4.0 s for carrying three more fields per
+clinical report, which is the entire price paid. The 15-gene council set is
+15.8 s against 49.9 s.
+
+PLAN §5's target is met on the measurement it was written for, at concurrency 4
+per host with no host throttled below it.
+
+## The clean run
+
+`runs/V24-COUNCIL-COLD`, council liver set, region Liver, **empty cache**.
+
+```
+I1 PASS  I2 PASS  I3 PASS  I4 PASS  I5 PASS  I6 PASS  I7 PASS
+any_invariant_failed: False   all_invariants_pass: True
+15 in / 14 rendered / 1 ledgered · 0 CT.gov drug hops · 15.8 s
+I1: 168 cells across 12 rings match the CSV
+I5: 1 Europe PMC echo checked live and byte-identical; no ERROR key in 14 NCBI responses
+I7: 4 of 10 eligible genes in the front, each with a real value on all 5 axes
+RUN CONDITIONS: 4 Pareto-axis cell(s) missing (regional_specificity 3, clinical_phase 1)
+```
+
+Identical to v2.3's block in every number except the clock. All six fixture ×
+region combinations render with all seven PASS (`logs/v24-matrix.txt`), and
+eligibility is unchanged from v2.3 on every one:
+
+| fixture | Liver | Lung |
+|---|---|---|
+| `de_realistic.csv` (15 in / 14 / 1) | 7/7, 7 eligible | 7/7, 11 eligible |
+| `de_broken.csv` (16 in / 7 / 9) | 7/7, 5 eligible | 7/7, 6 eligible |
+| council liver set (15 in / 14 / 1) | 7/7, 10 eligible | 7/7, 10 eligible |
+
+**No invariant was relaxed and no test was deleted.** `tests/test_clinicaltrials.py`
+became `tests/test_clinical_activity.py`: every assertion that still has meaning
+was re-pointed at the code that does the work now, and the ones that asserted
+CT.gov-specific behaviour were rewritten to assert the correct behaviour — the
+status-classification exhaustiveness, the unknown-status hard failure, the
+one-direction resolution of partial evidence, the distinct-NCT de-duplication,
+sponsor and live status in the drawer. The suite grew 368 → 375.
+
+## Screenshots
+
+`docs/screenshots/`, retaken on this code with the repo cache moved aside to
+`cache.v24-pre` — nothing deleted. One file is renamed and one is deliberately
+left behind:
+
+| file | shows |
+|---|---|
+| `7-drawer-trial-sponsors.png` | **new**: "1343 distinct trial(s) (1381 drug-trial pairs) · 227 live (239 pairs) · 254 stopped early (262 pairs)", the source labels seen, the per-drug for-cause counts, and the stop list with Open Targets' category before the sponsor's words |
+| `7b-ring-key-sources.png` | ring 8 reading "Pipeline: current activity (Open Targets clinicalReports)", and the legend's −1.0 entry saying "stopped for cause — OT category Negative / Safety_Sideeffects" |
+| `7-drawer-ctgov-sponsors.png` | **kept, not retaken** — the v2.3 panel, showing the retired hop's numbers. It is the before to the above's after and the only surviving image of what this cost |
+
+## Still open
+
+**1. The population changed and the figures a reader has already seen changed
+with it.** BRAF's drawer said 1,682 distinct trials this morning and says 1,343
+now. Both are honest counts of different things. The panel names its source and
+its de-duplication, but nothing in the app tells a reader who screenshotted the
+old one why their number moved — that is this report's job and it does not
+travel with the figure.
+
+**2. `PLAN.md` §2 ring 5 cites stop-reason counts that are now slightly
+stale** (`Business_Administrative 50`, `Negative 19` against today's 51 and 17).
+The counts drift with the source; the argument does not. Not edited — PLAN.md
+is yours (this is the second such line, with *Still open* 7 of §v2.3).
+
+**3. I did not re-probe what the hop taught.** COUNCIL D3's finding that CT.gov
+cannot be keyed on a gene is still true and still recorded; it is simply no
+longer load-bearing. If the activity ring is ever wanted on CT.gov's larger
+concept-expanded population rather than Open Targets' curated links, that is a
+source-semantics decision and the measurements are in §v2.2 item 2.
+
+**4. The lesson, stated so it is checkable rather than sentimental.** A ring
+that goes empty should be read as a question about the selection before it is
+read as a claim about the source. The check that would have caught this in
+minutes — assert the distinct `source` values and fail on an unrecognised one
+rather than filtering to a known one — now exists and costs nothing.
+
+**5. Unchanged and still not claimed:** LLM triage unbuilt ($5.00 of $5.00
+unspent); licensing (PLAN §9) is a human job before any workplace use; the
+default weights are provisional and unsigned-off; the ranking is not validated
+biology. QA §11's three items — the slide in a real presentation tool,
+Illustrator font substitution, a mono laser print — are still not re-evaluated;
+there is no PowerPoint, Illustrator or printer on this machine. §v2.3 *Still
+open* 4 (the slide render carries no ring sources) and 5 (the Pharos axis
+neither raises nor lowers eligibility) are untouched.
+
+## What you need to decide
+
+1. **Nothing, for the ring.** It reads what it always could, the speed target is
+   met, and no boundary was probed to get there.
+2. **`PLAN.md` §2**, now twice out of date with the build (ring list from §v2.3,
+   stop-reason counts above). Yours to correct or to leave as the historical
+   spec.
+3. Everything already in §6, §v2.1, §v2.2 and §v2.3, unchanged: the default
+   weights, and licensing before any workplace use.

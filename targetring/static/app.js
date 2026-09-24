@@ -324,7 +324,7 @@ function drawerHtml(d) {
         <td>${esc(r.modality || "—")}</td>
         <td>${esc(r.max_stage || "—")}</td>
         <td>${esc(r.status || "—")}${r.n_with_status === 0
-          ? " <span class='hint'>(no AACT status)</span>" : ""}</td>
+          ? " <span class='hint'>(no trial row carries a status)</span>" : ""}</td>
         <td>${esc((r.indications || []).join("; ") || "—")}</td>
         <td>${r.n_trials}</td>
         <td class="reason">${esc(Object.entries(r.stop_reasons || {})
@@ -333,7 +333,8 @@ function drawerHtml(d) {
       </tr>`).join("") + `</tbody></table></div>`;
   }
 
-  // --- v2.2 item 2: ClinicalTrials.gov, sponsor and live status ---
+  // --- trials: sponsor, live status, categorised stops (v2.2 item 2, re-sourced
+  // in v2.4 to Open Targets' own clinicalReports rows) ---
   // "sponsor plus live status must reach the drawer, since that is what tells
   // the user a target is crowded."
   const tr = d.trials || {};
@@ -343,6 +344,12 @@ function drawerHtml(d) {
       <p class="summary-line">${tr.n_lead_sponsors || 0} distinct lead sponsor(s)
         across this target's drugs${(tr.lead_sponsors || []).length
           ? ": " + tr.lead_sponsors.slice(0, 6).map(esc).join(", ") : ""}.</p>`;
+    // v2.4 requirement 1: the source labels actually seen, so the next
+    // relabelling is visible in the drawer instead of emptying a ring.
+    if (tr.sources_seen && Object.keys(tr.sources_seen).length) {
+      h += `<p class="summary-line hint">report source labels on this target:
+        ${Object.entries(tr.sources_seen).map(([k, v]) => `${esc(k)} ${v}`).join(" · ")}</p>`;
+    }
     // v2.3 item 2. The target-level totals are DISTINCT NCT ids; the sum of the
     // rows below is drug-trial pairs. Both are shown and the note says which is
     // which, because this panel was read once with only the pair count on it.
@@ -361,12 +368,13 @@ function drawerHtml(d) {
         <th>Live</th><th>Stopped early</th><th>Lead sponsors (live)</th>
         <th>Live example</th></tr></thead><tbody>` +
         trDrugs.map((r) => `<tr>
-          <td><b>${esc(r.drug)}</b><br><span class="hint"><code>${esc(r.query || "")}</code></span></td>
+          <td><b>${esc(r.drug)}</b></td>
           <td>${r.error ? "—" : r.n_trials}${
             !r.error && r.n_distinct !== undefined && r.n_distinct !== r.n_trials
-              ? ` <span class="hint">(${r.n_distinct} distinct on the page)</span>` : ""}</td>
+              ? ` <span class="hint">(${r.n_distinct} distinct NCT)</span>` : ""}</td>
           <td>${r.error ? "—" : r.n_live}</td>
-          <td>${r.error ? "—" : r.n_stopped}</td>
+          <td>${r.error ? "—" : r.n_stopped}${
+            r.n_for_cause ? ` <span class="hint">(${r.n_for_cause} for cause)</span>` : ""}</td>
           <td>${esc((r.sponsors || []).slice(0, 3).join("; ") || "—")}</td>
           <td>${(r.live || []).length
             ? `<a href="${esc(r.live[0].url || "#")}" target="_blank" rel="noopener">${
@@ -375,12 +383,17 @@ function drawerHtml(d) {
             : r.error ? `<span class="hint">${esc(r.error)}</span>` : "—"}</td>
         </tr>`).join("") + `</tbody></table></div>`;
       const stopped = trDrugs.flatMap((r) => (r.stopped || []).map((s) => ({...s, drug: r.drug})))
-        .filter((s) => s.why_stopped).slice(0, 6);
+        .filter((s) => s.why_stopped || (s.categories || []).length).slice(0, 6);
       if (stopped.length) {
-        h += `<p class="summary-line">Stated reasons for stopping — free text from the
-          sponsor, <b>not categorised</b>, shown verbatim:</p><ul class="reason">` +
-          stopped.map((s) => `<li><code>${esc(s.nct_id)}</code> ${esc(s.drug)}:
-            “${esc(s.why_stopped)}”</li>`).join("") + `</ul>`;
+        // v2.4: Open Targets categorises the stop, so the category leads and the
+        // sponsor's free text follows it verbatim for a human to read — rather
+        // than the free text standing alone with nothing to anchor it.
+        h += `<p class="summary-line">Why trials stopped — <b>Open Targets' category</b>
+          first, then the sponsor's own words verbatim:</p><ul class="reason">` +
+          stopped.map((s) => `<li><code>${esc(s.nct_id || "—")}</code> ${esc(s.drug)}:
+            <b>${esc((s.categories || []).join(", ") || "no category")}</b>${
+              s.for_cause ? ` <span class="hint">(for cause)</span>` : ""}
+            — “${esc(s.why_stopped)}”</li>`).join("") + `</ul>`;
       }
     }
   }

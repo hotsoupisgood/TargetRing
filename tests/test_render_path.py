@@ -166,6 +166,10 @@ class TestThePerHostGateSurvivesMoreThanOneEventLoop:
     `RuntimeError: ... is bound to a different event loop` on the second run.
     Latent while every host was capped at 4; certain once clinicaltrials.gov was
     throttled to 2.
+
+    v2.4 retired that host and `HOST_CONCURRENCY` is empty again, so these tests
+    exercise the gate on a host of their own rather than on whatever happens to
+    be throttled today. The bug is in the gate, not in the host.
     """
 
     def test_two_sequential_runs_do_not_share_a_bound_semaphore(self) -> None:
@@ -174,7 +178,7 @@ class TestThePerHostGateSurvivesMoreThanOneEventLoop:
         from targetring.http import _semaphore
 
         async def contend() -> None:
-            sem = _semaphore("https://clinicaltrials.gov/api/v2/studies")
+            sem = _semaphore("https://example.invalid/api")
 
             async def hold() -> None:
                 async with sem:
@@ -185,16 +189,21 @@ class TestThePerHostGateSurvivesMoreThanOneEventLoop:
         asyncio.run(contend())
         asyncio.run(contend())  # this is the call that used to raise
 
-    def test_the_gate_still_caps_at_the_host_limit(self) -> None:
+    def test_the_gate_caps_at_a_hosts_stated_limit(self) -> None:
+        """AGENTS.md rule 9's enforcement point. The mechanism outlives the one
+        host that needed it: the next source to answer 429 is throttled here,
+        never retried."""
         import asyncio
 
-        from targetring.http import HOST_CONCURRENCY, _semaphore
+        from targetring import http as http_mod
 
+        host = "throttled.invalid"
+        http_mod.HOST_CONCURRENCY[host] = 2
         peak = 0
 
         async def go() -> None:
             nonlocal peak
-            sem = _semaphore("https://clinicaltrials.gov/api/v2/studies")
+            sem = http_mod._semaphore(f"https://{host}/api")
             live = 0
 
             async def one() -> None:
@@ -207,5 +216,35 @@ class TestThePerHostGateSurvivesMoreThanOneEventLoop:
 
             await asyncio.gather(*(one() for _ in range(10)))
 
-        asyncio.run(go())
-        assert peak <= HOST_CONCURRENCY["clinicaltrials.gov"]
+        try:
+            asyncio.run(go())
+        finally:
+            http_mod.HOST_CONCURRENCY.pop(host, None)
+        assert peak <= 2
+
+    def test_no_host_is_gated_above_the_rule_9_ceiling(self) -> None:
+        from targetring.config import MAX_CONCURRENCY_PER_HOST
+        from targetring.http import HOST_CONCURRENCY, HOST_PACING_SECONDS
+
+        for host, limit in HOST_CONCURRENCY.items():
+            assert limit <= MAX_CONCURRENCY_PER_HOST, host
+        for host, pace in HOST_PACING_SECONDS.items():
+            assert pace > 0, host
+
+    def test_no_render_path_source_is_clinicaltrials_gov_any_more(self) -> None:
+        """v2.4. The hop is retired; nothing in the package may reach that host.
+        Its data is in the Open Targets gene query, and going back for it cost
+        48.2 s of a 70.5 s cold 50-gene run and one live 429."""
+        import pathlib
+
+        import targetring
+
+        root = pathlib.Path(targetring.__file__).parent
+        offenders = []
+        for path in root.rglob("*.py"):
+            text = path.read_text()
+            # Linking an NCT id into the drawer costs no request; calling the
+            # API does. The ban is on the API host.
+            if "clinicaltrials.gov/api" in text:
+                offenders.append(path.name)
+        assert not offenders, f"per-drug CT.gov hop is back in {offenders}"

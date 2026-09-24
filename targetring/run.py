@@ -18,11 +18,6 @@ from pathlib import Path
 from typing import Any
 
 from . import figure, manifest as manifest_mod
-from .adapters.clinicaltrials import (
-    CTGovAdapter,
-    activity_cell as ctgov_activity_cell,
-    drawer_trials,
-)
 from .adapters.gtex import GTExAdapter, GTExRecord, list_regions, specificity_cell
 from .adapters.literature import (
     EuropePMCAdapter,
@@ -43,6 +38,7 @@ from .adapters.opentargets import (
     safety_cell,
     severe_liabilities,
     tractable_cell,
+    trials_panel,
 )
 from .cache import Cache
 from .config import LLM_SPEND_CAP_USD, RUNS_DIR
@@ -199,7 +195,6 @@ async def run_analysis(
         pubtator = PubTatorAdapter(http, cache)
         epmc = EuropePMCAdapter(http, cache)
 
-        ctgov = CTGovAdapter(http, cache)
         pharos = PharosAdapter(http, cache)
 
         ot_records = await ot_adapter.fetch([res.ensembl_id for _, _, res in live])
@@ -220,27 +215,25 @@ async def run_analysis(
             finally:
                 timings[f"{name}_s"] = round(time.time() - t0, 2)
 
-        # v2.2 item 2. The drug names the ClinicalTrials.gov hop is keyed on.
-        # COUNCIL D3: CT.gov cannot be keyed on a gene, so the names come from
-        # Open Targets and the hop is per drug, deduplicated across the whole
-        # submitted set (EGFR alone carries 82).
-        ot_by_eid = {res.ensembl_id: ot_records[res.ensembl_id] for _, _, res in live}
-        all_drug_names = sorted({
-            n for rec in ot_by_eid.values() for n in rec.drug_names()
-        })
+        # v2.4. There is no ClinicalTrials.gov hop here any more. The activity
+        # ring's trial rows -- status, sponsor, categorised stop reason, NCT id
+        # -- are in `drugAndClinicalCandidates.rows[].clinicalReports` in the
+        # Open Targets call above, and were the whole time: the hop existed
+        # because a `source == "AACT"` filter stopped matching when Open Targets
+        # relabelled the rows `ClinicalTrials.gov`. It cost 217 requests and
+        # 48.2 s of a 70.5 s cold 50-gene run (`docs/V2-REPORT.md` §v2.3 item 3).
 
-        # v2.2 item 3. ChEMBL and Europe PMC are NOT here any more. Both drive
-        # no ring and no rank, and on 2026-09-24 they were 99% and 64% of the
-        # time spent on sources; they are fetched on gene click instead
+        # v2.2 item 3. ChEMBL and Europe PMC are NOT here. Both drive no ring
+        # and no rank, and on 2026-09-24 they were 99% and 64% of the time spent
+        # on sources; they are fetched on gene click instead
         # (`app.gene_drawer`). What stays is one Europe PMC query, cache
         # bypassed, so invariant I5 is still *evaluated* on a live echo rather
         # than quietly becoming NOT_EVALUATED for ever.
-        gtex_records, lit_records, ct_by_drug, pharos_records, probe = await asyncio.gather(
+        gtex_records, lit_records, pharos_records, probe = await asyncio.gather(
             timed("gtex", asyncio.gather(*(gtex.fetch_one(res.gencode_id)
                                            for _, _, res in live))),
             timed("pubtator", asyncio.gather(*(pubtator.fetch_one(d, None)
                                                for d, _, _ in live))),
-            timed("clinicaltrials", ctgov.fetch_many(all_drug_names)),
             timed("pharos", pharos.fetch_many(
                 [d for d, _, _ in live],
                 {d: res.uniprot for d, _, res in live},
@@ -248,7 +241,6 @@ async def run_analysis(
             timed("europepmc_probe", epmc.integrity_probe(live[0][0])),
         )
         timings["adapters_s"] = round(time.time() - t, 2)
-        timings["ctgov_drug_hops"] = ctgov.hops
 
         # --- the five-ID regression test, against the same live API -------
         regression = None
@@ -265,7 +257,6 @@ async def run_analysis(
     lit_by_gene: dict[str, LiteratureRecord] = dict(zip(genes, lit_records))
     pharos_by_gene: dict[str, PharosRecord] = {g: pharos_records[g] for g in genes}
     drug_names_by_gene = {g: ot_by_gene[g].drug_names() for g in genes}
-    ctgov_budget_hit = set(ctgov.budget_exhausted)
 
     import math
 
@@ -288,17 +279,11 @@ async def run_analysis(
             g: specificity_cell(gtex_by_gene[g], region) for g in genes
         },
         "clinical_phase": {g: clinical_phase_cell(ot_by_gene[g]) for g in genes},
-        # v2.2 item 2: ClinicalTrials.gov v2, hopped per drug. A different
-        # population from the AACT rows this ring counted before 2026-09-24,
-        # and the ring's own label says so on the figure.
-        "clinical_activity": {
-            g: ctgov_activity_cell(
-                drug_names_by_gene[g], ct_by_drug,
-                drug_count=ot_by_gene[g].drug_count,
-                budget_exhausted=bool(set(drug_names_by_gene[g]) & ctgov_budget_hit),
-            )
-            for g in genes
-        },
+        # v2.4: back on Open Targets' own `clinicalReports`, read out of the
+        # gene query above. Rows are selected by carrying a status rather than
+        # by a source literal, and the distinct source labels seen travel into
+        # the cell so the next relabelling is visible instead of silent.
+        "clinical_activity": {g: clinical_activity_cell(ot_by_gene[g]) for g in genes},
         # v2.2 item 4: COUNCIL S1/V8, an explicit ordinal over Tdark/Tbio/Tchem/Tclin.
         "tdl": {g: tdl_cell(pharos_by_gene[g]) for g in genes},
         "rodent": {g: rodent_cell(ot_by_gene[g]) for g in genes},
@@ -523,13 +508,12 @@ async def run_analysis(
             "attribution_error": rec.associations_error,
             "drugs": drug_pipeline_rows(rec),
             "safety_liabilities": rec.safety_liabilities,
-            # v2.2 item 2: sponsor and live status, which is what says whether a
-            # target is crowded. Puck's second hard condition.
-            "trials": drawer_trials(drug_names_by_gene[g], ct_by_drug),
-            # What Open Targets' own trial rows say, kept as context now that the
-            # ring is sourced elsewhere -- and as the standing record of the AACT
-            # disappearance (`docs/V2-REPORT.md` §v2.1, Newly open 2).
-            "ot_trial_rows": clinical_activity_cell(rec).detail,
+            # v2.2 item 2's two conditions -- sponsor and live status reach the
+            # drawer, and the panel says which source it counted -- met in v2.4
+            # off the gene query, with v2.3 item 2's distinct-NCT de-duplication
+            # kept and the Open Targets stop categories added beside the
+            # sponsor's free text.
+            "trials": trials_panel(rec),
             "tdl": {
                 "state": cells_by_ring["tdl"][g].state,
                 "value": cells_by_ring["tdl"][g].value,

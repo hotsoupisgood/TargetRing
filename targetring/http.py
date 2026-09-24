@@ -50,21 +50,22 @@ class RateLimited(HardFailure):
 _sems: dict[tuple[asyncio.AbstractEventLoop, str], asyncio.Semaphore] = {}
 
 # AGENTS.md rule 9 caps concurrency at 4 per host. That is a ceiling, not a
-# target, and one host has now been measured below it.
+# target, and a host may be gated below it by name here.
 #
-# ClinicalTrials.gov, 2026-09-24: a cold 15-gene run at 4 concurrent hops
-# returned **HTTP 429 after 12 s**. The run failed hard, as rule 9 requires, and
-# did not retry. Two changes followed: the adapter now makes one call per drug
-# instead of three (see adapters/clinicaltrials.py), and this host is limited to
-# 2 concurrent requests with a short pause between them. Throttling is not a
-# retry loop -- nothing is re-sent, the request rate is simply lower.
-HOST_CONCURRENCY: dict[str, int] = {
-    "clinicaltrials.gov": 2,
-}
+# **Both maps are empty as of v2.4, and that is a deletion, not an oversight.**
+# Their only entry was `clinicaltrials.gov: 2` with 0.25 s of pacing, added
+# after a cold 15-gene run at 4 concurrent hops took **HTTP 429 after 12 s** on
+# 2026-09-24. The run failed hard and retried nothing, which is what rule 9
+# requires. That host is no longer called at all: its data was always in the
+# Open Targets response (see `adapters/opentargets.py`), and the pacing was
+# 0.25 s of every ~0.44 s slot cycle -- 48.2 s of a 70.5 s cold 50-gene run.
+#
+# The *mechanism* stays, because it is how rule 9 is enforced and how the next
+# host that answers 429 gets throttled without a retry loop. Throttling is not
+# retrying: nothing is re-sent, the request rate is simply lower.
+HOST_CONCURRENCY: dict[str, int] = {}
 # Seconds to wait after releasing a slot, per host. Paced, not retried.
-HOST_PACING_SECONDS: dict[str, float] = {
-    "clinicaltrials.gov": 0.25,
-}
+HOST_PACING_SECONDS: dict[str, float] = {}
 
 
 def _semaphore(url: str) -> asyncio.Semaphore:

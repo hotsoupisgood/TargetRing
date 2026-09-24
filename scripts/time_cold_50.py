@@ -1,9 +1,9 @@
 """PLAN §5's speed target, measured on a real cold 50-gene run.
 
-"Cold 50 genes under 60 s at concurrency <= 4 per host." The last measurement
-was on a 15-gene set (30.6 s -> 50.9 s), so the target itself has never been
-tested, and since v2.2 the render path lost ChEMBL and Europe PMC and gained
-ClinicalTrials.gov.
+"Cold 50 genes under 60 s at concurrency <= 4 per host." First measured in v2.3
+at 70.5 s, of which 48.2 s was a per-drug ClinicalTrials.gov hop fetching data
+that was already in the Open Targets gene query. v2.4 deleted the hop; this is
+the script that says what that was worth.
 
 Cold means an empty cache directory, not the repo's. Nothing is deleted: the
 run writes to a fresh directory under `--cache`, which you can throw away.

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from targetring.adapters.clinicaltrials import SOURCE_LABEL as CTGOV_SOURCE_LABEL
+from targetring.adapters.opentargets import SOURCE_LABEL as ACTIVITY_SOURCE_LABEL
 from targetring.adapters.pharos import TDL_MAX
 from targetring.figure import (
     ACTIVITY_PALETTE,
@@ -237,15 +237,16 @@ class TestV12CategoricalActivityRing:
                region="Liver", out_svg=tmp_path / "a.svg", input_count=3,
                rendered_count=3, ledger_counts={})
         body = (tmp_path / "a.svg").read_text()
-        for label in ("stopped early", "dormant", "live trial"):
+        for label in ("stopped for cause", "dormant", "live trial"):
             assert label in body
-        # v2.2 item 2, Puck's first hard condition: the ring must state which
-        # source it counted, on the figure, because CT.gov is a different
-        # population from AACT and the numbers are not continuous with it.
-        assert CTGOV_SOURCE_LABEL in body
-        assert "cause NOT categorised" in body, (
-            "CT.gov has no categorised stop reason, so the -1 state must not "
-            "claim one (COUNCIL D4)")
+        # Puck's first hard condition, unchanged: the ring must state which
+        # source it counted, on the figure. v2.4 changed the answer back to Open
+        # Targets' own clinicalReports rows, so that is what must appear.
+        assert ACTIVITY_SOURCE_LABEL in body
+        assert "stopped for cause" in body, (
+            "Open Targets categorises stop reasons, so the -1 state says what it "
+            "means again -- and the ~7-of-8 administrative stops are NOT it "
+            "(COUNCIL D4, v2.4 item 2)")
 
 
 class TestV17SignedRingHasAZeroAnchor:

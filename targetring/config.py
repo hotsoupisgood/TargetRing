@@ -21,12 +21,11 @@ GTEX_BASE = "https://gtexportal.org/api/v2"
 PUBTATOR_SEARCH = "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/search/"
 EUROPEPMC_SEARCH = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 CHEMBL_BASE = "https://www.ebi.ac.uk/chembl/api/data"
-# v2.2 item 2. COUNCIL D3 verified this endpoint live and ruled it "the authority
-# on live status and sponsor, but it cannot be keyed on a gene" -- `?query.term=BRAF`
-# returns 1,045 studies whose top hits are cfDNA biomarker studies with
-# interventions like "Blood sampling". So the hop is per *drug*, with the drug
-# names taken from Open Targets' rows.
-CTGOV_STUDIES = "https://clinicaltrials.gov/api/v2/studies"
+# v2.4: `CTGOV_STUDIES` is gone with the per-drug hop. Open Targets' own
+# `clinicalReports` rows carry the NCT id, the status, the sponsor and a
+# *categorised* stop reason, in the gene query this build already issues, so
+# there is nothing left for a second endpoint to fetch. NCT ids still resolve to
+# clinicaltrials.gov/study/<id> in the drawer as links, which costs no request.
 PHAROS_GRAPHQL = "https://pharos-api.ncats.io/graphql"
 
 # GTEx dataset is pinned: gtex_v10 returns 0 rows for the v26 gencode ids that
@@ -41,28 +40,27 @@ SCHEMA_VERSIONS = {
     # phase ring can report a stage *for the attributed indication* rather than
     # the drug's global maximum (QA-v2-retest §2). A v1 payload carries no
     # per-indication stage and would read as "cannot be established".
-    "opentargets.target": "2",
+    #
+    # v3 (v2.4): the query also asks for `clinicalReports.id`, `trialSponsor{name}`
+    # and `trialWhyStopped`, which is everything the retired per-drug
+    # ClinicalTrials.gov hop went and fetched separately. A v2 payload carries
+    # none of the three, so the activity ring and the drawer's trial panel would
+    # read as empty rather than as absent. Bumped so no v2 cache entry is reused.
+    "opentargets.target": "3",
     "gtex.gene": "1",
     "gtex.median_expression": "1",
     "pubtator.count": "1",
     "chembl.target": "1",
     "chembl.mechanism": "1",
     "europepmc.search": "1",
-    # v2: one page per drug holding the whole result, instead of three filtered
-    # count calls. The cached shape changed with it (rows + completeness).
-    "clinicaltrials.studies": "2",
     "pharos.target": "1",
 }
 
-# v2.2 item 2. A CT.gov hop is one call per drug per status bucket, and a
-# 60-gene table can carry several hundred distinct drugs (EGFR alone has 82).
-# A stated budget, so a large submission cannot turn into a thousand-call run:
-# genes whose drugs were not all hopped render `no_data` naming the budget,
-# never a partial count. Never hit on either fixture (160 and 115 drugs).
-CTGOV_MAX_DRUG_HOPS = 400
-# Rows kept per drug per bucket for the drawer. The *counts* are exact
-# (`countTotal`), so this bounds only how many examples travel.
-CTGOV_ROWS_PER_BUCKET = 20
+# v2.4: `CTGOV_MAX_DRUG_HOPS` and `CTGOV_ROWS_PER_BUCKET` are gone with the hop.
+# The hop budget existed because a 60-gene table can carry several hundred
+# distinct drugs (EGFR alone has 82) and each one cost a request; the trial rows
+# now arrive with the gene, so the number of drugs costs nothing and there is no
+# budget left to exhaust or to render `no_data` for.
 
 # AGENTS.md rule 9. Not a measured limit -- an unmeasured-risk cap.
 MAX_CONCURRENCY_PER_HOST = 4

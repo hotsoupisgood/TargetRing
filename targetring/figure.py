@@ -48,7 +48,7 @@ matplotlib.rcParams["svg.fonttype"] = SVG_FONTTYPE
 SAVE_RC = {"savefig.bbox": None, "savefig.pad_inches": 0.0,
            "svg.fonttype": SVG_FONTTYPE}
 
-from .adapters.clinicaltrials import SOURCE_LABEL as CTGOV_SOURCE_LABEL  # noqa: E402
+from .adapters.opentargets import SOURCE_LABEL as ACTIVITY_SOURCE_LABEL  # noqa: E402
 from .adapters.pharos import TDL_MAX  # noqa: E402
 from .config import MAX_GENES  # noqa: E402
 from .rank import (  # noqa: E402
@@ -170,13 +170,17 @@ ACTIVITY_PALETTE: dict[float, str] = {
     1.0: "#08519c",    # active
 }
 ACTIVITY_LABELS: dict[float, str] = {
-    # v2.2 item 2. On the AACT source this state was "stopped for cause", read
-    # off Open Targets' categorised `trialStopReasonCategories`. ClinicalTrials.gov
-    # carries free-text `whyStopped` and nothing categorised, so the cause cannot
-    # be established from it and the label must not claim it can: COUNCIL D4
-    # measured that 7 of every 8 BRAF terminations say nothing about the target.
-    -1.0: "stopped early — cause NOT categorised by CT.gov",
-    0.0: "dormant — drugs exist, no live trial",
+    # v2.4 restores the categorised state. v2.2 downgraded this to "stopped
+    # early — cause NOT categorised by CT.gov" because the per-drug
+    # ClinicalTrials.gov hop could only see the sponsor's free text. Open
+    # Targets categorises the same stops and always did, so the ring says what
+    # it means again: -1.0 is a stop Open Targets categorised Negative or
+    # Safety_Sideeffects. COUNCIL D4's measurement is why the distinction
+    # matters -- roughly 7 of 8 BRAF terminations say nothing about the target
+    # (Insufficient_Enrollment 108, Business_Administrative 51 against Negative
+    # 17 and Safety_Sideeffects 13), and those land on 0.0, not here.
+    -1.0: "stopped for cause — OT category Negative / Safety_Sideeffects",
+    0.0: "dormant — drugs exist, no live trial, no for-cause stop",
     1.0: "live trial — recruiting or ongoing",
 }
 
@@ -219,16 +223,18 @@ RING_SPECS: tuple[RingSpec, ...] = (
     RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)",
              "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence",
              domain=(0.0, 5.0)),
-    # v2.2 item 2. Puck's hard condition: the ring must state which source it
-    # counted, on the figure, because ClinicalTrials.gov is a different
-    # population from the AACT rows this ring counted until 2026-09-24 and the
-    # numbers are not continuous with them. The source is therefore in the
-    # ring's own *label* -- which reaches the numbered key on the audit render
-    # and, through the categorical legend entries, both renders -- not only in
-    # the caption and the manifest.
-    RingSpec("clinical_activity", f"Pipeline: current activity ({CTGOV_SOURCE_LABEL})",
-             "ClinicalTrials.gov v2 studies?query.intr=<drug>, hopped per drug from OT's "
-             "drug rows; NOT the AACT population used before 2026-09-24",
+    # Puck's hard condition from v2.2 item 2 stands: the ring must state which
+    # source it counted, on the figure. v2.4 changes the answer -- the per-drug
+    # ClinicalTrials.gov hop is retired and these rows come from Open Targets'
+    # own `clinicalReports`, in the same query as every other OT ring -- so the
+    # label says that, and the cell detail names the `source` values actually
+    # seen on the gene. The source is in the ring's own *label*, which reaches
+    # the numbered key on the audit render and, through the categorical legend
+    # entries, both renders.
+    RingSpec("clinical_activity", f"Pipeline: current activity ({ACTIVITY_SOURCE_LABEL})",
+             "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a "
+             "trialOverallStatus — NOT by a source literal (the AACT->ClinicalTrials.gov "
+             "relabelling of 2026-09-24 is what a literal filter missed)",
              categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS),
     # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred.
     RingSpec("tdl", "Target development level (Pharos TDL — knowledge, not a pocket)",
