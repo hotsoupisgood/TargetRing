@@ -18,7 +18,11 @@ from pathlib import Path
 from typing import Any
 
 from . import figure, manifest as manifest_mod
-from .adapters.chembl import ChEMBLAdapter, mechanism_summary
+from .adapters.clinicaltrials import (
+    CTGovAdapter,
+    activity_cell as ctgov_activity_cell,
+    drawer_trials,
+)
 from .adapters.gtex import GTExAdapter, GTExRecord, list_regions, specificity_cell
 from .adapters.literature import (
     EuropePMCAdapter,
@@ -26,6 +30,7 @@ from .adapters.literature import (
     PubTatorAdapter,
     literature_cell,
 )
+from .adapters.pharos import PharosAdapter, PharosRecord, tdl_cell
 from .adapters.opentargets import (
     OpenTargetsAdapter,
     OTRecord,
@@ -67,6 +72,12 @@ from .states import Cell, no_data, value
 DEFAULT_REGION = "Lung"
 
 # Sources whose values reach the drawer and never a ring or a rank.
+#
+# v2.2 item 3: both are now fetched on gene click instead of on the render path,
+# so neither should appear in the render's timings at all. The condition below
+# is kept as the guard that says so if one ever comes back: it fired correctly
+# on v2 (ChEMBL at 99% of source time) and the cheapest way to keep that alarm
+# working is to leave it armed.
 DRAWER_ONLY_SOURCES = ("chembl", "europepmc")
 # Above this share of the time spent on sources, a drawer-only source is
 # reported as a run condition.
@@ -81,7 +92,7 @@ COST_SHARE_WARN = 0.40
 # the drawer, and ranked nowhere -- which is what M4 asked for.
 RANKED_RINGS = (
     "druggability", "safety", "regional_specificity",
-    "clinical_phase", "clinical_activity", "literature",
+    "clinical_phase", "clinical_activity", "tdl", "literature",
 )
 
 
@@ -182,7 +193,9 @@ async def run_analysis(
         gtex = GTExAdapter(http, cache)
         pubtator = PubTatorAdapter(http, cache)
         epmc = EuropePMCAdapter(http, cache)
-        chembl = ChEMBLAdapter(http, cache)
+
+        ctgov = CTGovAdapter(http, cache)
+        pharos = PharosAdapter(http, cache)
 
         ot_records = await ot_adapter.fetch([res.ensembl_id for _, _, res in live])
         # COUNCIL V1: the indication-attribution query needs the drug rows, so it
@@ -202,17 +215,35 @@ async def run_analysis(
             finally:
                 timings[f"{name}_s"] = round(time.time() - t0, 2)
 
-        gtex_records, lit_records, chembl_records, epmc_results = await asyncio.gather(
+        # v2.2 item 2. The drug names the ClinicalTrials.gov hop is keyed on.
+        # COUNCIL D3: CT.gov cannot be keyed on a gene, so the names come from
+        # Open Targets and the hop is per drug, deduplicated across the whole
+        # submitted set (EGFR alone carries 82).
+        ot_by_eid = {res.ensembl_id: ot_records[res.ensembl_id] for _, _, res in live}
+        all_drug_names = sorted({
+            n for rec in ot_by_eid.values() for n in rec.drug_names()
+        })
+
+        # v2.2 item 3. ChEMBL and Europe PMC are NOT here any more. Both drive
+        # no ring and no rank, and on 2026-09-24 they were 99% and 64% of the
+        # time spent on sources; they are fetched on gene click instead
+        # (`app.gene_drawer`). What stays is one Europe PMC query, cache
+        # bypassed, so invariant I5 is still *evaluated* on a live echo rather
+        # than quietly becoming NOT_EVALUATED for ever.
+        gtex_records, lit_records, ct_by_drug, pharos_records, probe = await asyncio.gather(
             timed("gtex", asyncio.gather(*(gtex.fetch_one(res.gencode_id)
                                            for _, _, res in live))),
             timed("pubtator", asyncio.gather(*(pubtator.fetch_one(d, None)
                                                for d, _, _ in live))),
-            timed("chembl", asyncio.gather(*(chembl.fetch_one(res.uniprot)
-                                             for _, _, res in live))),
-            timed("europepmc", asyncio.gather(*(epmc.fetch_one(d, None)
-                                                for d, _, _ in live))),
+            timed("clinicaltrials", ctgov.fetch_many(all_drug_names)),
+            timed("pharos", pharos.fetch_many(
+                [d for d, _, _ in live],
+                {d: res.uniprot for d, _, res in live},
+            )),
+            timed("europepmc_probe", epmc.integrity_probe(live[0][0])),
         )
         timings["adapters_s"] = round(time.time() - t, 2)
+        timings["ctgov_drug_hops"] = ctgov.hops
 
         # --- the five-ID regression test, against the same live API -------
         regression = None
@@ -227,7 +258,9 @@ async def run_analysis(
     ot_by_gene: dict[str, OTRecord] = {d: ot_records[res.ensembl_id] for d, _, res in live}
     gtex_by_gene: dict[str, GTExRecord] = dict(zip(genes, gtex_records))
     lit_by_gene: dict[str, LiteratureRecord] = dict(zip(genes, lit_records))
-    chembl_by_gene = dict(zip(genes, chembl_records))
+    pharos_by_gene: dict[str, PharosRecord] = {g: pharos_records[g] for g in genes}
+    drug_names_by_gene = {g: ot_by_gene[g].drug_names() for g in genes}
+    ctgov_budget_hit = set(ctgov.budget_exhausted)
 
     import math
 
@@ -247,7 +280,19 @@ async def run_analysis(
             g: specificity_cell(gtex_by_gene[g], region) for g in genes
         },
         "clinical_phase": {g: clinical_phase_cell(ot_by_gene[g]) for g in genes},
-        "clinical_activity": {g: clinical_activity_cell(ot_by_gene[g]) for g in genes},
+        # v2.2 item 2: ClinicalTrials.gov v2, hopped per drug. A different
+        # population from the AACT rows this ring counted before 2026-09-24,
+        # and the ring's own label says so on the figure.
+        "clinical_activity": {
+            g: ctgov_activity_cell(
+                drug_names_by_gene[g], ct_by_drug,
+                drug_count=ot_by_gene[g].drug_count,
+                budget_exhausted=bool(set(drug_names_by_gene[g]) & ctgov_budget_hit),
+            )
+            for g in genes
+        },
+        # v2.2 item 4: COUNCIL S1/V8, an explicit ordinal over Tdark/Tbio/Tchem/Tclin.
+        "tdl": {g: tdl_cell(pharos_by_gene[g]) for g in genes},
         "rodent": {g: rodent_cell(ot_by_gene[g]) for g in genes},
         "literature": {g: literature_cell(lit_by_gene[g]) for g in genes},
     }
@@ -273,22 +318,25 @@ async def run_analysis(
     # COUNCIL V11: live and replayed echoes are counted separately. An echo that
     # was asserted three days ago and read back off disk is not an echo this run
     # checked, and I5 must not PASS on replays alone.
-    epmc_by_gene = dict(zip(genes, epmc_results))
+    #
+    # v2.2 item 3: the per-gene Europe PMC fetch is now on the drawer, so the
+    # render path issues exactly one query -- cache bypassed, live by
+    # construction -- whose echo is what I5 asserts. See
+    # `EuropePMCAdapter.integrity_probe` for what that narrows.
     echo_live = echo_replayed = ncbi_checked = 0
     echo_mismatches: list[str] = []
     unreachable: list[str] = []
     for g in genes:
         if lit_by_gene[g].error is None:
             ncbi_checked += 1
-        res = epmc_by_gene[g]
-        if res.echo_ok is True and res.live:
-            echo_live += 1
-        elif res.echo_ok is True:
-            echo_replayed += 1
-        elif res.echo_ok is False:
-            echo_mismatches.append(f"{g}: {res.error}")
-        elif res.error:
-            unreachable.append(f"{g}: {res.error[:90]}")
+    if probe.echo_ok is True and probe.live:
+        echo_live += 1
+    elif probe.echo_ok is True:
+        echo_replayed += 1
+    elif probe.echo_ok is False:
+        echo_mismatches.append(f"{genes[0]}: {probe.error}")
+    elif probe.error:
+        unreachable.append(f"{genes[0]}: {probe.error[:90]}")
     lit_audit = {
         "echo_live": echo_live, "echo_replayed": echo_replayed,
         # Kept for anything reading the old key; it is the sum, and it is not
@@ -305,9 +353,20 @@ async def run_analysis(
     conditions: list[tuple[str, str]] = []
     if unreachable:
         conditions.append((
-            f"Europe PMC unreachable for {len(unreachable)} of {len(genes)} genes",
+            "the Europe PMC integrity probe did not answer",
             "it sets no ring value (PLAN §2, COUNCIL M6); the literature ring is "
-            "PubTator3 and is unaffected",
+            "PubTator3 and is unaffected, and Europe PMC counts are fetched on gene "
+            "click where the echo is asserted again",
+        ))
+    # v2.2 item 4. Pharos is now a Pareto axis, so a Pharos outage changes who
+    # is eligible for the headline. That has to be visible.
+    pharos_missing = [g for g in genes if cells_by_ring["tdl"][g].state != "value"]
+    if pharos_missing:
+        conditions.append((
+            f"no Pharos TDL for {len(pharos_missing)} of {len(genes)} gene(s) "
+            f"({', '.join(pharos_missing[:5])})",
+            "TDL is a Pareto axis, so those genes are ineligible for the headline; "
+            "Pharos covers 20,412 human targets and absence of a record is not Tdark",
         ))
     # A source that drives no ring should not be able to dominate a run without
     # saying so. ChEMBL is drawer evidence only (PLAN §8) and was measured at
@@ -454,17 +513,33 @@ async def run_analysis(
             "attribution_error": rec.associations_error,
             "drugs": drug_pipeline_rows(rec),
             "safety_liabilities": rec.safety_liabilities,
+            # v2.2 item 2: sponsor and live status, which is what says whether a
+            # target is crowded. Puck's second hard condition.
+            "trials": drawer_trials(drug_names_by_gene[g], ct_by_drug),
+            # What Open Targets' own trial rows say, kept as context now that the
+            # ring is sourced elsewhere -- and as the standing record of the AACT
+            # disappearance (`docs/V2-REPORT.md` §v2.1, Newly open 2).
+            "ot_trial_rows": clinical_activity_cell(rec).detail,
+            "tdl": {
+                "state": cells_by_ring["tdl"][g].state,
+                "value": cells_by_ring["tdl"][g].value,
+                "detail": cells_by_ring["tdl"][g].detail,
+                "raw": cells_by_ring["tdl"][g].raw,
+            },
             "literature": {
                 "pubtator_count": lit_by_gene[g].count,
                 "pubtator_query": lit_by_gene[g].query,
                 "years": lit_by_gene[g].years,
                 "error": lit_by_gene[g].error,
-                "europepmc_query": epmc_by_gene[g].query,
-                "europepmc_count": epmc_by_gene[g].count,
-                "europepmc_error": epmc_by_gene[g].error,
-                "europepmc_echo_live": epmc_by_gene[g].live,
+                # v2.2 item 3: fetched on click, not on the render path.
+                "europepmc": None,
+                "europepmc_note": "fetched on gene click (v2.2 item 3)",
             },
-            "chembl": mechanism_summary(chembl_by_gene[g]),
+            # v2.2 item 3: likewise. `null` means not fetched yet, which is not
+            # the same as ChEMBL having nothing -- the four-state semantics of
+            # `mechanism_summary` are unchanged and arrive on click.
+            "chembl": None,
+            "chembl_note": "fetched on gene click (v2.2 item 3)",
             "mouse_phenotypes": [
                 p.get("modelPhenotypeLabel") for p in rec.mouse_phenotypes[:25]
             ],

@@ -21,6 +21,13 @@ GTEX_BASE = "https://gtexportal.org/api/v2"
 PUBTATOR_SEARCH = "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/search/"
 EUROPEPMC_SEARCH = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 CHEMBL_BASE = "https://www.ebi.ac.uk/chembl/api/data"
+# v2.2 item 2. COUNCIL D3 verified this endpoint live and ruled it "the authority
+# on live status and sponsor, but it cannot be keyed on a gene" -- `?query.term=BRAF`
+# returns 1,045 studies whose top hits are cfDNA biomarker studies with
+# interventions like "Blood sampling". So the hop is per *drug*, with the drug
+# names taken from Open Targets' rows.
+CTGOV_STUDIES = "https://clinicaltrials.gov/api/v2/studies"
+PHAROS_GRAPHQL = "https://pharos-api.ncats.io/graphql"
 
 # GTEx dataset is pinned: gtex_v10 returns 0 rows for the v26 gencode ids that
 # /reference/gene serves (probed 2026-09-24), so v8 is the only coherent pair.
@@ -41,7 +48,19 @@ SCHEMA_VERSIONS = {
     "chembl.target": "1",
     "chembl.mechanism": "1",
     "europepmc.search": "1",
+    "clinicaltrials.studies": "1",
+    "pharos.target": "1",
 }
+
+# v2.2 item 2. A CT.gov hop is one call per drug per status bucket, and a
+# 60-gene table can carry several hundred distinct drugs (EGFR alone has 82).
+# A stated budget, so a large submission cannot turn into a thousand-call run:
+# genes whose drugs were not all hopped render `no_data` naming the budget,
+# never a partial count. Never hit on either fixture (160 and 115 drugs).
+CTGOV_MAX_DRUG_HOPS = 400
+# Rows kept per drug per bucket for the drawer. The *counts* are exact
+# (`countTotal`), so this bounds only how many examples travel.
+CTGOV_ROWS_PER_BUCKET = 20
 
 # AGENTS.md rule 9. Not a measured limit -- an unmeasured-risk cap.
 MAX_CONCURRENCY_PER_HOST = 4

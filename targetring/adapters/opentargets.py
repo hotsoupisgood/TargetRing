@@ -270,6 +270,20 @@ class OTRecord:
     associations: dict[str, dict[str, float]] | None = None
     associations_error: str | None = None
 
+    def drug_names(self) -> list[str]:
+        """Distinct drug names on this target's rows, in first-seen order.
+
+        v2.2 item 2: these are what the ClinicalTrials.gov hop is keyed on.
+        COUNCIL D3 ruled out keying CT.gov on the gene itself -- `query.term=BRAF`
+        returns cfDNA biomarker studies -- so the drug name is the only join.
+        """
+        out: list[str] = []
+        for row in self.drug_rows:
+            name = (row.get("drug") or {}).get("name")
+            if name and name not in out:
+                out.append(str(name))
+        return out
+
     def indication_disease_ids(self) -> list[str]:
         """Every disease id any of this target's drug rows is indicated for."""
         out: list[str] = []

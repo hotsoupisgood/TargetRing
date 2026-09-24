@@ -6,6 +6,7 @@ import pytest
 
 from targetring.rank import (
     DEFAULT_WEIGHTS,
+    PARETO_AXES,
     pareto_eligible,
     pareto_front,
     rank_genes,
@@ -71,36 +72,53 @@ class TestNeverImpute:
 
 
 class TestPareto:
+    @staticmethod
+    def _axes(**overrides: float) -> dict[str, float]:
+        """A complete gene, written against PARETO_AXES rather than a literal
+        list — v2.2 item 4 added a fifth axis and a fixture that hard-codes four
+        stops testing eligibility and starts testing the fixture."""
+        base = dict.fromkeys(PARETO_AXES, 0.5)
+        base.update(overrides)
+        assert set(base) == set(PARETO_AXES)
+        return base
+
     def test_dominated_gene_is_excluded(self) -> None:
         ranks = {
-            "best": {"druggability": 1.0, "safety": 1.0,
-                     "regional_specificity": 1.0, "clinical_phase": 1.0},
-            "worst": {"druggability": 0.0, "safety": 0.0,
-                      "regional_specificity": 0.0, "clinical_phase": 0.0},
+            "best": self._axes(**dict.fromkeys(PARETO_AXES, 1.0)),
+            "worst": self._axes(**dict.fromkeys(PARETO_AXES, 0.0)),
         }
         assert pareto_front(ranks) == {"best"}
 
     def test_a_tradeoff_keeps_both(self) -> None:
-        """Both are complete on all four axes and neither beats the other
+        """Both are complete on every axis and neither beats the other
         everywhere, so both survive. Eligibility (V2) does not collapse the
         front onto a single winner."""
         ranks = {
-            "druggable": {"druggability": 1.0, "safety": 0.0,
-                          "regional_specificity": 1.0, "clinical_phase": 0.0},
-            "safe": {"druggability": 0.0, "safety": 1.0,
-                     "regional_specificity": 0.0, "clinical_phase": 1.0},
+            "druggable": self._axes(druggability=1.0, safety=0.0,
+                                    regional_specificity=1.0, clinical_phase=0.0),
+            "safe": self._axes(druggability=0.0, safety=1.0,
+                               regional_specificity=0.0, clinical_phase=1.0),
         }
         assert pareto_front(ranks) == {"druggable", "safe"}
 
     def test_a_gene_missing_an_axis_is_not_in_the_front(self) -> None:
-        """COUNCIL V2. Eligibility is all four axes, not the shared subset."""
+        """COUNCIL V2. Eligibility is EVERY axis, not the shared subset."""
         ranks = {
-            "full": {"druggability": 1.0, "safety": 1.0,
-                     "regional_specificity": 1.0, "clinical_phase": 1.0},
+            "full": self._axes(**dict.fromkeys(PARETO_AXES, 1.0)),
             "sparse": {"druggability": 0.5},
         }
         assert pareto_front(ranks) == {"full"}
         assert not pareto_eligible(ranks["sparse"])
+
+    def test_every_pareto_axis_is_required(self) -> None:
+        """v2.2 item 4: one axis short is ineligible, whichever axis it is."""
+        for dropped in PARETO_AXES:
+            ranks = {
+                "full": self._axes(**dict.fromkeys(PARETO_AXES, 1.0)),
+                "short": {ax: 1.0 for ax in PARETO_AXES if ax != dropped},
+            }
+            assert not pareto_eligible(ranks["short"]), dropped
+            assert pareto_front(ranks) == {"full"}, dropped
 
     def test_no_axis_at_all_is_not_a_free_pass(self) -> None:
         """v1 returned both of these as non-dominated because they shared no axis."""
@@ -146,11 +164,19 @@ class TestV2OneAxisCannotDominateFour:
                 "ASGR1": value(1.0), "PCSK9": value(1.0),
                 "SERPINA1": value(0.3), "TTR": value(0.7),
             },
+            # v2.2 item 4. The council's probe is about eligibility, so every
+            # gene in it has to be complete on every axis — including the one
+            # added after the probe was written.
+            "tdl": {
+                "ASGR1": value(1.0), "PCSK9": value(2.0),
+                "SERPINA1": value(3.0), "TTR": value(0.0),
+            },
         }
         if with_oneaxis:
             spec["druggability"]["ONEAXIS"] = value(1.0)
-            for ring in ("safety", "regional_specificity", "clinical_phase"):
-                spec[ring]["ONEAXIS"] = no_data("adapter returned nothing")
+            for ring in PARETO_AXES:
+                if ring != "druggability":
+                    spec.setdefault(ring, {})["ONEAXIS"] = no_data("adapter returned nothing")
         return spec
 
     def test_baseline_front(self) -> None:
@@ -163,7 +189,7 @@ class TestV2OneAxisCannotDominateFour:
         front = {g for g, r in out.items() if r.pareto}
         assert "ONEAXIS" not in front, "one measurement must not reach the headline"
         assert front == {"ASGR1", "PCSK9", "SERPINA1", "TTR"}, \
-            "and it must not delete genes that have all four axes"
+            "and it must not delete genes that have every axis"
         assert out["ONEAXIS"].pareto_k == 1
         assert not out["ONEAXIS"].pareto_eligible
 
@@ -233,10 +259,7 @@ class TestWeightedScore:
         """A gene can top the weighted score and still be outside the front, and
         the app must report the front as the headline."""
         out = rank_genes({
-            "druggability": cells(A=1.0, B=0.9, C=0.8),
-            "safety": cells(A=1.0, B=0.9, C=0.8),
-            "regional_specificity": cells(A=1.0, B=0.9, C=0.8),
-            "clinical_phase": cells(A=1.0, B=0.9, C=0.8),
+            ax: cells(A=1.0, B=0.9, C=0.8) for ax in PARETO_AXES
         })
         assert out["A"].pareto and not out["B"].pareto and not out["C"].pareto
 
@@ -274,12 +297,16 @@ class TestV5TheFooterMustNotContradictTheCode:
     def test_rodent_and_clinical_phase_are_in_no_score(self) -> None:
         from targetring.rank import EXCLUDED_FROM_SCORE
         from targetring.run import RANKED_RINGS
-        assert set(EXCLUDED_FROM_SCORE) == {"rodent", "clinical_phase"}
+        # v2.2 item 4 adds `tdl` by the same D7 argument: a Pareto axis, and not
+        # a score term, because Tclin is defined by an approved drug existing —
+        # which druggability and the phase ring already weigh.
+        assert set(EXCLUDED_FROM_SCORE) == {"rodent", "clinical_phase", "tdl"}
         for ring in EXCLUDED_FROM_SCORE:
             assert ring not in DEFAULT_WEIGHTS
         assert "rodent" not in RANKED_RINGS
-        # clinical_phase stays ranked: it is a Pareto axis, just not a score term.
+        # Both stay ranked: they are Pareto axes, just not score terms.
         assert "clinical_phase" in RANKED_RINGS
+        assert "tdl" in RANKED_RINGS
 
     def test_the_rodent_ring_reaches_no_rank(self) -> None:
         from targetring.run import RANKED_RINGS

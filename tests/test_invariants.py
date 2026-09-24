@@ -426,6 +426,10 @@ class TestI7HeadlineEligibility:
             "safety": {g: v(2 * i / (n - 1) - 1) for i, g in enumerate(genes)},
             "regional_specificity": {g: v(1.0 + i) for i, g in enumerate(genes)},
             "clinical_phase": {g: v(float(i % 6)) for i, g in enumerate(genes)},
+            # v2.2 item 4: `tdl` is a Pareto axis, so omitting it here would
+            # make every gene ineligible and quietly turn this into a test of
+            # the V10 suppression path instead of the diamond readback.
+            "tdl": {g: v(float(i % 4)) for i, g in enumerate(genes)},
         }
         rankings = rank_genes(spec)
         res = render(genes=genes, cells_by_ring=spec, rankings=rankings, region="Lung",

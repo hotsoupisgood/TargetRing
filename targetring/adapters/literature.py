@@ -215,6 +215,32 @@ class EuropePMCAdapter:
         # checked now, and I5 must not count it as if it had been.
         return EPMCResult(q, cached["count"], cached["echo_ok"], None, live=False)
 
+    async def integrity_probe(self, symbol: str) -> EPMCResult:
+        """One live echo assertion, for invariant I5, with the cache bypassed.
+
+        v2.2 item 3 moves Europe PMC off the render path: it drives no ring and
+        no rank (PLAN §2, COUNCIL M6) and it was 64% of the time spent on
+        sources. But PLAN §6.5 makes the echo an invariant, and an invariant
+        that stops being evaluated is an invariant that has been relaxed --
+        I5 would read NOT_EVALUATED on every run for ever, which is exactly the
+        cry-wolf failure UX A1 is about.
+
+        So the *per-gene* Europe PMC fetch moves to the drawer and one query
+        stays on the render path to be asserted: the same query shape, the same
+        echo comparison, the cache bypassed so it is live by construction
+        (COUNCIL V11 -- a replayed echo is not a checked echo, and I6 already
+        bypasses the cache for the same reason). One call, ~1.6 s against a
+        healthy EBI, against 14 calls and ~80 s before.
+
+        What this narrows, stated because it is real: v2 asserted the echo for
+        every gene's query and this asserts it for one. A reinterpretation that
+        affected only some symbols could now be missed at render time -- it is
+        still caught on the drawer fetch for that gene, where the count is
+        actually used.
+        """
+        probe = EuropePMCAdapter(self.http, Cache(enabled=False))
+        return await probe.fetch_one(symbol, None)
+
 
 def literature_cell(rec: LiteratureRecord) -> Cell:
     """log10(1 + count). Raw counts span five orders of magnitude, so the ring

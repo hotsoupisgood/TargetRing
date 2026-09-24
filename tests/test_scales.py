@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from targetring.adapters.clinicaltrials import SOURCE_LABEL as CTGOV_SOURCE_LABEL
+from targetring.adapters.pharos import TDL_MAX
 from targetring.figure import (
     ACTIVITY_PALETTE,
     CMAP_STOPS,
@@ -28,21 +30,34 @@ from targetring.figure import (
     render,
     value_cmap,
 )
-from targetring.rank import EXTERNAL_RING_COUNT, EXTERNAL_RINGS, rank_genes
+from targetring.rank import (
+    EXTERNAL_RING_COUNT,
+    EXTERNAL_RINGS,
+    PARETO_AXES,
+    rank_genes,
+)
 from targetring.states import no_data, value
 
 SPEC = {s.key: s for s in RING_SPECS}
 
 def _axes_spec(genes):
-    """Four Pareto axes, strictly ordered, every value inside its declared
-    domain so `assert_within_domain` is not tripped by synthetic data."""
+    """Every Pareto axis, strictly ordered, every value inside its declared
+    domain so `assert_within_domain` is not tripped by synthetic data.
+
+    v2.2 item 4: `tdl` is a Pareto axis now, and a spec that omits it makes
+    every gene ineligible — which would silently turn these V10 tests into
+    tests of the suppression path rather than of what they were written for.
+    """
     n = len(genes)
-    return {
+    spec = {
         "druggability": {g: value(i / (n - 1)) for i, g in enumerate(genes)},
         "safety": {g: value(2 * i / (n - 1) - 1) for i, g in enumerate(genes)},
         "regional_specificity": {g: value(1.0 + i) for i, g in enumerate(genes)},
         "clinical_phase": {g: value(float(i % 6)) for i, g in enumerate(genes)},
+        "tdl": {g: value(float(i % (TDL_MAX + 1))) for i, g in enumerate(genes)},
     }
+    assert set(PARETO_AXES) <= set(spec), "a Pareto axis has no synthetic values"
+    return spec
 
 
 
@@ -122,14 +137,15 @@ class TestV6ScalesMeanSomething:
         so TMEM229B's k cell is maximally dark"."""
         from matplotlib.colors import to_hex
         cmap = value_cmap()
-        cells = {"A": value(5.0), "B": value(6.0), "C": value(7.0)}
+        top = float(EXTERNAL_RING_COUNT)
+        cells = {"A": value(top - 2), "B": value(top - 1), "C": value(top)}
         fills = _fill("completeness", cells)
         assert fills["A"] != to_hex(cmap(0.0)), \
-            "5 of 7 is not the bottom of the scale just because it is the lowest here"
-        # A two-step difference on a 0..7 domain covers 2/7 of the ramp, not all.
-        assert fills["C"] == to_hex(cmap(1.0)), "7 of 7 is the top, and genuinely is"
+            "k-2 is not the bottom of the scale just because it is the lowest here"
+        # A two-step difference covers 2/K of the ramp, not all of it.
+        assert fills["C"] == to_hex(cmap(1.0)), "K of K is the top, and genuinely is"
         norm = _norm_for(SPEC["completeness"], cells)
-        assert norm(5.0) == pytest.approx(5 / 7)
+        assert norm(top - 2) == pytest.approx((top - 2) / top)
 
 
 class TestFixedDomainsAreNeverSilentlyClipped:
@@ -173,7 +189,9 @@ class TestV13KCountsExternalRingsOnly:
         assert out["B"].k == 0, "a gene nothing is known about must be able to reach 0"
 
     def test_the_maximum_is_the_number_of_external_rings(self) -> None:
-        assert EXTERNAL_RING_COUNT == 7
+        # v2.2 item 4 added `tdl`, the eighth external ring.
+        assert EXTERNAL_RING_COUNT == 8
+        assert "tdl" in EXTERNAL_RINGS
         assert "logfc" not in EXTERNAL_RINGS and "neg_log10_padj" not in EXTERNAL_RINGS
         assert "completeness" not in EXTERNAL_RINGS
         assert SPEC["completeness"].domain == (0.0, float(EXTERNAL_RING_COUNT))
@@ -216,8 +234,15 @@ class TestV12CategoricalActivityRing:
                region="Liver", out_svg=tmp_path / "a.svg", input_count=3,
                rendered_count=3, ledger_counts={})
         body = (tmp_path / "a.svg").read_text()
-        for label in ("stopped for cause", "dormant", "active"):
+        for label in ("stopped early", "dormant", "live trial"):
             assert label in body
+        # v2.2 item 2, Puck's first hard condition: the ring must state which
+        # source it counted, on the figure, because CT.gov is a different
+        # population from AACT and the numbers are not continuous with it.
+        assert CTGOV_SOURCE_LABEL in body
+        assert "cause NOT categorised" in body, (
+            "CT.gov has no categorised stop reason, so the -1 state must not "
+            "claim one (COUNCIL D4)")
 
 
 class TestV17SignedRingHasAZeroAnchor:

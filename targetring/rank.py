@@ -38,6 +38,12 @@ RING_SIGN: dict[str, int] = {
     "regional_specificity": +1,
     "clinical_phase": +1,
     "clinical_activity": +1,
+    # v2.2 item 4. Tclin > Tchem > Tbio > Tdark, pointed +1: a target somebody
+    # has already drugged is a better prospect than one nobody has looked at.
+    # That is an assertion about desirability, like every other sign here, and
+    # COUNCIL S1's caveat travels with it -- TDL measures development and study
+    # depth, not a pocket, so the ring is labelled for what it is.
+    "tdl": +1,
     "rodent": +1,
     "literature": +1,
     "logfc": +1,
@@ -53,13 +59,28 @@ RING_SIGN: dict[str, int] = {
 # for, and the maximum is stated on the figure.
 EXTERNAL_RINGS: tuple[str, ...] = (
     "druggability", "safety", "regional_specificity", "clinical_phase",
-    "clinical_activity", "rodent", "literature",
+    "clinical_activity", "tdl", "rodent", "literature",
 )
 EXTERNAL_RING_COUNT = len(EXTERNAL_RINGS)
 
 # PLAN §3: druggability, safety, regional specificity, and clinical/evidence.
+#
+# v2.2 item 4 adds a fifth, COUNCIL S1/V8's Pharos TDL. Two things about that,
+# both measured rather than assumed:
+#
+#  * S1's case is that TDL has no missing values inside Pharos (Tbio 12303 +
+#    Tdark 5501 + Tchem 1904 + Tclin 704 = 20,412 = the whole target count), so
+#    it is the one axis that never withdraws a gene from eligibility for want of
+#    a measurement.
+#  * It does not, by itself, make more genes eligible. Eligibility is a
+#    conjunction over the axes (COUNCIL V2), so adding an axis can only hold
+#    eligibility level or reduce it -- it holds it level exactly where Pharos
+#    has a record. What a fifth axis does change is the *front*: more axes means
+#    fewer genes are dominated, so the headline set is larger among the genes
+#    that are eligible. The before/after is measured in `docs/V2-REPORT.md`
+#    §v2.2 rather than asserted here.
 PARETO_AXES: tuple[str, ...] = (
-    "druggability", "safety", "regional_specificity", "clinical_phase",
+    "druggability", "safety", "regional_specificity", "clinical_phase", "tdl",
 )
 
 # Provisional. AGENTS.md: the defaults are a scientific choice, not a QA item,
@@ -87,6 +108,11 @@ DEFAULT_WEIGHTS: dict[str, float] = {
 EXCLUDED_FROM_SCORE: dict[str, str] = {
     "rodent": "COUNCIL M4/V5 — a lead, not a verdict; never folded into any score",
     "clinical_phase": "COUNCIL D7/V5 — a Pareto axis, deliberately not a score term",
+    # v2.2 item 4, by the same argument D7 makes for clinical_phase, and because
+    # TDL is not independent of the rings already weighted: Tclin is defined by
+    # an approved drug existing, which druggability and the phase ring already
+    # measure. Weighting it would count prior effort three times.
+    "tdl": "COUNCIL S1 / D7 by analogy — a Pareto axis, deliberately not a score term",
 }
 
 

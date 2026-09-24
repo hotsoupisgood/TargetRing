@@ -48,11 +48,14 @@ matplotlib.rcParams["svg.fonttype"] = SVG_FONTTYPE
 SAVE_RC = {"savefig.bbox": None, "savefig.pad_inches": 0.0,
            "svg.fonttype": SVG_FONTTYPE}
 
+from .adapters.clinicaltrials import SOURCE_LABEL as CTGOV_SOURCE_LABEL  # noqa: E402
+from .adapters.pharos import TDL_MAX  # noqa: E402
 from .config import MAX_GENES  # noqa: E402
 from .rank import (  # noqa: E402
     DEFAULT_WEIGHTS,
     EXCLUDED_FROM_SCORE,
     EXTERNAL_RING_COUNT,
+    PARETO_AXES,
     GeneRanking,
 )
 from .states import Cell  # noqa: E402
@@ -80,7 +83,15 @@ VALUE_CMAP = "viridis"
 CMAP_STOPS = (0.16, 0.92)
 GREYSCALE_MIN_DELTA = 0.05
 
-# COUNCIL V10. "Non-dominated" is not "good"; with four axes it mostly identifies
+# v2.2 item 4 added a fifth Pareto axis, and three places on the figure said
+# "four" in prose. A figure must not make a false claim about its own method
+# (COUNCIL V5), so the count and the names are derived from PARETO_AXES rather
+# than written out -- the next axis cannot leave a stale number behind.
+_AXIS_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}
+PARETO_AXIS_COUNT_WORD = _AXIS_WORDS.get(len(PARETO_AXES), str(len(PARETO_AXES)))
+PARETO_AXIS_NAMES = ", ".join(ax.replace("_", " ") for ax in PARETO_AXES)
+
+# COUNCIL V10. "Non-dominated" is not "good"; over a handful of axes it mostly identifies
 # unusual *combinations*, including bad ones. Measured fronts: 4 of 14 on the
 # liver set, 3 of 14 on de_realistic.csv and 5 of 7 on de_broken.csv -- where 71%
 # of the figure got a headline diamond, including GAPDH, the canonical
@@ -151,9 +162,14 @@ ACTIVITY_PALETTE: dict[float, str] = {
     1.0: "#08519c",    # active
 }
 ACTIVITY_LABELS: dict[float, str] = {
-    -1.0: "stopped for cause, nothing active",
-    0.0: "dormant — drugs exist, no active trial",
-    1.0: "active — recruiting or ongoing",
+    # v2.2 item 2. On the AACT source this state was "stopped for cause", read
+    # off Open Targets' categorised `trialStopReasonCategories`. ClinicalTrials.gov
+    # carries free-text `whyStopped` and nothing categorised, so the cause cannot
+    # be established from it and the label must not claim it can: COUNCIL D4
+    # measured that 7 of every 8 BRAF terminations say nothing about the target.
+    -1.0: "stopped early — cause NOT categorised by CT.gov",
+    0.0: "dormant — drugs exist, no live trial",
+    1.0: "live trial — recruiting or ongoing",
 }
 
 # COUNCIL V4 / V2-REPORT §2.4, and QA-v2-retest §5. The four safety keys buy
@@ -188,9 +204,21 @@ RING_SPECS: tuple[RingSpec, ...] = (
     RingSpec("clinical_phase", "Pipeline: furthest phase (attributable indications only)",
              "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence",
              domain=(0.0, 5.0)),
-    RingSpec("clinical_activity", "Pipeline: current activity",
-             "OT clinicalReports (AACT rows only)",
+    # v2.2 item 2. Puck's hard condition: the ring must state which source it
+    # counted, on the figure, because ClinicalTrials.gov is a different
+    # population from the AACT rows this ring counted until 2026-09-24 and the
+    # numbers are not continuous with them. The source is therefore in the
+    # ring's own *label* -- which reaches the numbered key on the audit render
+    # and, through the categorical legend entries, both renders -- not only in
+    # the caption and the manifest.
+    RingSpec("clinical_activity", f"Pipeline: current activity ({CTGOV_SOURCE_LABEL})",
+             "ClinicalTrials.gov v2 studies?query.intr=<drug>, hopped per drug from OT's "
+             "drug rows; NOT the AACT population used before 2026-09-24",
              categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS),
+    # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred.
+    RingSpec("tdl", "Target development level (Pharos TDL — knowledge, not a pocket)",
+             "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3",
+             domain=(0.0, float(TDL_MAX))),
     # V9: reduced to three states, so there is no count left to scale.
     # COUNCIL V15: the source is OT `mousePhenotypes` -- mouse only. PLAN §2
     # retired the rodent source citing a QA finding about IMPC, but COUNCIL S6
@@ -682,13 +710,14 @@ def _draw_headline(ax, front, n_eligible, show_diamonds, lay, y: float) -> list:
 
     Removing PCSK9 from the council's liver list promoted DDR1 -- 0 drugs, 0.05
     liver specificity -- into the headline. A reader will read a diamond as
-    "best target on this list"; it means "unbeaten on all four axes by anything
-    else you submitted".
+    "best target on this list"; it means "unbeaten on every Pareto axis by
+    anything else you submitted".
     """
     k = (lay.centre_scale if lay else 1.0)
     if not show_diamonds:
         text = (f"\u25c6 not drawn \u2014 only {n_eligible} gene(s) are eligible on all "
-                f"four axes,\nand on a list this short almost nothing is dominated")
+                f"{PARETO_AXIS_COUNT_WORD} axes,\nand on a list this short almost nothing "
+                f"is dominated")
     else:
         text = (f"\u25c6 {len(front)} of {n_eligible} eligible \u2014 membership is a "
                 f"property of\nthis list, not of the target")
@@ -803,9 +832,9 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
             break
     excluded = ", ".join(sorted(EXCLUDED_FROM_SCORE))
     notes = [
-        "HEADLINE = Pareto non-dominated set (◆), over druggability, safety, regional "
-        "specificity, furthest clinical phase. A gene needs a real value on ALL FOUR to be "
-        "eligible; genes with fewer are neither in the set nor able to remove anything from it.",
+        f"HEADLINE = Pareto non-dominated set (◆), over {PARETO_AXIS_NAMES}. A gene needs a "
+        f"real value on ALL {PARETO_AXIS_COUNT_WORD.upper()} to be eligible; genes with fewer "
+        f"are neither in the set nor able to remove anything from it.",
         f"Weighted score is a labelled CONVENIENCE, not the headline. Default weights "
         f"(provisional, unsigned-off): {w}. Excluded from every score: {excluded}.",
         f"Regional specificity = {region} TPM ÷ median across {n_tissues or 'the GTEx panel'}.",
@@ -877,11 +906,10 @@ def caption(rings, norms, weights, region, provenance, gene_flags=None,
     excluded = ", ".join(sorted(EXCLUDED_FROM_SCORE))
     lines += [
         "",
-        "Headline (\u25c6) = the Pareto non-dominated set over druggability, safety, "
-        "regional specificity and furthest clinical phase. A gene needs a real value on "
-        "all four to be eligible; genes with fewer are neither in the set nor able to "
-        "remove anything from it. Membership is a property of the submitted list, not "
-        "of the target.",
+        f"Headline (\u25c6) = the Pareto non-dominated set over {PARETO_AXIS_NAMES}. A gene "
+        f"needs a real value on all {PARETO_AXIS_COUNT_WORD} to be eligible; genes with fewer "
+        f"are neither in the set nor able to remove anything from it. Membership is a "
+        f"property of the submitted list, not of the target.",
         f"Weighted score is a labelled convenience, not the headline. Default weights "
         f"(provisional, not signed off): {w}. Excluded from every score: {excluded}.",
         "Pipeline: furthest phase counts only drugs indicated for a disease with human "
