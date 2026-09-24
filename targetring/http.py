@@ -50,14 +50,39 @@ class RateLimited(HardFailure):
 _sems: dict[str, asyncio.Semaphore] = {}
 _sems_lock: asyncio.Lock | None = None
 
+# AGENTS.md rule 9 caps concurrency at 4 per host. That is a ceiling, not a
+# target, and one host has now been measured below it.
+#
+# ClinicalTrials.gov, 2026-09-24: a cold 15-gene run at 4 concurrent hops
+# returned **HTTP 429 after 12 s**. The run failed hard, as rule 9 requires, and
+# did not retry. Two changes followed: the adapter now makes one call per drug
+# instead of three (see adapters/clinicaltrials.py), and this host is limited to
+# 2 concurrent requests with a short pause between them. Throttling is not a
+# retry loop -- nothing is re-sent, the request rate is simply lower.
+HOST_CONCURRENCY: dict[str, int] = {
+    "clinicaltrials.gov": 2,
+}
+# Seconds to wait after releasing a slot, per host. Paced, not retried.
+HOST_PACING_SECONDS: dict[str, float] = {
+    "clinicaltrials.gov": 0.25,
+}
+
 
 def _semaphore(url: str) -> asyncio.Semaphore:
     host = urlsplit(url).netloc
     sem = _sems.get(host)
     if sem is None:
-        sem = asyncio.Semaphore(MAX_CONCURRENCY_PER_HOST)
+        limit = min(HOST_CONCURRENCY.get(host, MAX_CONCURRENCY_PER_HOST),
+                    MAX_CONCURRENCY_PER_HOST)
+        sem = asyncio.Semaphore(limit)
         _sems[host] = sem
     return sem
+
+
+async def _pace(url: str) -> None:
+    delay = HOST_PACING_SECONDS.get(urlsplit(url).netloc)
+    if delay:
+        await asyncio.sleep(delay)
 
 
 class Http:
@@ -84,6 +109,7 @@ class Http:
         async with _semaphore(url):
             assert self._client is not None
             r = await self._client.get(url, params=params)
+            await _pace(url)
         _check_status(r)
         return r
 

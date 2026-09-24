@@ -48,7 +48,9 @@ SCHEMA_VERSIONS = {
     "chembl.target": "1",
     "chembl.mechanism": "1",
     "europepmc.search": "1",
-    "clinicaltrials.studies": "1",
+    # v2: one page per drug holding the whole result, instead of three filtered
+    # count calls. The cached shape changed with it (rows + completeness).
+    "clinicaltrials.studies": "2",
     "pharos.target": "1",
 }
 

@@ -89,11 +89,17 @@ LIVE_STATUSES: tuple[str, ...] = (
 # module docstring. `COMPLETED` is not here -- a completed trial is neither live
 # nor stopped early.
 STOPPED_STATUSES: tuple[str, ...] = ("TERMINATED", "SUSPENDED", "WITHDRAWN")
+# Neither live nor stopped early. Listed explicitly so that a status CT.gov
+# introduces later is a loud failure rather than a trial silently counted in
+# neither bucket.
+INERT_STATUSES: tuple[str, ...] = (
+    "COMPLETED", "UNKNOWN", "NO_LONGER_AVAILABLE", "TEMPORARILY_NOT_AVAILABLE",
+    "APPROVED_FOR_MARKETING", "WITHHELD",
+)
 
-_BUCKETS: dict[str, tuple[str, ...]] = {
-    "live": LIVE_STATUSES,
-    "stopped": STOPPED_STATUSES,
-}
+# One page, sized to hold a whole result. Measured maxima 2026-09-24: sorafenib
+# 885, erlotinib 875, vemurafenib 169.
+CTGOV_PAGE_SIZE = 1000
 
 
 @dataclass
@@ -108,10 +114,20 @@ class CTDrug:
     live_rows: list[dict[str, Any]] = field(default_factory=list)
     stopped_rows: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
+    # False when CT.gov holds more studies for this drug than the page budget
+    # read. The counts are then a floor, never a total: they can still
+    # *establish* a live trial, and can never establish that there is none.
+    complete: bool = True
 
     @property
     def ok(self) -> bool:
+        """It answered at all."""
         return self.error is None and self.n_total is not None
+
+    @property
+    def conclusive(self) -> bool:
+        """It answered, and the answer covers every study CT.gov holds."""
+        return self.ok and self.complete
 
     @property
     def sponsors(self) -> list[str]:
@@ -133,16 +149,17 @@ def _study(node: dict[str, Any]) -> dict[str, Any]:
     p = node.get("protocolSection") or {}
     status = p.get("statusModule") or {}
     conditions = (p.get("conditionsModule") or {}).get("conditions") or []
+    ident = p.get("identificationModule") or {}
     return {
-        "nct_id": (p.get("identificationModule") or {}).get("nctId"),
+        "nct_id": ident.get("nctId"),
         "status": status.get("overallStatus"),
         # Free text from the sponsor. Data, never an instruction (rule 5).
         "why_stopped": status.get("whyStopped"),
         "sponsor": ((p.get("sponsorCollaboratorsModule") or {}).get("leadSponsor") or {}).get("name"),
         "conditions": [str(c) for c in conditions][:4],
         "phases": [str(x) for x in ((p.get("designModule") or {}).get("phases") or [])],
-        "url": (f"https://clinicaltrials.gov/study/{(p.get('identificationModule') or {}).get('nctId')}"
-                if (p.get("identificationModule") or {}).get("nctId") else None),
+        "url": (f"https://clinicaltrials.gov/study/{ident['nctId']}"
+                if ident.get("nctId") else None),
     }
 
 
@@ -152,6 +169,17 @@ def intervention_query(drug: str) -> str:
     if not cleaned:
         raise HardFailure("empty drug name; refusing to query ClinicalTrials.gov for it")
     return f'"{cleaned}"'
+
+
+def summarise(studies: list[dict[str, Any]]) -> dict[str, Any]:
+    """Split one drug's studies into the two buckets the ring reads."""
+    live = [s for s in studies if s["status"] in LIVE_STATUSES]
+    stopped = [s for s in studies if s["status"] in STOPPED_STATUSES]
+    return {
+        "n_live": len(live), "n_stopped": len(stopped),
+        "live_rows": live[:CTGOV_ROWS_PER_BUCKET],
+        "stopped_rows": stopped[:CTGOV_ROWS_PER_BUCKET],
+    }
 
 
 class CTGovAdapter:
@@ -176,81 +204,93 @@ class CTGovAdapter:
         return {r.drug: r for r in results}
 
     async def _one(self, drug: str) -> CTDrug:
+        """**One** request per drug, and the reason is measured.
+
+        The first implementation used three: a total, and one filtered count per
+        status bucket, so that every count came from `countTotal` and none from
+        the size of a page. On a cold 15-gene council run that is 480 requests,
+        and ClinicalTrials.gov answered **HTTP 429 after 12 s**. Rule 9 says a
+        429 is a hard run failure and never a retry loop, so the run stopped --
+        correctly, and uselessly.
+
+        One request per drug instead, asking for a page large enough to hold the
+        whole result: `pageSize=1000` against a measured maximum of 885
+        (sorafenib) and 875 (erlotinib). `totalCount` is still read and still
+        checked against the page, so the counts are exact *because the page is
+        the whole set*, not because a sample was assumed to be one. When a drug
+        has more studies than one page holds, `complete` goes False and the
+        counts become a floor that can establish a live trial and can never
+        establish the absence of one.
+        """
         try:
             q = intervention_query(drug)
         except HardFailure as e:
             return CTDrug(drug, "", error=describe(e))
         rec = CTDrug(drug, q)
         try:
-            total, _ = await self._count(q, None, rows=0)
-            rec.n_total = total
-            if total == 0:
-                # CT.gov knows this drug name not at all. Absence of data about
-                # the drug, not evidence that nobody is trialling the target.
-                rec.n_live = rec.n_stopped = 0
-                return rec
-            (rec.n_live, rec.live_rows), (rec.n_stopped, rec.stopped_rows) = await asyncio.gather(
-                self._count(q, _BUCKETS["live"], rows=CTGOV_ROWS_PER_BUCKET),
-                self._count(q, _BUCKETS["stopped"], rows=CTGOV_ROWS_PER_BUCKET),
-            )
+            body = await self._studies(q)
         except RateLimited:
             # AGENTS.md rule 9. Never a retry loop, never a quiet empty ring.
             raise
         except Exception as e:  # noqa: BLE001 -- recorded, surfaced as `failed`
             rec.error = describe(e)
+            return rec
+        rec.n_total = body["total"]
+        rec.complete = body["complete"]
+        parsed = summarise(body["rows"])
+        rec.n_live = parsed["n_live"]
+        rec.n_stopped = parsed["n_stopped"]
+        rec.live_rows = parsed["live_rows"]
+        rec.stopped_rows = parsed["stopped_rows"]
         return rec
 
-    async def _count(
-        self, query: str, statuses: tuple[str, ...] | None, rows: int
-    ) -> tuple[int, list[dict[str, Any]]]:
-        """Exact count for one status bucket, plus up to `rows` examples.
-
-        The count comes from `countTotal`, never from `len(studies)`: a page is
-        a sample and a sampled count on a ring is a plausible wrong figure.
-        """
-        bucket = ",".join(statuses) if statuses else "all"
-        key = f"{query}|{bucket}|{rows}"
-        cached = self.cache.get(self.source, key)
-        if cached is None:
-            params: dict[str, Any] = {
-                "query.intr": query,
-                "fields": CTGOV_FIELDS,
-                # CT.gov rejects pageSize=0; one row is the cheapest legal page.
-                "pageSize": max(rows, 1),
-                "countTotal": "true",
-            }
-            if statuses:
-                params["filter.overallStatus"] = ",".join(statuses)
-            self.hops += 1
-            r = await self.http.get(CTGOV_STUDIES, params)
-            body = json_or_raise(r)
-            total = body.get("totalCount")
-            if not isinstance(total, int):
-                raise HardFailure(
-                    f"ClinicalTrials.gov returned no integer `totalCount` for {query!r} "
-                    f"(keys: {sorted(body)}); the count is the ring, so refusing it"
-                )
-            studies = body.get("studies")
-            if studies is None:
-                raise HardFailure(
-                    f"ClinicalTrials.gov returned no `studies` key for {query!r}")
-            parsed = [_study(s) for s in studies]
-            if statuses:
-                # The ChEMBL lesson (adapters/chembl.py): a filter that silently
-                # fails to apply turns a typo into a confident wrong answer.
-                # CT.gov 400s on an unknown *parameter* (probed), which does not
-                # prove an unknown *value* narrows anything.
-                wrong = sorted({p["status"] for p in parsed
-                                if p["status"] and p["status"] not in statuses})
-                if wrong:
-                    raise HardFailure(
-                        f"ClinicalTrials.gov returned statuses {wrong} for a query filtered "
-                        f"to {list(statuses)}; the status filter did not apply, so this "
-                        f"count is not the count that was asked for"
-                    )
-            cached = {"total": total, "rows": parsed[:rows]}
-            self.cache.put(self.source, key, cached)
-        return cached["total"], list(cached.get("rows") or [])
+    async def _studies(self, query: str) -> dict[str, Any]:
+        cached = self.cache.get(self.source, query)
+        if cached is not None:
+            return cached
+        params: dict[str, Any] = {
+            "query.intr": query,
+            "fields": CTGOV_FIELDS,
+            "pageSize": CTGOV_PAGE_SIZE,
+            "countTotal": "true",
+        }
+        self.hops += 1
+        r = await self.http.get(CTGOV_STUDIES, params)
+        body = json_or_raise(r)
+        total = body.get("totalCount")
+        if not isinstance(total, int):
+            raise HardFailure(
+                f"ClinicalTrials.gov returned no integer `totalCount` for {query!r} "
+                f"(keys: {sorted(body)}); the count is the ring, so refusing it"
+            )
+        studies = body.get("studies")
+        if studies is None:
+            raise HardFailure(
+                f"ClinicalTrials.gov returned no `studies` key for {query!r}")
+        rows = [_study(s) for s in studies]
+        if len(rows) > total:
+            # A page larger than the stated total means one of the two numbers
+            # is not what it claims. Refuse rather than pick.
+            raise HardFailure(
+                f"ClinicalTrials.gov returned {len(rows)} studies for {query!r} but a "
+                f"totalCount of {total}; the two disagree, so neither is usable"
+            )
+        # Every status must be one this build knows, or a count over the two
+        # buckets silently drops trials into neither. An unknown status is a
+        # fact we do not have.
+        unknown = sorted({s["status"] for s in rows
+                          if s["status"] and s["status"] not in LIVE_STATUSES
+                          and s["status"] not in STOPPED_STATUSES
+                          and s["status"] not in INERT_STATUSES})
+        if unknown:
+            raise HardFailure(
+                f"ClinicalTrials.gov returned overall statuses this build does not "
+                f"classify for {query!r}: {unknown}. Counting them as neither live nor "
+                f"stopped would silently drop them from the ring."
+            )
+        payload = {"total": total, "rows": rows, "complete": len(rows) >= total}
+        self.cache.put(self.source, query, payload)
+        return payload
 
 
 # --- the ring ---------------------------------------------------------------
@@ -277,9 +317,10 @@ def activity_cell(
     that seven of every eight BRAF terminations say nothing about the target.
 
     Partial answers are resolved in the only safe direction. One live trial
-    establishes "active" whatever else failed, because the evidence is positive
-    and monotone. "Dormant" and "stopped" are claims about *every* drug, so a
-    single failed hop makes them unknowable and the cell is `failed`.
+    establishes "live" whatever else failed, because the evidence is positive
+    and monotone. "Dormant" and "stopped" are claims about *every* drug and
+    every study, so one hop that failed -- or one that came back truncated --
+    makes them unknowable and the cell is `failed`.
     """
     if not drug_count:
         return not_applicable(f"no drugs, so there is no activity to report ({SOURCE_LABEL})")
@@ -300,6 +341,9 @@ def activity_cell(
     ok = [r for r in known if r.ok]
     broken = [r for r in known if not r.ok]
     missing = [d for d in drug_names if d not in by_drug]
+    # Answered, but CT.gov holds more studies than one page carried. Its counts
+    # are a floor: good enough to prove a live trial, never to disprove one.
+    truncated = [r for r in ok if not r.complete]
 
     n_live = sum(r.n_live or 0 for r in ok)
     n_stopped = sum(r.n_stopped or 0 for r in ok)
@@ -326,11 +370,17 @@ def activity_cell(
             + (f" (first: {broken[0].drug} — {str(broken[0].error)[:90]})" if broken else "")
             + "."
         )
+    if truncated:
+        incomplete += (
+            f" {len(truncated)} drug(s) have more studies than one page holds "
+            f"({', '.join(r.drug for r in truncated[:3])}), so their counts are a floor."
+        )
 
     raw = {
         "source": SOURCE_LABEL,
         "n_live": n_live, "n_stopped": n_stopped, "n_trials": n_total,
         "n_drugs_hopped": len(ok), "n_drugs_failed": len(broken) + len(missing),
+        "n_drugs_truncated": len(truncated),
         "live_drugs": live_drugs, "sponsors": sponsors[:12],
     }
 
@@ -345,14 +395,17 @@ def activity_cell(
                        f"CT.gov — the free text is in the drawer)")
         return value(1.0, detail + incomplete + source_note, raw=raw)
 
-    # From here on the claim is about every drug, so an unanswered hop is fatal
-    # to it. "We asked and could not find out" is not "nothing is running".
-    if broken or missing:
-        names = [r.drug for r in broken] + missing
+    # From here on the claim is about every drug and every study, so an
+    # unanswered or truncated hop is fatal to it. "We asked and could not find
+    # out" is not "nothing is running".
+    if broken or missing or truncated:
+        names = [r.drug for r in broken] + missing + [r.drug for r in truncated]
+        why = ("did not answer" if (broken or missing)
+               else f"returned more studies than one {CTGOV_PAGE_SIZE}-row page holds")
         return failed(
-            f"{len(names)} of {len(drug_names)} drug(s) did not answer {SOURCE_LABEL}, and "
-            f"no live trial was found among the {len(ok)} that did. 'Dormant' and 'stopped' "
-            f"are claims about every drug, so this is unknown rather than either: "
+            f"{len(names)} of {len(drug_names)} drug(s) {why} on {SOURCE_LABEL}, and no "
+            f"live trial was found among the rest. 'Dormant' and 'stopped' are claims "
+            f"about every drug, so this is unknown rather than either: "
             f"{', '.join(names[:4])}."
             + (f" First error: {str(broken[0].error)[:120]}" if broken else "")
         )
@@ -435,5 +488,6 @@ def drawer_trials(drug_names: list[str], by_drug: dict[str, CTDrug]) -> dict[str
 
 __all__ = [
     "CTGovAdapter", "CTDrug", "activity_cell", "drawer_trials", "intervention_query",
-    "SOURCE_LABEL", "LIVE_STATUSES", "STOPPED_STATUSES", "CTGOV_FIELDS",
+    "SOURCE_LABEL", "LIVE_STATUSES", "STOPPED_STATUSES", "INERT_STATUSES",
+    "CTGOV_FIELDS", "CTGOV_PAGE_SIZE", "summarise",
 ]
