@@ -1,0 +1,1 @@
+{"source": "clinicaltrials.studies", "key": "\"AV-412\"|TERMINATED,SUSPENDED,WITHDRAWN|20", "body": {"total": 1, "rows": [{"nct_id": "NCT00381654", "status": "TERMINATED", "why_stopped": "Study did not meet pre-specified objectives.", "sponsor": "AVEO Pharmaceuticals, Inc.", "conditions": ["Tumor"], "phases": ["PHASE1"], "url": "https://clinicaltrials.gov/study/NCT00381654"}]}}

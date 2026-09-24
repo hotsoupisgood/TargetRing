@@ -47,8 +47,7 @@ class RateLimited(HardFailure):
     """A 429. AGENTS.md rule 9: never a retry loop, always a run failure."""
 
 
-_sems: dict[str, asyncio.Semaphore] = {}
-_sems_lock: asyncio.Lock | None = None
+_sems: dict[tuple[asyncio.AbstractEventLoop, str], asyncio.Semaphore] = {}
 
 # AGENTS.md rule 9 caps concurrency at 4 per host. That is a ceiling, not a
 # target, and one host has now been measured below it.
@@ -69,13 +68,27 @@ HOST_PACING_SECONDS: dict[str, float] = {
 
 
 def _semaphore(url: str) -> asyncio.Semaphore:
+    """The per-host gate, keyed by **(event loop, host)**.
+
+    Found 2026-09-24 running six fixtures in one process: an `asyncio.Semaphore`
+    binds to the loop that first blocks on it, so a module-level one shared
+    across `asyncio.run()` calls raises
+    `RuntimeError: <Semaphore ...> is bound to a different event loop` on the
+    second run. It was latent while every host was capped at 4 and contention
+    was rare; throttling clinicaltrials.gov to 2 made it certain, and the
+    council run died on it. The loop is part of the key now, and closed loops
+    are dropped so the map cannot grow without bound.
+    """
+    loop = asyncio.get_running_loop()
+    for key in [k for k in _sems if k[0] is not loop and k[0].is_closed()]:
+        del _sems[key]
     host = urlsplit(url).netloc
-    sem = _sems.get(host)
+    sem = _sems.get((loop, host))
     if sem is None:
         limit = min(HOST_CONCURRENCY.get(host, MAX_CONCURRENCY_PER_HOST),
                     MAX_CONCURRENCY_PER_HOST)
         sem = asyncio.Semaphore(limit)
-        _sems[host] = sem
+        _sems[(loop, host)] = sem
     return sem
 
 

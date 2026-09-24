@@ -1,0 +1,1 @@
+{"source": "clinicaltrials.studies", "key": "\"CUDC-101\"|TERMINATED,SUSPENDED,WITHDRAWN|20", "body": {"total": 1, "rows": [{"nct_id": "NCT01702285", "status": "TERMINATED", "why_stopped": null, "sponsor": "Curis, Inc.", "conditions": ["Cancer"], "phases": ["PHASE1"], "url": "https://clinicaltrials.gov/study/NCT01702285"}]}}

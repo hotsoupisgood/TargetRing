@@ -157,3 +157,55 @@ class _FakeHttp(Http):
     def __init__(self, transport) -> None:
         import httpx
         super().__init__(httpx.AsyncClient(transport=transport))
+
+
+class TestThePerHostGateSurvivesMoreThanOneEventLoop:
+    """Found running six fixtures in one process, 2026-09-24: an
+    `asyncio.Semaphore` binds to the loop that first blocks on it, so a
+    module-level one shared across `asyncio.run()` calls raised
+    `RuntimeError: ... is bound to a different event loop` on the second run.
+    Latent while every host was capped at 4; certain once clinicaltrials.gov was
+    throttled to 2.
+    """
+
+    def test_two_sequential_runs_do_not_share_a_bound_semaphore(self) -> None:
+        import asyncio
+
+        from targetring.http import _semaphore
+
+        async def contend() -> None:
+            sem = _semaphore("https://clinicaltrials.gov/api/v2/studies")
+
+            async def hold() -> None:
+                async with sem:
+                    await asyncio.sleep(0.01)
+
+            await asyncio.gather(*(hold() for _ in range(6)))
+
+        asyncio.run(contend())
+        asyncio.run(contend())  # this is the call that used to raise
+
+    def test_the_gate_still_caps_at_the_host_limit(self) -> None:
+        import asyncio
+
+        from targetring.http import HOST_CONCURRENCY, _semaphore
+
+        peak = 0
+
+        async def go() -> None:
+            nonlocal peak
+            sem = _semaphore("https://clinicaltrials.gov/api/v2/studies")
+            live = 0
+
+            async def one() -> None:
+                nonlocal live, peak
+                async with sem:
+                    live += 1
+                    peak = max(peak, live)
+                    await asyncio.sleep(0.01)
+                    live -= 1
+
+            await asyncio.gather(*(one() for _ in range(10)))
+
+        asyncio.run(go())
+        assert peak <= HOST_CONCURRENCY["clinicaltrials.gov"]
