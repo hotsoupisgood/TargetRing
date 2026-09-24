@@ -1403,7 +1403,7 @@ and the attribution gate, neither of which is new.
 **Ring count.** Nine external rings now, so k is drawn on 0..9 and
 `EXTERNAL_RING_COUNT` is 9. Twelve rings on the figure.
 
-**Evidence:** `TestDrugPipelineRings` and `TestSparsePrioritisationKeys` updated
+**Evidence:** `TestMissingIsNotLow` and `TestSparsePrioritisationKeys` updated
 to the split (including a new
 `test_m7_the_split_is_real_in_every_structure_that_ranks`, which asserts the
 probe ring is absent from `PARETO_AXES`, `DEFAULT_WEIGHTS` and `RANKED_RINGS`),
