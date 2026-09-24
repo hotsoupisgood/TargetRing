@@ -68,9 +68,18 @@ def run_table(page, which: str, region: str = "Lung") -> None:
     _go(page, region)
 
 
-def run_text(page, table: str, region: str) -> None:
+def run_text(page, table: str, region: str, filters: str = "",
+             drop_no_data: bool = False, ordering: str = "") -> None:
     page.goto(APP, wait_until="networkidle")
     page.fill("#table", table)
+    # v2.5. The filter box and the spoke-order select are part of a run now, so
+    # a screenshot of a filtered figure is driven the way a user drives it.
+    if filters:
+        page.fill("#filters", filters)
+    if drop_no_data:
+        page.check("#drop-no-data")
+    if ordering:
+        page.select_option("#ordering", ordering)
     _go(page, region)
 
 
@@ -156,6 +165,30 @@ def main() -> int:
         top(page)
         page.wait_for_timeout(400)
         shot(page, "7b-ring-key-sources.png")
+
+        # 3d. v2.5 item 2: the same list, filtered. Two thresholds, one of them
+        #     on a ring several of these genes have no value for, so the figure
+        #     carries both outcomes at once -- genes removed into the ledger and
+        #     genes kept and marked ~ because the filter could not be evaluated.
+        print("5d/10 the council list with two threshold filters active")
+        run_text(page, COUNCIL_LIST, "Liver",
+                 filters="literature >= 2\nregional_specificity >= 0.5")
+        top(page)
+        shot(page, "8-filtered-figure.png")
+        page.click('.tab[data-tab="ledger"]')
+        top(page)
+        shot(page, "8b-filtered-ledger.png")
+        page.click('.tab[data-tab="figure"]')
+        marked = page.evaluate(
+            "Object.entries(RUN.genes).find(([, g]) => g.unfiltered_rings.length)?.[0]")
+        if marked:
+            page.evaluate(f"openDrawer({marked!r})")
+            page.wait_for_selector("#drawer:not([hidden])")
+            page.wait_for_timeout(700)
+            shot(page, "8c-drawer-kept-not-filtered.png")
+            page.click("#drawer-close")
+        else:
+            print("  (no gene was kept-unevaluated on this run; 8c not retaken)")
 
         # 4. The deliberately broken input: counts + drop ledger.
         print("6/8 broken input, drop ledger")

@@ -70,6 +70,7 @@ class TestPalette:
 def _claims(res=None, **over):
     """The claims I7 checks, built the way run.py builds them."""
     return {
+        "ordering": "submitted", "submitted_order": list(GENES),
         "ordering_note": res.ordering_note if res is not None else ORDER_NOTE,
         "filter_notes": list(res.filter_notes) if res is not None else [],
         "n_filtered": 0, "n_kept_unevaluated": 0, **over,
@@ -423,6 +424,52 @@ class TestI7TheFigureStatesWhatItDid:
         assert i7.outcome == "PASS", i7.detail
         assert "1 active filter(s) named on it" in i7.detail
         assert "3 gene(s) filtered into the ledger" in i7.detail
+
+    def test_fails_when_the_spokes_are_not_in_the_order_the_figure_claims(
+            self, tmp_path: Path) -> None:
+        """The order is re-derived from values.csv, so a figure that *says*
+        alphabetical and draws something else fails here instead of being
+        believed. GENES is already alphabetical, so this draws it backwards
+        under an alphabetical caption."""
+        note = "spoke order: alphabetical by gene symbol"
+        backwards = list(reversed(GENES))
+        spec = _spec()
+        res = render(genes=backwards, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Lung", out_svg=tmp_path / "w.svg", input_count=4,
+                     rendered_count=4, ledger_counts={}, ordering_note=note)
+        rep = check_all(svg_path=tmp_path / "w.svg", csv_rows=res.csv_rows,
+                        gene_order=backwards, input_count=4, rendered_count=4,
+                        ledger_count=0,
+                        figure_claims=_claims(res, ordering="alphabetical",
+                                              submitted_order=backwards))
+        i7 = next(r for r in rep.results if r.id == "I7")
+        assert i7.outcome == "FAIL"
+        assert "spokes are in 'alphabetical' order and they are not" in i7.detail
+
+    def test_the_order_check_reads_the_drawn_values_not_the_ordering_code(
+            self, rendered) -> None:
+        """A submitted order that disagrees with what was drawn is caught even
+        though `order_for_figure` is not consulted for it."""
+        i7 = self._run(rendered, _claims(submitted_order=list(reversed(GENES))))
+        assert i7.outcome == "FAIL"
+        assert "re-derived from values.csv" in i7.detail
+
+    def test_a_single_ring_order_is_checked_against_that_rings_values(
+            self, tmp_path: Path) -> None:
+        from targetring.order import RING_PREFIX, order_for_figure
+        spec = _spec()
+        want = order_for_figure(GENES, spec, f"{RING_PREFIX}regional_specificity")
+        note = ("spoke order: by the 'regional_specificity' ring, best first; "
+                "genes with no value on it are last")
+        res = render(genes=want, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Lung", out_svg=tmp_path / "r.svg", input_count=4,
+                     rendered_count=4, ledger_counts={}, ordering_note=note)
+        claims = _claims(res, ordering=f"{RING_PREFIX}regional_specificity")
+        rep = check_all(svg_path=tmp_path / "r.svg", csv_rows=res.csv_rows,
+                        gene_order=want, input_count=4, rendered_count=4,
+                        ledger_count=0, figure_claims=claims)
+        assert next(r for r in rep.results if r.id == "I7").outcome == "PASS"
+        assert want != list(GENES), "otherwise this test proves nothing"
 
     def test_absent_claims_are_not_evaluated_not_passed(self, rendered) -> None:
         i7 = self._run(rendered, None)

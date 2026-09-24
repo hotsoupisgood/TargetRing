@@ -225,7 +225,8 @@ def check_all(
     rep.results.append(_i4_accounting(input_count, rendered_count, ledger_count))
     rep.results.append(_i5_literature(literature_audit))
     rep.results.append(_i6_regression(regression))
-    rep.results.append(_i7_figure_states_what_it_did(figure_claims, svg_path))
+    rep.results.append(
+        _i7_figure_states_what_it_did(figure_claims, svg_path, csv_rows))
     return rep
 
 
@@ -427,8 +428,52 @@ def _i6_regression(reg: dict[str, Any] | None) -> Result:
     return Result("I6", "five-ID regression", "FAIL", reg.get("detail", "failed"))
 
 
+def _spokes_follow_the_stated_order(claims: dict[str, Any],
+                                    csv_rows: Sequence[dict[str, Any]]) -> str:
+    """Re-derive the spoke order from the drawn values and compare.
+
+    The data comes out of the CSV of what was actually drawn, the way I1 and I3
+    take theirs, so this survives a regression in the ordering code rather than
+    asking that code whether it did its job.
+    """
+    from .order import ALPHABETICAL, SUBMITTED, is_ring_ordering, order_for_figure
+    from .states import Cell
+
+    ordering = claims.get("ordering") or SUBMITTED
+    submitted = list(claims.get("submitted_order") or ())
+    drawn: dict[int, str] = {}
+    cells: dict[str, dict[str, Cell]] = {}
+    for r in csv_rows:
+        drawn.setdefault(int(r["spoke_index"]), r["gene"])
+        ring = cells.setdefault(r["ring"], {})
+        ring[r["gene"]] = Cell(r["state"],
+                               float(r["value"]) if r["value"] != "" else None, "")
+    got = [drawn[i] for i in sorted(drawn)]
+    if not got:
+        return ""
+
+    if ordering == SUBMITTED:
+        if not submitted:
+            return ""
+        want = [g for g in submitted if g in set(got)]
+    elif ordering == ALPHABETICAL:
+        want = sorted(got)
+    elif is_ring_ordering(ordering):
+        # The submitted order is the documented tie-break, so it has to be the
+        # input here too or a legitimate tie reads as a mis-ordering.
+        base = [g for g in submitted if g in set(got)] or got
+        want = order_for_figure(base, cells, ordering)
+    else:
+        return ""
+    if want != got:
+        return (f"the figure says its spokes are in {ordering!r} order and they are not: "
+                f"drawn {got[:6]}, expected {want[:6]} (re-derived from values.csv)")
+    return ""
+
+
 def _i7_figure_states_what_it_did(
-    claims: dict[str, Any] | None, svg_path: Path | None
+    claims: dict[str, Any] | None, svg_path: Path | None,
+    csv_rows: Sequence[dict[str, Any]] = (),
 ) -> Result:
     """COUNCIL V5, and v2.5 item 2 — the figure states what it actually did.
 
@@ -446,9 +491,13 @@ def _i7_figure_states_what_it_did(
 
     1. **No headline marker survives the ranking.** Nothing is ranked, so a ◆
        anywhere in the artefact is a claim with nothing behind it.
-    2. **The spoke order is stated on the figure**, and the sentence printed is
-       the ordering the run actually used. An order that carries meaning and is
-       not stated is the same defect as an unlabelled colour scale.
+    2. **The spoke order is stated on the figure**, the sentence printed is the
+       ordering the run used, and **the spokes are actually in that order** --
+       re-derived from the CSV of drawn values, so a figure that says
+       "alphabetical" and draws something else fails here rather than being
+       believed. An order that carries meaning and is not stated is the same
+       defect as an unlabelled colour scale; an order that is stated wrongly is
+       worse.
     3. **Every active threshold filter is named on the figure.** A filtered plot
        that does not say so reads as the whole submitted set -- a plausible wrong
        figure, which AGENTS.md calls the worst possible output.
@@ -486,6 +535,10 @@ def _i7_figure_states_what_it_did(
             f"the run ordered the spokes by {ordering!r} and the figure does not say so "
             f"anywhere in its own text.")
 
+    wrong = _spokes_follow_the_stated_order(claims, csv_rows)
+    if wrong:
+        return Result("I7", "the figure states what it did", "FAIL", wrong)
+
     missing = [f for f in (claims.get("filter_notes") or []) if f not in body]
     if missing:
         return Result(
@@ -500,7 +553,7 @@ def _i7_figure_states_what_it_did(
     return Result(
         "I7", "the figure states what it did", "PASS",
         f"no headline marker survives the ranking; the spoke order is printed on the "
-        f"figure ({ordering}); "
+        f"figure ({ordering}) and the spokes follow it; "
         + (f"{n_filters} active filter(s) named on it, {n_filtered} gene(s) filtered into "
            f"the ledger and {n_marked} kept and marked for having no data on a filtered ring"
            if n_filters else "no threshold filter was active"))

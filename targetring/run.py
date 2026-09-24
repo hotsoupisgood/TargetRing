@@ -501,6 +501,11 @@ async def run_analysis(
         regression=regression,
         literature_audit=lit_audit,
         figure_claims={
+            "ordering": ordering,
+            # The order his table arrived in, which is both the default ordering
+            # and the documented tie-break for the others. I7 re-derives the
+            # expected spoke order from this and the drawn values.
+            "submitted_order": genes,
             "ordering_note": fig_result.ordering_note,
             "filter_notes": list(fig_result.filter_notes),
             "n_filtered": len(outcome.drops),
