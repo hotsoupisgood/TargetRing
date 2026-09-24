@@ -367,3 +367,67 @@ class TestNothingIsClippedAtTheCanvasEdge:
         with pytest.raises(AssertionError, match="runs off the edge"):
             assert_text_within_canvas(fig, [bad])
         plt.close(fig)
+
+
+class TestTheSafetyCaveatReachesBothRenders:
+    """QA-v2-retest §5. V2 §2.4's central move was renaming the safety ring to
+    "Safety flags & constraint — NOT evidence of safety". The rename reached
+    `values.csv` and `caption.txt` and reached neither picture: the audit
+    figure's ring key truncated it at 34 characters to
+    "Safety flags & constraint — NOT e…", and the slide render carries no ring
+    key at all, so the artefact that goes in front of colleagues had the ring
+    and not the thing that qualifies it.
+
+    The four safety keys buy comparability across genes; they do not separate a
+    clean target from an unstudied one. A figure that shows the ring and drops
+    the caveat overstates its data, which is the one thing AGENTS.md forbids —
+    "Say this on the figure, not only in the report".
+    """
+
+    def _svg_text(self, svg: Path) -> str:
+        """Every string the SVG actually renders, in order, with runs of
+        whitespace collapsed.
+
+        Read out of the `<text>` elements rather than off the file, so nothing
+        passes on a string that is in the source and not drawn. Matplotlib emits
+        one element per line, so whitespace is collapsed across them: a caveat
+        that *wraps* is intact, a caveat that is *elided* is not, and this has
+        to be able to tell those two apart.
+        """
+        root = ET.parse(svg).getroot()
+        ns = "{http://www.w3.org/2000/svg}"
+        return re.sub(
+            r"\s+", " ",
+            " ".join("".join(el.itertext()) for el in root.iter(f"{ns}text")))
+
+    @pytest.mark.parametrize("layout", ["audit", "slide"])
+    def test_the_caveat_is_in_the_render(self, tmp_path: Path, layout: str) -> None:
+        from targetring.figure import SAFETY_RING_CAVEAT
+        _, svg = _render(tmp_path, layout)
+        assert SAFETY_RING_CAVEAT in self._svg_text(svg), (
+            f"the {layout} render draws the safety ring without the caveat that "
+            f"qualifies it")
+
+    def test_the_audit_key_no_longer_truncates_it(self, tmp_path: Path) -> None:
+        """The specific v2 artefact: "…& constraint — NOT e…" in the ring key."""
+        _, svg = _render(tmp_path, "audit")
+        text = self._svg_text(svg)
+        assert "NOT e…" not in text, "truncated mid-caveat, as in v2"
+        assert "Safety flags & constraint" in text
+
+    def test_the_caption_still_carries_it_too(self, tmp_path: Path) -> None:
+        """The slide's caption is not where the caveat lives, but it must not
+        have lost it in the move either."""
+        from targetring.figure import SAFETY_RING_CAVEAT
+        res, _ = _render(tmp_path, "slide")
+        assert SAFETY_RING_CAVEAT in res.caption
+
+    def test_a_long_ring_label_wraps_rather_than_eliding(self, tmp_path: Path) -> None:
+        """The mechanism, in isolation: truncation is never the answer for a
+        label whose tail is a caveat."""
+        from targetring.figure import _key_lines
+        lines = _key_lines("4. ", "Safety flags & constraint — NOT evidence of safety",
+                           "[-1, 1]")
+        assert len(lines) > 1, "wrapped, not shortened"
+        assert "NOT evidence of safety" in " ".join(l.strip() for l in lines)
+        assert "…" not in "".join(lines)

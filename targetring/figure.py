@@ -156,6 +156,14 @@ ACTIVITY_LABELS: dict[float, str] = {
     1.0: "active — recruiting or ongoing",
 }
 
+# COUNCIL V4 / V2-REPORT §2.4, and QA-v2-retest §5. The four safety keys buy
+# comparability across genes, not the ability to tell a clean target from an
+# unstudied one: Open Targets not holding a safety-event record is a fact about
+# Open Targets. This string is the caveat that says so, and it is checked onto
+# both renders rather than trusted to a label that something downstream might
+# truncate.
+SAFETY_RING_CAVEAT = "NOT evidence of safety"
+
 RING_SPECS: tuple[RingSpec, ...] = (
     # V17: logFC is signed and had no zero anchor, so GFAP at -3.3 rendered
     # darkest and TTR at +3.1 brightest -- a strongly down-regulated gene read
@@ -722,7 +730,7 @@ def _draw_legend(fig, rings, norms, cmap, lay) -> list:
     for i, spec in enumerate(rings, start=1):
         n = norms.get(spec.key)
         rng = f"[{n.vmin:.3g}, {n.vmax:.3g}]" if n else "no values"
-        lines.append(f"{i}. {_short(spec.label)}  {rng}")
+        lines.extend(_key_lines(f"{i}. ", spec.label, rng))
     return blocks + [fig.text(0.006, 0.80,
                               "rings, outermost first\n"
                               "(sources in the caption and manifest)\n\n"
@@ -732,6 +740,33 @@ def _draw_legend(fig, rings, norms, cmap, lay) -> list:
 
 def _short(label: str, limit: int = 34) -> str:
     return label if len(label) <= limit else label[:limit - 1].rstrip(" ,-") + "\u2026"
+
+
+def _key_lines(prefix: str, label: str, rng: str, limit: int = 34) -> list[str]:
+    """QA-v2-retest \u00a75. The ring key elided the half of a label that does the
+    honest work.
+
+    `_short` truncated at 34 characters, so V2 \u00a72.4's central move -- renaming
+    the safety ring to "Safety flags & constraint \u2014 NOT evidence of safety" --
+    reached `values.csv` and `caption.txt` and arrived on the audit figure as
+    "Safety flags & constraint \u2014 NOT e\u2026". The caveat qualifies the ring; a
+    figure that drops it overstates its data, which is the one thing AGENTS.md
+    forbids ("Say this on the figure, not only in the report").
+
+    Wrapped onto an indented continuation line instead of truncated: the block
+    stays inside the width `assert_no_text_over_the_rings` measures, and nothing
+    is lost. Truncation is never the answer for a caveat.
+    """
+    words, lines, cur = label.split(" "), [], prefix
+    for w in words:
+        candidate = f"{cur}{w}" if cur.endswith(" ") or not cur.strip() else f"{cur} {w}"
+        if len(candidate) > limit + len(prefix) and cur.strip() != prefix.strip():
+            lines.append(cur)
+            cur = " " * len(prefix) + w
+        else:
+            cur = candidate
+    lines.append(f"{cur}  {rng}")
+    return lines
 
 
 def assert_footer_is_true(weights: dict[str, float], ranked_rings: Sequence[str]) -> None:
@@ -800,10 +835,17 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
         # UX A4 / the UX review's "noise" list: at 3.7 pt on a slide none of the
         # six footer lines is read by anyone. One line does the honest work and
         # the rest go into the caption you paste underneath.
+        #
+        # QA-v2-retest \u00a75: the safety ring's caveat was one of the lines that
+        # went into the caption, so the artefact that actually goes in front of
+        # colleagues carried the ring and not the thing that qualifies it. A
+        # caption you have to be handed separately is not where a caveat lives.
+        # It is on the slide now, in the same 10 pt as the rest of this line.
         out.append(fig.text(
             0.5, 0.008,
-            "ranking is provisional and not validated \u00b7 rings are scaled "
-            "independently of one another \u00b7 see the caption",
+            f"the safety ring is {SAFETY_RING_CAVEAT} \u00b7 ranking is provisional "
+            "and not validated \u00b7 rings are scaled independently of one "
+            "another \u00b7 see the caption",
             fontsize=10, ha="center", va="bottom", color="#8a4b00"))
     else:
         out.append(fig.text(0.5, 0.008, "\n".join(notes),
