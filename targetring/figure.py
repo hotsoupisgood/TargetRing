@@ -8,9 +8,9 @@ Design rules that are not cosmetic:
 * Every cell carries an SVG `id` (`cell|<ring>|<index>|<gene>`). That is what
   makes cell-count identity and label correspondence checkable in the artefact
   rather than only in the code that produced it (QA S1 checks 1 and 4).
-* k, the gene and dropped counts, the default weights, the region and the
-  denominator tissue set are stamped on the figure, because the morning review
-  is a screenshot (QA B7 item 4).
+* k, the gene and dropped counts, the spoke-ordering rule, any active threshold
+  filter, the region and the denominator tissue set are stamped on the figure,
+  because the morning review is a screenshot (QA B7 item 4).
 * A failed invariant draws a banner across the figure. The overnight run's job
   is to be honest, not to produce output (QA §5 item 8).
 """
@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import itertools
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -51,13 +51,7 @@ SAVE_RC = {"savefig.bbox": None, "savefig.pad_inches": 0.0,
 from .adapters.opentargets import SOURCE_LABEL as ACTIVITY_SOURCE_LABEL  # noqa: E402
 from .adapters.pharos import TDL_MAX  # noqa: E402
 from .config import MAX_GENES  # noqa: E402
-from .rank import (  # noqa: E402
-    DEFAULT_WEIGHTS,
-    EXCLUDED_FROM_SCORE,
-    EXTERNAL_RING_COUNT,
-    PARETO_AXES,
-    GeneRanking,
-)
+from .order import EXTERNAL_RING_COUNT, GeneStats  # noqa: E402
 from .states import Cell  # noqa: E402
 
 VALUE_CMAP = "viridis"
@@ -83,21 +77,16 @@ VALUE_CMAP = "viridis"
 CMAP_STOPS = (0.16, 0.92)
 GREYSCALE_MIN_DELTA = 0.05
 
-# v2.2 item 4 added a fifth Pareto axis, and three places on the figure said
-# "four" in prose. A figure must not make a false claim about its own method
-# (COUNCIL V5), so the count and the names are derived from PARETO_AXES rather
-# than written out -- the next axis cannot leave a stale number behind.
-_AXIS_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}
-PARETO_AXIS_COUNT_WORD = _AXIS_WORDS.get(len(PARETO_AXES), str(len(PARETO_AXES)))
-PARETO_AXIS_NAMES = ", ".join(ax.replace("_", " ") for ax in PARETO_AXES)
-
-# COUNCIL V10. "Non-dominated" is not "good"; over a handful of axes it mostly identifies
-# unusual *combinations*, including bad ones. Measured fronts: 4 of 14 on the
-# liver set, 3 of 14 on de_realistic.csv and 5 of 7 on de_broken.csv -- where 71%
-# of the figure got a headline diamond, including GAPDH, the canonical
-# housekeeping negative control. Below this many eligible genes the diamond is
-# not drawn at all, and the fraction is printed either way.
-PARETO_MIN_ELIGIBLE = 10
+# v2.5. Words this figure must not use about itself any more, checked at draw
+# time by `assert_footer_is_true`. Ranking is gone -- the Pareto set, the
+# weighted score, the weights, eligibility and the stability flag with it -- and
+# a stamp or a caption line that still promises one would be a false claim about
+# the figure's own method, which is the defect COUNCIL V5 is about. A leftover
+# sentence is as wrong as leftover code, and cheaper to leave behind.
+RETIRED_CLAIM_WORDS: tuple[str, ...] = (
+    "pareto", "non-dominated", "weighted score", "default weights",
+    "eligible", "headline", "reweighting", "median available rank",
+)
 
 # See the comment at the rect() call: anything but exactly 1.0 keeps each cell a
 # separate SVG element with its own id.
@@ -199,15 +188,15 @@ RING_SPECS: tuple[RingSpec, ...] = (
     RingSpec("logfc", "logFC (yours)", "submitted DE table", scale="diverging"),
     RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table"),
     # v2.3 item 1 / COUNCIL M7/V8. One ring became two, and the labels say which
-    # claim each one makes. The dense ring is the Pareto axis; the sparse one is
-    # allowed to be hatched and is ranked and weighted nowhere.
-    RingSpec("tractable", "Tractability (family suggests druggable) — Pareto axis",
+    # claim each one makes: the dense three-key ring is not the sparse probe key,
+    # and a hatched probe cell must not take tractability down with it.
+    RingSpec("tractable", "Tractability (family suggests druggable)",
              "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder — "
              "3 dense keys, present for every target with a prioritisation record",
              domain=(0.0, 1.0)),
     RingSpec("chemical_probe", "Chemical probe available (prior tool-compound effort)",
              "OT prioritisation: hasHighQualityChemicalProbes — SPARSE. Explicit 0.0 = "
-             "looked, no probe; key absent = no_data (hatched). Not a Pareto axis, not scored",
+             "looked, no probe; key absent = no_data (hatched)",
              domain=(0.0, 1.0)),
     RingSpec("safety", "Safety flags & constraint — NOT evidence of safety",
              "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene",
@@ -445,17 +434,18 @@ class FigureResult:
     cell_ids: list[str]
     n_cells: int
     caption: str = ""
-    # COUNCIL V10: below PARETO_MIN_ELIGIBLE the diamond is not drawn at all.
-    # I7 compares the drawn diamonds against the ranking's front, so it has to
-    # be told that "none drawn" was a decision rather than a disagreement.
-    diamonds_suppressed: bool = False
+    # v2.5 item 2. The sentences the figure printed about its own spoke order and
+    # its own active filters, returned so invariant 7 can check them against what
+    # the run actually did rather than trusting the renderer.
+    ordering_note: str = ""
+    filter_notes: list[str] = field(default_factory=list)
 
 
 def render(
     *,
     genes: Sequence[str],
     cells_by_ring: dict[str, dict[str, Cell]],
-    rankings: dict[str, GeneRanking],
+    stats: dict[str, GeneStats],
     region: str,
     out_svg: Path,
     out_png: Path | None = None,
@@ -465,8 +455,8 @@ def render(
     dropped_names: Sequence[str] = (),
     invariant_failures: Sequence[str] = (),
     run_conditions: Sequence[str] = (),
-    weights: dict[str, float] | None = None,
-    ranked_rings: Sequence[str] = (),
+    ordering_note: str = "",
+    filter_notes: Sequence[str] = (),
     gene_flags: dict[str, list[str]] | None = None,
     subtitle: str = "",
     provenance: str = "",
@@ -475,8 +465,7 @@ def render(
     assert_fills_disjoint()
     assert_greyscale_disjoint()
     lay = LAYOUTS[layout]
-    weights = weights or DEFAULT_WEIGHTS
-    assert_footer_is_true(weights, ranked_rings or ())
+    filter_notes = list(filter_notes)
     genes = list(genes)
     if not genes:
         raise ValueError("no genes to render")
@@ -562,28 +551,23 @@ def render(
                 "source": spec.source,
             })
 
-    # COUNCIL V10: on a short list almost nothing is dominated, so the diamond
-    # stops meaning anything. Suppressed below a stated n, and the fraction is
-    # printed on the figure either way.
-    n_eligible = sum(1 for g in genes
-                     if (gr := rankings.get(g)) is not None and gr.pareto_eligible)
-    front = [g for g in genes
-             if (gr := rankings.get(g)) is not None and gr.pareto]
-    show_diamonds = n_eligible >= PARETO_MIN_ELIGIBLE
-
-    # Spoke labels carry k, and mark Pareto members and unstable genes.
+    # v2.5 item 1. No diamond, no stability asterisk: there is no headline set to
+    # mark membership of and no reweighting to be unstable under. What is left on
+    # a spoke label is the gene, its k, and the liability marker.
     for gene_i, gene in enumerate(genes):
         sector = circos.get_sector(gene)
-        gr = rankings.get(gene)
-        k = gr.k if gr else 0
-        mark = "◆ " if (gr and gr.pareto and show_diamonds) else ""
+        st = stats.get(gene)
+        k = st.k if st else 0
         # COUNCIL V1 (ii). Open Targets has no anti-target axis, so hERG reads as
         # druggable, clinically validated and actively trialled while its own
         # safetyLiabilities are Torsades de Pointes and Increased Mortality. The
         # marker sits where the eye already is, next to k.
         liab = "⚠ " if gene in (gene_flags or {}) else ""
-        warn = " *" if (gr and gr.unstable) else ""
-        label = f"{mark}{liab}{gene} (k={k}/{EXTERNAL_RING_COUNT}){warn}"
+        # v2.5 item 2, rule 1. A gene kept on the figure because a threshold
+        # could not be evaluated against a cell it has no data for is marked
+        # here, not silently mixed in with the genes that passed the filter.
+        unf = " ~" if (st and st.unfiltered_rings) else ""
+        label = f"{liab}{gene} (k={k}/{EXTERNAL_RING_COUNT}){unf}"
         size = lay.label_size * (0.82 if len(genes) > 18 else 1.0)
         sector.text(label, r=r_outer + 3, size=size,
                     orientation="vertical", color="#111111")
@@ -601,14 +585,24 @@ def render(
     # trusting these numbers -- see `assert_no_text_over_the_rings`.
     ax.set_position(lay.axes_box)
 
+    # COUNCIL V5, re-pointed by v2.5: the figure must not make a false claim
+    # about its own method. Every sentence it is about to draw is checked against
+    # what this render is actually doing, before any of it reaches the canvas.
+    notes = _stamp_notes(ordering_note, filter_notes, region, cells_by_ring,
+                         gene_flags, subtitle)
+    cap = caption(rings, norms, region, provenance, ordering_note, filter_notes,
+                  gene_flags, dropped_names)
+    assert_footer_is_true(notes + cap.splitlines(), ordering_note, filter_notes)
+
     centre_blocks, next_y = _draw_centre(ax, region, len(genes), input_count,
                                          rendered_count, ledger_counts,
                                          dropped_names, lay)
-    centre_blocks += _draw_headline(ax, front, n_eligible, show_diamonds, lay, next_y)
+    centre_blocks += _draw_ordering_and_filters(ax, ordering_note, filter_notes,
+                                                stats, lay, next_y)
     text_blocks = []
     text_blocks += _draw_legend(fig, rings, norms, cmap, lay)
-    text_blocks += _draw_stamps(fig, weights, region, subtitle, provenance,
-                                cells_by_ring, gene_flags, lay)
+    text_blocks += _draw_stamps(fig, notes, provenance, lay,
+                                slide_line(ordering_note, filter_notes))
     if invariant_failures:
         _draw_banner(fig, invariant_failures)
     if run_conditions and lay.draw_conditions:
@@ -639,9 +633,9 @@ def render(
             fig.savefig(out_png, format="png", dpi=110)
     plt.close(fig)
     return FigureResult(out_svg, csv_rows, cell_ids, len(cell_ids),
-                        caption=caption(rings, norms, weights, region,
-                                        provenance, gene_flags, dropped_names),
-                        diamonds_suppressed=not show_diamonds)
+                        caption=cap,
+                        ordering_note=ordering_note,
+                        filter_notes=list(filter_notes))
 
 
 def _wrap(names, per_line: int = 5) -> str:
@@ -696,14 +690,16 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
                            family="monospace"))
         n_lines = 1 + (len(shown) - 1) // 3 + (1 if more else 0)
         y -= 0.015 * n_lines + 0.008
-    out.append(ax.text(0.5, y, "ranking is provisional and not validated",
-                       ha="center", va="top", size=7.5 * k, transform=ax.transAxes,
-                       color="#8a4b00", style="italic"))
-    # The centre block lives in the hole at the middle of the rings by design,
-    # so it is checked against the hole rather than against the circle. The
-    # next free y goes back to the caller so the V10 headline line does not
-    # print on top of the caveat.
-    return out, y - 0.022 * k
+    # v2.5 item 1: "ranking is provisional and not validated" is gone from here,
+    # because nothing is ranked. The caveat existed only to qualify the headline
+    # and the score, and a caveat about a thing the figure no longer does is not
+    # honesty, it is noise. What replaces it is the ordering rule, which is a
+    # statement about what this circle *is*.
+    #
+    # The centre block lives in the hole at the middle of the rings by design, so
+    # it is checked against the hole rather than against the circle. The next
+    # free y goes back to the caller for the ordering and filter lines.
+    return out, y
 
 
 def _draw_colourbar(fig, cmap, lay) -> list:
@@ -732,25 +728,29 @@ def _draw_colourbar(fig, cmap, lay) -> list:
                      color="#8a4b00", weight="bold")]
 
 
-def _draw_headline(ax, front, n_eligible, show_diamonds, lay, y: float) -> list:
-    """COUNCIL V10. Say how big the headline set is, as a fraction, and say that
-    membership is a property of the submitted list rather than of the target.
+def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[str],
+                               stats, lay, y: float) -> list:
+    """v2.5. Two claims about the figure that a reader cannot recover by looking.
 
-    Removing PCSK9 from the council's liver list promoted DDR1 -- 0 drugs, 0.05
-    liver specificity -- into the headline. A reader will read a diamond as
-    "best target on this list"; it means "unbeaten on every Pareto axis by
-    anything else you submitted".
+    The spoke order carries meaning -- it always did -- and an unstated ordering
+    rule is the same defect as an unlabelled colour scale. And a filtered plot
+    that does not say it is filtered is a plausible wrong figure: it looks like
+    the whole submitted set. Both go in the hole, where the counts already are.
     """
     k = (lay.centre_scale if lay else 1.0)
-    if not show_diamonds:
-        text = (f"\u25c6 not drawn \u2014 only {n_eligible} gene(s) are eligible on all "
-                f"{PARETO_AXIS_COUNT_WORD} axes,\nand on a list this short almost nothing "
-                f"is dominated")
-    else:
-        text = (f"\u25c6 {len(front)} of {n_eligible} eligible \u2014 membership is a "
-                f"property of\nthis list, not of the target")
-    return [ax.text(0.5, y, text, ha="center", va="top", size=7 * k,
-                    transform=ax.transAxes, color="#444444")]
+    out = []
+    if ordering_note:
+        out.append(ax.text(0.5, y, ordering_note, ha="center", va="top", size=6.8 * k,
+                           transform=ax.transAxes, color="#444444", wrap=False))
+        y -= 0.020 * k
+    if filter_notes:
+        n_marked = sum(1 for s in (stats or {}).values() if s.unfiltered_rings)
+        text = (f"FILTERED \u2014 {len(filter_notes)} active:\n" + _wrap(filter_notes, 1)
+                + (f"\n~ {n_marked} gene(s) kept unfiltered: no data on a filtered ring"
+                   if n_marked else ""))
+        out.append(ax.text(0.5, y, text, ha="center", va="top", size=6.8 * k,
+                           transform=ax.transAxes, color="#8a4b00", weight="bold"))
+    return out
 
 
 def _draw_legend(fig, rings, norms, cmap, lay) -> list:
@@ -843,58 +843,98 @@ def _key_lines(prefix: str, label: str, rng: str, limit: int = 34) -> list[str]:
     return lines
 
 
-def assert_footer_is_true(weights: dict[str, float], ranked_rings: Sequence[str]) -> None:
+def assert_footer_is_true(lines: Sequence[str], ordering_note: str,
+                          filter_notes: Sequence[str]) -> None:
     """COUNCIL V5: the figure must not make a false claim about its own method.
 
     v1's footer read "Rodent ring: … Never folded into any score" one line below
     "Default weights … rodent=0.5", and `rodent` was in RANKED_RINGS too, so it
-    was in the weighted score *and* the median available rank. Rather than trust
-    a comment to keep the two in step, the claim is checked against the data
-    structures it describes, every time the figure is drawn.
+    was in the weighted score *and* the median available rank. The claim was
+    checked against the data structures it described, every time the figure was
+    drawn, rather than trusted to a comment.
+
+    v2.5 keeps the assertion and re-points it, because the defect it exists to
+    catch is not about weights -- it is about a figure asserting something its
+    own code contradicts. There are no weights now, so the three claims left to
+    check are:
+
+      1. **Nothing claims a ranking.** No stamp or caption line may use the
+         vocabulary of the retired headline. A sentence promising a Pareto set
+         on a figure that computes none is the V5 defect exactly.
+      2. **The stated spoke order is stated.** A circle whose order carries
+         meaning must say what the order is.
+      3. **Every active filter is printed.** A reader must not mistake a
+         filtered plot for the whole submitted set, so each active filter's own
+         label has to appear in the text the figure draws.
     """
-    for ring, why in EXCLUDED_FROM_SCORE.items():
-        if ring in weights:
+    body = "\n".join(lines)
+    low = body.lower()
+    for word in RETIRED_CLAIM_WORDS:
+        if word in low:
+            line = next((l for l in lines if word in l.lower()), "")
             raise AssertionError(
-                f"the figure's footer says {ring!r} is never folded into any score, but it "
-                f"is in the default weights ({ring}={weights[ring]:g}). {why}. "
-                f"Either remove the weight or delete the footer sentence."
+                f"the figure still says {word!r} — {line.strip()[:160]!r} — but v2.5 removed "
+                f"ranking: there is no Pareto set, no weighted score, no eligibility and no "
+                f"stability flag to describe. Delete the sentence; do not leave the claim "
+                f"behind the missing feature."
             )
-        if ring in ranked_rings and ring == "rodent":
+    if not ordering_note:
+        raise AssertionError(
+            "the spoke order carries meaning and this figure does not state it. An "
+            "unstated ordering rule is the same defect as an unlabelled colour scale."
+        )
+    if ordering_note not in body:
+        raise AssertionError(
+            f"the figure orders its spokes by {ordering_note!r} and does not print it "
+            f"anywhere in its own stamps or caption."
+        )
+    for note in filter_notes:
+        if note not in body:
             raise AssertionError(
-                f"{ring!r} is in RANKED_RINGS, so it contributes to the median available "
-                f"rank, while the footer says it is never folded into any score. {why}."
+                f"the filter {note!r} removed genes from this plot and the figure does not "
+                f"say so. A filtered figure that does not name its filters reads as the "
+                f"whole submitted set."
             )
 
 
-def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
-                 gene_flags=None, lay=None) -> list:
-    w = ", ".join(f"{k}={v:g}" for k, v in sorted(weights.items()))
+def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
+                 cells_by_ring, gene_flags=None, subtitle: str = "") -> list[str]:
+    """The footer's sentences, built once so `assert_footer_is_true` checks
+    exactly the text that gets drawn rather than a copy of it."""
     n_tissues = ""
     for c in cells_by_ring.get("regional_specificity", {}).values():
         if c.state == "value" and isinstance(c.raw, dict) and c.raw.get("n_tissues"):
             n_tissues = f"{c.raw['n_tissues']} GTEx tissues"
             break
-    excluded = ", ".join(sorted(EXCLUDED_FROM_SCORE))
     notes = [
-        f"HEADLINE = Pareto non-dominated set (◆), over {PARETO_AXIS_NAMES}. A gene needs a "
-        f"real value on ALL {PARETO_AXIS_COUNT_WORD.upper()} to be eligible; genes with fewer "
-        f"are neither in the set nor able to remove anything from it.",
-        f"Weighted score is a labelled CONVENIENCE, not the headline. Default weights "
-        f"(provisional, unsigned-off): {w}. Excluded from every score: {excluded}.",
+        # v2.5 item 1. The two lines that were here -- the Pareto headline and
+        # the weighted convenience score with its printed weights -- are gone
+        # with the thing they described. Nothing replaces them: this figure is a
+        # gene set, rings of evidence and a drawer, and it now says so by saying
+        # nothing it cannot do.
         f"Regional specificity = {region} TPM ÷ median across {n_tissues or 'the GTEx panel'}.",
-        "Mouse-phenotype ring: a LEAD, not a verdict; ranked nowhere and weighted nowhere, "
-        "asserted against the weights at draw time rather than just claimed. Embryonic-lethal "
-        "lines drop out of adult phenotyping, which biases exactly the essential genes the "
-        "safety ring flags as risky (COUNCIL M5).",
+        "Mouse-phenotype ring: a LEAD, not a verdict. Embryonic-lethal lines drop out of "
+        "adult phenotyping, which biases exactly the essential genes the safety ring flags "
+        "as risky (COUNCIL M5).",
         f"Missing is never imputed. k = how many of the {EXTERNAL_RING_COUNT} EXTERNAL rings "
-        f"have a real measurement for that gene; your own logFC and padj are not counted.",
-        "* = this gene's top-10 place does not survive reweighting. Spoke ORDER carries "
-        "meaning: the circle starts at 12 o'clock and runs clockwise by median available "
-        "rank, headline members first. Region affects exactly one ring (regional specificity).",
+        f"have a real measurement for that gene; your own logFC and padj are not counted. It "
+        f"is a completeness gauge: it orders nothing and selects nothing.",
+        f"The circle starts at 12 o'clock and runs clockwise — {ordering_note}. Region "
+        f"affects exactly one ring (regional specificity).",
         "Pipeline: furthest phase counts only drugs indicated for a disease with mechanistic "
         "evidence linking it to THIS target. A drug that hits the target for an unrelated "
         "indication sets no phase; those genes are drawn 'not applicable', not 'low'.",
     ]
+    if filter_notes:
+        # v2.5 item 2. On the figure, in the footer, and in the caption: three
+        # places, because a reader who has only one of them must still know the
+        # plot is not the whole submitted set.
+        notes.append(
+            "THRESHOLD FILTERS ARE ACTIVE and this is not your whole submitted set: "
+            + " · ".join(filter_notes)
+            + ". A gene with no data on a filtered ring is KEPT and marked ~, never dropped "
+              "for being unmeasured; every filtered gene is in ledger.csv with its reason."
+        )
     if gene_flags:
         notes.append(
             "⚠ = Open Targets records a cardiac-conduction, cardiotoxicity or mortality "
@@ -903,7 +943,30 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
         )
     if subtitle:
         notes.insert(0, subtitle)
+    return notes
 
+
+def slide_line(ordering_note: str, filter_notes: Sequence[str]) -> str:
+    """UX A4: the one line the slide render carries instead of the footer block.
+
+    The filters are on it, first, when there are any. A slide is the artefact
+    that goes in front of other people, and "this is not the whole list you were
+    given" is not something to leave in a caption somebody has to be handed
+    separately -- the same argument QA-v2-retest §5 made about the safety caveat.
+    """
+    parts = []
+    if filter_notes:
+        parts.append("FILTERED (" + " · ".join(filter_notes) + ") — not the whole "
+                     "submitted set; no-data genes kept and marked ~")
+    parts += [f"the safety ring is {SAFETY_RING_CAVEAT}",
+              ordering_note,
+              "rings are scaled independently of one another",
+              "see the caption"]
+    return " · ".join(parts)
+
+
+def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
+                 slide_text: str = "") -> list:
     out = []
     if lay is not None and not lay.draw_footer:
         # UX A4 / the UX review's "noise" list: at 3.7 pt on a slide none of the
@@ -915,12 +978,8 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
         # colleagues carried the ring and not the thing that qualifies it. A
         # caption you have to be handed separately is not where a caveat lives.
         # It is on the slide now, in the same 10 pt as the rest of this line.
-        out.append(fig.text(
-            0.5, 0.008,
-            f"the safety ring is {SAFETY_RING_CAVEAT} \u00b7 ranking is provisional "
-            "and not validated \u00b7 rings are scaled independently of one "
-            "another \u00b7 see the caption",
-            fontsize=10, ha="center", va="bottom", color="#8a4b00"))
+        out.append(fig.text(0.5, 0.008, slide_text,
+                            fontsize=10, ha="center", va="bottom", color="#8a4b00"))
     else:
         out.append(fig.text(0.5, 0.008, "\n".join(notes),
                             fontsize=(lay.footer_size if lay else 7.5),
@@ -932,8 +991,8 @@ def _draw_stamps(fig, weights, region, subtitle, provenance, cells_by_ring,
     return out
 
 
-def caption(rings, norms, weights, region, provenance, gene_flags=None,
-            dropped_names=()) -> str:
+def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
+            gene_flags=None, dropped_names=()) -> str:
     """UX A4. Everything the slide render drops, as text to paste underneath.
 
     The full audit stamps stay on the audit render, which is the right artefact
@@ -946,26 +1005,27 @@ def caption(rings, norms, weights, region, provenance, gene_flags=None,
         n = norms.get(spec.key)
         rng = _range_label(spec, n)
         lines.append(f"  {i}. {spec.label} {rng} \u2014 {spec.source}")
-    w = ", ".join(f"{k}={v:g}" for k, v in sorted(weights.items()))
-    excluded = ", ".join(sorted(EXCLUDED_FROM_SCORE))
     lines += [
         "",
-        f"Headline (\u25c6) = the Pareto non-dominated set over {PARETO_AXIS_NAMES}. A gene "
-        f"needs a real value on all {PARETO_AXIS_COUNT_WORD} to be eligible; genes with fewer "
-        f"are neither in the set nor able to remove anything from it. Membership is a "
-        f"property of the submitted list, not of the target.",
-        f"Weighted score is a labelled convenience, not the headline. Default weights "
-        f"(provisional, not signed off): {w}. Excluded from every score: {excluded}.",
         "Pipeline: furthest phase counts only drugs indicated for a disease with human "
         "genetic evidence linking it to this target. A drug that hits the target for an "
         "unrelated indication sets no phase.",
-        "Missing is never imputed. k = rings with a real measurement for that gene. "
-        "* = this gene's top-10 place does not survive reweighting. Spoke ORDER carries "
-        "meaning: the circle starts at 12 o'clock and runs clockwise by median available "
-        "rank, headline members first. Region affects exactly one ring (regional specificity).",
-        "This figure is internally consistent and auditable. It is not a validated "
-        "ranking.",
+        f"Missing is never imputed. k = external rings with a real measurement for that "
+        f"gene; it is a completeness gauge and orders nothing. Spoke ORDER: the circle "
+        f"starts at 12 o'clock and runs clockwise \u2014 {ordering_note}. Region affects exactly "
+        f"one ring (regional specificity).",
+        "This figure is internally consistent and auditable. Nothing on it is ranked or "
+        "scored: it is your gene set, the evidence rings, and a drawer per gene.",
     ]
+    if filter_notes:
+        lines += [
+            "",
+            "THRESHOLD FILTERS ARE ACTIVE \u2014 this is not your whole submitted set:",
+            *(f"  \u00b7 {n}" for n in filter_notes),
+            "  A gene with no data on a filtered ring is kept and marked ~, never dropped "
+            "for being unmeasured. Every filtered gene is in ledger.csv with its reason, "
+            "and the filter settings are in manifest.json and values.csv.",
+        ]
     if dropped_names:
         lines += ["", f"Not shown ({len(dropped_names)}), every one named here and in "
                       f"ledger.csv with its reason:",
@@ -1171,6 +1231,6 @@ def _draw_conditions(fig, conditions: Sequence[str]) -> None:
 __all__ = ["render", "RING_SPECS", "STATE_STYLE", "VALUE_CMAP", "FigureResult",
            "assert_fills_disjoint", "assert_footer_is_true", "colormap_hexes",
            "assert_greyscale_disjoint", "relative_luminance", "value_cmap", "CMAP_STOPS",
-           "assert_within_domain", "ACTIVITY_PALETTE", "PARETO_MIN_ELIGIBLE",
-           "assert_text_within_canvas",
+           "assert_within_domain", "ACTIVITY_PALETTE", "RETIRED_CLAIM_WORDS",
+           "slide_line", "assert_text_within_canvas",
            "assert_no_text_over_the_rings", "assert_centre_fits_the_hole", "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE"]

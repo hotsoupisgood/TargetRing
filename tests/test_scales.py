@@ -18,7 +18,6 @@ from targetring.figure import (
     ACTIVITY_PALETTE,
     CMAP_STOPS,
     GREYSCALE_MIN_DELTA,
-    PARETO_MIN_ELIGIBLE,
     RING_SPECS,
     STATE_STYLE,
     _norm_for,
@@ -30,24 +29,17 @@ from targetring.figure import (
     render,
     value_cmap,
 )
-from targetring.rank import (
-    EXTERNAL_RING_COUNT,
-    EXTERNAL_RINGS,
-    PARETO_AXES,
-    rank_genes,
-)
+from targetring.order import EXTERNAL_RING_COUNT, EXTERNAL_RINGS, gene_stats
 from targetring.states import no_data, value
 
 SPEC = {s.key: s for s in RING_SPECS}
 
-def _axes_spec(genes):
-    """Every Pareto axis, strictly ordered, every value inside its declared
-    domain so `assert_within_domain` is not tripped by synthetic data.
+ORDER_NOTE = "spoke order: the order of your submitted DE table (unchanged)"
 
-    v2.2 item 4: `tdl` is a Pareto axis now, and a spec that omits it makes
-    every gene ineligible — which would silently turn these V10 tests into
-    tests of the suppression path rather than of what they were written for.
-    """
+
+def _axes_spec(genes):
+    """Five rings, strictly ordered, every value inside its declared domain so
+    `assert_within_domain` is not tripped by synthetic data."""
     n = len(genes)
     spec = {
         "tractable": {g: value(i / (n - 1)) for i, g in enumerate(genes)},
@@ -56,7 +48,6 @@ def _axes_spec(genes):
         "clinical_phase": {g: value(float(i % 6)) for i, g in enumerate(genes)},
         "tdl": {g: value(float(i % (TDL_MAX + 1))) for i, g in enumerate(genes)},
     }
-    assert set(PARETO_AXES) <= set(spec), "a Pareto axis has no synthetic values"
     return spec
 
 
@@ -174,7 +165,7 @@ class TestFixedDomainsAreNeverSilentlyClipped:
 
 
 class TestV13KCountsExternalRingsOnly:
-    """V13: "`rank_genes` is called before `completeness` is added, over nine
+    """V13: "k was counted before `completeness` was added, over nine
     rings of which `logfc` and `neg_log10_padj` come from the submitted table
     and are therefore never missing. Every gene in every run I did has k >= 2 for
     free… TMEM229B, a gene about which essentially nothing is known, shows k=7.""" 
@@ -185,7 +176,7 @@ class TestV13KCountsExternalRingsOnly:
             "neg_log10_padj": {"A": value(3.0), "B": value(4.0)},
             "tractable": {"A": value(0.5), "B": no_data("x")},
         }
-        out = rank_genes(spec)
+        out = gene_stats(spec)
         assert out["A"].k == 1, "logfc and padj are his measurement, not a source's"
         assert out["B"].k == 0, "a gene nothing is known about must be able to reach 0"
 
@@ -202,9 +193,9 @@ class TestV13KCountsExternalRingsOnly:
     def test_the_figure_states_the_denominator(self, tmp_path: Path) -> None:
         spec = {"logfc": {"A": value(1.0), "B": value(2.0)},
                 "tractable": {"A": value(0.5), "B": value(0.9)}}
-        render(genes=["A", "B"], cells_by_ring=spec, rankings=rank_genes(spec),
+        render(genes=["A", "B"], cells_by_ring=spec, stats=gene_stats(spec),
                region="Liver", out_svg=tmp_path / "k.svg", input_count=2,
-               rendered_count=2, ledger_counts={})
+               rendered_count=2, ledger_counts={}, ordering_note=ORDER_NOTE)
         body = (tmp_path / "k.svg").read_text()
         assert f"(k=1/{EXTERNAL_RING_COUNT})" in body
         assert "EXTERNAL rings" in body
@@ -233,9 +224,9 @@ class TestV12CategoricalActivityRing:
     def test_the_three_states_are_named_in_the_legend(self, tmp_path: Path) -> None:
         spec = {"logfc": {g: value(1.0 * i) for i, g in enumerate("ABC")},
                 "clinical_activity": {"A": value(-1.0), "B": value(0.0), "C": value(1.0)}}
-        render(genes=list("ABC"), cells_by_ring=spec, rankings=rank_genes(spec),
+        render(genes=list("ABC"), cells_by_ring=spec, stats=gene_stats(spec),
                region="Liver", out_svg=tmp_path / "a.svg", input_count=3,
-               rendered_count=3, ledger_counts={})
+               rendered_count=3, ledger_counts={}, ordering_note=ORDER_NOTE)
         body = (tmp_path / "a.svg").read_text()
         for label in ("stopped for cause", "dormant", "live trial"):
             assert label in body
@@ -265,33 +256,36 @@ class TestV17SignedRingHasAZeroAnchor:
         assert norm(-2.0) == pytest.approx(1 - norm(2.0))
 
 
-class TestV10HeadlineSizeIsStated:
-    """V10: "on a 7-gene submission 71% of the figure gets a headline diamond,
-    including GAPDH — the canonical housekeeping negative control." """
+class TestV10TheHeadlineIsGoneFromTheArtefact:
+    """V10 measured that on a 7-gene submission 71% of the figure got a headline
+    diamond, including GAPDH — the canonical housekeeping negative control — and
+    asked for the fraction to be printed and the diamond suppressed below a
+    stated n.
+
+    v2.5 answers it by deletion: there is no headline set on any list length, so
+    the suppression rule, the floor and the printed fraction all go. What is
+    checked here is that the artefact agrees — no diamond at any n, and the thing
+    the spoke order *does* mean is stated instead.
+    """
 
     def _render(self, tmp_path, n):
         genes = [f"G{i:02d}" for i in range(n)]
         spec = _axes_spec(genes)
-        res = render(genes=genes, cells_by_ring=spec, rankings=rank_genes(spec),
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
                      region="Liver", out_svg=tmp_path / f"n{n}.svg",
-                     input_count=n, rendered_count=n, ledger_counts={})
+                     input_count=n, rendered_count=n, ledger_counts={},
+                     ordering_note=ORDER_NOTE)
         return res, (tmp_path / f"n{n}.svg").read_text()
 
-    def test_the_diamond_is_suppressed_on_a_short_list(self, tmp_path: Path) -> None:
-        res, body = self._render(tmp_path, PARETO_MIN_ELIGIBLE - 3)
-        assert res.diamonds_suppressed
-        assert "◆ not drawn" in body
-        assert "almost nothing is dominated" in body
+    @pytest.mark.parametrize("n", [7, 14])
+    def test_no_diamond_at_any_list_length(self, tmp_path: Path, n: int) -> None:
+        _, body = self._render(tmp_path, n)
+        assert "\u25c6" not in body
+        assert "eligible" not in body
 
-    def test_the_fraction_is_printed_when_it_is_drawn(self, tmp_path: Path) -> None:
-        n = PARETO_MIN_ELIGIBLE + 4
-        res, body = self._render(tmp_path, n)
-        assert not res.diamonds_suppressed
-        assert f"of {n} eligible" in body
-
-    def test_it_says_membership_is_a_property_of_the_list(self, tmp_path: Path) -> None:
-        _, body = self._render(tmp_path, PARETO_MIN_ELIGIBLE + 4)
-        assert "property of" in body and "not of the target" in body
+    def test_the_spoke_order_is_stated_instead(self, tmp_path: Path) -> None:
+        _, body = self._render(tmp_path, 7)
+        assert ORDER_NOTE in body
 
 
 class TestGreyscaleDisjointness:
@@ -366,8 +360,8 @@ class TestTheKeyDoesNotMisstateItsOwnRings:
     def test_the_rendered_key_says_it(self, tmp_path: Path) -> None:
         spec = {"logfc": {g: value(1.0 * i) for i, g in enumerate("ABC")},
                 "clinical_activity": {"A": value(-1.0), "B": value(0.0), "C": value(1.0)}}
-        render(genes=list("ABC"), cells_by_ring=spec, rankings=rank_genes(spec),
+        render(genes=list("ABC"), cells_by_ring=spec, stats=gene_stats(spec),
                region="Liver", out_svg=tmp_path / "k2.svg", input_count=3,
-               rendered_count=3, ledger_counts={})
+               rendered_count=3, ledger_counts={}, ordering_note=ORDER_NOTE)
         body = (tmp_path / "k2.svg").read_text()
         assert "3 states" in body

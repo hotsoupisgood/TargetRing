@@ -23,10 +23,11 @@ from targetring.figure import (
     caption,
     render,
 )
-from targetring.rank import DEFAULT_WEIGHTS, rank_genes
+from targetring.order import gene_stats
 from targetring.states import failed, no_data, not_applicable, value
 
 GENES = ["BRAF", "CDKN2A", "INS", "KCNQ1", "EGFR", "GAPDH"]
+ORDER_NOTE = "spoke order: the order of your submitted DE table (unchanged)"
 
 
 def _spec():
@@ -51,10 +52,10 @@ def _render(tmp_path: Path, layout: str, **kw):
     spec = _spec()
     out = tmp_path / f"{layout}.svg"
     kw.setdefault("ledger_counts", {"unresolved": 2})
-    res = render(genes=GENES, cells_by_ring=spec, rankings=rank_genes(spec),
+    kw.setdefault("ordering_note", ORDER_NOTE)
+    res = render(genes=GENES, cells_by_ring=spec, stats=gene_stats(spec),
                  region="Liver", out_svg=out, input_count=8, rendered_count=6,
-                 layout=layout, weights=DEFAULT_WEIGHTS,
-                 provenance="run X · abc123", **kw)
+                 layout=layout, provenance="run X · abc123", **kw)
     return res, out
 
 
@@ -77,7 +78,7 @@ class TestA4SlideRender:
         _, svg = _render(tmp_path, "audit")
         body = svg.read_text()
         assert "rings, outermost first" in body, "the audit render keeps the key"
-        assert "Weighted score is a labelled CONVENIENCE" in body
+        assert "Mouse-phenotype ring" in body, "and the full footer block"
 
     def test_the_slide_render_is_16_by_9(self, tmp_path: Path) -> None:
         _, svg = _render(tmp_path, "slide")
@@ -114,18 +115,20 @@ class TestA4SlideRender:
         body = svg.read_text()
         assert "rings, outermost first" not in body
         assert "hasSmallMoleculeBinder" not in body
-        assert "Weighted score is a labelled CONVENIENCE" not in body
-        # One line still does the honest work.
-        assert "ranking is provisional and not validated" in body
+        assert "Mouse-phenotype ring" not in body
+        # One line still does the honest work, and v2.5 put the spoke order on
+        # it: a slide whose circle has an order nobody can see is the same
+        # defect the ring key's caveat had.
+        assert "NOT evidence of safety" in body
+        assert ORDER_NOTE in body
         assert "see the caption" in body
 
     def test_the_caption_carries_everything_the_slide_dropped(self, tmp_path: Path) -> None:
         res, _ = _render(tmp_path, "slide")
         cap = res.caption
         for must in ["Rings, outermost first", "hasSmallMoleculeBinder",
-                     "Default weights", "Pareto non-dominated set",
-                     "Missing is never imputed", "not a validated ranking",
-                     "genetic evidence"]:
+                     "Missing is never imputed", "Nothing on it is ranked or scored",
+                     ORDER_NOTE, "genetic evidence"]:
             assert must in cap, must
 
     def test_the_caption_names_the_liability_flag_when_there_is_one(
@@ -178,9 +181,10 @@ class TestA6NoTextOverTheRings:
                 # does not fire on synthetic data
                 "tractable": {g: value((i % 4) / 3) for i, g in enumerate(genes)}}
         for layout in ("audit", "slide"):
-            render(genes=genes, cells_by_ring=spec, rankings=rank_genes(spec),
+            render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
                    region="Liver", out_svg=tmp_path / f"{layout}{n}.svg",
-                   input_count=n, rendered_count=n, ledger_counts={}, layout=layout)
+                   input_count=n, rendered_count=n, ledger_counts={}, layout=layout,
+                   ordering_note=ORDER_NOTE)
 
     def test_the_check_would_catch_a_block_over_the_arcs(self, tmp_path: Path) -> None:
         """A check that has never been seen to fail is not a check."""
@@ -237,9 +241,10 @@ class TestB1SectorCeiling:
         genes = [f"G{i}" for i in range(200)]
         spec = {"logfc": {g: value(1.0) for g in genes}}
         with pytest.raises(ValueError, match="exceeds the 360 degrees"):
-            render(genes=genes, cells_by_ring=spec, rankings=rank_genes(spec),
+            render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
                    region="Liver", out_svg=tmp_path / "big.svg",
-                   input_count=200, rendered_count=200, ledger_counts={})
+                   input_count=200, rendered_count=200, ledger_counts={},
+                   ordering_note=ORDER_NOTE)
 
     def test_the_cap_applies_before_any_network_work(self) -> None:
         """`parse_de_table` runs first in run_analysis, before resolve and

@@ -15,6 +15,15 @@ async function init() {
     `<option ${t === r.default ? "selected" : ""}>${esc(t)}</option>`).join("");
   if (r.error) $("#status").textContent = "GTEx region list unavailable: " + r.error;
 
+  // v2.5. The spoke orders and the rings a threshold can be set on both come
+  // from the build, so a control can never offer a ring the figure does not have.
+  const o = await fetch("/api/orderings").then((x) => x.json());
+  $("#ordering").innerHTML = o.orderings.map((x) =>
+    `<option value="${esc(x.value)}" ${x.value === o.default ? "selected" : ""}>
+      ${esc(x.label)}</option>`).join("");
+  $("#filterable").innerHTML = "Filterable rings: " +
+    o.filterable_rings.map((f) => `<code>${esc(f.ring)}</code>`).join(", ");
+
   $("#load-example").onclick = async () => {
     $("#table").value = (await fetch("/api/example").then((x) => x.json())).realistic;
   };
@@ -68,6 +77,13 @@ async function analyse() {
   const fd = new FormData();
   fd.append("table", $("#table").value);
   fd.append("region", $("#region").value);
+  fd.append("ordering", $("#ordering").value);
+  // The no-data toggle is a property of every active filter, and it is off
+  // unless the user says otherwise — rule 1 of the two that govern filtering.
+  const drop = $("#drop-no-data").checked;
+  fd.append("filters", ($("#filters").value || "").split("\n")
+    .filter((l) => l.trim())
+    .map((l) => l.trim() + (drop ? " drop_no_data" : "")).join("\n"));
   if ($("#file").files[0]) fd.append("file", $("#file").files[0]);
 
   let res, body;
@@ -139,7 +155,19 @@ function render(b) {
     `<b>${b.counts.input}</b> genes in · <b>${b.counts.rendered}</b> rendered · ` +
     `<button class="drop linkish" id="show-ledger"><b>${b.counts.dropped}</b>` +
     ` not shown — why?</button> · ` +
-    `region <b>${esc(b.region)}</b> · Pareto set: <b>${b.pareto.map(esc).join(", ") || "—"}</b>` +
+    `region <b>${esc(b.region)}</b> · ${esc(b.ordering_note || "")}` +
+    // v2.5 item 2. A filtered figure must never read as the whole submitted set,
+    // so the counts line — the one thing everybody reads — says so first.
+    ((b.filters || []).length
+      ? `<div class="note warn"><b>Filtered — this is not your whole submitted set.</b>
+         ${b.filters.map((f) => `<code>${esc(f.expression)}</code>${f.drop_no_data
+           ? " <span class='pill warn'>+ drop no-data</span>" : ""}`).join(" · ")}
+         · <b>${b.filter_counts.filtered || 0}</b> gene(s) filtered into the ledger` +
+        (b.filter_counts.kept_unevaluated
+          ? ` · <b>${b.filter_counts.kept_unevaluated}</b> kept and marked ~ (no data on a
+             filtered ring — a threshold never drops a gene for being unmeasured)` : "") +
+        `</div>`
+      : "") +
     (b.warnings.length ? `<div class="note warn">${b.warnings.map(esc).join("<br>")}</div>` : "");
 
   $("#dl-svg").href = b.svg_url;
@@ -176,7 +204,7 @@ function wireFigure() {
     el.addEventListener("click", () => openDrawer(gene));
   });
   $("#figure").querySelectorAll("text").forEach((t) => {
-    const m = (t.textContent || "").match(/^[◆⚠\s]*([A-Za-z0-9._-]+)\s*\(k=/);
+    const m = (t.textContent || "").match(/^[⚠\s]*([A-Za-z0-9._-]+)\s*\(k=/);
     if (!m) return;
     if (!RUN.gene_order.includes(m[1])) return;
     t.style.cursor = "pointer";
@@ -189,10 +217,13 @@ function renderLedger(b) {
     $("#ledger").innerHTML = "<p class='hint'>No gene was dropped, renamed or flagged.</p>";
     return;
   }
-  const rank = { excel_corrupt: 0, ambiguous: 1, unresolved: 2, dropped_no_padj: 3,
-                 dropped_bad_logfc: 4, dropped_dup: 5, dropped_over_cap: 6,
-                 possible_mouse: 7, renamed: 8 };
-  const rows = [...b.ledger].sort((x, y) => (rank[x.status] ?? 9) - (rank[y.status] ?? 9));
+  // Problems first, then the deliberate removals, then the genes that are on the
+  // figure and only listed. A filtered gene is not a parse failure and must not
+  // sort among them.
+  const order = { excel_corrupt: 0, ambiguous: 1, unresolved: 2, dropped_no_padj: 3,
+                  dropped_bad_logfc: 4, dropped_dup: 5, dropped_over_cap: 6,
+                  filtered: 7, filtered_no_data: 8, possible_mouse: 9, renamed: 10 };
+  const rows = [...b.ledger].sort((x, y) => (order[x.status] ?? 11) - (order[y.status] ?? 11));
   const shown = new Set(["renamed", "possible_mouse"]);
   $("#ledger").innerHTML =
     `<p class="hint">Problems first. <b>renamed</b> and <b>possible_mouse</b> genes
@@ -234,13 +265,15 @@ function renderInvariants(b) {
 function renderCaveats(b) {
   $("#caveats").innerHTML =
     `<div class="note warn"><b>This figure is internally consistent and auditable.
-     It is not a validated ranking.</b></div>
+     Nothing on it is ranked or scored.</b> It is your gene set, the evidence rings,
+     and a drawer per gene.</div>
      <h4>Not attempted — and deliberately so</h4>
      <ul class="tight">${b.not_attempted.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
-     <h4>Default weights (provisional, not signed off)</h4>
-     <p><code>${esc(JSON.stringify(b.weights))}</code></p>
-     <p class="hint">The weighted score is a convenience. The headline is the Pareto
-     non-dominated set.</p>`;
+     <h4>Spoke order</h4>
+     <p>${esc(b.ordering_note || "")}</p>
+     <p class="hint">The order carries meaning, so it is printed on the figure too.
+     The default is your own table's order — it is your measurement, not a composite
+     this app invented.</p>`;
 }
 
 // ---------- drawer ----------
@@ -276,26 +309,23 @@ function drawerHtml(d) {
           ${esc(d.resolution_note)}</div>`;
   }
 
-  h += `<h4>your measurement &amp; rank</h4><dl class="kv">
+  h += `<h4>your measurement</h4><dl class="kv">
     <dt>logFC</dt><dd>${d.logfc}</dd>
     <dt>adjusted p</dt><dd>${d.padj}</dd>
-    <dt>rings available (k)</dt><dd>${d.k}</dd>
-    <dt>Pareto non-dominated</dt><dd>${d.pareto
-      ? "<span class='pill ok'>yes — headline set</span>"
-      : d.pareto_eligible === false
-        ? `<span class='pill warn'>not eligible — ${d.pareto_k} of ${d.n_pareto_axes ?? "?"} axes</span>`
-        : "<span class='pill grey'>no</span>"}</dd>
-    <dt>median available rank</dt><dd>${d.median_rank == null ? "—"
-      : d.median_rank.toFixed(3)}</dd>
-    <dt>weighted score</dt><dd>${d.weighted_score == null ? "—"
-      : d.weighted_score.toFixed(3)} <span class="hint">(convenience only)</span></dd>
+    <dt>rings with a real value (k)</dt><dd>${d.k} of ${d.k_max}
+      <span class="hint">completeness only — k orders nothing and selects nothing</span></dd>
     <dt>Pharos TDL</dt><dd>${d.tdl && d.tdl.state === "value"
       ? `<b>${esc((d.tdl.raw || {}).tdl || "")}</b> <span class="hint">development level, not a pocket</span>`
-      : `<span class='pill grey'>${esc((d.tdl || {}).state || "—")}</span>`}</dd>
-    <dt>reweighting-stable</dt><dd>${d.unstable
-      ? "<span class='pill warn'>no — top-10 place moves</span>"
-      : "<span class='pill ok'>yes</span>"}</dd></dl>`;
-  if (d.rank_note) h += `<div class="note">${esc(d.rank_note)}</div>`;
+      : `<span class='pill grey'>${esc((d.tdl || {}).state || "—")}</span>`}</dd></dl>`;
+  if (d.k_note) h += `<div class="note">${esc(d.k_note)}</div>`;
+  // v2.5 item 2, rule 1: this gene is on the figure because a threshold could
+  // not be evaluated against a cell it has no data for, not because it passed.
+  if ((d.unfiltered_rings || []).length) {
+    h += `<div class="note warn">~ Kept, not filtered: a threshold is active on
+      <b>${d.unfiltered_rings.map(esc).join(", ")}</b> and this gene has no value there,
+      so the filter could not be evaluated. Dropping it would delete genes for being
+      under-studied rather than for missing the threshold.</div>`;
+  }
 
   // --- drug pipeline (COUNCIL D6) ---
   h += `<h4>drug pipeline</h4>

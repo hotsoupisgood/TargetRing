@@ -36,6 +36,12 @@ DropStatus = Literal[
     "dropped_no_padj",
     "dropped_bad_logfc",
     "dropped_over_cap",
+    # v2.5 item 2. Two, not one, and neither is a parse failure or an
+    # unresolvable symbol: a gene whose measurement missed a manual threshold and
+    # a gene removed because it had no measurement at all are different facts
+    # about the figure, and only the second one biases a gene set.
+    "filtered",
+    "filtered_no_data",
 ]
 
 RENDERED_STATUSES: frozenset[str] = frozenset({"ok", "renamed", "possible_mouse"})

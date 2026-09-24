@@ -19,7 +19,7 @@ from targetring.figure import (
     render,
 )
 from targetring.invariants import check_all
-from targetring.rank import rank_genes
+from targetring.order import gene_stats
 from targetring.states import failed, no_data, not_applicable, value
 
 GENES = ["AAA", "BBB", "CCC", "DDD"]
@@ -41,14 +41,16 @@ def _spec():
     }
 
 
+ORDER_NOTE = "spoke order: the order of your submitted DE table (unchanged)"
+
+
 @pytest.fixture
 def rendered(tmp_path: Path):
     spec = _spec()
-    rankings = rank_genes(spec)
     res = render(
-        genes=GENES, cells_by_ring=spec, rankings=rankings, region="Lung",
+        genes=GENES, cells_by_ring=spec, stats=gene_stats(spec), region="Lung",
         out_svg=tmp_path / "f.svg", input_count=6, rendered_count=4,
-        ledger_counts={"unresolved": 2},
+        ledger_counts={"unresolved": 2}, ordering_note=ORDER_NOTE,
     )
     return res, tmp_path / "f.svg"
 
@@ -65,18 +67,12 @@ class TestPalette:
             assert_fills_disjoint()
 
 
-def _pareto_audit(svg, rankings, res=None):
-    """The audit I7 checks, built the way run.py builds it."""
-    from targetring.invariants import diamond_genes
-    from targetring.rank import PARETO_AXES, pareto_axis_completeness
-    c = pareto_axis_completeness(rankings)
+def _claims(res=None, **over):
+    """The claims I7 checks, built the way run.py builds them."""
     return {
-        "axes": list(PARETO_AXES),
-        "front": sorted(g for g, r in rankings.items() if r.pareto),
-        "front_pareto_k": {g: r.pareto_k for g, r in rankings.items()},
-        "n_eligible": c["n_eligible"], "n_ineligible": c["n_ineligible"],
-        "diamond_genes": diamond_genes(svg),
-        "diamonds_suppressed": res.diamonds_suppressed if res is not None else False,
+        "ordering_note": res.ordering_note if res is not None else ORDER_NOTE,
+        "filter_notes": list(res.filter_notes) if res is not None else [],
+        "n_filtered": 0, "n_kept_unevaluated": 0, **over,
     }
 
 
@@ -89,10 +85,10 @@ class TestAllPassOnAGoodRender:
             regression={"ok": True, "detail": "stub"},
             literature_audit={"echo_live": 4, "echo_replayed": 0, "ncbi_checked": 4,
                               "echo_mismatches": [], "ncbi_errors": []},
-            pareto_audit=_pareto_audit(svg, rank_genes(_spec()), res),
+            figure_claims=_claims(res),
         )
         assert rep.ok, rep.banner_lines() + rep.condition_lines()
-        # I7 (COUNCIL V2/V3, headline eligibility) joins the PASS/FAIL list.
+        # I7 (COUNCIL V5, re-pointed: the figure states what it did) is in the list.
         assert [r.outcome for r in rep.results] == ["PASS"] * 7
 
     def test_every_cell_reached_the_svg(self, rendered) -> None:
@@ -213,9 +209,10 @@ class TestNotEvaluatedIsNotAPass:
 class TestBanner:
     def test_failures_reach_the_figure(self, tmp_path: Path) -> None:
         spec = _spec()
-        render(genes=GENES, cells_by_ring=spec, rankings=rank_genes(spec), region="Lung",
+        render(genes=GENES, cells_by_ring=spec, stats=gene_stats(spec), region="Lung",
                out_svg=tmp_path / "b.svg", input_count=6, rendered_count=4,
-               ledger_counts={}, invariant_failures=["I4 accounting: FAIL — 3 unaccounted"])
+               ledger_counts={}, ordering_note=ORDER_NOTE,
+               invariant_failures=["I4 accounting: FAIL — 3 unaccounted"])
         svg = (tmp_path / "b.svg").read_text()
         assert "INVARIANT FAILURE" in svg
         assert "DO NOT TRUST THIS FIGURE" in svg
@@ -227,9 +224,10 @@ class TestDegenerateGeometry:
         genes = GENES[:n]
         spec = {"logfc": {g: value(1.0) for g in genes},
                 "tractable": {g: value(0.5) for g in genes}}
-        res = render(genes=genes, cells_by_ring=spec, rankings=rank_genes(spec),
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
                      region="Lung", out_svg=tmp_path / f"n{n}.svg",
-                     input_count=n, rendered_count=n, ledger_counts={})
+                     input_count=n, rendered_count=n, ledger_counts={},
+                     ordering_note=ORDER_NOTE)
         assert res.n_cells == 2 * n
         rep = check_all(svg_path=tmp_path / f"n{n}.svg", csv_rows=res.csv_rows,
                         gene_order=genes, input_count=n, rendered_count=n, ledger_count=0)
@@ -256,10 +254,7 @@ class TestA1OutageIsNotInvariantFailure:
             regression={"ok": True, "detail": "stub"},
             literature_audit={"echo_live": 4, "echo_replayed": 0, "ncbi_checked": 4,
                               "echo_mismatches": [], "ncbi_errors": []},
-            pareto_audit={"axes": ["tractable", "safety", "regional_specificity",
-                                   "clinical_phase"],
-                          "front": [], "front_pareto_k": {}, "n_eligible": 0,
-                          "n_ineligible": 0, "diamond_genes": []},
+            figure_claims=_claims(),
         )
         defaults.update(kw)
         return check_all(**defaults)
@@ -289,8 +284,9 @@ class TestA1OutageIsNotInvariantFailure:
     def test_the_two_reach_the_figure_differently(self, tmp_path: Path) -> None:
         """Measured in the SVG, not on screen."""
         spec = _spec()
-        kw = dict(genes=GENES, cells_by_ring=spec, rankings=rank_genes(spec),
-                  region="Lung", input_count=6, rendered_count=4, ledger_counts={})
+        kw = dict(genes=GENES, cells_by_ring=spec, stats=gene_stats(spec),
+                  region="Lung", input_count=6, rendered_count=4, ledger_counts={},
+                  ordering_note=ORDER_NOTE)
 
         render(out_svg=tmp_path / "outage.svg", run_conditions=[
             "I5 literature query integrity: NOT CHECKED — 0 live echoes "
@@ -356,48 +352,79 @@ class TestV11ReplayedEchoIsNotACheckedEcho:
         assert r.outcome == "FAIL"
 
 
-class TestI7HeadlineEligibility:
-    """COUNCIL V2/V3, the new invariant. It would have caught the original
-    defect: a gene whose only Pareto axis was tractable=1.0 reached the front
-    and ejected two genes that had all four."""
+class TestI7TheFigureStatesWhatItDid:
+    """COUNCIL V5, re-pointed by v2.5.
 
-    def _audit(self, **kw):
-        base = {
-            "axes": ["tractable", "safety", "regional_specificity", "clinical_phase"],
-            "front": ["AAA"], "front_pareto_k": {"AAA": 4, "BBB": 2},
-            "n_eligible": 1, "n_ineligible": 1, "diamond_genes": ["AAA"],
-        }
-        base.update(kw)
-        return base
+    I7 was "headline eligibility": every gene in the Pareto front had a real
+    value on all the Pareto axes, and the diamonds drawn on the figure were
+    exactly that front. The first half was a ranking check and went with ranking.
+    The second half was a *figure-honesty* check — the artefact must not assert
+    something the run does not support — and that survives its feature. I7 keeps
+    its id and now proves three things about the drawn SVG: no headline marker
+    outlived the ranking, the spoke order is stated, and every active filter is
+    named on the figure.
+    """
 
-    def _run(self, rendered, audit):
+    def _run(self, rendered, claims):
         res, svg = rendered
         rep = check_all(svg_path=svg, csv_rows=res.csv_rows, gene_order=GENES,
                         input_count=6, rendered_count=4, ledger_count=2,
-                        pareto_audit=audit)
+                        figure_claims=claims)
         return next(r for r in rep.results if r.id == "I7")
 
-    def test_passes_when_every_front_member_has_every_axis(self, rendered) -> None:
-        i7 = self._run(rendered, self._audit())
+    def test_passes_on_an_honest_unfiltered_figure(self, rendered) -> None:
+        res, _ = rendered
+        i7 = self._run(rendered, _claims(res))
         assert i7.outcome == "PASS"
-        assert "1 gene(s) ineligible" in i7.detail
+        assert "no headline marker survives the ranking" in i7.detail
+        assert "no threshold filter was active" in i7.detail
 
-    def test_fails_when_a_one_axis_gene_reaches_the_front(self, rendered) -> None:
-        i7 = self._run(rendered, self._audit(
-            front=["AAA", "ONEAXIS"],
-            front_pareto_k={"AAA": 4, "ONEAXIS": 1},
-            diamond_genes=["AAA", "ONEAXIS"]))
-        assert i7.outcome == "FAIL"
-        assert "ONEAXIS" in i7.detail and "every axis" in i7.detail
-
-    def test_fails_when_the_figure_and_the_ranking_disagree(self, rendered) -> None:
+    def test_fails_when_a_headline_marker_outlives_the_ranking(self, tmp_path: Path,
+                                                               rendered) -> None:
         """Checked in the artefact, like I1-I3: a rendering bug must not be able
-        to put a headline marker on a gene the ranking says is ineligible."""
-        i7 = self._run(rendered, self._audit(diamond_genes=["AAA", "BBB"]))
+        to leave a ◆ on a figure that computes no front."""
+        res, svg = rendered
+        doctored = tmp_path / "doctored.svg"
+        doctored.write_text(svg.read_text().replace(
+            ">AAA (k=", ">\u25c6 AAA (k=", 1))
+        rep = check_all(svg_path=doctored, csv_rows=res.csv_rows, gene_order=GENES,
+                        input_count=6, rendered_count=4, ledger_count=2,
+                        figure_claims=_claims(res))
+        i7 = next(r for r in rep.results if r.id == "I7")
         assert i7.outcome == "FAIL"
-        assert "diamond" in i7.detail
+        assert "retired headline marker" in i7.detail
 
-    def test_absent_audit_is_not_evaluated_not_passed(self, rendered) -> None:
+    def test_fails_when_the_figure_does_not_state_its_spoke_order(self, rendered) -> None:
+        i7 = self._run(rendered, _claims(ordering_note="spoke order: by median rank"))
+        assert i7.outcome == "FAIL"
+        assert "does not say so" in i7.detail
+
+    def test_fails_when_an_active_filter_is_not_named_on_the_figure(self,
+                                                                    rendered) -> None:
+        """The one that matters: a reader must not take a filtered figure for the
+        whole submitted set."""
+        i7 = self._run(rendered, _claims(filter_notes=["Literature volume >= 2"],
+                                         n_filtered=3))
+        assert i7.outcome == "FAIL"
+        assert "Literature volume >= 2" in i7.detail
+
+    def test_passes_when_the_filter_is_named(self, tmp_path: Path) -> None:
+        spec = _spec()
+        note = "Literature volume >= 2"
+        res = render(genes=GENES, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Lung", out_svg=tmp_path / "f.svg", input_count=7,
+                     rendered_count=4, ledger_counts={"filtered": 3},
+                     ordering_note=ORDER_NOTE, filter_notes=[note])
+        rep = check_all(svg_path=tmp_path / "f.svg", csv_rows=res.csv_rows,
+                        gene_order=GENES, input_count=7, rendered_count=4,
+                        ledger_count=3,
+                        figure_claims=_claims(res, n_filtered=3, n_kept_unevaluated=1))
+        i7 = next(r for r in rep.results if r.id == "I7")
+        assert i7.outcome == "PASS", i7.detail
+        assert "1 active filter(s) named on it" in i7.detail
+        assert "3 gene(s) filtered into the ledger" in i7.detail
+
+    def test_absent_claims_are_not_evaluated_not_passed(self, rendered) -> None:
         i7 = self._run(rendered, None)
         assert i7.outcome == "NOT_EVALUATED"
 
@@ -408,51 +435,30 @@ class TestI7HeadlineEligibility:
                         regression={"ok": True, "detail": "x"},
                         literature_audit={"echo_live": 1, "ncbi_checked": 1,
                                           "echo_mismatches": [], "ncbi_errors": []},
-                        pareto_audit=self._audit())
+                        figure_claims=_claims(res))
         ids = [r["id"] for r in rep.as_json()]
         assert ids == ["I1", "I2", "I3", "I4", "I5", "I6", "I7"]
         assert rep.ok, rep.banner_lines() + rep.condition_lines()
 
-    def test_the_diamond_is_readable_back_out_of_the_svg(self, tmp_path: Path) -> None:
-        """Enough eligible genes that V10 draws diamonds at all, one of which
-        also carries the ⚠ liability marker."""
-        from targetring.figure import PARETO_MIN_ELIGIBLE
-        from targetring.invariants import diamond_genes
+    def test_no_diamond_is_drawn_on_any_figure_any_more(self, tmp_path: Path) -> None:
+        """The readback that used to name the front's genes now proves the set
+        is empty, on a figure large enough that v2.4 would have drawn one."""
+        from targetring.invariants import headline_markers
         from targetring.states import value as v
-        n = PARETO_MIN_ELIGIBLE + 2
+        n = 12
         genes = [f"G{i:02d}" for i in range(n)]
         spec = {
             "tractable": {g: v(i / (n - 1)) for i, g in enumerate(genes)},
             "safety": {g: v(2 * i / (n - 1) - 1) for i, g in enumerate(genes)},
             "regional_specificity": {g: v(1.0 + i) for i, g in enumerate(genes)},
             "clinical_phase": {g: v(float(i % 6)) for i, g in enumerate(genes)},
-            # v2.2 item 4: `tdl` is a Pareto axis, so omitting it here would
-            # make every gene ineligible and quietly turn this into a test of
-            # the V10 suppression path instead of the diamond readback.
             "tdl": {g: v(float(i % 4)) for i, g in enumerate(genes)},
         }
-        rankings = rank_genes(spec)
-        res = render(genes=genes, cells_by_ring=spec, rankings=rankings, region="Lung",
-                     out_svg=tmp_path / "d.svg", input_count=n, rendered_count=n,
-                     ledger_counts={}, gene_flags={genes[-1]: ["Torsades de Point"]})
-        assert not res.diamonds_suppressed
-        want = sorted(g for g, r in rankings.items() if r.pareto)
-        assert want, "a strictly ordered set has exactly one non-dominated gene"
-        assert sorted(diamond_genes(tmp_path / "d.svg")) == want
-        assert genes[-1] in want, "the ⚠ liability marker must not hide the diamond"
-
-    def test_the_v10_suppressed_case(self, tmp_path: Path) -> None:
-        from targetring.invariants import diamond_genes
-        spec = _spec()
-        rankings = rank_genes(spec)
-        res = render(genes=GENES, cells_by_ring=spec, rankings=rankings, region="Lung",
-                     out_svg=tmp_path / "d.svg", input_count=4, rendered_count=4,
-                     ledger_counts={}, gene_flags={"AAA": ["Torsades de Point"]})
-        # V10 suppresses the diamond below PARETO_MIN_ELIGIBLE eligible genes,
-        # so force a set large enough for it to be drawn at all.
-        assert res.diamonds_suppressed, "4 genes is below the V10 floor"
-        drawn = diamond_genes(tmp_path / "d.svg")
-        assert drawn == [], "and none is drawn"
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec), region="Lung",
+               out_svg=tmp_path / "d.svg", input_count=n, rendered_count=n,
+               ledger_counts={}, ordering_note=ORDER_NOTE,
+               gene_flags={genes[-1]: ["Torsades de Point"]})
+        assert headline_markers(tmp_path / "d.svg") == []
 
 
 class TestManifestCarriesTheRedBannerQuestion:

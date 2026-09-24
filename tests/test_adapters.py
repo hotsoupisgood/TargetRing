@@ -238,11 +238,14 @@ class TestRodent:
         assert rodent_cell(thin).raw["n_rows"] == 1
         assert rodent_cell(thick).raw["n_rows"] == 50
 
-    def test_the_ring_is_in_no_score(self) -> None:
-        from targetring.rank import DEFAULT_WEIGHTS, EXCLUDED_FROM_SCORE
-        from targetring.run import RANKED_RINGS
-        assert "rodent" in EXCLUDED_FROM_SCORE
-        assert "rodent" not in DEFAULT_WEIGHTS and "rodent" not in RANKED_RINGS
+    def test_the_ring_is_a_lead_and_the_figure_says_so(self) -> None:
+        """COUNCIL M4/V5. It used to be excluded from the score and the rank;
+        there is no score and no rank now, so what is left to assert is that the
+        figure still calls it a lead rather than a verdict."""
+        from targetring.figure import _stamp_notes
+        notes = " ".join(_stamp_notes("spoke order: alphabetical by gene symbol", [],
+                                      "Liver", {}))
+        assert "Mouse-phenotype ring: a LEAD, not a verdict" in notes
 
 
 class TestV14PipelineSummaryReadsStraight:
@@ -442,8 +445,7 @@ class TestSparsePrioritisationKeys:
     def test_v8_the_probe_key_no_longer_reorders_genes_for_free(self) -> None:
         """v1: DDR1 mean(1,0,1,1)=0.75 outranked KCNH2 mean(1,0,1)=0.667 purely
         because DDR1's probe key existed — an ordering with no scientific
-        content. After the split the probe key cannot reorder anything at all:
-        it is not in RANKED_RINGS, not in DEFAULT_WEIGHTS and not a Pareto axis,
+        content. After the split the probe key cannot reorder anything at all,
         and the two genes' tractability is identical."""
         from targetring.adapters.opentargets import tractable_cell
         ddr1 = self._rec(hasLigand=1.0, hasPocket=0.0, hasSmallMoleculeBinder=1.0,
@@ -453,21 +455,16 @@ class TestSparsePrioritisationKeys:
         assert tractable_cell(ddr1).value == pytest.approx(2 / 3)
         assert tractable_cell(kcnh2).value == pytest.approx(2 / 3)
 
-    def test_m7_the_split_is_real_in_every_structure_that_ranks(self) -> None:
-        """COUNCIL M7/V8 asked for two rings; this asserts the sparse one does no
-        ranking work anywhere, which is the whole reason the dense one can carry
-        the axis."""
-        from targetring.rank import (
-            DEFAULT_WEIGHTS,
-            EXTERNAL_RINGS,
-            PARETO_AXES,
-            RING_SIGN,
-        )
-        from targetring.run import RANKED_RINGS
-        assert "druggability" not in PARETO_AXES and "tractable" in PARETO_AXES
-        assert "chemical_probe" not in PARETO_AXES
-        assert "chemical_probe" not in DEFAULT_WEIGHTS
-        assert "chemical_probe" not in RANKED_RINGS
+    def test_m7_the_split_is_real_in_every_structure_that_names_a_ring(self) -> None:
+        """COUNCIL M7/V8 asked for two rings, and v2.5 removed the ranking that
+        was the reason for splitting them. They are still two: two separate
+        rings, two separate k contributions, two things a threshold can be set
+        on — so a hatched probe cell still cannot take tractability with it."""
+        from targetring.order import EXTERNAL_RINGS, RING_SIGN
+        from targetring.run import FILTERABLE_RINGS
+        assert "druggability" not in EXTERNAL_RINGS
+        assert {"tractable", "chemical_probe"} <= set(EXTERNAL_RINGS)
+        assert {"tractable", "chemical_probe"} <= set(FILTERABLE_RINGS)
         # Drawn and counted in k, though — it is a real measurement when present.
         assert "chemical_probe" in EXTERNAL_RINGS and "tractable" in EXTERNAL_RINGS
         assert "druggability" not in EXTERNAL_RINGS
@@ -960,14 +957,15 @@ class TestV1SevereLiabilityFlag:
 
     def test_the_flag_reaches_the_figure(self, tmp_path) -> None:
         from targetring.figure import render
-        from targetring.rank import rank_genes
+        from targetring.order import gene_stats
         from targetring.states import value as v
         spec = {"logfc": {"KCNH2": v(1.0), "PCSK9": v(2.0)},
-                "druggability": {"KCNH2": v(0.5), "PCSK9": v(0.9)}}
+                "tractable": {"KCNH2": v(0.5), "PCSK9": v(0.9)}}
         render(genes=["KCNH2", "PCSK9"], cells_by_ring=spec,
-               rankings=rank_genes(spec), region="Liver",
+               stats=gene_stats(spec), region="Liver",
                out_svg=tmp_path / "f.svg", input_count=2, rendered_count=2,
-               ledger_counts={}, gene_flags={"KCNH2": ["Torsades de Point"]})
+               ledger_counts={}, gene_flags={"KCNH2": ["Torsades de Point"]},
+               ordering_note="spoke order: alphabetical by gene symbol")
         svg = (tmp_path / "f.svg").read_text()
         assert "⚠ KCNH2" in svg or "KCNH2" in svg
         assert "cardiac-conduction, cardiotoxicity or mortality" in svg

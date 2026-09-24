@@ -40,6 +40,12 @@ button.ghost, .btn.ghost { background: #fff; color: var(--accent); }
 button:disabled { opacity: .5; cursor: progress; }
 #go { margin-top: 12px; font-weight: 600; }
 
+/* v2.5 item 2. The drop-no-data opt-out sits under the filter box, unticked,
+   and reads as the exception it is rather than as another routine control. */
+label.check { display: block; margin: 8px 0 4px; font-size: 13px; color: var(--ink); }
+label.check input { margin-right: 6px; }
+#filterable { margin-top: 4px; }
+
 #status { margin-top: 10px; font-size: 13px; color: var(--muted); white-space: pre-wrap; }
 #status.err { color: var(--bad); font-weight: 600; }
 

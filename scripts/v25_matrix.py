@@ -1,4 +1,4 @@
-"""v2.4: the clean cold council run, then all six fixture x region combinations.
+"""The clean cold council run, then all six fixture x region combinations.
 
 Writes one line per combination and a JSON blob per run; nothing is deleted and
 the repo cache is not touched (each run gets its own cache directory).
@@ -24,38 +24,44 @@ FIXTURES = {
 }
 
 
-async def one(name: str, table: str, region: str, run_id: str, cache_root: Path):
+async def one(name: str, table: str, region: str, run_id: str, cache_root: Path,
+              **kw):
     res = await run_analysis(table=table, region=region, run_id=run_id,
-                             cache=Cache(root=cache_root), run_regression=True)
+                             cache=Cache(root=cache_root), run_regression=True, **kw)
     m = res.manifest
     inv = {i["id"]: i["outcome"] for i in m.invariants}
     n_pass = sum(1 for v in inv.values() if v == "PASS")
-    elig = (m.pareto_completeness or {}).get("n_eligible")
     print(f"{name:20s} {region:6s} {m.input_row_count:2d} in / {m.rendered_count:2d} "
           f"rendered / {m.ledger_count} ledgered · {n_pass}/7 PASS · "
-          f"{elig} eligible · {m.timings.get('total_s')}s")
+          f"{m.timings.get('total_s')}s")
     return {"fixture": name, "region": region, "invariants": inv,
-            "eligible": elig, "timings": m.timings,
+            "ordering": m.ordering, "filters": m.filters,
+            "filter_counts": m.filter_counts, "timings": m.timings,
             "conditions": m.run_conditions}
 
 
 async def main() -> None:
     out = []
     # The clean cold council run, on its own empty cache.
-    cold = Path("/tmp/tr-v24-council-cold")
+    cold = Path("/tmp/tr-v25-council-cold")
     if cold.exists():
         raise SystemExit(f"{cold} exists; a warm cache is not a cold run")
     out.append(await one("council-liver", COUNCIL_LIST, "Liver",
-                         "V24-COUNCIL-COLD", cold))
+                         "V25-COUNCIL-COLD", cold))
     # The matrix, sharing one cache after the cold run above.
-    warm = Path("/tmp/tr-v24-matrix")
+    warm = Path("/tmp/tr-v25-matrix")
     for name, table in FIXTURES.items():
         for region in ("Liver", "Lung"):
             if name == "council-liver" and region == "Liver":
                 continue
             out.append(await one(name, table, region,
-                                 f"V24-{name.split('.')[0]}-{region}", warm))
-    (ROOT / "logs" / "v24-matrix.json").write_text(json.dumps(out, indent=1))
+                                 f"V25-{name.split('.')[0]}-{region}", warm))
+    # v2.5 item 2: one combination re-run with filters active, so the matrix
+    # exercises the filtered path as well as the unfiltered one.
+    out.append(await one("de_realistic.csv (filtered)", FIXTURES["de_realistic.csv"],
+                         "Liver", "V25-FILTERED", warm,
+                         filters="literature >= 2\nregional_specificity >= 0.5"))
+    (ROOT / "logs" / "v25-matrix.json").write_text(json.dumps(out, indent=1))
 
 
 asyncio.run(main())

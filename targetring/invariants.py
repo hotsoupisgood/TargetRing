@@ -1,4 +1,4 @@
-"""The six invariants of PLAN.md §6, checked against the rendered artefact.
+"""The seven invariants of PLAN.md §6, checked against the rendered artefact.
 
 These run at the end of every render, including the unattended one, and their
 PASS/FAIL goes into the manifest and onto the figure. The point of checking the
@@ -205,7 +205,7 @@ def check_all(
     ledger_count: int,
     regression: dict[str, Any] | None = None,
     literature_audit: dict[str, Any] | None = None,
-    pareto_audit: dict[str, Any] | None = None,
+    figure_claims: dict[str, Any] | None = None,
     conditions: Sequence[tuple[str, str]] = (),
 ) -> InvariantReport:
     rep = InvariantReport(conditions=list(conditions))
@@ -225,20 +225,26 @@ def check_all(
     rep.results.append(_i4_accounting(input_count, rendered_count, ledger_count))
     rep.results.append(_i5_literature(literature_audit))
     rep.results.append(_i6_regression(regression))
-    rep.results.append(_i7_headline_eligibility(svg_cells, pareto_audit, svg_path))
+    rep.results.append(_i7_figure_states_what_it_did(figure_claims, svg_path))
     return rep
 
 
-def diamond_genes(svg_path: Path) -> list[str]:
-    """Genes the figure marks with the headline diamond, read back out of the SVG."""
+def svg_text(svg_path: Path) -> list[str]:
+    """Every text run the figure drew, in document order."""
     root = ET.parse(svg_path).getroot()
-    out: list[str] = []
-    for el in root.iter(f"{SVG_NS}text"):
-        text = "".join(el.itertext())
-        m = re.match(r"^\s*◆\s*⚠?\s*([A-Za-z0-9._-]+)\s*\(k=", text)
-        if m:
-            out.append(m.group(1))
-    return out
+    return ["".join(el.itertext()) for el in root.iter(f"{SVG_NS}text")]
+
+
+def headline_markers(svg_path: Path) -> list[str]:
+    """Text the figure draws carrying the retired headline diamond.
+
+    v2.5 keeps this readback and inverts what it proves. It used to name the
+    genes the Pareto front marked, so I7 could check the drawn diamonds against
+    the ranking; nothing is ranked now, so the only correct answer is none, and
+    a diamond surviving anywhere in the artefact means a ranking marker outlived
+    the ranking.
+    """
+    return [t.strip() for t in svg_text(svg_path) if "◆" in t]
 
 
 def _i1_cell_count(svg_cells, csv_rows) -> Result:
@@ -421,64 +427,84 @@ def _i6_regression(reg: dict[str, Any] | None) -> Result:
     return Result("I6", "five-ID regression", "FAIL", reg.get("detail", "failed"))
 
 
-def _i7_headline_eligibility(
-    svg_cells, pareto_audit: dict[str, Any] | None, svg_path: Path | None
+def _i7_figure_states_what_it_did(
+    claims: dict[str, Any] | None, svg_path: Path | None
 ) -> Result:
-    """COUNCIL V2/V3 — the headline is computed only over eligible genes.
+    """COUNCIL V5, and v2.5 item 2 — the figure states what it actually did.
 
-    New in v2 and added to the manifest's PASS/FAIL list. Two assertions:
+    **What this invariant used to be, and why it is not simply deleted.** I7 was
+    "headline eligibility": every gene in the Pareto front had a real value on
+    all the Pareto axes (COUNCIL V2), and the diamonds drawn on the figure were
+    exactly that front, checked in the artefact so a rendering bug could not put
+    a headline marker on a gene the ranking called ineligible. Its first half was
+    a ranking check and went with ranking. Its second half was not: it was a
+    figure-honesty check -- *the drawn artefact must not assert something the run
+    does not support* -- and that claim outlives the feature it was written for.
 
-    1. Every gene in the Pareto front has a real value on *all* the Pareto axes.
-       In v1 a gene whose only axis was druggability=1.0 entered the front and
-       ejected two genes that had all four, so this is the check that would have
-       caught the original defect.
-    2. The diamond drawn on the figure marks exactly the front. Checked in the
-       artefact, like I1-I3, so a rendering bug cannot put a headline marker on
-       a gene the ranking says is ineligible.
+    So I7 keeps its id and its place in the PASS/FAIL list, and now asserts three
+    things about the rendered SVG:
+
+    1. **No headline marker survives the ranking.** Nothing is ranked, so a ◆
+       anywhere in the artefact is a claim with nothing behind it.
+    2. **The spoke order is stated on the figure**, and the sentence printed is
+       the ordering the run actually used. An order that carries meaning and is
+       not stated is the same defect as an unlabelled colour scale.
+    3. **Every active threshold filter is named on the figure.** A filtered plot
+       that does not say so reads as the whole submitted set -- a plausible wrong
+       figure, which AGENTS.md calls the worst possible output.
     """
-    if not pareto_audit:
-        return Result("I7", "headline eligibility", "NOT_EVALUATED",
-                      "no Pareto audit was supplied for this render",
-                      affects="the headline set was not re-checked against the figure")
+    if not claims:
+        return Result("I7", "the figure states what it did", "NOT_EVALUATED",
+                      "no figure claims were supplied for this render",
+                      affects="the ordering rule and any active filters were not "
+                              "re-checked against the drawn artefact")
+    if svg_path is None:
+        return Result("I7", "the figure states what it did", "NOT_EVALUATED",
+                      "no SVG to read the claims back out of")
+    try:
+        drawn = svg_text(svg_path)
+    except Exception as e:  # noqa: BLE001
+        return Result("I7", "the figure states what it did", "NOT_EVALUATED",
+                      f"SVG unreadable: {e}")
+    body = "\n".join(drawn)
 
-    axes = list(pareto_audit.get("axes") or ())
-    front = sorted(pareto_audit.get("front") or ())
-    per_gene_k = pareto_audit.get("front_pareto_k") or {}
-    bad = {g: per_gene_k.get(g) for g in front if per_gene_k.get(g, 0) < len(axes)}
-    if bad:
+    diamonds = [t.strip() for t in drawn if "◆" in t]
+    if diamonds:
         return Result(
-            "I7", "headline eligibility", "FAIL",
-            f"these genes are in the Pareto front without a value on every axis "
-            f"{axes}: {bad}. A gene must not reach the headline on the axes it "
-            f"happens to have (COUNCIL V2).")
+            "I7", "the figure states what it did", "FAIL",
+            f"the figure draws the retired headline marker: {diamonds[:3]}. Nothing is "
+            f"ranked in v2.5, so a ◆ marks membership of a set that is not computed.")
 
-    n_in = pareto_audit.get("n_eligible", 0)
-    n_out = pareto_audit.get("n_ineligible", 0)
-    drawn = pareto_audit.get("diamond_genes")
-    if pareto_audit.get("diamonds_suppressed"):
-        # COUNCIL V10: on a short list almost nothing is dominated, so the
-        # diamond is not drawn. None drawn is then correct, and any drawn is not.
-        if drawn:
-            return Result("I7", "headline eligibility", "FAIL",
-                          f"the diamond is suppressed on a list this short, but the figure "
-                          f"draws one on {sorted(drawn)}")
+    ordering = claims.get("ordering_note") or ""
+    if not ordering:
+        return Result("I7", "the figure states what it did", "FAIL",
+                      "this run states no spoke-ordering rule; the order of the circle "
+                      "carries meaning and must be printed on it")
+    if ordering not in body:
         return Result(
-            "I7", "headline eligibility", "PASS",
-            f"{len(front)} of {n_in} eligible gene(s) in the front, each with a real value "
-            f"on all {len(axes)} axes {axes}; {n_out} ineligible. The headline diamond is "
-            f"suppressed on a list this short (COUNCIL V10) and none is drawn.")
-    if drawn is not None and sorted(drawn) != front:
-        return Result(
-            "I7", "headline eligibility", "FAIL",
-            f"the figure draws a headline diamond on {sorted(drawn)} but the ranking's "
-            f"front is {front}")
+            "I7", "the figure states what it did", "FAIL",
+            f"the run ordered the spokes by {ordering!r} and the figure does not say so "
+            f"anywhere in its own text.")
 
+    missing = [f for f in (claims.get("filter_notes") or []) if f not in body]
+    if missing:
+        return Result(
+            "I7", "the figure states what it did", "FAIL",
+            f"{len(missing)} active filter(s) removed genes from this plot and are not "
+            f"named on it: {missing}. A reader would take a filtered figure for the whole "
+            f"submitted set.")
+
+    n_filters = len(claims.get("filter_notes") or [])
+    n_filtered = claims.get("n_filtered", 0)
+    n_marked = claims.get("n_kept_unevaluated", 0)
     return Result(
-        "I7", "headline eligibility", "PASS",
-        f"{len(front)} of {n_in} eligible gene(s) in the front, each with a real value on "
-        f"all {len(axes)} axes {axes}; {n_out} gene(s) ineligible and drawn without a "
-        f"diamond" + (f"; the figure's {len(drawn)} diamond(s) match"
-                      if drawn is not None else ""))
+        "I7", "the figure states what it did", "PASS",
+        f"no headline marker survives the ranking; the spoke order is printed on the "
+        f"figure ({ordering}); "
+        + (f"{n_filters} active filter(s) named on it, {n_filtered} gene(s) filtered into "
+           f"the ledger and {n_marked} kept and marked for having no data on a filtered ring"
+           if n_filters else "no threshold filter was active"))
 
 
-__all__ = ["check_all", "InvariantReport", "Result", "Outcome"]
+__all__ = ["check_all", "InvariantReport", "Result", "Outcome", "svg_text",
+           "headline_markers"]

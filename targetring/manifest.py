@@ -61,14 +61,20 @@ class Manifest:
     invariants: list[dict[str, str]] = field(default_factory=list)
     llm: dict[str, Any] = field(default_factory=dict)
     ledger: list[dict[str, Any]] = field(default_factory=list)
-    weights: dict[str, float] = field(default_factory=dict)
     timings: dict[str, float] = field(default_factory=dict)
     not_attempted: list[str] = field(default_factory=list)
     environment: dict[str, str] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+    # v2.5. `weights` and `pareto_completeness` are gone with ranking. What
+    # replaces them is the two settings that now shape which genes are on the
+    # figure and in what order: without these a run is not reproducible from its
+    # artefacts, which is the whole point of writing a manifest beside it.
+    ordering: str = ""
+    ordering_note: str = ""
+    filters: list[dict[str, Any]] = field(default_factory=list)
+    filter_counts: dict[str, Any] = field(default_factory=dict)
     # COUNCIL V3 / UX A1. Run conditions are not invariant failures and are
     # recorded separately so the two can never be confused in an audit.
-    pareto_completeness: dict[str, Any] = field(default_factory=dict)
     run_conditions: list[dict[str, str]] = field(default_factory=list)
 
     @property
@@ -111,11 +117,11 @@ NOT_ATTEMPTED: list[str] = [
     "LLM triage gold set — labelling ~20 abstracts is human work. Triage precision "
     "is UNMEASURED (QA S2 item 5).",
     "Any ChEMBL-backed ring — UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL "
-    "is drawer evidence only and drives no ring and no rank (QA B6, COUNCIL D2).",
-    "A defensible weighting scheme — the default weights are provisional until a human "
-    "signs them off (COUNCIL M3, AGENTS.md).",
-    "Any claim that the ranking is biologically meaningful. This figure is internally "
-    "consistent and auditable; it is not a validated ranking.",
+    "is drawer evidence only and drives no ring (QA B6, COUNCIL D2).",
+    # v2.5: the two ranking entries are gone, because the thing they declined to "
+    # claim no longer exists. Nothing here is ranked, scored or weighted.
+    "Any ordering of the genes by merit. The spokes are in the order this run states on "
+    "the figure and nothing on it is a ranking, a score or a recommendation.",
 ]
 
 
@@ -130,12 +136,14 @@ def build(
     invariants: InvariantReport,
     contracts: list[dict[str, Any]],
     ledger: list[dict[str, Any]],
-    weights: dict[str, float],
     llm: dict[str, Any],
     timings: dict[str, float],
     sources: dict[str, Any] | None = None,
     warnings: list[str] | None = None,
-    pareto_completeness: dict[str, Any] | None = None,
+    ordering: str = "",
+    ordering_note: str = "",
+    filters: list[dict[str, Any]] | None = None,
+    filter_counts: dict[str, Any] | None = None,
     run_conditions: list[dict[str, str]] | None = None,
 ) -> Manifest:
     return Manifest(
@@ -153,7 +161,6 @@ def build(
         invariants=invariants.as_json(),
         llm=llm,
         ledger=ledger,
-        weights=weights,
         timings=timings,
         not_attempted=list(NOT_ATTEMPTED),
         environment={
@@ -162,7 +169,10 @@ def build(
             "max_concurrency_per_host": str(config.MAX_CONCURRENCY_PER_HOST),
         },
         warnings=warnings or [],
-        pareto_completeness=pareto_completeness or {},
+        ordering=ordering,
+        ordering_note=ordering_note,
+        filters=filters or [],
+        filter_counts=filter_counts or {},
         run_conditions=run_conditions or [],
     )
 

@@ -1,9 +1,15 @@
 """Orchestration: DE table + region -> figure, CSV, manifest.
 
 Order is fixed and matters: contracts -> parse -> resolve -> dedupe on the
-resolved id -> adapters -> rank -> render -> invariants -> manifest. Resolution
-comes before every ring (AGENTS.md rule 5) and the accounting assertion runs
-before anything is drawn (rule 3).
+resolved id -> adapters -> filter -> order -> render -> invariants -> manifest.
+Resolution comes before every ring (AGENTS.md rule 5) and the accounting
+assertion runs before anything is drawn (rule 3) and again after filtering,
+because a filter removes genes from the plot and rule 3 does not care why a gene
+is missing.
+
+v2.5 removed ranking: no Pareto front, no weighted score, no weights, no
+eligibility, no rank within the submitted set and no reweighting-stability flag.
+What is left is a gene set, rings of evidence and a drawer per gene.
 """
 
 from __future__ import annotations
@@ -15,7 +21,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from . import figure, manifest as manifest_mod
 from .adapters.gtex import GTExAdapter, GTExRecord, list_regions, specificity_cell
@@ -51,16 +57,18 @@ from .de_input import (
     dropped_entries,
     parse_de_table,
 )
+from .filters import Filter, FilterRejected, parse_filters
+from . import filters as filters_mod
 from .http import Http
 from .invariants import InvariantReport, check_all
-from .invariants import diamond_genes
-from .rank import (
-    DEFAULT_WEIGHTS,
+from . import order as order_mod
+from .order import (
     EXTERNAL_RING_COUNT,
-    PARETO_AXES,
+    SUBMITTED,
+    gene_stats,
+    normalise_ordering,
     order_for_figure,
-    pareto_axis_completeness,
-    rank_genes,
+    ordering_label,
 )
 from .regression import five_id_regression
 from .resolve import Resolver, ledger_reason
@@ -80,20 +88,17 @@ DRAWER_ONLY_SOURCES = ("chembl", "europepmc")
 # reported as a run condition.
 COST_SHARE_WARN = 0.40
 
-# Rings that feed the ranking. The user's own logFC/padj and k are drawn but not
-# ranked against each other -- they are his measurement, not a target property.
-#
-# COUNCIL V5: `rodent` is gone from here as well as from DEFAULT_WEIGHTS. It was
-# in both the weighted score and the median available rank while the figure's
-# footer asserted it was "never folded into any score". It is now drawn, read in
-# the drawer, and ranked nowhere -- which is what M4 asked for.
-#
-# v2.3 item 1: `chemical_probe` is drawn but is NOT here. It is sparse, and the
-# median available rank would silently be computed over a different ring set for
-# a probed gene than for an unprobed one.
-RANKED_RINGS = (
-    "tractable", "safety", "regional_specificity",
-    "clinical_phase", "clinical_activity", "tdl", "literature",
+# v2.5 item 2. The rings a threshold filter may be set on: every ring that
+# carries a number a user could reasonably threshold, including his own two.
+# `clinical_activity` is here and is a three-state categorical, so a threshold on
+# it is a threshold on the stated ordinal (-1 stopped for cause, 0 dormant,
+# 1 live) and nothing else; `completeness` is derived after filtering and is
+# deliberately absent, because filtering on k would be filtering on how much
+# anybody has studied a gene, which is M3's bias with a slider on it.
+FILTERABLE_RINGS = (
+    "logfc", "neg_log10_padj", "tractable", "chemical_probe", "safety",
+    "regional_specificity", "clinical_phase", "clinical_activity", "tdl",
+    "rodent", "literature",
 )
 
 
@@ -110,6 +115,8 @@ class RunResult:
     drawers: dict[str, dict[str, Any]] = field(default_factory=dict)
     ledger: list[LedgerEntry] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    ordering: str = SUBMITTED
+    active_filters: list[dict[str, Any]] = field(default_factory=list)
 
 
 async def run_analysis(
@@ -121,6 +128,8 @@ async def run_analysis(
     runs_dir: Path | None = None,
     run_regression: bool = True,
     with_triage: bool = False,
+    ordering: str | None = None,
+    filters: Any = None,
 ) -> RunResult:
     t0 = time.time()
     run_id = run_id or f"{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}-{uuid.uuid4().hex[:6]}"
@@ -130,6 +139,10 @@ async def run_analysis(
     warnings: list[str] = []
 
     parsed: ParsedInput = parse_de_table(table)
+    # Before any network work: a filter naming a ring this build does not have is
+    # a mistake the user can fix in a second, and finding out after a 27 s cold
+    # run is not a kindness.
+    active_filters: list[Filter] = parse_filters(filters, FILTERABLE_RINGS)
 
     async with Http() as http:
         t = time.time()
@@ -290,14 +303,52 @@ async def run_analysis(
         "literature": {g: literature_cell(lit_by_gene[g]) for g in genes},
     }
 
-    rankings = rank_genes(cells_by_ring, DEFAULT_WEIGHTS, RANKED_RINGS)
+    # --- filters (v2.5 item 2) -------------------------------------------
+    # Applied here: after every ring has its real value, before k is counted and
+    # before anything is drawn. Two rules, both promised and both asserted in
+    # `filters.apply`: a threshold never silently drops a gene with no data on
+    # that ring (it is kept and marked, and only an explicit per-filter toggle
+    # removes it), and every filtered gene lands in the drop ledger under its own
+    # status so `input == rendered + ledgered` still holds.
+    outcome = filters_mod.apply(genes, cells_by_ring, active_filters)
+    for d in outcome.drops:
+        row, res = by_gene[d.gene]
+        ledger.append(LedgerEntry(
+            row.symbol, d.status, d.reason,
+            resolved_symbol=d.gene, ensembl_id=res.ensembl_id,
+            row_number=row.row_number,
+        ))
+    if not outcome.kept:
+        raise ValueError(
+            f"every one of the {len(genes)} gene(s) was removed by the "
+            f"{len(active_filters)} active filter(s): "
+            f"{'; '.join(f.label() for f in active_filters)}. No figure is drawn rather "
+            f"than an empty circle."
+        )
+    genes = outcome.kept
+    cells_by_ring = filters_mod.restrict(cells_by_ring, genes)
+    rendered_count = len(genes)
+    # AGENTS.md rule 3 again. A gene removed by a slider is as missing from the
+    # figure as a gene that failed to resolve, and the counts stamped on the
+    # figure have to add up either way.
+    assert_accounted(parsed.input_row_count, rendered_count, ledger)
+
+    stats = gene_stats(cells_by_ring)
+    for g, rings_unfiltered in outcome.kept_unevaluated.items():
+        if g in stats:
+            stats[g].unfiltered_rings = rings_unfiltered
     cells_by_ring["completeness"] = {
-        g: value(float(rankings[g].k),
-                 f"{rankings[g].k} of {EXTERNAL_RING_COUNT} external rings have a real "
+        g: value(float(stats[g].k),
+                 f"{stats[g].k} of {EXTERNAL_RING_COUNT} external rings have a real "
                  f"measurement (COUNCIL V13: your own logFC and padj are not counted)")
         for g in genes
     }
-    gene_order = order_for_figure(rankings)
+    ordering = normalise_ordering(ordering, cells_by_ring)
+    ring_labels = {s.key: s.label for s in figure.RING_SPECS}
+    ring_key = order_mod.is_ring_ordering(ordering)
+    ordering_note = ordering_label(ordering, ring_labels.get(ring_key or ""))
+    filter_notes = filters_mod.filter_lines(active_filters, ring_labels)
+    gene_order = order_for_figure(genes, cells_by_ring, ordering)
 
     # COUNCIL V1 (ii): genes whose Open Targets safety record includes a cardiac
     # or mortality liability. Carried to the figure so the clinical rings cannot
@@ -351,15 +402,16 @@ async def run_analysis(
             "PubTator3 and is unaffected, and Europe PMC counts are fetched on gene "
             "click where the echo is asserted again",
         ))
-    # v2.2 item 4. Pharos is now a Pareto axis, so a Pharos outage changes who
-    # is eligible for the headline. That has to be visible.
+    # v2.2 item 4. A Pharos outage no longer changes a headline -- there is none
+    # -- but it still empties a whole ring, and a ring of hatching is a fact
+    # about Pharos rather than about the genes.
     pharos_missing = [g for g in genes if cells_by_ring["tdl"][g].state != "value"]
     if pharos_missing:
         conditions.append((
             f"no Pharos TDL for {len(pharos_missing)} of {len(genes)} gene(s) "
             f"({', '.join(pharos_missing[:5])})",
-            "TDL is a Pareto axis, so those genes are ineligible for the headline; "
-            "Pharos covers 20,412 human targets and absence of a record is not Tdark",
+            "those cells are hatched, never zeroed; Pharos covers 20,412 human targets "
+            "and absence of a record is not Tdark",
         ))
     # A source that drives no ring should not be able to dominate a run without
     # saying so. ChEMBL is drawer evidence only (PLAN §8) and was measured at
@@ -374,19 +426,31 @@ async def run_analysis(
             conditions.append((
                 f"{source} took {spent:.0f}s of the {total:.0f}s spent on sources "
                 f"({spent / total:.0%})",
-                "it drives no ring and no rank (PLAN §8), so this is pure cost on the "
-                "render path; failures are never cached, so every run re-pays it",
+                "it drives no ring (PLAN §8), so this is pure cost on the render path; "
+                "failures are never cached, so every run re-pays it",
             ))
 
-    completeness = pareto_axis_completeness(rankings)
-    if not completeness["complete"]:
-        missing = ", ".join(f"{ax} {n}" for ax, n in
-                            completeness["missing_cells_per_axis"].items() if n)
+    # v2.5 item 2, rule 1 made visible. A gene kept because a threshold could not
+    # be evaluated against a cell it has no data for is on the figure and marked,
+    # and how many there are is a fact about the filter, not about the genes.
+    if outcome.kept_unevaluated:
+        per_ring: dict[str, int] = {}
+        for rings_unfiltered in outcome.kept_unevaluated.values():
+            for r in rings_unfiltered:
+                per_ring[r] = per_ring.get(r, 0) + 1
         conditions.append((
-            f"{completeness['missing_cells_total']} Pareto-axis cell(s) missing "
-            f"({missing})",
-            f"{completeness['n_ineligible']} gene(s) are ineligible for the headline "
-            f"and carry no diamond; the front is a floor, not a ranking",
+            f"{len(outcome.kept_unevaluated)} gene(s) kept unfiltered: no data on a "
+            f"filtered ring ({', '.join(f'{r} {n}' for r, n in sorted(per_ring.items()))})",
+            "a threshold never drops a gene for being unmeasured (COUNCIL v0 M3); they are "
+            "drawn, marked ~, and only the explicit per-filter 'drop no-data' toggle "
+            "removes them",
+        ))
+    if outcome.drops:
+        conditions.append((
+            f"{len(outcome.drops)} gene(s) removed by {len(active_filters)} threshold "
+            f"filter(s): {'; '.join(filter_notes)}",
+            "this figure is not your whole submitted set; every filtered gene is in "
+            "ledger.csv with the filter it failed",
         ))
     # Deliberately NOT added to `warnings`: the conditions have their own
     # channel now (#conditions on the page, the amber notice on the figure,
@@ -404,7 +468,7 @@ async def run_analysis(
         return figure.render(
             genes=gene_order,
             cells_by_ring=cells_by_ring,
-            rankings=rankings,
+            stats=stats,
             region=region,
             out_svg=svg or svg_path,
             out_png=png if png is not None else runs_dir / "figure.png",
@@ -418,8 +482,8 @@ async def run_analysis(
             dropped_names=[e.input_symbol for e in dropped_entries(ledger)],
             invariant_failures=failures,
             run_conditions=conds,
-            weights=DEFAULT_WEIGHTS,
-            ranked_rings=RANKED_RINGS,
+            ordering_note=ordering_note,
+            filter_notes=filter_notes,
             gene_flags=severe_liability_flags,
             provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
         )
@@ -436,14 +500,11 @@ async def run_analysis(
         ledger_count=len(dropped_entries(ledger)),
         regression=regression,
         literature_audit=lit_audit,
-        pareto_audit={
-            "axes": list(PARETO_AXES),
-            "front": [g for g in gene_order if rankings[g].pareto],
-            "front_pareto_k": {g: rankings[g].pareto_k for g in gene_order},
-            "n_eligible": completeness["n_eligible"],
-            "n_ineligible": completeness["n_ineligible"],
-            "diamond_genes": diamond_genes(svg_path),
-            "diamonds_suppressed": fig_result.diamonds_suppressed,
+        figure_claims={
+            "ordering_note": fig_result.ordering_note,
+            "filter_notes": list(fig_result.filter_notes),
+            "n_filtered": len(outcome.drops),
+            "n_kept_unevaluated": len(outcome.kept_unevaluated),
         },
         conditions=conditions,
     )
@@ -471,7 +532,8 @@ async def run_analysis(
               svg=runs_dir / "figure-slide.svg", png=runs_dir / "figure-slide.png")
     (runs_dir / "caption.txt").write_text(fig_result.caption + "\n")
 
-    _write_csv(csv_path, fig_result.csv_rows, ledger, parsed)
+    _write_csv(csv_path, fig_result.csv_rows, ledger, parsed,
+               ordering_note, active_filters, outcome.kept_unevaluated)
     # UX A3. The ledger is already appended to values.csv as a second table, but
     # a second table below a comment line is not something a CSV parser reads --
     # which is why the UX review concluded the dropped genes were absent from
@@ -493,16 +555,12 @@ async def run_analysis(
             "resolution_note": res.note,
             "logfc": row.logfc,
             "padj": row.padj,
-            "k": rankings[g].k,
-            "pareto": rankings[g].pareto,
-            "pareto_eligible": rankings[g].pareto_eligible,
-            "pareto_k": rankings[g].pareto_k,
-            # v2.2 item 4: the drawer said "n of 4 axes" in a template literal.
-            "n_pareto_axes": len(PARETO_AXES),
-            "unstable": rankings[g].unstable,
-            "median_rank": rankings[g].median_rank,
-            "weighted_score": rankings[g].weighted_score,
-            "rank_note": rankings[g].note,
+            "k": stats[g].k,
+            "k_max": EXTERNAL_RING_COUNT,
+            "k_note": stats[g].note,
+            # v2.5 item 2, rule 1: the rings where a filter was active and this
+            # gene had nothing to compare, so it was kept rather than dropped.
+            "unfiltered_rings": list(stats[g].unfiltered_rings),
             "pipeline_summary": pipeline_summary(rec),
             "severe_liabilities": severe_liabilities(rec),
             "attribution_error": rec.associations_error,
@@ -574,12 +632,20 @@ async def run_analysis(
             "resolved_symbol": e.resolved_symbol, "ensembl_id": e.ensembl_id,
             "row": e.row_number,
         } for e in ledger],
-        weights=dict(DEFAULT_WEIGHTS), llm=llm_info, timings=timings,
+        llm=llm_info, timings=timings,
         sources={"gtex_region": region, "cache_hits": cache.hits, "cache_misses": cache.misses},
         warnings=warnings,
-        # COUNCIL V3: the headline is not reproducible while a Pareto axis is
-        # incomplete, so how incomplete it was is part of the audit trail.
-        pareto_completeness=completeness,
+        # v2.5 item 2: the figure is reproducible from its artefacts only if the
+        # settings that shaped it travel with them.
+        ordering=ordering,
+        ordering_note=ordering_note,
+        filters=filters_mod.as_dicts(active_filters),
+        filter_counts={
+            "filtered": len(outcome.drops),
+            "kept_unevaluated": len(outcome.kept_unevaluated),
+            "kept_unevaluated_by_gene": {g: list(rs) for g, rs
+                                         in outcome.kept_unevaluated.items()},
+        },
         run_conditions=[{"condition": h, "affects": w} for h, w in conditions],
     )
     manifest_path = man.write(runs_dir / "manifest.json")
@@ -588,17 +654,42 @@ async def run_analysis(
         run_id=run_id, region=region, svg_path=svg_path, csv_path=csv_path,
         manifest_path=manifest_path, manifest=man, invariants=invariants,
         gene_order=gene_order, drawers=drawers, ledger=ledger, warnings=warnings,
+        ordering=ordering, active_filters=filters_mod.as_dicts(active_filters),
     )
 
 
-def _write_csv(path: Path, rows, ledger, parsed) -> None:
+def _write_csv(path: Path, rows, ledger, parsed, ordering_note: str = "",
+               active_filters: Sequence[Filter] = (),
+               kept_unevaluated: dict[str, list[str]] | None = None) -> None:
     """The CSV carries the drop ledger as its own section (QA B7 item 3), so the
-    dropped genes travel with the figure."""
+    dropped genes travel with the figure.
+
+    v2.5 item 2: and the filter settings, so the figure is reproducible from its
+    artefacts. A `values.csv` that does not say which thresholds were active
+    describes a gene set nobody can rebuild.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
+    kept_unevaluated = kept_unevaluated or {}
     with path.open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
+        fh.write(f"\n# SPOKE ORDER — {ordering_note}\n")
+        fh.write("\n# FILTERS ACTIVE ON THIS FIGURE — it is not the whole submitted set\n")
+        fw = csv.writer(fh)
+        fw.writerow(["ring", "comparison", "threshold", "drop_no_data", "expression"])
+        for f in active_filters:
+            fw.writerow([f.ring, f.symbol, f"{f.threshold:g}", f.drop_no_data,
+                         f"{f.ring} {f.symbol} {f.threshold:g}"])
+        if not active_filters:
+            fw.writerow(["", "", "", "", "none"])
+        if kept_unevaluated:
+            fh.write("\n# KEPT, NOT FILTERED — no data on a filtered ring, so the "
+                     "threshold could not be evaluated (marked ~ on the figure)\n")
+            uw = csv.writer(fh)
+            uw.writerow(["gene", "rings_not_evaluated"])
+            for g, rings_unfiltered in sorted(kept_unevaluated.items()):
+                uw.writerow([g, " ".join(rings_unfiltered)])
         fh.write("\n# DROP LEDGER — every input row is above or below this line\n")
         lw = csv.writer(fh)
         lw.writerow(["input_symbol", "status", "resolved_symbol", "ensembl_id", "row", "reason"])
@@ -627,4 +718,5 @@ async def available_regions(cache: Cache | None = None) -> list[str]:
     return list_regions(rec)
 
 
-__all__ = ["run_analysis", "RunResult", "available_regions", "RANKED_RINGS", "DEFAULT_REGION"]
+__all__ = ["run_analysis", "RunResult", "available_regions", "FILTERABLE_RINGS",
+           "DEFAULT_REGION"]

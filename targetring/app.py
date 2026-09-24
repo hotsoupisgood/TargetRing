@@ -19,8 +19,10 @@ from .adapters.literature import EuropePMCAdapter
 from .cache import Cache
 from .config import RUNS_DIR
 from .de_input import InputRejected
+from .filters import FilterRejected
 from .http import HardFailure, Http
-from .run import DEFAULT_REGION, available_regions, run_analysis
+from .order import ALPHABETICAL, RING_PREFIX, SUBMITTED
+from .run import DEFAULT_REGION, FILTERABLE_RINGS, available_regions, run_analysis
 
 app = FastAPI(title="targetring", docs_url="/api/docs")
 
@@ -57,6 +59,33 @@ async def regions() -> dict[str, Any]:
     return {"regions": _regions_cache, "default": DEFAULT_REGION}
 
 
+@app.get("/api/orderings")
+async def orderings() -> dict[str, Any]:
+    """The spoke orders this build offers, and the rings a filter can be set on.
+
+    v2.5. The default is the order of the submitted DE table: Puck has usually
+    already sorted it, and it is his measurement rather than a composite we
+    invented. Alphabetical and order-by-a-single-ring are beside it — a single
+    ring is one source's own number, not a composite, which is why it is allowed
+    where a ranking is not.
+    """
+    from .figure import RING_SPECS
+
+    labels = {s.key: s.label for s in RING_SPECS}
+    return {
+        "default": SUBMITTED,
+        "orderings": [
+            {"value": SUBMITTED,
+             "label": "the order of your submitted DE table (default)"},
+            {"value": ALPHABETICAL, "label": "alphabetical by gene symbol"},
+            *[{"value": f"{RING_PREFIX}{key}", "label": f"by ring: {labels.get(key, key)}"}
+              for key in FILTERABLE_RINGS],
+        ],
+        "filterable_rings": [{"ring": key, "label": labels.get(key, key)}
+                             for key in FILTERABLE_RINGS],
+    }
+
+
 @app.get("/api/example")
 async def example() -> dict[str, str]:
     p = Path(__file__).parent.parent / "fixtures" / "de_realistic.csv"
@@ -71,6 +100,8 @@ async def example() -> dict[str, str]:
 async def analyse(
     table: str = Form(""),
     region: str = Form(DEFAULT_REGION),
+    ordering: str = Form(SUBMITTED),
+    filters: str = Form(""),
     file: UploadFile | None = None,
 ) -> JSONResponse:
     raw: bytes | str
@@ -82,7 +113,14 @@ async def analyse(
         raise HTTPException(400, "Provide a DE table, pasted or uploaded.")
 
     try:
-        result = await run_analysis(table=raw, region=region)
+        result = await run_analysis(table=raw, region=region,
+                                    ordering=ordering, filters=filters)
+    except FilterRejected as e:
+        # The filter settings themselves are unusable — a ring that does not
+        # exist, a threshold that is not a number. Nothing was fetched and
+        # nothing was drawn; the message names what to fix.
+        return JSONResponse({"error": "filter_rejected", "message": str(e)},
+                            status_code=422)
     except InputRejected as e:
         # The whole file is unusable. Distinct from per-row drops, and the
         # message is the user's instruction for fixing it.
@@ -134,18 +172,24 @@ def _summarise(r) -> dict[str, Any]:
         # the two.
         "any_invariant_failed": m.any_invariant_failed,
         "run_conditions": m.run_conditions,
-        "pareto_completeness": m.pareto_completeness,
         "contracts": m.contracts,
         "warnings": m.warnings,
         "ledger": m.ledger,
-        "weights": m.weights,
         "timings": m.timings,
         "not_attempted": m.not_attempted,
-        "pareto": [g for g in r.gene_order if r.drawers.get(g, {}).get("pareto")],
+        # v2.5: the two settings that decide which genes are on the figure and in
+        # what order. The UI prints them beside the counts for the same reason
+        # the figure does — a filtered plot must not read as the whole set.
+        "ordering": m.ordering,
+        "ordering_note": m.ordering_note,
+        "filters": m.filters,
+        "filter_counts": m.filter_counts,
+        "filterable_rings": list(FILTERABLE_RINGS),
         "genes": {
             g: {
-                "k": d["k"], "pareto": d["pareto"], "unstable": d["unstable"],
-                "median_rank": d["median_rank"], "pipeline_summary": d["pipeline_summary"],
+                "k": d["k"], "k_max": d["k_max"],
+                "unfiltered_rings": d["unfiltered_rings"],
+                "pipeline_summary": d["pipeline_summary"],
                 "n_drugs": len(d["drugs"]), "resolution_status": d["resolution_status"],
             }
             for g, d in r.drawers.items()

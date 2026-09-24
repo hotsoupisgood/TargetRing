@@ -1,10 +1,11 @@
-"""v2.2 item 4 — Pharos TDL as a fifth Pareto axis (COUNCIL S1 / V8).
+"""v2.2 item 4 — Pharos TDL (COUNCIL S1 / V8).
 
-S1's case: TDL is the one axis with no missing values inside Pharos
-(Tbio 12303 + Tdark 5501 + Tchem 1904 + Tclin 704 = 20,412 = the whole target
-count), which V2-REPORT §1.4 names as the answer to a headline that keeps not
-appearing. Puck's condition: map Tclin/Tchem/Tbio/Tdark to an **explicit**
-ordinal, never an inferred one.
+It arrived as a fifth Pareto axis, on S1's case that TDL is the one axis with no
+missing values inside Pharos (Tbio 12303 + Tdark 5501 + Tchem 1904 + Tclin 704 =
+20,412 = the whole target count). v2.5 removed the headline it was chosen to
+rescue; the ring stayed, because it is a real measurement and a legible one.
+Puck's condition is unchanged and is what most of this file tests: map
+Tclin/Tchem/Tbio/Tdark to an **explicit** ordinal, never an inferred one.
 """
 
 from __future__ import annotations
@@ -68,36 +69,33 @@ class TestAbsenceIsNotTdark:
         assert "ConnectTimeout" in c.detail
 
 
-class TestItIsAParetoAxisButNotAScoreTerm:
-    def test_it_is_in_the_axes_and_the_external_rings(self) -> None:
-        from targetring.rank import EXTERNAL_RINGS, PARETO_AXES
-        from targetring.run import RANKED_RINGS
-        assert "tdl" in PARETO_AXES
+class TestItIsARingAndNothingWeighsIt:
+    def test_it_is_an_external_ring_and_counts_toward_k(self) -> None:
+        from targetring.order import EXTERNAL_RINGS
+        from targetring.run import FILTERABLE_RINGS
         assert "tdl" in EXTERNAL_RINGS
-        assert "tdl" in RANKED_RINGS
+        assert "tdl" in FILTERABLE_RINGS
 
-    def test_it_is_in_no_weighted_score(self) -> None:
-        """D7 by analogy: Tclin is defined by an approved drug existing, which
-        druggability and the phase ring already weigh."""
-        from targetring.rank import DEFAULT_WEIGHTS, EXCLUDED_FROM_SCORE
-        assert "tdl" not in DEFAULT_WEIGHTS
-        assert "tdl" in EXCLUDED_FROM_SCORE
-
-    def test_more_developed_ranks_better(self) -> None:
-        from targetring.rank import RING_SIGN, rank_within_set
+    def test_more_developed_is_the_stated_better_direction(self) -> None:
+        """The sign survives ranking's removal because ordering the spokes by
+        this one ring still has to know which end is which. It orders one ring at
+        a time and combines nothing, so it cannot reintroduce M3's
+        incommensurability."""
+        from targetring.order import RING_PREFIX, RING_SIGN, order_for_figure
         from targetring.states import value
         assert RING_SIGN["tdl"] == +1
-        ranks = rank_within_set({"clin": value(3.0), "dark": value(0.0)}, "tdl")
-        assert ranks["clin"] > ranks["dark"]
+        spec = {"tdl": {"clin": value(3.0), "dark": value(0.0)}}
+        assert order_for_figure(["dark", "clin"], spec,
+                                f"{RING_PREFIX}tdl") == ["clin", "dark"]
 
-    def test_the_figure_prose_counts_the_axes_rather_than_saying_four(self) -> None:
+    def test_the_figure_makes_no_axis_claim_about_it_any_more(self) -> None:
         """COUNCIL V5: a figure must not make a false claim about its own
-        method, and three footer lines said 'four'."""
-        from targetring.figure import PARETO_AXIS_COUNT_WORD, PARETO_AXIS_NAMES
-        from targetring.rank import PARETO_AXES
-        assert PARETO_AXIS_COUNT_WORD == "five"
-        for ax in PARETO_AXES:
-            assert ax.replace("_", " ") in PARETO_AXIS_NAMES
+        method. Three footer lines once said 'four axes'; there are no axes."""
+        from targetring.figure import RETIRED_CLAIM_WORDS, RING_SPECS
+        tdl = next(s for s in RING_SPECS if s.key == "tdl")
+        text = f"{tdl.label} {tdl.source}".lower()
+        for word in RETIRED_CLAIM_WORDS:
+            assert word not in text
 
 
 class TestTheJoinIsByIdentifier:
@@ -163,8 +161,8 @@ class TestPharosLive:
     async def test_the_uniprot_fallback_finds_a_superseded_symbol(self) -> None:
         """Measured: Pharos returns null for SEPTIN9 and MARCHF1 — the current
         HGNC symbols for the two genes PLAN §4 names as Excel's date-corruption
-        cases — and holds them under SEPT9 and MARCH1. A symbol-only lookup made
-        exactly those genes ineligible for the headline for a naming reason."""
+        cases — and holds them under SEPT9 and MARCH1. A symbol-only lookup
+        emptied this ring for exactly those genes, for a naming reason."""
         async with Http() as http:
             a = PharosAdapter(http, Cache(enabled=False))
             by_sym = await a.fetch_many(["SEPTIN9"])

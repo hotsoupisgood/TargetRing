@@ -9,7 +9,8 @@
 <header>
   <h1>targetring <span class="ver">v1</span></h1>
   <p class="sub">
-    Internally consistent and auditable. <strong>Not a validated ranking.</strong>
+    A gene set, rings of evidence, and a drawer per gene.
+    <strong>Nothing here is ranked or scored.</strong>
     Local only — nothing leaves this machine.
   </p>
 </header>
@@ -40,6 +41,32 @@
       1 TPM in the region are drawn <b>no data</b> rather than given a ratio: a ratio
       without a level is not a specificity statement.</p>
     <select id="region"></select>
+
+    <h2>3. Gene order around the circle</h2>
+    <!-- v2.5 item 1. The order carries meaning and is printed on the figure. -->
+    <p class="hint">The default is <b>the order of your submitted table</b>, unchanged —
+      you have usually already sorted it, and it is your measurement rather than a
+      composite this app invented. Ordering by a single ring uses that one source's own
+      number; genes with no value on it go last, as a visible block, never treated as
+      the lowest value.</p>
+    <select id="ordering"></select>
+
+    <h2>4. Threshold filters <span class="hint">optional</span></h2>
+    <!-- v2.5 item 2, and the two rules that govern it. -->
+    <p class="hint">One per line, as <code>ring &gt;= number</code> or
+      <code>ring &lt;= number</code>, compared against the ring's own raw value — the
+      number in <code>values.csv</code>, not a rank or a colour position. A filtered
+      gene is removed from the plot and named in the drop ledger.<br>
+      <b>A threshold never drops a gene that has no data on that ring.</b> It is kept
+      and marked <code>~</code>; otherwise filtering would quietly delete the
+      under-studied genes instead of the ones that missed the threshold. Tick the box
+      below to drop them anyway, and the figure will say that is what happened.</p>
+    <textarea id="filters" rows="3" spellcheck="false"
+      placeholder="regional_specificity >= 5&#10;literature >= 1.5"></textarea>
+    <label class="check"><input type="checkbox" id="drop-no-data">
+      also drop genes with no data on a filtered ring (off by default)</label>
+    <div id="filterable" class="hint"></div>
+
     <button id="go">Draw the figure</button>
     <div id="status"></div>
   </section>
