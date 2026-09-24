@@ -157,14 +157,16 @@ def main() -> int:
         page.wait_for_timeout(600)
         shot(page, "7-drawer-trial-sponsors.png")
 
-        # 3c. The ring key naming the activity ring's source — which in v2.4 is
-        #     Open Targets clinicalReports again — the TDL ring, and the hatched
-        #     chemical-probe cells.
-        print("5c/10 the ring key — the activity ring's source named")
+        # 3c. v2.6 replaces the numbered monospace key with a scale per ring,
+        #     so the shot is renamed to what it now shows: twelve scales, each
+        #     in its own colours and its own units, the activity ring's source
+        #     named on it (Puck's v2.2 condition), the TDL ring's four discrete
+        #     levels, and the hatched chemical-probe cells beside them.
+        print("5c/10 the ring scales — each ring's own domain, units and source")
         page.click("#drawer-close")
         top(page)
         page.wait_for_timeout(400)
-        shot(page, "7b-ring-key-sources.png")
+        shot(page, "7b-ring-scales-and-sources.png")
 
         # 3d. v2.5 item 2: the same list, filtered. Two thresholds, one of them
         #     on a ring several of these genes have no value for, so the figure
