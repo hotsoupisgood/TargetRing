@@ -2,7 +2,8 @@
 
 A web app for target prioritisation. Input: a differential-expression result
 (gene symbol, logFC, adjusted p) plus a body region. Output: a Circos figure
-where the circle is the ranked gene set and each ring is a heatmap track;
+where the circle is the submitted gene set in a stated order and each ring is a
+heatmap track;
 clicking a gene opens a drawer with its drug pipeline and its literature.
 Puck (Lucas Henry) owns it. It reproduces, automatically, a figure he used to
 build by hand at work.
