@@ -300,6 +300,11 @@ def _i6_regression(reg: dict[str, Any] | None) -> Result:
                       "the regression test was not run for this render")
     if reg.get("ok"):
         return Result("I6", "five-ID regression", "PASS", reg.get("detail", ""))
+    if reg.get("unavailable"):
+        # The source never answered. Still not a pass, still banners -- but it
+        # does not accuse the join logic of a regression it did not have.
+        return Result("I6", "five-ID regression", "NOT_EVALUATED",
+                      reg.get("detail", "source unavailable"))
     return Result("I6", "five-ID regression", "FAIL", reg.get("detail", "failed"))
 
 

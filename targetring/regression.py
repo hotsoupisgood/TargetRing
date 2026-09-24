@@ -50,10 +50,17 @@ async def five_id_regression(http: Http, cache: Cache | None = None) -> dict[str
     def add(name: str, ok: bool, detail: str) -> None:
         checks.append({"check": name, "ok": ok, "detail": detail})
 
+    # A source outage and a broken join are different facts. If the API never
+    # answered, the regression was not evaluated -- reporting FAIL would tell
+    # Puck his join logic regressed when Open Targets simply 502'd at 2 a.m.
+    # NOT_EVALUATED still raises the banner, so nothing is quietly excused.
+    unavailable: list[str] = []
+
     try:
         recs = await adapter.fetch(FIVE_IDS)
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "detail": f"batch fetch raised: {e}", "checks": checks}
+        return {"ok": False, "unavailable": True, "checks": checks,
+                "detail": f"batch fetch could not complete: {e}"}
 
     # 1. Five spokes -- every requested id got a record.
     add("five_spokes", len(recs) == 5 and set(recs) == set(FIVE_IDS),
@@ -71,7 +78,7 @@ async def five_id_regression(http: Http, cache: Cache | None = None) -> dict[str
         single = await graphql(http, OPENTARGETS_URL, SINGLE_QUERY, {"id": BRAF})
         one = single["target"]
     except Exception as e:  # noqa: BLE001
-        add("braf_matches_single_query", False, f"single-target query raised: {e}")
+        unavailable.append(f"single-target query could not complete: {e}")
         one = None
 
     if one is not None:
@@ -109,11 +116,13 @@ async def five_id_regression(http: Http, cache: Cache | None = None) -> dict[str
         "TP53 / BRCA1 / EGFR each on their own id" if not shifted
         else f"MISLABELLED: {shifted}")
 
-    ok = all(c["ok"] for c in checks)
+    ok = all(c["ok"] for c in checks) and not unavailable
     detail = "; ".join(f"{c['check']}={'ok' if c['ok'] else 'FAIL'}" for c in checks)
-    if not ok:
+    if unavailable:
+        detail += " | NOT EVALUATED: " + "; ".join(u[:200] for u in unavailable)
+    elif not ok:
         detail += " | " + json.dumps([c for c in checks if not c["ok"]])[:400]
-    return {"ok": ok, "detail": detail, "checks": checks}
+    return {"ok": ok, "unavailable": bool(unavailable), "detail": detail, "checks": checks}
 
 
 def _tract_key(rows) -> dict[str, bool]:
