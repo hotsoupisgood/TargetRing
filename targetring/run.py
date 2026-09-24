@@ -57,7 +57,7 @@ from .de_input import (
     dropped_entries,
     parse_de_table,
 )
-from .filters import Filter, FilterRejected, parse_filters
+from .filters import Filter, parse_filters
 from . import filters as filters_mod
 from .http import Http
 from .invariants import InvariantReport, check_all

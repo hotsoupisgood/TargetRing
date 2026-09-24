@@ -737,19 +737,32 @@ def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[st
     that does not say it is filtered is a plausible wrong figure: it looks like
     the whole submitted set. Both go in the hole, where the counts already are.
     """
+    import textwrap
+
     k = (lay.centre_scale if lay else 1.0)
     out = []
+    # The hole is ~30 characters wide at this size, and both of these are
+    # user-driven: a ring label is as long as its caveat and a filter list is as
+    # long as the user's. Wrapped here rather than measured afterwards, because
+    # `assert_centre_fits_the_hole` refuses to render instead of clipping, and a
+    # filter statement that stops the figure being drawn helps nobody.
     if ordering_note:
-        out.append(ax.text(0.5, y, ordering_note, ha="center", va="top", size=6.8 * k,
-                           transform=ax.transAxes, color="#444444", wrap=False))
-        y -= 0.020 * k
+        out.append(ax.text(0.5, y, textwrap.fill(ordering_note, 34),
+                           ha="center", va="top", size=6.8 * k,
+                           transform=ax.transAxes, color="#444444"))
+        y -= 0.018 * k * (1 + ordering_note.count(" ") // 6)
     if filter_notes:
         n_marked = sum(1 for s in (stats or {}).values() if s.unfiltered_rings)
-        text = (f"FILTERED \u2014 {len(filter_notes)} active:\n" + _wrap(filter_notes, 1)
-                + (f"\n~ {n_marked} gene(s) kept unfiltered: no data on a filtered ring"
-                   if n_marked else ""))
-        out.append(ax.text(0.5, y, text, ha="center", va="top", size=6.8 * k,
-                           transform=ax.transAxes, color="#8a4b00", weight="bold"))
+        lines = [f"FILTERED \u2014 {len(filter_notes)} active, this is not",
+                 "your whole submitted set:"]
+        for note in filter_notes:
+            lines += textwrap.wrap(note, 32, subsequent_indent="   ")
+        if n_marked:
+            lines += textwrap.wrap(f"~ {n_marked} gene(s) kept: no data on a "
+                                   f"filtered ring", 32)
+        out.append(ax.text(0.5, y, "\n".join(lines), ha="center", va="top",
+                           size=6.5 * k, transform=ax.transAxes, color="#8a4b00",
+                           weight="bold"))
     return out
 
 
@@ -954,15 +967,18 @@ def slide_line(ordering_note: str, filter_notes: Sequence[str]) -> str:
     given" is not something to leave in a caption somebody has to be handed
     separately -- the same argument QA-v2-retest §5 made about the safety caveat.
     """
-    parts = []
-    if filter_notes:
-        parts.append("FILTERED (" + " · ".join(filter_notes) + ") — not the whole "
-                     "submitted set; no-data genes kept and marked ~")
-    parts += [f"the safety ring is {SAFETY_RING_CAVEAT}",
-              ordering_note,
-              "rings are scaled independently of one another",
-              "see the caption"]
-    return " · ".join(parts)
+    base = " · ".join([f"the safety ring is {SAFETY_RING_CAVEAT}",
+                           ordering_note,
+                           "rings are scaled independently of one another",
+                           "see the caption"])
+    if not filter_notes:
+        return base
+    # Its own line, above the rest. At 10 pt across a 1600 px canvas the two do
+    # not fit side by side -- `assert_text_within_canvas` said so rather than
+    # shipping a sentence clipped at "not the whole" -- and the filters are the
+    # half a reader must not miss, so they go first and get the width.
+    return ("FILTERED — not your whole submitted set: " + " · ".join(filter_notes)
+            + "\n" + base)
 
 
 def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
