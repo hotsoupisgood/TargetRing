@@ -364,8 +364,10 @@ class Layout:
 
 AUDIT = Layout("audit", (17.5, 14.0), 8.0, (0.250, 0.205, 0.53, 0.755),
                True, True, 7.5, 1.0, True, 0.872, 0.019, True)
-# 16:9. Labels at 11.5 pt in a 16 in canvas survive the 0.47 fit to a slide at
-# ~5.4 pt, against v1's 3.9; the key and the caveats leave the canvas entirely.
+# 16:9. A 9 in canvas fitted to a 7.5 in slide is a 0.83 scale, so an 11.5 pt
+# label lands at 9.6 pt -- against v1's 3.9, where an 18.3 x 15.2 in canvas on
+# the same slide was a 0.49 scale. The key and the caveats leave the canvas
+# entirely and go into caption.txt.
 SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.295, 0.075, 0.38, 0.86),
                False, False, 0.0, 1.15, False, 0.838, 0.020, False)
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE}

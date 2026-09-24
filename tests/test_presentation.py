@@ -91,13 +91,23 @@ class TestA4SlideRender:
 
     def test_gene_labels_survive_the_fit_to_a_slide(self, tmp_path: Path) -> None:
         """A 16:9 canvas fits a 16:9 slide with no letterboxing, so the scale
-        factor is 7.5in / canvas height. v1's 8 pt label became 3.9 pt."""
+        factor is 7.5 in / canvas height in inches.
+
+        matplotlib writes the SVG viewBox in POINTS, 72 to the inch — an earlier
+        version of this test divided by 100 and reported a scale of 1.16 where
+        the real one is 0.83. It passed, on a wrong number.
+
+        v1: an 18.3 x 15.2 in canvas fitted to a 7.5 in slide is a 0.49 scale,
+        so its 8 pt gene label became 3.9 pt.
+        """
         _, svg = _render(tmp_path, "slide")
         w, h = _viewbox(svg)
-        scale = 7.5 / (h / 100.0)          # 100 dpi canvas -> 7.5 in slide
+        canvas_in = h / 72.0
+        assert abs(canvas_in - SLIDE.figsize[1]) < 0.05, f"{canvas_in:.2f} in"
+        scale = 7.5 / canvas_in
         gene_label_pt = SLIDE.label_size * scale
-        assert gene_label_pt >= 5.0, f"{gene_label_pt:.1f} pt on a full slide"
-        assert gene_label_pt > 8.0 * (7.5 / 15.2), "must beat v1's 3.9 pt"
+        assert gene_label_pt >= 8.0, f"{gene_label_pt:.1f} pt on a full slide"
+        assert gene_label_pt > 2 * 8.0 * (7.5 / 15.2), "must beat v1's 3.9 pt"
 
     def test_the_key_and_the_six_line_footer_leave_the_slide(self, tmp_path: Path) -> None:
         _, svg = _render(tmp_path, "slide")
