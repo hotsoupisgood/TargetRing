@@ -2973,3 +2973,113 @@ reader would want after seeing a surprising cell. That is a real gap and it is a
 3. Everything already in §6 and §v2.1–§v2.7, unchanged: licensing before any
    workplace use, the Delta E gate, the `neg_log10_padj` log domain, the muted
    gauge.
+
+---
+
+# v2.9 — the Ensembl ids, and the one place they do not go
+
+Your words: *"can you put the ensembl id's next to the gene name?"*
+
+Wren II, 2026-09-25. Local only, nothing deployed, nothing pushed, no money
+spent, `~/ytpt` untouched, the gateway not restarted. One commit and this
+section. Dev server restarted before the screenshots.
+
+**Tests: 473 passed** (461 before; 12 new). 7/7 invariants on all seven cold
+runs (`logs/v29-matrix.json`); cold 50 genes 21.8 s against a 60 s target.
+
+## Read this first
+
+**1. `values.csv` did not have the id, and its own drop ledger did.** That is
+the finding, and it is worse than a missing column: the ledger section at the
+bottom of `values.csv` has carried `ensembl_id` since v1, so for every run so
+far a gene that got *dropped* travelled with the identifier it was resolved to
+and a gene that got *rendered* did not. The file that exists to make the figure
+checkable was checkable for the genes that are not on the figure. Fixed:
+`ensembl_id` is now a column, immediately after `gene`.
+
+**2. The rim answer is "never", not "below some gene count", and the constraint
+is not the one you expected.** You asked me to measure the spoke width rather
+than assume, so I did, and the spoke width turns out never to be what binds. A
+spoke label is drawn `orientation="vertical"` — it runs **radially outward**. An
+Ensembl id therefore does not crowd the neighbouring spoke at all; it reaches
+further out, into the scale column. Measured on the audit canvas
+(`logs/v29-rim-measure.txt`):
+
+```
+circle right edge    x = 1365 px
+scale column starts  x = 1486 px
+clear radial room        121 px
+
+'GENE001 (k=9/9)'                      15 ch   8.00 pt    69 px   fits
+'GENE001 · ENSG00000157764 (k=9/9)'    33 ch   8.00 pt   155 px   34 px into the column
+'GENE001 · ENSG00000157764 (k=9/9)'    33 ch   6.56 pt   127 px   still over (50-gene size)
+```
+
+The angular numbers you cited are right and irrelevant: 23.86° at fourteen
+genes, 6.68° at fifty. `assert_no_text_over_the_rings` refused the id at **every**
+count I tried — 6, 10, 12, 14, 16, 18, 20, 24, 30, 40 and 50
+(`logs/v29-rim-probe.txt`) — and at six genes it fails as hard as at fifty,
+naming the GTEx and pipeline scale rows it lands on.
+
+So the conditional rule you offered — ids below some gene count, with the
+suppression stated — has no gene count on its near side. Offering it would be a
+threshold with nothing above it. **The id never appears on the rim, it is always
+in the drawer and in `values.csv`, and the figure says exactly that**, with the
+measurement in the sentence:
+
+> Ensembl id per gene: in the click-drawer and in values.csv, deliberately NOT on
+> the rim at any gene count — a spoke label runs radially and the id needs 155 px
+> where there are 121 between the circle and the scale column. Symbols are
+> ambiguous; the id is what was queried.
+
+On the audit footer and in `caption.txt`, because the slide render draws no
+footer and its reader would otherwise be the only one not told.
+
+**3. The two ways to make it fit are both worse than not fitting.** Delete the
+scale column — which is what §v2.6 exists to provide and what your source links
+now live in — or take the spoke labels below legibility, which is UX A4. I did
+not do either, and I would want to hear it from you before I did.
+
+## Where the id went
+
+| place | before | now |
+|---|---|---|
+| click-drawer | **already there**, under the gene name (`ENSG00000157764 · UniProt P15056 · GTEx ENSG00000157764.12`) | unchanged, except the bare accession is now labelled `Ensembl ` so it reads like its two neighbours |
+| `values.csv` cells | **absent** | `ensembl_id` column, immediately after `gene` |
+| `values.csv` drop ledger | already there since v1 | unchanged |
+| `ledger.csv` | already there | unchanged |
+| rim / spoke labels | absent | **still absent, now stated and asserted** |
+| slide render | absent | still absent; the rule is in `caption.txt` |
+
+An unresolved gene gets an empty cell, never a placeholder: a string that looks
+like an identifier and is not one is AGENTS.md rule 1 in a column
+(`test_a_gene_the_resolver_gave_no_id_is_blank_not_invented`).
+
+## What stops it drifting back
+
+`assert_the_id_rule_is_kept` runs on every render and fails it if any spoke
+label contains `ENSG` while the footer says none does — because in six months,
+at six genes, the rim will *look* roomy and someone will try, and the failure
+mode then is a figure printing a sentence its own labels contradict, which is
+COUNCIL V5. `test_the_measurement_the_rule_rests_on_still_holds` re-measures the
+121 px and the 155 px from the layout instead of trusting the numbers written
+above: if the layout ever changes enough that the id fits, that test fails and
+the sentence has to be rewritten, which is the right way round.
+
+## Verification
+
+* **473 tests** (461 before). Twelve new, in
+  `tests/test_presentation.py::TestV29EnsemblIdsNextToTheGeneName`, including the
+  rim check at 6, 14 and 50 genes on both layouts.
+* 7/7 invariants on all seven cold runs; `runs/V29-COUNCIL-COLD/values.csv`
+  carries an id for all 14 rendered genes, none blank.
+* The v2.8 source links re-verified after this change: 9/9 live, and all nine
+  still clickable in the running app (`logs/v29-live-links.txt`).
+* Screenshots and both crops retaken on this code after restarting the server.
+* No invariant relaxed, no test deleted, no assertion weakened.
+
+## Still open, added to §v2.8
+
+10. **The id is not on the rim and cannot be without giving up the scale
+    column.** *Read this first* 2 and 3. If you ever want it on the rim more than
+    you want the per-ring scales, that is a real trade and it is yours.
