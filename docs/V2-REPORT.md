@@ -2778,3 +2778,198 @@ one — what is proven is the mechanism and its contents.
    word and it becomes `Mouse pheno. lead`, which fits.
 6. **`Safety flags ≠ safe` uses `≠`.** It reads correctly on screen; I have not
    tested it in a mono laser print, which is the §v2.6 open item it lands on.
+
+---
+
+# v2.8 — the source names in the legend become links
+
+Your words: *"can you keep links for sources in the legend."*
+
+Wren II, 2026-09-25. Local only, nothing deployed, nothing pushed, no money
+spent (triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched, the
+OpenClaw gateway not restarted. Two commits and this report. The dev server on
+:8811 was restarted before the screenshots — it was serving v2.7.1's code.
+
+**Tests: 461 passed, 0 skipped, 0 failed** (450 before; 11 new). All seven
+invariants PASS on a clean cold run (`runs/V28-COUNCIL-COLD`) and on all seven
+cold combinations. **Cold 50 genes: 22.6 s against a 60 s target**; `render`
+3.90 s against v2.7's 3.86 s, which is nothing.
+
+## Read this first: what is broken, and what is newly uncertain
+
+**1. The manifest has never recorded the Pharos endpoint.** `SOURCE_URLS` names
+Open Targets, GTEx, GTEx reference, PubTator3, Europe PMC and ChEMBL, and has
+not named Pharos since the TDL ring was built in v2.2 — so for three releases
+the ring driving four discrete levels on the figure was the one source the
+manifest did not name, against AGENTS.md's "every source URL". It is in now.
+I found it only because the legend and the manifest were being made to agree and
+they could not agree about a source one of them had never heard of. **That is
+worth more than the links are**: there may be other things in a v2.2-era
+artefact that nothing since has re-read.
+
+**2. One ring's citation is a compromise, and it is the mouse one.** `rodent`
+reads OT `mousePhenotypes`, and Open Targets publishes no documentation page for
+that field — verified, not assumed: `platform-docs.opentargets.org/llms.txt` is
+the complete page index and contains zero entries matching "mouse". The
+prioritisation view *does* have a "Mouse models" section, and citing it would
+have looked right and been wrong: it documents a harmonic-sum severity score
+normalised to 0…−1, which is a different number from the three-state lead this
+ring draws. So the link goes to the Target data-source table, which is the most
+specific page that exists and whose Mouse phenotypes row names MGI. **If you
+would rather it pointed straight at MGI** (`informatics.jax.org`), say so — that
+is a defensible different call, and it trades "where our value came from" for
+"who generated the underlying data".
+
+**3. The TDL link is not to Pharos.** The ring's value comes from Pharos'
+GraphQL `tdl` field, but Pharos does not define TDL anywhere in its own docs —
+`pharos.nih.gov/about` documents the portal and its data sources and never says
+what Tclin means. The definition lives with the IDG Knowledge Management Centre
+that produces the field. The printed text says `Pharos · druggablegenome.net`,
+which is honest about the split and is the one legend line where the name and
+the domain are different organisations. The Pharos GraphQL endpoint is in the
+manifest.
+
+**4. The slide render's scale column type is one step smaller than it was.**
+6.98 px to 6.58 px on the 16 in canvas. A source line per ring costs twelve
+lines and the fit loop pays for them in type size; unpaid it would have been
+5.79 px, which is UX A4 again on the render that gets projected, so the column
+grew from 0.855 to 0.912 tall and absorbed most of it. I could not get the last
+step back without moving the column left into the 0.11 of unused width beside
+the circle, and `assert_no_text_over_the_rings` refused that at six genes —
+`CDKN2A (k=5/9)` reaches further right than any label in a 14- or 50-gene run
+and the source line landed 14.3 px inside it. **The audit render is unaffected**
+(6.6 pt, unshrunk, on every gene count).
+
+## The link per ring, and why that one
+
+| # | ring | printed on the figure | links to | why that page |
+|---|---|---|---|---|
+| 1 | `logfc` | `yours` | — | your own column |
+| 2 | `neg_log10_padj` | `yours` | — | your own column |
+| 3 | `tractable` | Open Targets · platform-docs.opentargets.org | `…/web-interface/target-prioritisation#tractability-section` | defines and scores `hasLigand`, `hasPocket`, `hasSmallMoleculeBinder` — the three keys the ring averages. **Not** `/target/tractability`, which documents the tractability *buckets*, a dataset this ring does not read |
+| 4 | `chemical_probe` | Open Targets · platform-docs.opentargets.org | `…#chemical-probes` | the section for the one sparse key, which is why it is its own ring |
+| 5 | `safety` | Open Targets · platform-docs.opentargets.org | `…#safety-section` | states that an absent safety record scores 0 rather than "safe" — the caveat this ring's label carries |
+| 6 | `regional_specificity` | GTEx v8 · gtexportal.org/api/v2/redoc | the `medianGeneExpression` **operation** anchor | the endpoint the ring calls, with its parameters and its dataset ids. The URL the run actually calls pins `datasetId=gtex_v8`, so the legend's "v8" and the manifest's dataset are the same string |
+| 7 | `clinical_phase` | Open Targets · platform-docs.opentargets.org | `/target/drugs` | documents the widget, including that the maximum stage is taken across indications — which is *why* the ring gates on attribution (COUNCIL V1) |
+| 8 | `clinical_activity` | Open Targets · platform-docs.opentargets.org | `/drug/clinical-report` | the clinical report record itself: the statuses and the stop categories the three states are built from |
+| 9 | `tdl` | Pharos · druggablegenome.net | `/IDGProteinFamilies` | the IDG-KMC definition of the four levels. See *Read this first* 3 |
+| 10 | `rodent` | Open Targets · platform-docs.opentargets.org | `/target#target-annotation-data-sources` | see *Read this first* 2 |
+| 11 | `literature` | PubTator3 · ncbi.nlm.nih.gov/research/pubtator3 | `/api` | where the gene-id resolution that stops common-word symbols inflating is specified |
+| 12 | `completeness` | `derived` | — | counted here over rings 3–11; a gauge over other rings' sources, not a source |
+
+## How it behaves in each render, which is what decided the design
+
+* **Web app** — clickable. `app.js` inlines `figure.svg`, so the anchor in the
+  file is a live link with no JavaScript at all.
+* **Exported SVG** — the anchor is `<a xlink:href="…" target="_blank">`, written
+  by matplotlib's own `set_url` at save time. It is *in the artefact*: the SVG
+  you downloaded last month still opens the doc page. This is v2.7.1's argument
+  for why the tooltips are not in `app.js`, and it applies unchanged.
+* **PNG and slide** — nothing is clickable, which is why the printed text is
+  `name · domain` and not an underlined word. The domain is the whole point of
+  that format: "Open Targets" alone tells a reader nothing they did not have.
+* **`caption.txt`** — the full URL per ring, written out, because a slide reader
+  is handed the caption and cannot follow anything.
+
+There is **one registry**, `targetring/sources.py`, and the legend, the caption
+and the manifest all read it. That is not tidiness: a figure and its manifest
+disagreeing about where a number came from is a plausible wrong figure in an
+audit trail, and the only way to make that impossible is to have nowhere for a
+second copy of a URL to live. `test_the_legend_link_and_the_manifest_cannot_disagree`
+asserts the set of `xlink:href`s in the SVG equals the set of `doc_url`s in
+`manifest.json`, in ring order.
+
+## Version and access date
+
+`manifest.json` grows `ring_sources`: per ring, the doc URL the legend links to,
+the endpoint that was called, what field it reads, and the pinned schema or
+dataset version (`api/v4 graphql · target query schema v3`, `api v2 · dataset
+gtex_v8 · schema v1`, …). The **access date is `timestamp_utc`**, the manifest's
+existing one-per-run clock, rather than a second date that could drift from it.
+The figure already stamps the run clock.
+
+## What I verified live, and what the checker does that a naive one would not
+
+`scripts/check_source_links.py`, **9/9 OK** (`logs/v28-source-links.json`):
+
+* it sends this repo's `config.USER_AGENT`. `druggablegenome.net` and
+  `pharos.nih.gov` answer **403 to curl's default agent and 200 to ours** — a
+  checker on defaults would report a working citation as dead and invite
+  somebody to "fix" a good link;
+* it checks the **fragment**, not just the page. Five URLs are anchored, and a
+  reorganised GitBook page still returns 200 while landing the reader at the top;
+* GTEx's Redoc page renders operation anchors client-side, so the operation id is
+  provably absent from the HTML. Rather than wave it past, the checker resolves
+  the page's `spec-url` and looks the `operationId` up in the OpenAPI document —
+  a **stronger** check, because it verifies the endpoint the anchor names still
+  exists. It is also what told me the GTEx anchor was good when the HTML said
+  otherwise.
+
+The structural half runs on every render, before a link is drawn:
+`sources.assert_registry_is_coherent()`. It caught the literature entry printing
+`ncbi.nlm.nih.gov` while linking `www.ncbi.nlm.nih.gov` — harmless in that one
+case, because the bare host serves the same page (checked), and exactly the shape
+of mistake that strands a PNG reader at a wrong address in the next one.
+
+`scripts/verify_live_links.py`, driving the running app
+(`logs/v28-live-links.txt`): nine anchors in the *inlined* DOM, each the child of
+its own `ringsource|<key>` group, each with `target="_blank"`, each reachable at
+**144/144 probe points** — and then one actually **clicked**: the TDL source line
+opens `druggablegenome.net/IDGProteinFamilies` in a new tab and that page defines
+Tclin, Tchem, Tbio and Tdark. My first hit test probed one point at the box
+centre and reported 0/9: SVG text hits only on painted pixels, and the figure is
+outside the viewport until it is scrolled. The check was wrong, not the links.
+
+## What is NOT linked here, on purpose
+
+**Gene-specific deep links stay in the click-drawer**, per gene. The ring legend
+describes the *measure*; one gene's value is the drawer's job, and putting a
+gene in the legend would make the legend a function of which gene you last
+looked at.
+
+**The drawer already has them, for the evidence it shows**: PubTator3 and Europe
+PMC queries for that gene, PubMed by PMID on the mouse sentence, ChEMBL compound
+report cards per molecule, Open Targets drug pages, and ClinicalTrials.gov by
+NCT id. **Where it has none is the gene's own page on the three ring sources** —
+there is no link to `platform.opentargets.org/target/<ensembl>`, to the gene's
+GTEx expression page, or to its Pharos target page, which are exactly the three a
+reader would want after seeing a surprising cell. That is a real gap and it is a
+**separate item**, not this one; it is in *Still open* below.
+
+## Verification
+
+* **461 tests** (450 before). The eleven new ones are in
+  `tests/test_presentation.py::TestV28SourceLinksInTheLegend`, and two of them
+  are negative: the registry must refuse a homepage URL, and must refuse a domain
+  printed on the figure that is not the host the link goes to — which would
+  strand every reader of the PNG at the wrong address.
+* **7/7 invariants on all seven cold runs** (`logs/v28-matrix.json`), and on a
+  cold 50-gene run in 22.6 s (`logs/cold50-v28.json`).
+* Every existing assertion unchanged and passing: `assert_no_text_over_the_rings`
+  (which refused one of my layout attempts), `assert_centre_fits_the_hole`,
+  `assert_text_within_canvas`, the greyscale disjointness check and the seven
+  invariants. Nothing was relaxed and no test was deleted.
+* Screenshots retaken after the server restart. New:
+  `11-source-links-in-the-legend.png`, the column cropped at 1:1 from
+  `runs/V28-COUNCIL-COLD` — 6.6 pt type is unreadable in a full-figure shot.
+  `10-ring-names-in-the-wedge.png` came back **byte-identical**, which is the
+  evidence that this change is confined to the scale column.
+
+## Still open, added to §v2.7
+
+7. **Per-gene links to the gene's own page on Open Targets, GTEx and Pharos, in
+   the drawer.** See *What is NOT linked here*. Small, and the obvious next thing.
+8. **`rodent` cites a data-source table rather than a field page**, because Open
+   Targets has no field page. *Read this first* 2.
+9. **The slide's column type is 6.58 px, one step below v2.7's 6.98.** *Read this
+   first* 4. Getting it back means giving something else in the column up.
+
+## What you need to decide
+
+1. **Whether the mouse ring should link MGI instead of Open Targets.** *Read this
+   first* 2.
+2. **Whether the drawer's per-gene source links are worth the next hour.** *Still
+   open 7.*
+3. Everything already in §6 and §v2.1–§v2.7, unchanged: licensing before any
+   workplace use, the Delta E gate, the `neg_log10_padj` log domain, the muted
+   gauge.
