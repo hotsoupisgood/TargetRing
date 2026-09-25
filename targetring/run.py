@@ -489,6 +489,10 @@ async def run_analysis(
             filter_notes=filter_notes,
             gene_flags=severe_liability_flags,
             provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
+            # v2.9. The resolver already has these; the figure only needs them
+            # for `values.csv` and for the footer sentence that says where they
+            # are. They are deliberately NOT on the rim -- see `_ID_NOTE`.
+            gene_ids={g: by_gene[g][1].ensembl_id for g in gene_order},
         )
 
     fig_result = do_render([])

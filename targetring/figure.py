@@ -999,6 +999,7 @@ def render(
     subtitle: str = "",
     provenance: str = "",
     layout: str = "audit",
+    gene_ids: dict[str, str] | None = None,
 ) -> FigureResult:
     assert_fills_disjoint()
     assert_greyscale_disjoint()
@@ -1115,6 +1116,16 @@ def render(
                 "cell_id": gid,
                 "spoke_index": gene_i,
                 "gene": gene,
+                # v2.9. Puck: "can you put the ensembl id's next to the gene
+                # name?" -- and `values.csv` is where that matters most, because
+                # the CSV is what makes a figure checkable against a source. A
+                # symbol is ambiguous (HBB matches two Open Targets targets on
+                # the council list and is ledgered for exactly that reason); the
+                # Ensembl id is what the run actually queried on. The ledger
+                # section of this file has carried `ensembl_id` since v1 -- so
+                # until now a *dropped* gene's id was in the artefact and a
+                # *rendered* gene's was not, which is the wrong way round.
+                "ensembl_id": (gene_ids or {}).get(gene, ""),
                 "ring": spec.key,
                 "ring_label": spec.label,
                 "state": cell.state,
@@ -1127,6 +1138,7 @@ def render(
     # v2.5 item 1. No diamond, no stability asterisk: there is no headline set to
     # mark membership of and no reweighting to be unstable under. What is left on
     # a spoke label is the gene, its k, and the liability marker.
+    spoke_labels: list[str] = []
     for gene_i, gene in enumerate(genes):
         sector = circos.get_sector(gene)
         st = stats.get(gene)
@@ -1140,7 +1152,11 @@ def render(
         # could not be evaluated against a cell it has no data for is marked
         # here, not silently mixed in with the genes that passed the filter.
         unf = " ~" if (st and st.unfiltered_rings) else ""
+        # v2.9: the Ensembl id is deliberately absent from here. See `_ID_NOTE`
+        # for the measurement, and `assert_the_id_rule_is_kept` for the check
+        # that stops it drifting back in without the footer changing with it.
         label = f"{liab}{gene} (k={k}/{EXTERNAL_RING_COUNT}){unf}"
+        spoke_labels.append(label)
         size = lay.label_size * (0.82 if len(genes) > 18 else 1.0)
         sector.text(label, r=r_outer + 3, size=size,
                     orientation="vertical", color="#111111")
@@ -1201,6 +1217,7 @@ def render(
                   gene_flags, dropped_names, wnote, clock)
     assert_footer_is_true(notes + cap.splitlines(), ordering_note, filter_notes,
                           wnote)
+    assert_the_id_rule_is_kept(spoke_labels, notes)
 
     centre_blocks, next_y = _draw_centre(ax, region, len(genes), input_count,
                                          rendered_count, ledger_counts,
@@ -1771,6 +1788,37 @@ def assert_footer_is_true(lines: Sequence[str], ordering_note: str,
         )
 
 
+def assert_the_id_rule_is_kept(spoke_labels: Sequence[str],
+                               notes: Sequence[str]) -> None:
+    """v2.9. The figure says where the Ensembl ids are; this checks it is true.
+
+    Two halves, and the second is the one that matters in six months:
+
+    1. the rule is printed. A figure that quietly has no gene ids is a figure a
+       reader assumes has none available, and they are one click away;
+    2. **no spoke label carries an id anyway.** `_ID_NOTE` is a claim about the
+       rim, so the rim is checked against it. If someone later puts the id back
+       on a spoke -- reasonably, because at six genes it *looks* like it would
+       fit -- the figure would be printing a sentence its own labels contradict,
+       which is COUNCIL V5 exactly. It fails here instead, and then
+       `assert_no_text_over_the_rings` would have failed on the geometry anyway.
+    """
+    if not any(_ID_NOTE == n for n in notes):
+        raise AssertionError(
+            "the figure does not say where its Ensembl ids are. They exist for "
+            "every rendered gene; a reader who cannot see one must be told it "
+            "is in the drawer and in values.csv, not left to assume it is absent."
+        )
+    offenders = [l for l in spoke_labels if "ENSG" in l]
+    if offenders:
+        raise AssertionError(
+            "the footer says the Ensembl id is NOT on the rim and these spoke "
+            f"labels carry one: {offenders[:3]}. The id needs 155 px of radial "
+            "room and there are 121 px before the scale column; either the "
+            "sentence is wrong or the labels are."
+        )
+
+
 def clock_phrase(lay) -> str:
     """How the figure describes where its first spoke is.
 
@@ -1854,6 +1902,38 @@ def gtex_panel_size(cells_by_ring) -> str:
     return ""
 
 
+# v2.9. Puck: "can you put the ensembl id's next to the gene name?" -- and, if
+# it does not fit on the rim, "I would rather the rule were explicit and stated
+# on the figure than silently truncated".
+#
+# It does not fit, at ANY gene count, and the reason is not the one either of us
+# expected. A spoke label is drawn `orientation="vertical"`, so it runs radially
+# outward: an Ensembl id does not crowd the neighbouring spoke, it reaches
+# further out. Measured on the audit canvas (`logs/v29-rim-measure.txt`), there
+# are **121 px** between the circle's edge (x=1365) and the scale column
+# (x=1486). `GENE001 (k=9/9)` advances 69 px at 8 pt and fits with room to
+# spare; `GENE001 · ENSG00000157764 (k=9/9)` advances **155 px** and is 34 px
+# into the column. At fifty genes the label shrinks to 6.56 pt and it is still
+# 127 px -- over. So the angular width Puck asked me to check (22.00 deg at
+# fourteen genes, 4.72 at fifty) never becomes the binding constraint; the
+# column does, and it binds at six genes as hard as at fifty.
+#
+# The two ways to make it fit are both worse than not fitting: delete the scale
+# column, which is the thing v2.6 exists to provide, or take the spoke labels
+# below legibility, which is UX A4. A conditional rule -- ids below some gene
+# count -- was the other option Puck offered and there is no count where it is
+# true, so offering it would be a threshold with nothing on the near side.
+#
+# Therefore: never on the rim, always in the drawer and in values.csv, and the
+# figure says so rather than leaving a reader to conclude the id is not there.
+_ID_NOTE = (
+    "Ensembl id per gene: in the click-drawer and in values.csv, deliberately NOT on the "
+    "rim at any gene count — a spoke label runs radially and the id needs 155 px where "
+    "there are 121 between the circle and the scale column. Symbols are ambiguous; the id "
+    "is what was queried."
+)
+
+
 def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
                  cells_by_ring, gene_flags=None, subtitle: str = "",
                  wedge: str = "", clock: str = "") -> list[str]:
@@ -1884,6 +1964,7 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
         "evidence linking it to THIS target. A drug that hits the target for an unrelated "
         "indication sets no phase; those genes are drawn 'not applicable', not 'low'.",
     ]
+    notes.append(_ID_NOTE)
     if wedge:
         notes.append(wedge)
     if filter_notes:
@@ -2012,6 +2093,9 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
         f"ring (regional specificity).",
         "This figure is internally consistent and auditable. Nothing on it is ranked or "
         "scored: it is your gene set, the evidence rings, and a drawer per gene.",
+        # v2.9. The slide render draws no footer at all, so without this line the
+        # slide's reader would be the one person not told where the ids are.
+        _ID_NOTE,
     ]
     if wedge:
         lines += ["", wedge]

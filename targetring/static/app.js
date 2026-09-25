@@ -300,7 +300,7 @@ function drawerHtml(d) {
   // on the render path. `null` means not fetched yet, never "nothing there".
 
   let h = `<h3>${esc(d.gene)}</h3>
-    <p class="hint">${esc(d.ensembl_id || "")}${d.uniprot
+    <p class="hint">${d.ensembl_id ? "Ensembl " + esc(d.ensembl_id) : ""}${d.uniprot
       ? " · UniProt " + esc(d.uniprot) : ""}${d.gencode_id
       ? " · GTEx " + esc(d.gencode_id) : ""}</p>`;
 

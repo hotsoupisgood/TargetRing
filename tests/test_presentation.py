@@ -955,3 +955,118 @@ class TestV28SourceLinksInTheLegend:
         for spec in RING_SPECS:
             if spec.wedge_tooltip and spec.source_doc:
                 assert spec.source_doc.url in spec.tooltip, spec.key
+
+
+class TestV29EnsemblIdsNextToTheGeneName:
+    """v2.9. Puck: *"can you put the ensembl id's next to the gene name?"*, with
+    the condition that if it does not fit on the rim the rule must be **explicit
+    and stated on the figure** rather than silently truncated.
+
+    It does not fit, at any gene count, and not for the reason either of us
+    expected -- a spoke label runs radially, so the id reaches out into the
+    scale column rather than crowding the neighbouring spoke. These tests pin
+    the measurement, the stated rule, and the two places the id does live.
+    """
+
+    def _render_full(self, tmp_path: Path, n: int, layout: str, **kw):
+        genes = [f"GENE{i:03d}" for i in range(n)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / f"id-{layout}{n}.svg"
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Liver", out_svg=out, input_count=n, rendered_count=n,
+                     ledger_counts={}, ordering_note=ORDER_NOTE, layout=layout,
+                     provenance="run X · abc123", **kw)
+        return res, out
+
+    def test_the_values_csv_carries_the_id_for_every_rendered_gene(
+            self, tmp_path: Path) -> None:
+        """The half that matters most: the CSV is what makes a figure checkable
+        against a source, and a symbol is ambiguous where an Ensembl id is not.
+        The drop ledger has carried `ensembl_id` since v1, so until v2.9 a
+        *dropped* gene's id was in the artefacts and a *rendered* gene's was
+        not."""
+        ids = {f"GENE{i:03d}": f"ENSG{i:011d}" for i in range(14)}
+        res, _ = self._render_full(tmp_path, 14, "audit", gene_ids=ids)
+        assert res.csv_rows, "no cells"
+        for row in res.csv_rows:
+            assert "ensembl_id" in row, "values.csv has no ensembl_id column"
+            assert row["ensembl_id"] == ids[row["gene"]], row["cell_id"]
+        # Next to the gene, not appended at the end of the row.
+        cols = list(res.csv_rows[0].keys())
+        assert cols.index("ensembl_id") == cols.index("gene") + 1, cols
+
+    def test_a_gene_the_resolver_gave_no_id_is_blank_not_invented(
+            self, tmp_path: Path) -> None:
+        """AGENTS.md rule 1's shape, applied to a column: an absent id is empty,
+        never a placeholder that reads like an identifier."""
+        res, _ = self._render_full(tmp_path, 6, "audit", gene_ids={"GENE000": "ENSG1"})
+        blanks = {r["ensembl_id"] for r in res.csv_rows if r["gene"] != "GENE000"}
+        assert blanks == {""}, blanks
+
+    @pytest.mark.parametrize("layout", ["audit", "slide"])
+    @pytest.mark.parametrize("n", [6, 14, 50])
+    def test_no_spoke_label_carries_an_id_at_any_gene_count(
+            self, tmp_path: Path, n: int, layout: str) -> None:
+        """Puck asked me to measure rather than assume, and the measurement says
+        never -- so "never" is what is checked, at the two counts he named and at
+        the six-gene case that turned out to fail just as hard."""
+        ids = {f"GENE{i:03d}": f"ENSG{i:011d}" for i in range(n)}
+        _, svg = self._render_full(tmp_path, n, layout, gene_ids=ids)
+        text = re.sub(r"\s+", " ", " ".join(
+            "".join(el.itertext()) for el in
+            ET.parse(svg).getroot().iter("{http://www.w3.org/2000/svg}text")))
+        assert "ENSG00000000" not in text, (
+            f"{layout} at n={n} drew an Ensembl id on the figure")
+
+    @pytest.mark.parametrize("layout", ["audit", "slide"])
+    def test_the_figure_states_where_the_ids_are(
+            self, tmp_path: Path, layout: str) -> None:
+        """Not silently absent. A reader who cannot see an id must be told it is
+        one click away, on both renders -- the slide draws no footer, so it is
+        the caption that has to carry it there."""
+        from targetring.figure import _ID_NOTE
+        res, svg = self._render_full(tmp_path, 14, layout)
+        body = re.sub(r"\s+", " ", " ".join(
+            "".join(el.itertext()) for el in
+            ET.parse(svg).getroot().iter("{http://www.w3.org/2000/svg}text")))
+        where = body if layout == "audit" else re.sub(r"\s+", " ", res.caption)
+        for phrase in ("Ensembl id per gene", "values.csv", "NOT on the rim"):
+            assert phrase in where, (layout, phrase)
+        assert _ID_NOTE in re.sub(r"\s+", " ", res.caption)
+
+    def test_putting_an_id_back_on_the_rim_is_caught_not_drawn(self) -> None:
+        """The check that matters in six months. At six genes the rim *looks*
+        roomy, so someone will try; the figure would then print a sentence its
+        own labels contradict, which is COUNCIL V5."""
+        from targetring.figure import _ID_NOTE, assert_the_id_rule_is_kept
+        assert_the_id_rule_is_kept(["BRAF (k=9/9)"], [_ID_NOTE])
+        with pytest.raises(AssertionError, match="NOT on the rim"):
+            assert_the_id_rule_is_kept(
+                ["BRAF · ENSG00000157764 (k=9/9)"], [_ID_NOTE])
+        with pytest.raises(AssertionError, match="where its Ensembl ids are"):
+            assert_the_id_rule_is_kept(["BRAF (k=9/9)"], ["some other note"])
+
+    def test_the_measurement_the_rule_rests_on_still_holds(self) -> None:
+        """The 121 px and the 155 px in `_ID_NOTE` are the whole argument, so
+        they are re-measured rather than remembered. If the layout changes
+        enough to make the id fit, this fails and the sentence gets rewritten --
+        which is the right way round."""
+        from matplotlib.font_manager import FontProperties
+        from matplotlib.textpath import TextPath
+        from targetring.figure import AUDIT
+
+        w, h = AUDIT.figsize[0] * 100, AUDIT.figsize[1] * 100
+        ax_x, _, ax_w, ax_h = AUDIT.axes_box
+        radius = min(ax_w * w, ax_h * h) / 2
+        room = AUDIT.scale_box[0] * w - ((ax_x + ax_w / 2) * w + radius)
+        advance = lambda s: TextPath(  # noqa: E731
+            (0, 0), s, size=AUDIT.label_size,
+            prop=FontProperties(family="DejaVu Sans")).get_extents().width
+
+        plain = advance("GENE001 (k=9/9)")
+        withid = advance("GENE001 · ENSG00000157764 (k=9/9)")
+        assert 115 < room < 130, f"radial room is {room:.0f} px, not the measured 121"
+        assert plain < room, f"the plain label ({plain:.0f} px) should fit in {room:.0f}"
+        assert withid > room, (
+            f"an id now fits ({withid:.0f} px in {room:.0f}) — re-decide the rule "
+            f"and rewrite the footer sentence")
