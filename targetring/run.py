@@ -664,6 +664,10 @@ async def run_analysis(
                                          in outcome.kept_unevaluated.items()},
         },
         run_conditions=[{"condition": h, "affects": w} for h, w in conditions],
+        # v2.8. In the figure's own radial order, so the manifest's citation list
+        # reads in the same order as the legend column a reader is comparing it
+        # against.
+        ring_keys=[s.key for s in figure.RING_SPECS],
     )
     manifest_path = man.write(runs_dir / "manifest.json")
 

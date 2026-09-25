@@ -788,3 +788,170 @@ class TestTheSafetyCaveatReachesBothRenders:
         assert len(lines) > 1, "wrapped, not shortened"
         assert "NOT evidence of safety" in " ".join(l.strip() for l in lines)
         assert "…" not in "".join(lines)
+
+
+class TestV28SourceLinksInTheLegend:
+    """v2.8. Puck: *"can you keep links for sources in the legend."*
+
+    The scale column already named each ring's source in words. These tests
+    measure the three things that turns into, and each one is a different
+    render's capability:
+
+    * the **SVG** carries a real `<a xlink:href>` per ring, in the file, so the
+      download still works in a browser weeks later -- the v2.7.1 argument for
+      why a tooltip is not in `app.js`, applied again;
+    * the **PNG and the slide** carry no link at all, so the *printed* text has
+      to name the source and a domain a reader can type;
+    * the **manifest** carries the same URLs, because a figure and its manifest
+      disagreeing about where a number came from is a plausible wrong figure in
+      an audit trail.
+    """
+
+    def _render_full(self, tmp_path: Path, layout: str):
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / f"src-{layout}.svg"
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Liver", out_svg=out, input_count=14, rendered_count=14,
+                     ledger_counts={}, ordering_note=ORDER_NOTE, layout=layout,
+                     provenance="run X · abc123")
+        return res, out
+
+    def test_every_external_ring_has_a_citation_and_the_others_say_why(self) -> None:
+        """Nine external rings, three of Puck's own or derived. "No link" is a
+        stated decision, not a gap a reader has to notice."""
+        from targetring.figure import RING_SPECS
+        from targetring import sources
+
+        linked = {s.key for s in RING_SPECS if s.source_doc}
+        assert linked == set(sources.RING_SOURCE_DOCS)
+        for spec in RING_SPECS:
+            if spec.key in linked:
+                continue
+            assert spec.key in sources.UNLINKED_RINGS, (
+                f"{spec.key} has neither a citation nor a stated reason for not "
+                f"having one")
+
+    def test_a_citation_points_at_a_field_not_at_a_homepage(self) -> None:
+        """"Open Targets" linking to opentargets.org is nearly useless. The
+        structural half of that, asserted; the live half is
+        `scripts/check_source_links.py`."""
+        from targetring import sources
+        sources.assert_registry_is_coherent()
+        for key, doc in sources.RING_SOURCE_DOCS.items():
+            path = doc.url.split("/", 3)[3].partition("#")[0]
+            assert path.strip("/"), f"{key}: {doc.url} is a bare origin"
+            assert doc.reads, f"{key}: does not say which field it cites"
+
+    def test_the_registry_refuses_a_homepage_and_a_mismatched_domain(self) -> None:
+        """The two edits that would quietly undo this work: a link back to a
+        homepage, and a domain printed on the figure that is not where the link
+        goes -- which strands every reader of the PNG."""
+        from dataclasses import replace
+        from targetring import sources
+
+        doc = sources.RING_SOURCE_DOCS["tdl"]
+        for bad, why in (
+            (replace(doc, url="https://pharos.nih.gov/"), "homepage"),
+            (replace(doc, url="https://pharos.nih.gov/about"), "mismatched domain"),
+            (replace(doc, url="http://druggablegenome.net/IDGProteinFamilies"), "http"),
+        ):
+            saved = dict(sources.RING_SOURCE_DOCS)
+            sources.RING_SOURCE_DOCS["tdl"] = bad
+            try:
+                with pytest.raises(AssertionError):
+                    sources.assert_registry_is_coherent()
+            finally:
+                sources.RING_SOURCE_DOCS.clear()
+                sources.RING_SOURCE_DOCS.update(saved)
+
+    @pytest.mark.parametrize("layout", ["audit", "slide"])
+    def test_the_link_is_in_the_file_and_not_added_by_the_app(
+            self, tmp_path: Path, layout: str) -> None:
+        """`set_url` is matplotlib's own SVG-backend feature, so the anchor is
+        written into `figure.svg` at save time. `app.js` inlines that file, which
+        is how it is clickable in the web app with no JavaScript at all."""
+        from targetring.figure import RING_SPECS
+        _, svg = self._render_full(tmp_path, layout)
+        body = svg.read_text()
+        for spec in RING_SPECS:
+            anchor = f'<g id="ringsource|{spec.key}">'
+            assert anchor in body, f"{spec.key}: no source line in the {layout} SVG"
+            after = body[body.index(anchor):body.index(anchor) + 400]
+            if spec.source_doc:
+                assert f'<a xlink:href="{spec.source_doc.url}"' in after, (
+                    f"{spec.key}: source line is not a link")
+            else:
+                assert "<a xlink:href=" not in after, (
+                    f"{spec.key}: drawn as a link with nothing to cite")
+
+    @pytest.mark.parametrize("layout", ["audit", "slide"])
+    def test_the_printed_text_survives_export_to_a_png(
+            self, tmp_path: Path, layout: str) -> None:
+        """Nothing in a PNG or on a projected slide is clickable, so a bare
+        underlined word would die on export. The source name AND a readable
+        domain are drawn, on both renders."""
+        from targetring.figure import RING_SPECS
+        _, svg = self._render_full(tmp_path, layout)
+        text = re.sub(r"\s+", " ", " ".join(
+            "".join(el.itertext()) for el in
+            ET.parse(svg).getroot().iter("{http://www.w3.org/2000/svg}text")))
+        for spec in RING_SPECS:
+            doc = spec.source_doc
+            if not doc:
+                continue
+            assert doc.name in text, f"{spec.key}: source name not on the {layout} render"
+            assert doc.domain in text, f"{spec.key}: no domain a reader could type"
+
+    def test_the_legend_link_and_the_manifest_cannot_disagree(
+            self, tmp_path: Path) -> None:
+        """Both read one registry, and this is the check that they still do: the
+        set of hrefs in the figure equals the set of `doc_url`s in the manifest.
+        A second copy of a URL anywhere makes this fail."""
+        from targetring import manifest as manifest_mod
+        from targetring.figure import RING_SPECS
+        from targetring.invariants import InvariantReport
+
+        _, svg = self._render_full(tmp_path, "audit")
+        in_figure = set(re.findall(r'<a xlink:href="([^"]+)"', svg.read_text()))
+        man = manifest_mod.build(
+            run_id="T", region="Liver", input_row_count=14, rendered_count=14,
+            ledger_count=0, gene_order=[], invariants=InvariantReport(),
+            contracts=[], ledger=[], llm={}, timings={},
+            ring_keys=[s.key for s in RING_SPECS])
+        rows = man.as_dict()["ring_sources"]
+        assert [r["ring"] for r in rows] == [s.key for s in RING_SPECS], (
+            "the manifest lists the rings in a different order from the legend")
+        assert {r["doc_url"] for r in rows if r["doc_url"]} == in_figure
+        for row in rows:
+            if row["linked"] == "yes":
+                assert row["endpoint"] and row["version"], row["ring"]
+            else:
+                assert row["reason"] and row["reason"] != "unstated", row["ring"]
+
+    def test_the_manifest_names_the_endpoint_of_every_ring_it_cites(self) -> None:
+        """v2.8 found Pharos absent from `SOURCE_URLS` — the source behind four
+        discrete levels on the figure was the one the manifest never named, and
+        AGENTS.md requires every source URL."""
+        from targetring import manifest as manifest_mod, sources
+        urls = set(manifest_mod.SOURCE_URLS.values())
+        assert manifest_mod.SOURCE_URLS["pharos"]
+        for key, doc in sources.RING_SOURCE_DOCS.items():
+            assert any(doc.endpoint.startswith(u) or u.startswith(doc.endpoint)
+                       for u in urls), f"{key}: {doc.endpoint} is in no SOURCE_URLS entry"
+
+    def test_the_caption_writes_the_url_out_in_full(self, tmp_path: Path) -> None:
+        """The caption is what a slide reader is handed, and a slide has no
+        links, so the domain is not enough there — the whole URL is written."""
+        from targetring.figure import RING_SPECS
+        res, _ = self._render_full(tmp_path, "slide")
+        for spec in RING_SPECS:
+            if spec.source_doc:
+                assert spec.source_doc.url in res.caption, spec.key
+        assert "manifest.json" in res.caption
+
+    def test_the_tooltip_carries_the_url_a_wedge_label_has_no_room_for(self) -> None:
+        from targetring.figure import RING_SPECS
+        for spec in RING_SPECS:
+            if spec.wedge_tooltip and spec.source_doc:
+                assert spec.source_doc.url in spec.tooltip, spec.key

@@ -57,6 +57,7 @@ from .palette import (  # noqa: E402
     cmap_from, discrete_hexes,
 )
 from .palette import relative_luminance as _luminance  # noqa: E402
+from . import sources as SOURCES  # noqa: E402
 from .states import Cell  # noqa: E402
 
 # v2.6. Every ring used to be drawn on one ramp -- viridis, truncated to
@@ -235,6 +236,30 @@ class RingSpec:
         return self.short_label or self.label
 
     @property
+    def source_doc(self):
+        """This ring's citation, or None where there is nothing to cite.
+
+        v2.8. Read from `sources.RING_SOURCE_DOCS` rather than stored here, so
+        the legend, the caption and the manifest cannot hold three versions of
+        the same URL.
+        """
+        return SOURCES.RING_SOURCE_DOCS.get(self.key)
+
+    @property
+    def source_line(self) -> str:
+        """What the scale column prints under the ticks.
+
+        `Open Targets · platform-docs.opentargets.org` on a ring with a
+        citation, and the bare short source on one without. The domain is on
+        the figure because the PNG and the projected slide have no links at all
+        -- the same argument that decided where the v2.7.1 tooltips live, one
+        step further: a link that only works in the SVG has to leave a
+        findable address behind in the renders that cannot follow it.
+        """
+        doc = self.source_doc
+        return doc.legend_text if doc else self.short_source
+
+    @property
     def tooltip(self) -> str:
         """"What is this and what am I looking at", in one hover.
 
@@ -259,6 +284,10 @@ class RingSpec:
         elif not self.categorical:
             bits.append("range moves with the submitted set — see its scale")
         bits.append(f"source: {self.short_source}")
+        # v2.8. The hover already answers "who says so"; the URL is the only
+        # part a reader can act on, and a wedge label has no room for it.
+        if self.source_doc:
+            bits.append(self.source_doc.url)
         return " · ".join(b for b in bits if b)
 
 
@@ -916,8 +945,21 @@ AUDIT = Layout("audit", (19.5, 14.0), 8.0, (0.225, 0.205, 0.475, 0.755),
 # names on their own scales in the column, where the type is 7.6 pt and has room.
 # The figure says which one it is doing -- `wedge_note`'s zero-wedge branch
 # prints the measurement, not a preference.
+#
+# v2.8: the slide's scale column is TALLER, because a source line per ring costs
+# twelve lines and the fit loop pays for them in type size -- which on the
+# projected render is UX A4 again. Unpaid, the column went 6.98 px to 5.79 px;
+# at 0.912 tall it is 6.58 px, one 0.94 step down rather than three.
+# `logs/v28-slide-sweep3.txt` is the sweep.
+#
+# The column does NOT move left, and that was measured rather than assumed. The
+# circle's right edge is at x=0.590 and 0.11 of width sits unused, so widening
+# looked free -- but at six genes `CDKN2A (k=5/9)` reaches further right than any
+# label in a 14- or 50-gene run, and `assert_no_text_over_the_rings` refused
+# x=0.655 with the source line 14.3 px inside it (`logs/v28-slide-sweep.txt`,
+# `-sweep2`). The gap belongs to the longest spoke label, not to the column.
 SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.075, 0.345, 0.86),
-               False, False, 0.0, 1.15, False, (0.700, 0.045, 0.290, 0.855),
+               False, False, 0.0, 1.15, False, (0.700, 0.026, 0.290, 0.912),
                8.4, 7.6, 52, False, False,
                wedge_deg=0.0, wedge_label_size=8.4)
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE}
@@ -961,6 +1003,8 @@ def render(
     assert_fills_disjoint()
     assert_greyscale_disjoint()
     assert_ramp_luminance_is_monotone()
+    # v2.8. Before a link is drawn, not after a reader follows one.
+    SOURCES.assert_registry_is_coherent()
     lay = LAYOUTS[layout]
     filter_notes = list(filter_notes)
     genes = list(genes)
@@ -1400,14 +1444,21 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
                           _key_lines(f"{i}. ", spec.label, "", limit=lay.scale_wrap))
 
     def _note(spec):
-        lines = textwrap.wrap(f"{spec.units} \u00b7 {spec.short_source}",
-                              lay.scale_wrap + 6) or [""]
+        # v2.8: the source moved off this line and onto its own, because it is
+        # now a link and an `<a>` has to wrap the source and nothing else -- a
+        # reader must not find the units clickable and land on a doc page for
+        # them. The units stay here, where they always were.
+        lines = textwrap.wrap(spec.units, lay.scale_wrap + 6) or [""]
         if lay.scale_detail and spec.transform:
             lines += textwrap.wrap(spec.transform, lay.scale_wrap + 6)
         return "\n".join(lines)
 
+    def _source(spec):
+        return "\n".join(textwrap.wrap(spec.source_line, lay.scale_wrap + 6) or [""])
+
     titles = {sp.key: _title(i, sp) for i, sp in enumerate(rings, start=1)}
     notes = {sp.key: _note(sp) for sp in rings}
+    srcs = {sp.key: _source(sp) for sp in rings}
 
     # A ring's label is as long as its caveat and its units are as long as its
     # source, so how tall a row needs to be is not knowable when the font sizes
@@ -1419,6 +1470,9 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
     for _ in range(14):
         need = sum((titles[sp.key].count("\n") + 1) * line(ts * scale)
                    + (notes[sp.key].count("\n") + 2) * line(tk * scale)
+                   # v2.8's source line, counted here rather than discovered by
+                   # the column running off the bottom of the canvas.
+                   + (srcs[sp.key].count("\n") + 1) * line(tk * scale)
                    + bar_h + line(ts * scale) * 0.65 for sp in rings)
         if need <= h:
             break
@@ -1501,7 +1555,32 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
         note = notes[spec.key]
         blocks.append(fig.text(x0, y, note, fontsize=tk, va="top", ha="left",
                                color="#666666"))
-        top = y - line(tk) * (note.count("\n") + 1) - line(ts) * 0.45
+        y -= line(tk) * (note.count("\n") + 1)
+
+        # v2.8. The source, as a link where there is one.
+        #
+        # `set_url` is matplotlib's own SVG-backend feature and it writes
+        # `<a xlink:href="..." target="_blank">` around this text in the saved
+        # file -- so, exactly like the v2.7.1 tooltips, the link is *in the
+        # artefact*. `app.js` inlines `figure.svg`, so it is clickable in the web
+        # app with no JavaScript, and the downloaded SVG still opens the doc page
+        # in a browser weeks later. The PNG backend ignores the url and the slide
+        # PNG has no links at all, which is why `source_line` prints the domain:
+        # the visible text is the fallback, not decoration on top of the link.
+        #
+        # The gid is `ringsource|<key>` -- the same handle idiom as the cells and
+        # the wedge names, so a test can find this ring's link without matching
+        # on the drawn string.
+        doc = spec.source_doc
+        t = fig.text(x0, y, srcs[spec.key], fontsize=tk, va="top", ha="left",
+                     color="#0b5cad" if doc else "#666666")
+        t.set_gid(f"ringsource|{spec.key}")
+        if doc:
+            t.set_url(doc.url)
+        blocks.append(t)
+        y -= line(tk) * (srcs[spec.key].count("\n") + 1)
+
+        top = y - line(ts) * 0.45
     return blocks
 
 
@@ -1904,6 +1983,24 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
         lines.append(f"  {i}. {spec.label} {rng} {spec.units} \u2014 {spec.source}")
         if spec.transform:
             lines.append(f"       scale: {spec.transform}")
+        # v2.8. The caption is the artefact a slide reader is handed, and a
+        # slide has no links, so this is where the URL has to be written out in
+        # full rather than shortened to a domain. A ring with no citation says
+        # so here too: nine links and three silences is a question.
+        doc = spec.source_doc
+        if doc:
+            lines.append(f"       source: {doc.name} \u2014 {doc.url}")
+        else:
+            lines.append(f"       source: "
+                         f"{SOURCES.UNLINKED_RINGS.get(spec.key, spec.short_source)}")
+    lines += [
+        "",
+        "The ring sources above are also in manifest.json (`ring_sources`), with the "
+        "endpoint and the pinned schema or dataset version for each, and the run's UTC "
+        "timestamp is the access date. In the SVG each source line is a real link; in a "
+        "PNG or on a slide nothing is clickable, which is why the figure prints the "
+        "domain beside the name.",
+    ]
     lines += [
         "",
         "Pipeline: furthest phase counts only drugs indicated for a disease with human "

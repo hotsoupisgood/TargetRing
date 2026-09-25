@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from . import config
+from . import sources as sources_mod
 from .invariants import InvariantReport
 
 
@@ -42,6 +43,13 @@ SOURCE_URLS: dict[str, str] = {
     "pubtator3": config.PUBTATOR_SEARCH,
     "europepmc": config.EUROPEPMC_SEARCH,
     "chembl": config.CHEMBL_BASE,
+    # v2.8: absent since the TDL ring was built in v2.2. AGENTS.md requires
+    # "every source URL" in the manifest, and the ring that drives four
+    # discrete levels on the figure was the one source the manifest did not
+    # name. Found while making the legend's links and the manifest agree --
+    # they could not agree about Pharos, because the manifest never mentioned
+    # it.
+    "pharos": config.PHAROS_GRAPHQL,
 }
 
 
@@ -76,6 +84,13 @@ class Manifest:
     # COUNCIL V3 / UX A1. Run conditions are not invariant failures and are
     # recorded separately so the two can never be confused in an audit.
     run_conditions: list[dict[str, str]] = field(default_factory=list)
+    # v2.8. Per ring: the documentation URL the legend links to, the endpoint
+    # that was called, and the pinned schema or dataset version. Built from the
+    # same `sources.RING_SOURCE_DOCS` the figure draws from, so a figure and its
+    # manifest cannot disagree about where a number came from. The access date
+    # is `timestamp_utc` above -- one clock per run, not a second one here that
+    # could drift from it.
+    ring_sources: list[dict[str, str]] = field(default_factory=list)
 
     @property
     def all_invariants_pass(self) -> bool:
@@ -145,6 +160,7 @@ def build(
     filters: list[dict[str, Any]] | None = None,
     filter_counts: dict[str, Any] | None = None,
     run_conditions: list[dict[str, str]] | None = None,
+    ring_keys: list[str] | None = None,
 ) -> Manifest:
     return Manifest(
         run_id=run_id,
@@ -174,6 +190,7 @@ def build(
         filters=filters or [],
         filter_counts=filter_counts or {},
         run_conditions=run_conditions or [],
+        ring_sources=sources_mod.as_manifest_rows(list(ring_keys or [])),
     )
 
 
