@@ -35,8 +35,24 @@ SLIDE_W_IN = 13.333
 HALF_SLIDE_W_IN = SLIDE_W_IN / 2
 
 # The laptop case: a 1440 px viewport, the app's 26 px page padding either side
-# and its 1500 px max-width, leaves the figure panel this wide in CSS px.
+# and its 1500 px max-width, leaves the result column this wide in CSS px.
 LAPTOP_PANEL_PX = 1388.0
+
+# v3.1 / round 1's fix. `figure-web.svg` no longer gets the whole column: A2's
+# fix puts the twelve scales and the four cell states beside it as HTML, in a
+# 330 px `#decode` panel with an 18 px gap, so the figure itself is 1040 px.
+#
+# The constant is here rather than folded into `LAPTOP_PANEL_PX` because the two
+# are different measurements and only one of them moved: the export opened full
+# width still gets the whole 1388. Measured in the live DOM at 1440 x 900
+# (`logs/ux-v3-r1fix-live.json`: `#figure` is 1040.0 px, scale 1.5046) rather
+# than derived from the stylesheet -- a flex row with `min-width: 0` does not
+# give you its width by arithmetic, and reading 1388 here instead of 1040
+# reports the app 33% more legible than it is, which is the one direction this
+# instrument must never be wrong in.
+DECODE_PANEL_PX = 330.0
+FIGURE_ROW_GAP_PX = 18.0
+WEB_FIGURE_PX = LAPTOP_PANEL_PX - DECODE_PANEL_PX - FIGURE_ROW_GAP_PX
 
 FS = re.compile(r'font-size:\s*([0-9.]+)px')
 VIEWBOX = re.compile(r'viewBox="([0-9.\- ]+)"')
@@ -77,7 +93,7 @@ def report(run: Path) -> dict:
                  "artefacts": {}}
     cases = [
         # file, how it is read, the width it is fitted to, the floor
-        ("figure-web.svg", "app, 1440 px laptop viewport", LAPTOP_PANEL_PX, "screen"),
+        ("figure-web.svg", "app, 1440 px laptop viewport", WEB_FIGURE_PX, "screen"),
         ("figure.svg", "the export, opened full width on the same laptop", LAPTOP_PANEL_PX, "screen"),
         ("figure-slide.svg", "half a slide", HALF_SLIDE_W_IN * 72, "slide"),
         ("figure-slide.svg", "a full slide", SLIDE_W_IN * 72, "slide"),

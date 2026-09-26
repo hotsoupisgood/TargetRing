@@ -117,6 +117,13 @@ class RunResult:
     warnings: list[str] = field(default_factory=list)
     ordering: str = SUBMITTED
     active_filters: list[dict[str, Any]] = field(default_factory=list)
+    # v3.1 / UX v3 A2. The page draws the twelve scales as HTML now, at a size
+    # a browser can draw legibly, so `/api/run/{id}/scales` needs the cells the
+    # ring norms are computed from. Kept rather than recomputed: a panel whose
+    # ranges came from a second pass over the data could disagree with the
+    # figure beside it, which is the failure mode a detachable legend has and
+    # an attached one should not.
+    cells_by_ring: dict[str, Any] = field(default_factory=dict)
 
 
 async def run_analysis(
@@ -730,6 +737,7 @@ async def run_analysis(
         manifest_path=manifest_path, manifest=man, invariants=invariants,
         gene_order=gene_order, drawers=drawers, ledger=ledger, warnings=warnings,
         ordering=ordering, active_filters=filters_mod.as_dicts(active_filters),
+        cells_by_ring=cells_by_ring,
     )
 
 

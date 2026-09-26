@@ -1346,3 +1346,341 @@ class TestV30TheArtefactSet:
         assert len(top_level) == 3, top_level
         offered = re.findall(r'<a id="dl-[a-z-]+"', html)
         assert len(offered) >= 9, offered
+
+
+STATIC = Path(__file__).resolve().parent.parent / "targetring" / "static"
+
+
+def _html() -> str:
+    return (STATIC / "index.html").read_text()
+
+
+def _js() -> str:
+    return (STATIC / "app.js").read_text()
+
+
+def _inside_a_disclosure(html: str, element_id: str) -> bool:
+    """Is `#element_id` anywhere inside a `<details>`?
+
+    Parsed rather than grepped: "is this behind a click" is a question about
+    ancestry, and a regex over the source answers a different one. The page is
+    well-formed enough for the stdlib parser, and it stays that way because
+    this test would fail loudly if it stopped being.
+    """
+    from html.parser import HTMLParser
+
+    class Finder(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__()
+            self.depth = 0
+            self.stack: list[str] = []
+            self.hit: bool | None = None
+
+        def handle_starttag(self, tag, attrs):
+            d = dict(attrs)
+            if d.get("id") == element_id and self.hit is None:
+                self.hit = "details" in self.stack
+            if tag not in ("br", "img", "input", "meta", "link", "hr"):
+                self.stack.append(tag)
+
+        def handle_startendtag(self, tag, attrs):
+            d = dict(attrs)
+            if d.get("id") == element_id and self.hit is None:
+                self.hit = "details" in self.stack
+
+        def handle_endtag(self, tag):
+            if tag in self.stack:
+                while self.stack.pop() != tag:
+                    pass
+
+    f = Finder()
+    f.feed(html)
+    assert f.hit is not None, f"#{element_id} is not on the page at all"
+    return f.hit
+
+
+class TestUXv3TheTwoThingsThatSurviveWhateverAnimatesAway:
+    """The rule `docs/reviews/UX-v3-rounds.md` states once and holds through all
+    three rounds, and the sentence that matters in it is the last one:
+    *"Both are checked by an assertion, not by care."*
+
+    Puck asked for animations that hide non-essential information, and §v3.0
+    made simplifying the app screen free — nothing hidden in the browser reaches
+    any exported artefact. Two things are exempt:
+
+      1. the four cell states stay reachable, with no dead end;
+      2. "each ring has its own scale; colours do not compare across rings" is
+         never behind a click.
+
+    A round-1 fix that collapsed the scale panel and left those two inside it
+    would pass every other test in this file. These are what stop round 2 or
+    round 3 doing that by accident while tidying the page — which is exactly the
+    kind of change a later round makes.
+    """
+
+    def test_the_four_cell_states_are_not_behind_a_disclosure(self) -> None:
+        """Rule 1. `#cell-states` has no toggle of its own and is not inside
+        anybody else's, so there is no state of the page in which the states are
+        hidden. That is stronger than "the control that reopens it is visible",
+        which is the weaker option the rule also allows."""
+        html = _html()
+        assert not _inside_a_disclosure(html, "cell-states"), (
+            "the four cell states are inside a <details>: the rule allows a "
+            "collapse only if the control that reopens it is visible and says "
+            "what it opens, and the simpler way to hold the rule is not to "
+            "collapse them at all")
+
+    def test_all_four_cell_states_are_actually_drawn_into_it(self) -> None:
+        """Reachable is not the same as present. The states come from
+        `STATE_STYLE`, so a state added to the figure appears in the panel
+        without anybody remembering to add it — and the count is asserted here
+        so that stays true."""
+        from targetring.figure import STATE_STYLE
+        js = _js()
+        # Three non-value states live in `STATE_STYLE`; `value` is the fourth
+        # and is the dashed empty box on every render, because any filled swatch
+        # would say the thing v2.6 exists to stop saying -- that one colour
+        # means "a value". The panel draws it the same way.
+        assert sorted(STATE_STYLE) == ["failed", "no_data", "not_applicable"]
+        assert "s.states.map(" in js, (
+            "the panel must render every state the figure defines, not a list "
+            "written out a second time in JavaScript")
+        assert "border-style:dashed" in js, "the fourth state, `value`"
+        assert '$("#cell-states").innerHTML' in js
+        assert "the four cell states" in js
+
+    def test_the_comparability_sentence_is_never_behind_a_click(self) -> None:
+        """Rule 2, first clause. It is a full-width band of its own, above the
+        figure row."""
+        html = _html()
+        assert not _inside_a_disclosure(html, "comparability")
+        assert html.index('id="comparability"') < html.index('class="figure-row"'), (
+            "a first-time viewer must meet the sentence before the figure, not "
+            "after scrolling past it")
+
+    def test_the_comparability_sentence_is_also_on_the_circle_itself(self) -> None:
+        """Rule 2, second clause, and the one A2 was actually failing: the
+        sentence was in the SVG at 6.14 CSS px in a corner. Collapsed is not the
+        same as absent, and neither is present-and-unreadable. It is on the page
+        at 14.5 px AND still on the render, where
+        `assert_figure_states_the_minimum` will not let any layout drop it."""
+        from targetring.figure import COMPARABILITY_CLAIM
+        js, html = _js(), _html()
+        assert "s.comparability" in js
+        assert 'id="comparability"' in html
+        # and the app render still carries it, so a screenshot of the figure
+        # alone is not a figure that lies.
+        assert COMPARABILITY_CLAIM  # named constant, read by drawing and check
+
+    def test_the_one_thing_that_may_collapse_says_what_it_opens(self) -> None:
+        """No dead end. `#scales` is the reference a reader consults for a
+        particular cell, so it is the thing that earns an animation — and its
+        summary names the contents and the count in the closed state."""
+        html = _html()
+        assert _inside_a_disclosure(html, "scale-rows"), (
+            "the scale panel is the one part that is allowed to animate away")
+        summary = re.search(r'<details id="scales"[^>]*>\s*<summary>(.*?)</summary>',
+                            html, re.S)
+        assert summary, "the collapsible panel has no summary at all"
+        words = re.sub(r"<[^>]+>", " ", summary.group(1))
+        assert "scale" in words.lower(), words
+        assert re.search(r"\d", words), (
+            "the closed state must say how many scales are behind it", words)
+
+    def test_the_panel_animates_and_respects_reduced_motion(self) -> None:
+        """Puck asked for the animation; an animation nobody can turn off is a
+        different defect from the one it fixes."""
+        css = (STATIC / "app.css").read_text()
+        assert "@keyframes reveal" in css
+        assert "prefers-reduced-motion" in css
+        block = css[css.index("prefers-reduced-motion"):]
+        assert "animation: none" in block
+
+
+class TestUXv3A2TheScalesLeaveTheSvgAndStayInTheApp:
+    """A2's fix in one sentence: the twelve scales stopped being 5.8 px of
+    vector text and became 13 px of HTML. What must not follow from that is the
+    export losing them — `UX-v1-mvp.md` A5 is binding on both exported renders.
+    """
+
+    def _spec(self):
+        return _full_ring_spec([f"GENE{i:03d}" for i in range(14)])
+
+    @pytest.mark.parametrize("layout,in_svg", [("audit", True), ("slide", True),
+                                               ("web", False)])
+    def test_only_the_app_render_drops_the_column(self, layout: str,
+                                                  in_svg: bool) -> None:
+        from targetring.figure import LAYOUTS
+        assert LAYOUTS[layout].scales_in_svg is in_svg
+
+    def test_the_flag_that_decides_it_is_its_own_flag(self) -> None:
+        """`slide` has `stamp_size_small=False` and draws a full scale column;
+        `web` has `stamp_size_small=False` and draws none. The two questions
+        were one field for one afternoon during this fix, and the slide render
+        lost its column and printed a banner across its own spoke labels. The
+        names are now what they decide, and this is the test that says so."""
+        from targetring.figure import SLIDE, WEB
+        assert SLIDE.stamp_size_small is False and SLIDE.scales_in_svg is True
+        assert WEB.stamp_size_small is False and WEB.scales_in_svg is False
+
+    def test_the_panel_is_built_from_the_renders_own_ramps_and_ticks(self) -> None:
+        """A panel whose ramp or ticks came from a second implementation could
+        disagree with the figure beside it — which is the failure mode §v3.0
+        spent structure on for the detachable legend, arriving on the attached
+        one."""
+        from targetring.figure import scale_rows
+        rows = scale_rows(self._spec())
+        assert [r["n"] for r in rows] == list(range(1, len(rows) + 1)), (
+            "a ring number that does not match the radial order is a wrong "
+            "figure — the bug v3.0 found in the two-column legend")
+        for r in rows:
+            assert r["colours"], r["key"]
+            assert r["units"], r["key"]
+            assert all(0.0 <= t["at"] <= 1.0 for t in r["ticks"]), r["key"]
+            assert r["source_text"], r["key"]
+
+    def test_the_categorical_ring_is_named_in_the_panel_not_numbered(self) -> None:
+        """COUNCIL V12, arriving on the HTML panel. Ring 8's three colours are
+        off every ramp, so they need naming — and the panel's first version read
+        its numeric tick labels instead and printed `-1 / 0 / 1` beside three
+        colours that are not positions on anything."""
+        from targetring.figure import scale_rows
+        act = next(r for r in scale_rows(self._spec())
+                   if r["key"] == "clinical_activity")
+        assert len(act["categories"]) == len(act["colours"]) == 3, act
+        for name in act["categories"]:
+            assert name and not re.fullmatch(r"-?[\d.]+", name), (
+                "a state is printed as its numeric position", act["categories"])
+        js = _js()
+        assert "act.categories[i]" in js
+        assert "act.ticks[i]" not in js, (
+            "the panel is back to reading the ring's numeric ticks")
+
+    def test_every_ring_reports_whether_it_is_categorical(self) -> None:
+        """And the non-categorical eleven carry an empty list rather than a
+        made-up name, which is AGENTS.md rule 1 in a JSON field."""
+        from targetring.figure import scale_rows
+        rows = scale_rows(self._spec())
+        cats = [r for r in rows if r["categories"]]
+        assert [r["key"] for r in cats] == ["clinical_activity"], [
+            r["key"] for r in cats]
+
+    def test_the_export_still_carries_a_scale_for_every_ring(self,
+                                                             tmp_path: Path) -> None:
+        """A5, unchanged, on the two files that leave the app."""
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        for layout in ("audit", "slide"):
+            out = tmp_path / f"{layout}.svg"
+            render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                   region="Liver", out_svg=out, input_count=14,
+                   rendered_count=14, ordering_note=ORDER_NOTE, layout=layout,
+                   provenance="run T1 · abc", ledger_counts={})
+            text = re.sub(r"\s+", " ", " ".join(
+                "".join(el.itertext()) for el in ET.parse(out).getroot()
+                .iter("{http://www.w3.org/2000/svg}text")))
+            from targetring.figure import RING_SPECS
+            drawn = [s for s in RING_SPECS if s.key in spec]
+            assert len(drawn) == 12, len(drawn)
+            for s in drawn:
+                assert s.wedge_label in text or s.label[:18] in text, (
+                    layout, s.key, "has no scale in the exported column")
+
+
+class TestUXv3A1TextMayNotPrintOverText:
+    """A1. Five pairs of strings intersected on `figure-slide.svg`, measured off
+    the file, and they had done since v2.6 — *"'Liver' sits on 'targetring v2'…
+    Say the word and it is ten minutes."* Nobody said the word, so it shipped
+    through v2.7, v2.8, v2.9 and v3.0.
+
+    The reason no check caught it is the interesting part. The build had three
+    assertions about text landing where it should not — over the rings, outside
+    the canvas, over the legend box — and none about text over *text*.
+    `fit_centre_to_the_hole` shrinks until every line's radial reach clears the
+    hole, and two lines sharing a y have the same reach they had apart; so did
+    `assert_centre_fits_the_hole`. Both were asking whether the block escaped
+    the hole, and the defect was entirely inside it.
+    """
+
+    def _render(self, tmp_path: Path, layout: str, n: int = 14, **kw):
+        genes = [f"GENE{i:03d}" for i in range(n)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / f"a1-{layout}-{n}.svg"
+        kw.setdefault("ledger_counts", {"ambiguous": 1})
+        kw.setdefault("dropped_names", ["HBB"])
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+               region="Lung", out_svg=out, input_count=n + 1, rendered_count=n,
+               ordering_note=ORDER_NOTE, layout=layout,
+               provenance="run T1 · abc123", **kw)
+        return out
+
+    @pytest.mark.parametrize("layout", ["audit", "web", "slide"])
+    @pytest.mark.parametrize("n", [3, 14])
+    def test_no_render_prints_a_string_over_another_string(
+            self, tmp_path: Path, layout: str, n: int) -> None:
+        """Rendering is the assertion: `assert_text_does_not_overprint_text`
+        runs inside `render` and raises rather than returning a figure. Three
+        genes is in the matrix because the footer is user-driven — the drop
+        categories, the dropped names and the filters all change its height —
+        and a constant tuned against a 14-gene run was what put the scale
+        column's last line inside it."""
+        self._render(tmp_path, layout, n=n)
+
+    @pytest.mark.parametrize("layout", ["audit", "web", "slide"])
+    def test_it_holds_with_filters_active_too(self, tmp_path: Path,
+                                              layout: str) -> None:
+        self._render(tmp_path, layout,
+                     filter_notes=["literature >= 2 removed 3 genes"])
+
+    def test_the_check_would_actually_fail(self) -> None:
+        """The negative. A check that has never refused anything is a comment.
+        Two strings at the same point, which is precisely what `Lung` and
+        `15 genes in, 14 rendered` were on the slide."""
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from targetring.figure import assert_text_does_not_overprint_text
+
+        fig = plt.figure(figsize=(6, 4))
+        a = fig.text(0.5, 0.5, "Lung", fontsize=14, ha="center")
+        b = fig.text(0.5, 0.5, "15 genes in, 14 rendered", fontsize=12,
+                     ha="center")
+        try:
+            with pytest.raises(AssertionError, match="on top of other text"):
+                assert_text_does_not_overprint_text(fig, [a, b], where="test")
+            # and it passes once they are apart
+            b.set_position((0.5, 0.2))
+            assert_text_does_not_overprint_text(fig, [a, b], where="test")
+        finally:
+            plt.close(fig)
+
+    def test_the_centre_block_is_stacked_by_measurement_not_by_constants(
+            self, tmp_path: Path) -> None:
+        """The fix, rather than its symptom. Nudging three constants would have
+        cleared the 1.15 slide and broken on the next `centre_scale`; the block
+        is laid out from its own measured line heights, so a longer region name
+        or a seventh drop category moves the lines below it instead of landing
+        on them."""
+        import inspect
+        import re as _re
+        from targetring.figure import (_draw_centre, _draw_ordering_and_filters,
+                                       stack_centre_blocks)
+        for fn in (_draw_centre, _draw_ordering_and_filters):
+            code = "\n".join(l for l in inspect.getsource(fn).splitlines()
+                             if not l.lstrip().startswith("#"))
+            ys = set(_re.findall(r"ax\.text\(0\.5,\s*([A-Za-z0-9_.]+)", code))
+            assert ys and ys <= {"Y", "y"}, (
+                fn.__name__, ys, "a line is still placed at its own constant; "
+                "the stack owns vertical position now")
+        assert "stack_centre_blocks" in inspect.getsource(
+            __import__("targetring.figure", fromlist=["x"]).fit_centre_to_the_hole)
+        assert stack_centre_blocks.__doc__
+
+    def test_the_slide_is_the_layout_that_used_to_fail(self, tmp_path: Path) -> None:
+        """A1 named the artefact: `centre_scale` is 1.0 on `audit` and `web`
+        and 1.15 on `slide`, so the type grew 15% and the spacing did not. The
+        regression test is that the slide renders at the scale factor that broke
+        it."""
+        from targetring.figure import SLIDE
+        assert SLIDE.centre_scale == 1.15
+        self._render(tmp_path, "slide", n=14)

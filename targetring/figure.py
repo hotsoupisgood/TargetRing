@@ -872,7 +872,14 @@ class Layout:
     figsize: tuple[float, float]
     label_size: float
     axes_box: tuple[float, float, float, float]
-    draw_key: bool
+    # Whether the run-id / git-SHA stamp is set at 6 pt or at 8 pt. It is the
+    # ONLY thing this flag has decided since v2.6 retired the monospace ring
+    # key it was named after, and the name outliving the feature cost a whole
+    # slide render during v3.1: `_draw_legend` read it as "does this layout draw
+    # the scale column", which is a question it had never answered. `slide` has
+    # it False and draws a column; `web` has it False and does not. Renamed to
+    # what it does. The question it was mistaken for is `scales_in_svg`, below.
+    stamp_size_small: bool
     draw_footer: bool
     footer_size: float
     centre_scale: float
@@ -918,6 +925,19 @@ class Layout:
     # nothing claims the two put a gene at the same angle.
     wedge_deg: float = WEDGE_DEG
     wedge_label_size: float = 7.4
+    # v3.1 / UX v3 A2. Whether the cell-state box and the per-ring scale column
+    # are drawn INTO the SVG, or left to the surface the render is read on.
+    #
+    # True everywhere it has always been true -- `audit` and `slide` are files
+    # that leave the app and must carry everything needed to decode a cell
+    # (UX-v1-mvp.md A5 is binding on both). False on `web` alone, where the page
+    # itself draws the same twelve scales as HTML at 13 px rather than as 5.8 px
+    # of vector text, which is what §v3.0 made legal.
+    #
+    # Default True, so a layout added later carries its own decode furniture
+    # unless it says otherwise -- the safe direction for a flag whose wrong
+    # value produces a figure a reader cannot decode.
+    scales_in_svg: bool = True
 
 
 # v2.6 widens the audit canvas from 17.5 to 19.5 in and narrows the axes box to
@@ -1021,10 +1041,48 @@ SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.105, 0.345, 0.83),
 # one-line footer landed 1.6 px under `GENE007 (k=9/9)`. What the app actually
 # gains is the 1.8 in of empty canvas below the circle, so the same circle fills
 # more of the screen at a given page width.
-WEB = Layout("web", (19.5, 12.2), 8.0, (0.225, 0.115, 0.475, 0.815),
-             True, False, 0.0, 1.0, False, (0.762, 0.035, 0.232, 0.930),
+# v3.1 / UX v3 A2. The canvas shrank from 19.5 x 12.2 in to 12.0 x 10.5, and
+# that is the whole fix rather than a tidy-up.
+#
+# A canvas is only ever seen at the width the page gives it. At 19.5 in in a
+# 1388 px panel -- a 1440 px laptop, which is what Puck uses -- the scale factor
+# is 0.9886, so a point in the file is a CSS pixel on screen and **148 of the
+# render's 149 strings were under 12 px**. The comparability sentence, which is
+# one of the two things that may never be hard to find, was 178 x 7 px of amber
+# in a corner: not behind a click, and not seen either.
+#
+# Two things paid for it. The scale column and the cell-state box leave the SVG
+# (`draw_key=False`) and the page draws them as HTML at 13 px, which is what
+# §v3.0 made legal -- "the export and the app render can be different" -- and
+# what nothing before v3.0 could have done. And the canvas then has no reason
+# to be 19.5 in wide: 23.2% of it was the column and 22.5% a margin holding one
+# oversized box, leaving the circle 47.5%.
+#
+# At 9.6 in, with the 330 px decode panel taking its share of the row, the
+# figure gets 1040 px and the scale is **1.505**: the 8 pt gene labels land at
+# 12.0 CSS px and the circle goes from 659 px across to 790.
+#
+# Three strings are still under the floor and each is deliberate, because each
+# is duplicated on the page at or above it: the twelve wedge ring names at 9.07
+# px (the panel numbers and names all twelve at 13 px, and the SVG keeps its
+# v2.7.1 tooltips), the centre's `spoke order` note at 10.23 (the counts line
+# above the figure says it at 14), and `the 1 not shown are named in the Drop
+# ledger tab` at 11.28 (the tab itself is 14 px and two inches away). The wedge
+# names are geometry-bound rather than a choice -- widening the gap to 32
+# degrees was measured and `assert_wedge_labels_fit` refused it, because at
+# twelve rings the binding budget is the band's HEIGHT, which is v2.7's finding
+# about the slide arriving on a third layout.
+#
+# Nothing is dropped that the page does not carry: UX-v1-mvp.md A5's binding
+# requirement that a scale exists per ring is met by the HTML panel, the export
+# keeps its column untouched, and `assert_figure_states_the_minimum` still
+# refuses to draw this circle without the comparability claim -- which
+# `_draw_legend` now draws large in the corner instead of as a 6 px column
+# header.
+WEB = Layout("web", (9.6, 10.6), 8.0, (0.120, 0.175, 0.760, 0.700),
+             False, False, 0.0, 1.0, False, (0.762, 0.035, 0.232, 0.930),
              7.4, 6.6, 42, True, False,
-             wedge_deg=26.0, wedge_label_size=7.4)
+             wedge_deg=26.0, wedge_label_size=7.4, scales_in_svg=False)
 
 # v3.0, Puck: *"we could have the download download legend as a separate
 # image"* -- "circle on one slide, legend on another, sized independently".
@@ -1035,9 +1093,22 @@ WEB = Layout("web", (19.5, 12.2), 8.0, (0.225, 0.115, 0.475, 0.815),
 # came from a second implementation could disagree with its figure, which is the
 # one new failure mode a detachable legend introduces and the one worth spending
 # structure on.
+# v3.1 / UX v3 A3. The scale box is one column's geometry; `render_legend`
+# offsets it three times. It was `(0.360, 0.045, 0.300, 0.845)` -- two columns
+# of six starting a third of the way across, which left the whole lower-left
+# quadrant of a 16:9 canvas empty and still set the ring names at 9 pt. Three
+# shorter columns start further left, stop above the caveat band, and spend the
+# reclaimed space on type: titles 9 -> 12.5 pt, ticks 8 -> 11 pt.
+#
+# The wrap is narrower because the column is (46 -> 34 characters): a 12.5 pt
+# title in a 0.225-wide column is the same number of glyphs as a 9 pt one in a
+# 0.300-wide column, give or take, and `_key_lines` wraps rather than eliding,
+# so a longer caveat costs a line rather than its tail.
+LEGEND_COLUMNS = 4
+LEGEND_COLUMN_PITCH = 0.2455
 LEGEND = Layout("legend", (16.0, 9.0), 8.0, (0.0, 0.0, 0.01, 0.01),
-                True, True, 7.2, 1.0, False, (0.360, 0.045, 0.300, 0.845),
-                9.0, 8.0, 46, True, False,
+                True, True, 7.2, 1.0, False, (0.025, 0.245, 0.212, 0.530),
+                12.5, 11.0, 34, True, False,
                 wedge_deg=0.0, wedge_label_size=8.0)
 
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE, "web": WEB}
@@ -1295,19 +1366,30 @@ def render(
                           wnote)
     assert_the_id_rule_is_kept(spoke_labels, notes)
 
-    centre_blocks, next_y = _draw_centre(ax, region, len(genes), input_count,
-                                         rendered_count, ledger_counts,
-                                         dropped_names, lay)
+    centre_blocks = _draw_centre(ax, region, len(genes), input_count,
+                                 rendered_count, ledger_counts,
+                                 dropped_names, lay)
     centre_blocks += _draw_ordering_and_filters(ax, ordering_note, filter_notes,
-                                                stats, lay, next_y)
+                                                stats, lay)
     text_blocks = []
-    text_blocks += _draw_legend(fig, rings, norms, cmaps, lay)
-    text_blocks += _draw_stamps(fig, notes, provenance, lay,
-                                slide_line(ordering_note, filter_notes,
-                                           wedge_note(lay, len(genes), space, short=True),
-                                           where=("see the What this is not tab"
-                                                  if lay.name == "web"
-                                                  else "see the caption")))
+    # v3.1 / UX v3 A1: the stamps are drawn FIRST now, and the scale column's
+    # bottom is then set above whatever they turned out to need. The footer is
+    # user-driven -- how many drop categories, how many dropped names, whether
+    # filters are active -- so its height is not knowable when a constant is
+    # chosen, and `AUDIT.scale_box`'s 0.035 bottom was chosen against a 14-gene
+    # run. At three genes the footer block reaches y=112 px and the column's
+    # last line, `derived`, sits at y=103: the column printed into the footer
+    # and every assertion passed. Measured rather than re-guessed.
+    stamps = _draw_stamps(fig, notes, provenance, lay,
+                          slide_line(ordering_note, filter_notes,
+                                     wedge_note(lay, len(genes), space, short=True),
+                                     where=("see the What this is not tab"
+                                            if lay.name == "web"
+                                            else "see the caption")))
+    text_blocks += _draw_legend(fig, rings, norms, cmaps,
+                                _column_above_the_footer(fig, lay, stamps),
+                                banner_width=_free_width_beside(fig, stamps, 0.018))
+    text_blocks += stamps
     if invariant_failures:
         _draw_banner(fig, invariant_failures)
     if run_conditions and lay.draw_conditions:
@@ -1331,6 +1413,13 @@ def render(
     assert_wedge_labels_fit(fig, ax, wedge_labels, wedge,
                             obstacles=[t for t in ax.texts
                                        if t.get_text() and t not in wedge_labels])
+    # v3.1 / UX v3 A1. Last of the geometry checks, because every block has now
+    # reached its final size and position: the centre has been fitted and
+    # re-stacked, the wedge labels have been shrunk to fit, the stamps are
+    # wrapped. Five collisions on the slide render survived four releases
+    # because nothing compared a drawn string with another drawn string.
+    assert_text_does_not_overprint_text(fig, text_blocks + centre_blocks,
+                                        where=f"{lay.name} render")
     # v3.0. The four claims a circle may never be without, checked against the
     # text this render actually drew. The centre block is measured last because
     # `fit_centre_to_the_hole` may have rewritten nothing but has certainly
@@ -1447,44 +1536,53 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
         shown_cats.append(f"+{len(cats) - 4} more reasons")
     detail = _wrap(shown_cats, 2) or "\u2014"
     k = (lay.centre_scale if lay else 1.0)
+    # v3.1 / UX v3 A1. Every block here is created at the same nominal y and
+    # `stack_centre_blocks` then places all of them, in this list's order, by
+    # their own measured heights.
+    #
+    # Until v3.1 each line carried its own constant -- 0.575, 0.542, 0.512, then
+    # a hand-decremented `y` -- while only the font SIZES were multiplied by
+    # `lay.centre_scale`. On `audit` and `web` that factor is 1.0 and the
+    # constants had been tuned for it, so it looked right for four releases. On
+    # `slide` it is 1.15: the type grew 15%, the spacing did not, and the block
+    # printed through itself on the one artefact that gets projected.
+    #
+    # The constants are gone rather than corrected. Leaving them would leave the
+    # file with two layout models, one of them dead, and the next person to
+    # adjust the centre would adjust the dead one.
+    Y = 0.5
     out = [
-        ax.text(0.5, 0.575, "targetring v2", ha="center", va="center", size=15 * k,
+        ax.text(0.5, Y, "targetring v2", ha="center", va="center", size=15 * k,
                 weight="bold", transform=ax.transAxes),
-        ax.text(0.5, 0.542, region, ha="center", va="center", size=11 * k,
+        ax.text(0.5, Y, region, ha="center", va="center", size=11 * k,
                 transform=ax.transAxes, color="#333333"),
-        ax.text(0.5, 0.512, _wrap(parts, 2), ha="center", va="center", size=9.5 * k,
+        ax.text(0.5, Y, _wrap(parts, 2), ha="center", va="center", size=9.5 * k,
                 transform=ax.transAxes, color="#111111"),
     ]
-    y0 = 0.492
     if lay is None or lay.centre_detail:
-        out.append(ax.text(0.5, y0, detail, ha="center", va="top", size=6.8 * k,
+        out.append(ax.text(0.5, Y, detail, ha="center", va="top", size=6.8 * k,
                            transform=ax.transAxes, color="#555555"))
-        y0 -= 0.016 * len(detail.split("\n")) + 0.008
 
     # UX A3. v1 printed counts by category only, so the slide could not answer
     # "where's TP53?" and neither could the CSV beside it. On the broken fixture
     # more than half the input vanished and the artefact was silent about which
     # half. The names now travel with the figure.
-    y = y0
     if dropped_names and lay is not None and not lay.centre_detail:
         # v3.0: where "named" points depends on which render this is, and being
         # wrong about it is COUNCIL V5. The slide is handed out with a
         # `caption.txt`; the web render is inside a page with a Drop ledger tab
         # and no caption anywhere. The audit render names them outright.
         where = "in the Drop ledger tab" if lay.name == "web" else "in the caption"
-        out.append(ax.text(0.5, y, f"the {len(dropped_names)} not shown are named "
+        out.append(ax.text(0.5, Y, f"the {len(dropped_names)} not shown are named "
                                    f"{where}", ha="center", va="top",
                            size=7.5 * k, transform=ax.transAxes, color="#8a4b00"))
-        y -= 0.024
     elif dropped_names:
         shown = list(dropped_names)[:9]
         more = len(dropped_names) - len(shown)
         text = _wrap(shown, 3) + (f"\n\u2026 and {more} more" if more else "")
-        out.append(ax.text(0.5, y, "not shown: " + text, ha="center", va="top",
+        out.append(ax.text(0.5, Y, "not shown: " + text, ha="center", va="top",
                            size=6.5 * k, transform=ax.transAxes, color="#8a4b00",
                            family="monospace"))
-        n_lines = 1 + (len(shown) - 1) // 3 + (1 if more else 0)
-        y -= 0.015 * n_lines + 0.008
     # v2.5 item 1: "ranking is provisional and not validated" is gone from here,
     # because nothing is ranked. The caveat existed only to qualify the headline
     # and the score, and a caveat about a thing the figure no longer does is not
@@ -1492,9 +1590,8 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
     # statement about what this circle *is*.
     #
     # The centre block lives in the hole at the middle of the rings by design, so
-    # it is checked against the hole rather than against the circle. The next
-    # free y goes back to the caller for the ordering and filter lines.
-    return out, y
+    # it is checked against the hole rather than against the circle.
+    return out
 
 
 def _fmt(x: float) -> str:
@@ -1544,7 +1641,7 @@ def _scale_ticks(spec: RingSpec, norm) -> list[tuple[float, str]]:
 
 
 def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
-                      start: int = 1) -> list:
+                      start: int = 1, header_size: float | None = None) -> list:
     """UX A5, and the reason it was "the one that gets a question you can't
     answer": there was no colour bar anywhere, and the only statement of a
     ring's range was 6.6 pt monospace in the left margin -- 3.3 pt on a slide.
@@ -1602,14 +1699,28 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
     # column, the same way the centre block is fitted to the hole -- and for the
     # same reason: v2.5's slide render is where UX A4 was found, and a column
     # that silently overprints itself is that finding in a new place.
+    # v3.1 / UX v3 A1. This budget used to be a second, independently written
+    # formula for the height of a row, and it did not agree with the loop below
+    # that actually lays one out: it counted `note_lines + 2` and `src_lines + 1`
+    # against a drawing that advances by `note_lines + src_lines + 1.15`, and it
+    # left out the 0.2 and 0.45 line-gaps entirely. On the audit canvas at twelve
+    # rings the two differ by 0.016 of the figure height -- enough that the loop
+    # concluded "0.8816 fits in 0.8822" and then drew a column 0.8975 tall,
+    # which ran off the bottom and printed `derived` inside the footer.
+    #
+    # One function now, used by the budget AND by the drawing, so the two cannot
+    # drift apart again. It returns the exact `top`-to-next-`top` advance.
+    def _row_advance(sp, ts_: float, tk_: float) -> float:
+        return (line(ts_) * (titles[sp.key].count("\n") + 1 + 0.2)
+                + bar_h + line(tk_) * 0.1
+                + line(tk_) * 1.05
+                + line(tk_) * (notes[sp.key].count("\n") + 1)
+                + line(tk_) * (srcs[sp.key].count("\n") + 1)
+                + line(ts_) * 0.45)
+
     scale = 1.0
     for _ in range(14):
-        need = sum((titles[sp.key].count("\n") + 1) * line(ts * scale)
-                   + (notes[sp.key].count("\n") + 2) * line(tk * scale)
-                   # v2.8's source line, counted here rather than discovered by
-                   # the column running off the bottom of the canvas.
-                   + (srcs[sp.key].count("\n") + 1) * line(tk * scale)
-                   + bar_h + line(ts * scale) * 0.65 for sp in rings)
+        need = sum(_row_advance(sp, ts * scale, tk * scale) for sp in rings)
         if need <= h:
             break
         scale *= 0.94
@@ -1632,7 +1743,8 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
             x0, y0 + h + line(ts) * 0.5,
             COMPARABILITY_CLAIM + "\n"
             "a colour means nothing outside its own ring",
-            fontsize=ts * 0.95, va="bottom", ha="left", color="#8a4b00", weight="bold"))
+            fontsize=header_size or ts * 0.95, va="bottom", ha="left",
+            color="#8a4b00", weight="bold"))
 
     top = y0 + h
     for i, spec in enumerate(rings, start=start):
@@ -1641,6 +1753,7 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
         # onto a continuation line. Truncation is never the answer for a caveat,
         # and the scale column is the second place that would have been tempted.
         title = titles[spec.key]
+        row_top = top
         blocks.append(fig.text(x0, top, title, fontsize=ts, va="top", ha="left",
                                color="#111111"))
         y = top - line(ts) * (title.count("\n") + 1) - line(ts) * 0.2
@@ -1721,22 +1834,85 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
         blocks.append(t)
         y -= line(tk) * (srcs[spec.key].count("\n") + 1)
 
+        # The budget and the layout, compared on every row rather than trusted
+        # to stay in step. This is the one line that would have caught the
+        # original drift the day it was written.
+        expected = row_top - _row_advance(spec, ts, tk)
         top = y - line(ts) * 0.45
+        assert abs(top - expected) < 1e-9, (
+            f"the scale column's height budget and its layout disagree on "
+            f"{spec.key}: budget says the next row starts at {expected:.5f}, "
+            f"the drawing put it at {top:.5f}. They must be the same arithmetic.")
     return blocks
 
 
+def scale_rows(cells_by_ring) -> list[dict]:
+    """The scale column as data, for the page to draw as HTML.
+
+    v3.1 / UX v3 A2. The twelve scales are not leaving the app -- UX-v1-mvp.md
+    A5 is binding and a reader must be able to decode a cell -- they are leaving
+    the *SVG*, because a 19.5 in canvas in a 1388 px panel drew them at 5.8 to
+    6.5 CSS px and the page around them is 13 px. Same numbers, same colours,
+    same ticks, same source links; drawn by the browser at a size a browser can
+    draw legibly.
+
+    It is deliberately the **same functions** the renders use -- `ring_swatches`,
+    `FAMILIES[...].hexes`, `_scale_ticks`, `spec.source_doc` -- rather than a
+    second description of a ring. A panel whose ramp or ticks came from a second
+    implementation could disagree with the figure beside it, which is the whole
+    argument §v3.0 made for `render_legend` sharing `_draw_ring_scales`.
+    """
+    rings, norms, _ = _rings_norms_cmaps(cells_by_ring)
+    out = []
+    for i, spec in enumerate(rings, start=1):
+        doc = spec.source_doc
+        stepped = bool(spec.levels or spec.categorical)
+        out.append({
+            "n": i,
+            "key": spec.key,
+            "label": spec.label,
+            "short_label": spec.wedge_label,
+            "units": spec.units,
+            "transform": spec.transform or "",
+            "stepped": stepped,
+            "colours": ring_swatches(spec) if stepped
+            else FAMILIES[spec.family].hexes[::8],
+            # COUNCIL V12. A categorical ring's colours are off every ramp, so
+            # they need naming or they read as positions on one -- which is what
+            # the first version of the HTML panel did, printing ring 8's three
+            # states as `-1 / 0 / 1` from the tick labels while the figure's own
+            # legend named them. Same order as `colours`, from the same sort, so
+            # the panel cannot pair a colour with the wrong state.
+            "categories": [(spec.category_labels or {}).get(v, str(v))
+                           for v in sorted(spec.categorical)]
+            if spec.categorical else [],
+            "ticks": [{"at": round(t, 4), "label": lab}
+                      for t, lab in _scale_ticks(spec, norms.get(spec.key))],
+            "source_text": spec.source_line,
+            "source_url": doc.url if doc else "",
+            "tooltip": spec.tooltip,
+        })
+    return out
+
+
 def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[str],
-                               stats, lay, y: float) -> list:
+                               stats, lay) -> list:
     """v2.5. Two claims about the figure that a reader cannot recover by looking.
 
     The spoke order carries meaning -- it always did -- and an unstated ordering
     rule is the same defect as an unlabelled colour scale. And a filtered plot
     that does not say it is filtered is a plausible wrong figure: it looks like
     the whole submitted set. Both go in the hole, where the counts already are.
+
+    v3.1 / UX v3 A1: these two continue the centre block, so they are created at
+    its nominal y and placed by `stack_centre_blocks` with everything above them.
+    The `y` this used to take and decrement was the second half of the layout
+    model that collided with itself on the slide.
     """
     import textwrap
 
     k = (lay.centre_scale if lay else 1.0)
+    y = 0.5
     out = []
     # The hole is ~30 characters wide at this size, and both of these are
     # user-driven: a ring label is as long as its caveat and a filter list is as
@@ -1747,7 +1923,6 @@ def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[st
         out.append(ax.text(0.5, y, textwrap.fill(ordering_note, 34),
                            ha="center", va="top", size=6.8 * k,
                            transform=ax.transAxes, color="#444444"))
-        y -= 0.018 * k * (1 + ordering_note.count(" ") // 6)
     if filter_notes:
         n_marked = sum(1 for s in (stats or {}).values() if s.unfiltered_rings)
         lines = [f"FILTERED \u2014 {len(filter_notes)} active, this is not",
@@ -1763,7 +1938,7 @@ def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[st
     return out
 
 
-def _draw_legend(fig, rings, norms, cmaps, lay) -> list:
+def _draw_legend(fig, rings, norms, cmaps, lay, banner_width: float = 1.0) -> list:
     """The four cell states, the three categorical states, and the scale column.
 
     v2.5 also drew a numbered monospace ring key in the left margin and a single
@@ -1783,6 +1958,26 @@ def _draw_legend(fig, rings, norms, cmaps, lay) -> list:
     # instead. Dashed and unfilled rather than white-filled, because a white
     # patch beside `not_applicable`'s white-with-dots is two states told apart
     # by a hatch alone.
+    # v3.1 / UX v3 A2. On the app render there is no box and no column in the
+    # SVG at all -- the page draws both as HTML at 13 px instead of as 6 px
+    # vector text -- so what the circle must still carry on its own is the one
+    # claim `assert_figure_states_the_minimum` will not let any layout drop. It
+    # is drawn large, in the top-left corner, which is outside the inscribed
+    # circle and therefore not an A6 collision.
+    if not lay.scales_in_svg:
+        # v3.1: wrapped to the width actually free beside the run-id stamp, not
+        # to the canvas. See `_free_width_beside` -- the two corners met when the
+        # canvas went from 19.5 in to 9.6, and the new overprint check is what
+        # said so rather than a screenshot three rounds later.
+        pt = 11.0
+        text = _wrap_to_canvas(
+            fig,
+            COMPARABILITY_CLAIM + "\n"
+            "a colour means nothing outside its own ring — the scale for each "
+            "one is beside this figure",
+            pt, margin=(1.0 - banner_width) / 2.0)
+        return [fig.text(0.018, 0.988, text, fontsize=pt, va="top", ha="left",
+                         color="#8a4b00", weight="bold")]
     handles.append(Patch(facecolor="none", edgecolor="#111111", linestyle="--",
                          label="value — decode it against THIS ring's own scale, right"))
     # COUNCIL V12: the categorical ring is off every ramp, so its three colours
@@ -1996,9 +2191,15 @@ def wedge_note(lay, n_genes: int, space: float, short: bool = False) -> str:
         # UX A4's rule for the slide: one line, and it has to carry the claim
         # rather than point at a caption somebody has to be handed. The three
         # numbers survive; the reasoning goes to the caption.
+        # v3.1: where the scales are depends on the render, and being wrong
+        # about it is COUNCIL V5 -- a figure describing a layout it no longer
+        # has. The app render has no column; the page draws the scales as HTML
+        # beside the figure, which is why they are legible there at all.
         return (f"ring names are inside the circle, in a FIXED {lay.wedge_deg:g}° gap at 12 "
                 f"o'clock — so spokes are {got:.2f}°, not the {full:.2f}° of a full circle; "
-                f"each ring's scale is in the column, right")
+                + ("each ring's scale is in the panel beside this figure"
+                   if not lay.scales_in_svg else
+                   "each ring's scale is in the column, right"))
     # Two lines, not one. The footer block is centred and the other five notes
     # already run most of the canvas width; measured at 14 genes this sentence
     # reached x=1903 of 1950 as a single line, i.e. 46 px from the clip
@@ -2148,6 +2349,103 @@ def slide_line(ordering_note: str, filter_notes: Sequence[str],
             + "\n" + base)
 
 
+def _column_above_the_footer(fig, lay, stamps) -> "Layout":
+    """Raise the scale column's floor to clear the footer this run produced.
+
+    The column is laid out top-down from `scale_box`'s top and stops where its
+    twelve rows stop; `scale_box`'s *bottom* is what the fit loop treats as the
+    budget. Both were constants, tuned against a 14-gene run, and the footer is
+    not a constant: it grows with the drop categories, the dropped gene names
+    and the active filters. At three genes it reaches 165 px further right and
+    9 px higher than the column's last line, so `derived` was printed inside
+    `Regional specificity = Liver TPM ÷ median across 54 GTEx tissues`.
+
+    Only the vertical budget moves, and only when the footer actually reaches
+    under the column -- a footer narrower than `scale_box[0]` costs the column
+    nothing, and paying for it anyway would shrink the type on every render for
+    a collision that does not happen on most of them. Shrinking type is UX A4
+    and is the last resort here, not the first.
+    """
+    import dataclasses
+
+    x0, y0, w, h = lay.scale_box
+    if not stamps:
+        return lay
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    W, H = fig.get_size_inches() * fig.dpi
+    top = 0.0
+    for t in stamps:
+        if not (t.get_text() or "").strip():
+            continue
+        bb = t.get_window_extent(renderer=r)
+        if bb.x1 / W <= x0:           # ends before the column starts
+            continue
+        if bb.y1 / H >= y0 + h:       # the run-id stamp, above the column's top
+            continue                  # -- it cannot be under the column's floor
+        top = max(top, bb.y1 / H)
+    if top <= 0.0:
+        return lay
+    floor = top + 4.0 / H             # four pixels of air, not a judgement call
+    # A floor that ate the column would be a worse figure than the collision:
+    # the rows would be fitted into nothing and the type would go to its own
+    # floor. `assert_text_does_not_overprint_text` is what then refuses the
+    # render, which is the right way round -- fail, do not silently shrink.
+    if floor <= y0 or floor >= y0 + h * 0.5:
+        return lay
+    return dataclasses.replace(lay, scale_box=(x0, floor, w, h - (floor - y0)))
+
+
+def _wrap_to_canvas(fig, text: str, pt: float, margin: float = 0.04) -> str:
+    """Re-wrap a stamp line to the width of the canvas it is being drawn on.
+
+    Each existing line is wrapped independently, so the deliberate breaks
+    `slide_line` already makes -- the filter warning on its own line above
+    everything, the wedge rule on its own line below -- survive.
+    """
+    import textwrap
+
+    if not text:
+        return text
+    width_pt = fig.get_size_inches()[0] * 72.0 * (1.0 - 2 * margin)
+    # DejaVu Sans averages ~0.55 em per character over prose of this kind.
+    cols = max(40, int(width_pt / (pt * 0.55)))
+    return "\n".join(
+        "\n".join(textwrap.wrap(line, cols)) if len(line) > cols else line
+        for line in text.splitlines())
+
+
+def _free_width_beside(fig, artists, x0: float, top: float = 0.90) -> float:
+    """How much of the canvas width is free, left of anything in the top band.
+
+    v3.1 / UX v3 A2. The app render's comparability banner is drawn top-left and
+    the run-id stamp is drawn top-right, and on a 19.5 in canvas that was two
+    corners with a continent between them. A2 shrank the canvas to 9.6 in and
+    the two met: `assert_text_does_not_overprint_text` refused the render with
+    the banner 62 px into `run V31-COUNCIL-COLD · 62d40a38`.
+
+    Measured rather than nudged, for the reason A1 is about: a constant that
+    clears today's run id is a constant that a longer one walks through. Returns
+    a width in figure fractions, starting at `x0`.
+    """
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    W, H = fig.get_size_inches() * fig.dpi
+    right = 1.0
+    for t in artists:
+        if not (t.get_text() or "").strip():
+            continue
+        bb = t.get_window_extent(renderer=r)
+        if bb.y0 / H < top:               # not in the top band
+            continue
+        if bb.x0 / W <= x0:               # starts left of us; not a right edge
+            continue
+        right = min(right, bb.x0 / W)
+    # Six points of air, in fractions, so a wrap that lands exactly on the
+    # stamp's left edge is still a wrap that clears it.
+    return max(0.25, right - x0 - 6.0 / W)
+
+
 def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
                  slide_text: str = "") -> list:
     out = []
@@ -2161,7 +2459,21 @@ def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
         # colleagues carried the ring and not the thing that qualifies it. A
         # caption you have to be handed separately is not where a caveat lives.
         # It is on the slide now, in the same 10 pt as the rest of this line.
-        out.append(fig.text(0.5, 0.008, slide_text,
+        #
+        # v3.1 / UX v3 A1: this line stayed exactly where it was, and the scale
+        # column moved instead (`_column_above_the_footer`). The obvious fix --
+        # centre it on the circle rather than on the canvas, so it cannot reach
+        # the column -- was tried and `assert_no_text_over_the_rings` refused it:
+        # shifted left, it came within 4 px of `GENE006 (k=9/9)`, the bottom-left
+        # spoke label. The gap under the circle belongs to the spoke labels, so
+        # the caveat keeps the width and the column gives up the height.
+        # v3.1: wrapped to the canvas it is actually on. `slide_line` builds
+        # clauses joined by `·` and breaks itself at two or three fixed places,
+        # which fitted a 16 in slide and nothing else -- on the 12 in app canvas
+        # the first line ran 43 pt off the left edge and 43 off the right, and
+        # `assert_text_within_canvas` refused the render. Re-wrapping rather
+        # than shrinking, because shrinking here is UX A4.
+        out.append(fig.text(0.5, 0.008, _wrap_to_canvas(fig, slide_text, 10.0),
                             fontsize=10, ha="center", va="bottom", color="#8a4b00"))
     else:
         out.append(fig.text(0.5, 0.008, "\n".join(notes),
@@ -2169,8 +2481,85 @@ def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
                             ha="center", va="bottom", color="#222222"))
     if provenance:
         out.append(fig.text(0.995, 0.995, provenance,
-                            fontsize=6 if (lay is None or lay.draw_key) else 8,
+                            fontsize=6 if (lay is None or lay.stamp_size_small) else 8,
                             ha="right", va="top", color="#555555", family="monospace"))
+    return out
+
+
+# v3.1. The bottom band of the legend: the cell-state box on the left, the
+# caveats in two columns to the right of it. The box's width is not negotiable
+# -- ring 8's activity labels are sentences ("stopped for cause — OT category
+# Negative / Safety_Sideeffects"), so at a readable 10.5 pt the box is 0.42 of
+# the canvas. That is what decides where the caveats start, and it was measured
+# off the drawn artist rather than guessed: `assert_legend_panels_do_not_overlap`
+# refused two earlier arrangements before this one.
+CAVEAT_COLUMNS = ((0.025, 0.295), (0.350, 0.295), (0.675, 0.305))
+CAVEAT_TOP = 0.215
+CAVEAT_SIZE = 10.0
+
+
+def _draw_caveat_columns(fig, notes: Sequence[str],
+                         size: float = CAVEAT_SIZE) -> list:
+    """The caveat block, along the bottom of the legend, in columns.
+
+    v3.0 drew these as 22 unbroken wrapped lines at 6.4 pt -- 5.3 pt on a full
+    slide, 2.7 pt on half of one -- with no space between subjects, stacked
+    above 18.7% of blank canvas. The block is not the problem; the type size and
+    the single tall column were.
+
+    Balanced by **line** rather than by note: the notes are 1 to 4 lines each
+    once wrapped, so dealing them out alternately would leave one column twice
+    the height of another and the band would be sized for the taller. Each note
+    stays whole and gets a blank line after it -- a caveat split across a column
+    break is a caveat half the room reads, and a caveat with no air around it is
+    the wall this replaces.
+
+    If the balanced columns would run past the top of the band, the type
+    shrinks, and it shrinks to a floor of 0.80. At the floor this returns the
+    block anyway and the canvas check refuses the render: quietly going to 6 pt
+    to make something fit is the defect this whole pass is about.
+    """
+    import textwrap
+
+    n_cols = len(CAVEAT_COLUMNS)
+    W = fig.get_size_inches()[0] * 72.0
+    scale, out = 1.0, []
+    for _ in range(8):
+        for t in out:
+            t.remove()
+        pt = size * scale
+        # DejaVu Sans averages ~0.55 em per character over prose of this kind.
+        widths = [max(24, int(w * W / (pt * 0.55))) for _, w in CAVEAT_COLUMNS]
+        wrapped = [textwrap.wrap(n, min(widths)) for n in notes]
+        # Greedy: each note goes to whichever column is shortest so far. Filling
+        # columns in order until each passed its share put the whole of a
+        # four-line note on the wrong side of the threshold and left one column
+        # 1.6x the height of the next -- and the band is sized for the tallest,
+        # so the imbalance was paid for in type size by every column.
+        buckets = [[] for _ in CAVEAT_COLUMNS]
+        used = [0] * n_cols
+        for w in wrapped:
+            cur = min(range(n_cols), key=lambda i: used[i])
+            buckets[cur].append(w)
+            used[cur] += len(w) + 1
+        out = []
+        for (x, _w), bucket in zip(CAVEAT_COLUMNS, buckets):
+            text = "\n\n".join("\n".join(w) for w in bucket)
+            if not text:
+                continue
+            out.append(fig.text(x, CAVEAT_TOP, text, fontsize=pt,
+                                va="top", ha="left", color="#333333"))
+        # Measured, not predicted. A line-height estimate of `pt * 1.35` put the
+        # first attempt 2 px past the bottom of the canvas and
+        # `assert_text_within_canvas` caught it -- the same class of mistake as
+        # the scale column's budget, so it gets the same answer: ask the
+        # renderer instead of modelling it.
+        fig.canvas.draw()
+        r = fig.canvas.get_renderer()
+        lowest = min(t.get_window_extent(renderer=r).y0 for t in out)
+        if lowest >= 6.0 or scale <= 0.80:
+            break
+        scale *= 0.94
     return out
 
 
@@ -2218,22 +2607,37 @@ def render_legend(
     blocks = []
 
     # --- the pairing block, top left, before anything it is a legend TO -----
-    blocks.append(fig.text(0.035, 0.955, f"targetring v2 — legend", fontsize=19,
+    #
+    # v3.1 / UX v3 A3: every size here went up, and the space was already on the
+    # canvas. v3.0's legend measured 9.3% ink, its bounding box stopped 115 px
+    # short of the bottom, and the block below x=35% / y=70% -- 616 x 297 px,
+    # 18.7% of the artefact -- was 0.00% ink, directly underneath a 6.4 pt
+    # caveat wall. It was small *and* empty. Three bands now: identity and cell
+    # states top-left, three scale columns filling the width, caveats along the
+    # bottom in three columns of their own.
+    blocks.append(fig.text(0.025, 0.994, "targetring v2 — legend", fontsize=21,
                            weight="bold", va="top", ha="left", color="#111111"))
-    blocks.append(fig.text(0.035, 0.905, f"{region} · {input_count} genes in, "
+    blocks.append(fig.text(0.025, 0.947, f"{region} · {input_count} genes in, "
                                          f"{rendered_count} rendered",
-                           fontsize=11, va="top", ha="left", color="#333333"))
-    blocks.append(fig.text(0.035, 0.872, run_id or provenance, fontsize=13,
+                           fontsize=13, va="top", ha="left", color="#333333"))
+    # The run id keeps its place as the third thing on the artefact and gets
+    # bigger, not smaller: the pairing is the one risk a detachable legend
+    # introduces, and nine of the twelve ranges move with the submitted set.
+    blocks.append(fig.text(0.300, 0.994, run_id or provenance, fontsize=16,
                            weight="bold", va="top", ha="left", color="#8a4b00"))
     blocks.append(fig.text(
-        0.035, 0.842,
-        "This legend is true only of the run named above. Nine of the twelve\n"
-        "ranges move with the submitted gene set — check the run id on the\n"
-        "figure matches this one before reading a colour off it.",
-        fontsize=8.2, va="top", ha="left", color="#8a4b00"))
+        0.300, 0.955,
+        "This legend is true only of the run named above.\n"
+        "Nine of the twelve ranges move with the submitted\n"
+        "gene set — check the run id on the figure matches\n"
+        "this one before reading a colour off it.",
+        fontsize=11.5, va="top", ha="left", color="#8a4b00"))
     if provenance and provenance != run_id:
-        blocks.append(fig.text(0.995, 0.995, provenance, fontsize=7.0, va="top",
-                               ha="right", color="#666666", family="monospace"))
+        # v3.1: bottom-right, not top-right. The cell-state box moved into the
+        # top band and this stamp was the first thing it printed through.
+        blocks.append(fig.text(0.995, 0.010, provenance, fontsize=8.0,
+                               va="bottom", ha="right", color="#666666",
+                               family="monospace"))
 
     # --- cell states, reusing the figure's own handles ----------------------
     handles = [
@@ -2257,30 +2661,67 @@ def render_legend(
                 facecolor=colour, edgecolor="#ffffff",
                 label=f"{spec.wedge_label}: "
                       f"{(spec.category_labels or {}).get(v, str(v))}"))
+    # v3.1: the box is in the bottom band, beside the caveats, not in the left
+    # margin. It is 0.42 of the canvas wide at a readable type size -- the
+    # activity labels are sentences, not words -- and a 0.42-wide box in a
+    # 0.29-wide margin is what `assert_legend_panels_do_not_overlap` refused
+    # when this layout was first tried. Width it has; height it does not need.
     legend_box = fig.legend(handles=handles, loc="upper left",
-                            bbox_to_anchor=(0.030, 0.760), fontsize=8.0,
-                            frameon=True, title="cell states", title_fontsize=9)
+                            bbox_to_anchor=(0.620, 0.995), fontsize=9.5,
+                            frameon=True,
+                            title="the four cell states, and ring 8's three",
+                            title_fontsize=10.5)
 
     # --- the caveats, which is what the slide render drops ------------------
+    #
+    # v3.1 / UX v3 A3. These were 22 unbroken wrapped lines at 6.4 pt in the
+    # left column -- 2.7 pt at half a slide, 5.3 pt at a full one -- with no
+    # spacing between subjects, directly above the 18.7% of blank canvas that is
+    # now paying for them. They run along the bottom in three columns at 11 pt,
+    # one note per paragraph, balanced by line count rather than by note count
+    # so a three-line note and a one-line note do not sit in the same column by
+    # accident. Nothing is dropped: the legend is where the caveats live now
+    # that the slide render carries one line and points here.
     notes = _stamp_notes(ordering_note, filter_notes, region, cells_by_ring,
                          gene_flags, "", "", clock_phrase(AUDIT))
     assert_footer_is_true(notes, ordering_note, filter_notes)
-    import textwrap
-    wrapped = "\n".join("\n".join(textwrap.wrap(n, 74)) for n in notes)
-    blocks.append(fig.text(0.030, 0.585, wrapped, fontsize=6.4, va="top",
-                           ha="left", color="#333333"))
+    blocks += _draw_caveat_columns(fig, notes)
 
-    # --- the scales: one code path, two columns -----------------------------
-    half = (len(rings) + 1) // 2
+    # --- the scales: one code path, four columns ----------------------------
+    #
+    # Four of three rather than two of six. Two columns left the type at 9 pt
+    # -- 3.75 pt at half a slide -- while a fifth of the canvas went unused;
+    # four shorter columns spend the whole width and the reclaimed block on the
+    # type instead. `start` continues the numbering across them: a ring number
+    # that does not match the radial order is a wrong figure, which is the bug
+    # v3.0 found in the two-column version and the reason `start` exists.
+    per = -(-len(rings) // LEGEND_COLUMNS)
     x0, y0, w, h = lay.scale_box
-    left = dataclasses.replace(lay, scale_box=(x0, y0, w, h))
-    right = dataclasses.replace(lay, scale_box=(x0 + 0.325, y0, w, h))
-    blocks += _draw_ring_scales(fig, rings[:half], norms, cmaps, left, start=1)
-    blocks += _draw_ring_scales(fig, rings[half:], norms, cmaps, right,
-                                header=False, start=half + 1)
+    for col in range(LEGEND_COLUMNS):
+        chunk = rings[col * per:(col + 1) * per]
+        if not chunk:
+            continue
+        box = dataclasses.replace(lay,
+                                  scale_box=(x0 + col * LEGEND_COLUMN_PITCH,
+                                             y0, w, h))
+        blocks += _draw_ring_scales(fig, chunk, norms, cmaps, box,
+                                    header=(col == 0), start=col * per + 1,
+                                    # v3.1. On the legend this sentence is the
+                                    # single most important string on the
+                                    # artefact and it was set SMALLER than the
+                                    # ring names it qualifies -- 8.55 pt against
+                                    # 9. It leads now.
+                                    header_size=15.0)
 
     assert_text_within_canvas(fig, blocks)
     assert_legend_panels_do_not_overlap(fig, legend_box, blocks)
+    # v3.1. The box-versus-text check above is v3.0's, and it is not the same
+    # question: two scale rows growing into each other, or the caveat block
+    # growing down into a column, is text over text and it had nothing looking
+    # at it. Measured at 0 pairs on the v3.0 legend, so this starts life as a
+    # check that holds rather than one that has to be made to hold -- which is
+    # exactly when to add it.
+    assert_text_does_not_overprint_text(fig, blocks, where="legend render")
     out_svg.parent.mkdir(parents=True, exist_ok=True)
     # `SAVE_RC`, for the reason at the top of this module: pycirclize sets
     # `savefig.bbox="tight"` with half an inch of padding, and a "16:9" legend
@@ -2741,6 +3182,67 @@ def assert_wedge_labels_fit(fig, ax, labels, wedge_deg: float, obstacles=()) -> 
 
 CENTRE_MIN_SCALE = 0.62
 
+# v3.1. Where the *middle* of the centre block sits, in axes fractions. The
+# block used to be positioned line by line from 0.575 downward; it is stacked
+# now and placed by its centre, and 0.507 is where the old block's centre came
+# out -- so the figures move by nothing on `audit` and `web`, where the old
+# constants were right, and stop colliding on `slide`, where they were not.
+CENTRE_BLOCK_MID = 0.507
+
+
+def stack_centre_blocks(fig, ax, blocks, centre_y: float = CENTRE_BLOCK_MID,
+                        leading: float = 0.34) -> None:
+    """UX v3 A1. Lay the centre block out by measured height, not at constants.
+
+    Until v3.1 the block's lines sat at fixed axes fractions -- 0.575, 0.542,
+    0.512 and a hand-decremented `y` after that -- while only the *font sizes*
+    were multiplied by `lay.centre_scale`. On `audit` and `web` that factor is
+    1.0 and the constants were tuned for it, so it looked correct for four
+    releases. On `slide` it is **1.15**: the type grew 15%, the spacing did not,
+    and the block printed through itself. `Lung` was struck across
+    `15 genes in, 14 rendered` and the amber `the 1 not shown are named in the
+    caption` across `1 not shown`, on the one artefact that gets projected.
+
+    Neither existing check could see it. `fit_centre_to_the_hole` shrinks until
+    every line's *radial reach* clears the hole, and two lines sharing a y have
+    the same reach they had apart; `assert_centre_fits_the_hole` measures that
+    same radius. Both were asking "does this escape the hole", and the defect
+    was entirely inside it.
+
+    So the positions are derived: every line is anchored by its top, advanced by
+    its own measured height plus `leading` of its own line height, and the
+    finished stack is centred on `centre_y`. A different `centre_scale`, a
+    longer region name, a seventh drop category or a filter block now moves the
+    lines below it rather than landing on them, because the layout is a
+    consequence of the type rather than a guess at it.
+    """
+    if not blocks:
+        return
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    inv = ax.transAxes.inverted()
+
+    def frac_h(px: float) -> float:
+        """A height in display pixels, as a fraction of the axes."""
+        y0 = inv.transform((0.0, 0.0))[1]
+        y1 = inv.transform((0.0, px))[1]
+        return abs(y1 - y0)
+
+    heights, gaps = [], []
+    for t in blocks:
+        t.set_va("top")
+        bb = t.get_window_extent(renderer=r)
+        heights.append(frac_h(bb.height))
+        # The gap after a block scales with that block's own type, so a 6.5 pt
+        # filter note is not given the same air as a 15 pt title.
+        gaps.append(frac_h(t.get_fontsize() * fig.dpi / 72.0) * leading)
+
+    total = sum(heights) + sum(gaps[:-1])
+    y = centre_y + total / 2.0
+    for t, h, g in zip(blocks, heights, gaps):
+        t.set_position((0.5, y))
+        y -= h + g
+
 
 def fit_centre_to_the_hole(fig, ax, blocks, hole_fraction: float) -> float:
     """Shrink the centre block until it fits in the hole, or hit the floor.
@@ -2755,12 +3257,18 @@ def fit_centre_to_the_hole(fig, ax, blocks, hole_fraction: float) -> float:
     and the block still does not fit, `assert_centre_fits_the_hole` raises --
     which is the right outcome, because the alternative is a figure with the
     caveat printed across the data.
+
+    v3.1: the block is re-stacked at the top of every iteration, because a font
+    size and a line position are not independent any more. Shrinking the type
+    without restacking would leave the gaps of the size before it, which is the
+    defect this pass exists to remove, arriving from the other direction.
     """
     if not blocks:
         return 1.0
     original = [t.get_fontsize() for t in blocks]
     scale = 1.0
     for _ in range(14):
+        stack_centre_blocks(fig, ax, blocks)
         r, cx, cy, hole = _hole_geometry(fig, ax, hole_fraction)
         if max(_reach(t, r, cx, cy) for t in blocks) <= hole:
             return scale
@@ -2770,7 +3278,60 @@ def fit_centre_to_the_hole(fig, ax, blocks, hole_fraction: float) -> float:
             break
         for t, size in zip(blocks, original):
             t.set_fontsize(size * scale)
+    stack_centre_blocks(fig, ax, blocks)
     return scale
+
+
+def assert_text_does_not_overprint_text(fig, blocks, slop: float = 1.0,
+                                        where: str = "") -> None:
+    """v3.1. No drawn string may sit on top of another drawn string.
+
+    The build had three checks about text landing where it should not -- over
+    the rings, outside the canvas, over the legend box -- and none of them about
+    text over *text*. So the slide render printed its region name through its own
+    counts line, and the bottom of its scale column through its own caveat line,
+    for four releases, while every assertion passed. The collisions were real,
+    visible and measured off the artefact (`logs/ux-v3-r1-overlap.txt`); nothing
+    was looking.
+
+    `blocks` are figure- and axes-level `Text` artists, all axis-aligned. The
+    rotated spoke labels are deliberately **not** in it: a label set at 37
+    degrees has an axis-aligned box far larger than its ink, so including them
+    would report collisions that are not there, and the thing that checks them
+    properly is `assert_no_text_over_the_rings`, which does the real geometry.
+
+    `slop` is a point in each axis. A tick label resting on the edge of its own
+    colour bar is a design; touching by a fraction of a point is not what a
+    reader sees.
+    """
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    boxes = []
+    for t in blocks:
+        if not (t.get_text() or "").strip() or not t.get_visible():
+            continue
+        if abs(t.get_rotation() or 0) > 1:
+            continue
+        boxes.append((t, t.get_window_extent(renderer=r)))
+    offenders = []
+    for i in range(len(boxes)):
+        for j in range(i + 1, len(boxes)):
+            (ta, a), (tb, b) = boxes[i], boxes[j]
+            dx = min(a.x1, b.x1) - max(a.x0, b.x0)
+            dy = min(a.y1, b.y1) - max(a.y0, b.y0)
+            if dx > slop and dy > slop:
+                offenders.append(
+                    f"{ta.get_text().splitlines()[0][:38]!r} over "
+                    f"{tb.get_text().splitlines()[0][:38]!r} "
+                    f"by {dx:.0f}x{dy:.0f} px")
+    if offenders:
+        raise AssertionError(
+            (f"{where}: " if where else "")
+            + "text is printed on top of other text: "
+            + "; ".join(offenders[:5])
+            + ". A figure that overprints itself is not a formatting problem -- "
+              "the reader cannot tell which of the two strings is the one that "
+              "is true.")
 
 
 def assert_centre_fits_the_hole(fig, ax, blocks, hole_fraction: float) -> None:
@@ -2941,4 +3502,5 @@ __all__ = ["render", "RING_SPECS", "RingSpec", "STATE_STYLE", "VALUE_CMAP",
            "WEB", "LEGEND", "render_legend", "COMPARABILITY_CLAIM",
            "assert_figure_states_the_minimum", "assert_renders_agree",
            "assert_artefacts_are_their_own_layout", "assert_legend_panels_do_not_overlap",
-           "assert_the_id_rule_is_kept"]
+           "assert_the_id_rule_is_kept", "assert_text_does_not_overprint_text",
+           "stack_centre_blocks", "CENTRE_BLOCK_MID", "scale_rows", "STATE_STYLE"]

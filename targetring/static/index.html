@@ -125,7 +125,32 @@
         <span id="dl-run" class="hint"></span>
         <span class="hint">Click a gene label or any of its cells to open the drawer.</span>
       </div>
-      <div id="figure"></div>
+      <!-- v3.1 / UX v3 A2. Two things used to live inside the SVG and be drawn
+           at 5.8-6.5 CSS px on a 1440 px laptop: the twelve per-ring scales and
+           the cell-state box. They are HTML now, at the page's own type sizes.
+
+           The two things Puck's rule protects are outside the collapse and stay
+           outside it:
+             * the comparability sentence is a full-width band ABOVE the figure,
+               not a 178 x 7 px corner and not behind a disclosure;
+             * the four cell states are always rendered open — `#cell-states`
+               has no toggle at all, so there is no state of this page in which
+               they are hidden.
+           What animates is `#scales`, which is reference a reader consults when
+           decoding a particular cell, and its summary says what it contains and
+           how many there are so the closed state is not a dead end. -->
+      <p id="comparability" class="comparability"></p>
+      <div class="figure-row">
+        <div id="figure"></div>
+        <aside id="decode">
+          <div id="cell-states"></div>
+          <details id="scales" open>
+            <summary><span class="chev" aria-hidden="true">▾</span>
+              <b>The 12 ring scales</b> — what a colour means, ring by ring</summary>
+            <div id="scale-rows" class="reveal"></div>
+          </details>
+        </aside>
+      </div>
     </div>
 
     <div class="tabpane" id="pane-ledger" hidden><div id="ledger"></div></div>

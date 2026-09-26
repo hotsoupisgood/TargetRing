@@ -20,6 +20,7 @@ from .cache import Cache
 from .config import RUNS_DIR
 from .de_input import InputRejected
 from .filters import FilterRejected
+from .figure import COMPARABILITY_CLAIM, STATE_STYLE, scale_rows
 from .http import HardFailure, Http
 from .order import ALPHABETICAL, RING_PREFIX, SUBMITTED
 from .run import DEFAULT_REGION, FILTERABLE_RINGS, available_regions, run_analysis
@@ -179,6 +180,10 @@ def _summarise(r) -> dict[str, Any]:
         "web_url": f"/api/run/{r.run_id}/figure-web.svg",
         "legend_url": f"/api/run/{r.run_id}/legend.svg",
         "legend_png_url": f"/api/run/{r.run_id}/legend.png",
+        # v3.1 / UX v3 A2. Not an artefact and not a download: the twelve
+        # scales as data, so the page can draw at 13 px what the SVG was
+        # drawing at 5.8.
+        "scales_url": f"/api/run/{r.run_id}/scales",
         "gene_order": r.gene_order,
         "counts": {
             "input": m.input_row_count,
@@ -281,6 +286,34 @@ async def gene_drawer(run_id: str, gene: str) -> JSONResponse:
         if not filled.pop("_retry_on_next_click", False):
             r.drawers[gene] = filled
     return JSONResponse(filled)
+
+
+@app.get("/api/run/{run_id}/scales")
+async def scales(run_id: str) -> JSONResponse:
+    """v3.1 / UX v3 A2. The twelve scales, as data, for the page to draw.
+
+    They used to be 5.8-6.5 CSS px of vector text in a column that took 23% of
+    the figure panel on a 1440 px laptop -- present, binding (UX-v1-mvp.md A5),
+    and unreadable. They are still per-ring, still in the ring's own units, and
+    still carry the v2.8 source link; the browser draws them at 13 px now,
+    because §v3.0 made it legal for the app render and the export to differ and
+    this is the thing that freedom was worth spending on.
+
+    The **export is unchanged**: `figure.svg`, `figure-slide.svg` and
+    `legend.svg` all still carry the column, and the tests that hold A5 on those
+    renders are untouched.
+    """
+    r = _runs.get(run_id)
+    if r is None:
+        raise HTTPException(404, f"run {run_id} is not in memory; re-submit the table")
+    return JSONResponse({
+        "run_id": run_id,
+        "comparability": COMPARABILITY_CLAIM,
+        "states": [{"key": k, "label": s["label"], "fill": s["fc"],
+                    "hatch": s["hatch"], "edge": s["ec"]}
+                   for k, s in STATE_STYLE.items()],
+        "rings": scale_rows(r.cells_by_ring),
+    })
 
 
 @app.get("/api/run/{run_id}/{filename}")

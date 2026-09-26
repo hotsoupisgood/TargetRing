@@ -212,6 +212,64 @@ function render(b) {
     $("#figure").innerHTML = svg;
     wireFigure();
   });
+
+  // v3.1 / UX v3 A2. The scale column and the cell-state box are no longer in
+  // the app's SVG; the page draws them, from the same norms and swatches the
+  // renders use. Same information, 13 px instead of 5.8.
+  if (b.scales_url) fetch(b.scales_url).then((r) => r.json()).then(renderDecode);
+}
+
+// v3.1. The comparability sentence, the four cell states, and the twelve
+// scales. Read the CSS beside `.figure-row` for why only one of the three is
+// allowed to collapse.
+function renderDecode(s) {
+  $("#comparability").innerHTML =
+    `${esc(s.comparability)}<span>A colour means nothing outside its own ring —
+     read every cell against that ring's own scale, on the right. Nine of the
+     twelve ranges move with the gene set you submitted.</span>`;
+
+  // Always open, no toggle: rule 1 of the two this review holds across all
+  // three rounds. The three trial-activity colours are a separate group under
+  // a rule, because they belong to ring 8 and the four states belong to every
+  // ring — one box with seven undifferentiated rows was reading as one list.
+  const act = s.rings.find((r) => r.key === "clinical_activity");
+  $("#cell-states").innerHTML =
+    `<h5>the four cell states</h5>` +
+    s.states.map((st) => `<div class="state">
+       <span class="sw" style="background:${esc(st.fill)};border-color:${esc(st.edge)}"></span>
+       <span>${esc(st.label)}</span></div>`).join("") +
+    `<div class="state"><span class="sw"
+       style="background:#fff;border-style:dashed"></span>
+       <span>value — decode it against that ring's own scale, below</span></div>` +
+    // COUNCIL V12: named, not numbered. `r.categories` comes off the same
+    // `sorted(spec.categorical)` as `r.colours`, so a colour cannot be paired
+    // with the wrong state; the tick labels this used to read are the ring's
+    // numeric positions and printing them said "-1 / 0 / 1" beside three
+    // colours that are not on a ramp at all.
+    (act ? `<div class="grp"><h5>ring ${act.n} · ${esc(act.short_label)}</h5>` +
+      act.colours.map((c, i) => `<div class="state">
+        <span class="sw" style="background:${esc(c)}"></span>
+        <span>${esc(act.categories[i] || "")}</span></div>`).join("") +
+      `</div>` : "");
+
+  $("#scale-rows").innerHTML = s.rings.map((r) => `
+    <div class="scale">
+      <div class="nm" title="${esc(r.tooltip || "")}">${r.n}. ${esc(r.label)}</div>
+      <div class="bar${r.stepped ? " stepped" : ""}">${
+        r.colours.map((c) => `<i style="background:${esc(c)}"></i>`).join("")}</div>
+      <div class="ticks">${r.ticks.map((t, i) => {
+        const cls = t.at <= 0.01 ? "lo" : t.at >= 0.99 ? "hi" : "";
+        return `<span class="${cls}" style="left:${(t.at * 100).toFixed(1)}%">${
+          esc(t.label)}</span>`;
+      }).join("")}</div>
+      <div class="un">${esc(r.units)}${r.transform ? " · " + esc(r.transform) : ""}</div>
+      ${r.source_url
+        ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${
+            esc(r.source_text)}</a>`
+        : `<span class="un">${esc(r.source_text)}</span>`}
+    </div>`).join("");
+  $("#scales").querySelector("summary b").textContent =
+    `The ${s.rings.length} ring scales`;
 }
 
 function wireFigure() {
