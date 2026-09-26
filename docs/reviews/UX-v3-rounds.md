@@ -956,3 +956,109 @@ strings, 5 clearing 10.0 pt at a full slide, 0 at half. The arithmetic there —
 a 16 in canvas at half a slide is scaled 0.4167, so 10.0 pt as seen needs 24.0
 pt in the file — did not move because nothing about it can. Whether the legend
 becomes two slides is still Puck's call.
+
+## 3.2 Fix
+
+Committed as `5b24186`, four files, +485/−26. 545 tests pass (530 at `f9bfd56`;
+15 new). The three instruments from round 1 were reused unchanged, and one
+one-off live-DOM probe was added for the things that are CSS rather than SVG
+(`logs/ux-v3-r3fix-live.json`) — the same split round 2 used.
+
+**A7 — the claim stops being a column header.** It read 4.88 pt at a full slide
+because on the slide render it was the scale column's header, sized at
+`scale_title_size × 0.95` and then fitted down by the column's own budget. A
+font bump could not fix that: the column would have re-fitted it back down. The
+claim is now drawn on the slide as its own banner with its own size, computed
+from the slide's final rendered width rather than the column's, so nothing
+downstream can shrink it.
+
+**A8 — the drawer collapses.** Eight `<details>` sections. The three the drawer
+exists for — your measurement, the drug pipeline, the literature — start open;
+the other five start closed. Each closed section states its own count in the
+summary, so nothing is hidden behind an unlabelled triangle. The caveats that
+AGENTS.md rule 6 requires stay in the `summary` itself, outside the collapse, so
+they are readable with the section shut: "mouse phenotype lead — a lead, not a
+verdict", "safety liabilities — absence is weak evidence of safety", "ChEMBL
+mechanisms — untrusted — resolution unprobed". Close button 28 × 39 px → 44 × 44.
+
+**B12–B16 — the floor is enforced, not just met.** Two assertions rather than a
+sweep of edits: no stylesheet rule sets type under 12.0 px, and no string the app
+actually renders is under it either. The spoke-order note no longer restates the
+banner's claim a third time, and the caveat strip is two kinds of statement
+instead of five grey lines of equal weight.
+
+## 3.3 Re-review
+
+Instruments: `scripts/ux_v3_measure.py`, `scripts/ux_v3_overlap.py`,
+`scripts/ux_v3_shots.py` (round 3 frames), plus the live probe. Run
+`20260926T201344Z-64f760`, git `5b24186`, viewport 1440 × 900.
+
+### A7 — fixed, and it lands exactly on the floor
+
+| the comparability claim | round 3 review | now |
+|---|---|---|
+| in the file | 5.86 pt | 12.00 pt |
+| at a full slide | **4.88 pt** | **10.00 pt** |
+| at half a slide | 2.44 pt | 5.00 pt |
+
+10.00 pt at a full slide is a pass by 0.00 pt. That is not a comfortable margin
+and it should be read as what it is: the floor, hit deliberately, with the
+assertion set at `>= 10.0` so any regression fails a test rather than a review.
+
+**At half a slide it is 5.00 pt and still under.** That is round 1's A3 finding,
+which was recorded then as genuinely unachievable at that size rather than
+forced, and it has not become achievable. The half-slide case remains stated on
+the artefact instead of being quietly passed.
+
+### A8 — fixed, and the reduction is measured
+
+| | round 3 review | now |
+|---|---|---|
+| drawer scroll height | 5,621 px | **2,868 px** |
+| in viewports | 6.25 | **3.19** |
+| sections | flat, none | 8 `<details>`, 3 open |
+| close button | 28 × 39 px | **44 × 44 px** |
+
+Half the scroll is gone and the five sections a reader does not open on the way
+in now cost one line each. The three that matter are still open on arrival, so
+the default view did not become a page of closed triangles.
+
+### B12–B16 — fixed, and now nothing can drift under the floor
+
+**202 visible HTML text runs, 0 under the 12.0 px floor** (review: 61 at
+11.5 px). The stylesheet assertion is the one that matters: the previous state
+was reachable by editing one rule, and now it is not reachable without failing a
+test.
+
+### Overlap — no regression, and one thing still open
+
+0 EXACT overlapping pairs on all four artefacts. `figure-slide.svg` reports **4
+aabb-only pairs** — a gene label's bounding box against a ring caption's. The
+same 4 were present at round 2's fix (`logs/ux-v3-r2fix-overlap.txt`, different
+gene names, identical pattern), so round 3 did not cause them and did not fix
+them. They are bounding-box adjacency rather than overprinted glyphs, which is
+why A1's no-overprint rule still holds. Left open, named, not swept.
+
+### Both must-survive rules held
+
+1. **The four cell-state legend is reachable with no dead end.** `no data`,
+   `not applicable` and `FAILED` are all present in the page with the drawer
+   shut — in the HTML, which is round 1's fix, not the SVG.
+2. **"Each ring has its own scale; colours do not compare across rings" is not
+   behind a click.** 16.55 px in the app and visible on load; 10.00 pt on the
+   slide, which is what A7 was.
+
+Both survived a change that moved both of them, for the third round running.
+
+### What round 3 leaves behind
+
+The cycle Puck asked for is complete: three rounds, each review → fix →
+re-review. What is still true and unfixed, so nobody has to rediscover it:
+
+* the 4 aabb-only adjacencies on the slide render, above;
+* the half-slide floor, which A3 established cannot be met and which the
+  artefact says out loud;
+* `figure.svg` — the export — has 154 of 155 runs under the *screen* floor when
+  opened full width on a laptop. That artefact exists to be printed or opened at
+  full size, so the screen floor is the wrong ruler for it; it is recorded here
+  only so the number is not mistaken for a defect later.

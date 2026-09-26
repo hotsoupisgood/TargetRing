@@ -3421,3 +3421,98 @@ what it decided, with nothing checking that it still did.
 2. Everything already in §6 and §v2.1–§v3.0, unchanged: licensing before any
    workplace use, the Delta E gate, the `neg_log10_padj` log domain, the muted
    gauge, whether the slide should drop its scale column.
+
+# v3.1 — round 1 of the UX cycle: the type on the artefacts
+
+Puck asked for three rounds of review → fix → re-review on the visuals:
+usability, readability, font size, button placement, legend size, overlap, and
+animation to hide what is not needed. `docs/reviews/UX-v3-rounds.md` is the
+full record; this is what each round changed.
+
+Round 1 measured type at the size a reader actually sees rather than the size in
+the file, which is the only measurement that means anything. Three instruments
+were built and then reused unchanged for rounds 2 and 3, so the rounds compare:
+`scripts/ux_v3_measure.py` (type size as seen, per artefact per surface),
+`scripts/ux_v3_overlap.py` (every drawn string's box, pairwise), and
+`scripts/ux_v3_shots.py` (the same five frames at 1440 × 900 every round).
+
+Two floors, both this build's own: **12.0 px** on a 1440 × 900 laptop, because
+the stylesheet's own smallest reader-facing type was 11.5 px; **10.0 pt** at
+final rendered size on the half-slide test A4 used.
+
+What round 1 found and fixed: the slide overprinted itself, the app rendered the
+comparability claim at 6 px, and the legend put it at 3.75 pt on a slide. The
+centre is now stacked, the app draws the scales itself, and the legend spends the
+dead space it had. Two rules were set here and held for all three rounds:
+
+1. the four cell-state legend — `value` / `no_data` / `not_applicable` /
+   `failed` — stays reachable, with no dead end;
+2. "each ring has its own scale; colours do not compare across rings" is never
+   behind a click.
+
+**A3 is the honest one.** One artefact cannot meet the 10.0 pt floor at half a
+slide. Round 1 recorded that it cannot, rather than shrinking the floor or
+picking a friendlier measurement, and the artefact says so on its face. It was
+still true at round 3.
+
+# v3.2 — round 2: the page
+
+Round 2's review found the figure did not fit the screen it was drawn for — 894
+px of content in a 900 px viewport, after round 1's own fix had grown the canvas
+— the app called itself v1 while the render called itself v2, and the
+spoke-ordering caveat was printed twice on one canvas.
+
+Fixed: the web canvas is shortened until the figure fits one 1440 × 900
+viewport, there is one named version string read by both the page and the render,
+and the sentence appears once. The controls were 1,053 px above the result; the
+counts line is now the largest number on the page.
+
+Re-review: 894 px → fits, 2 of 16 strings under the floor and both are the same
+string, no overlap anywhere, 530 tests pass. Both must-survive rules held through
+a change that moved both of them.
+
+# v3.3 — round 3: the projected artefact and the drawer
+
+Round 3 found the defect the first two rounds had structurally missed. The rule
+that the comparability claim is never behind a click had been enforced on the
+app, where it reads 16.55 px. **Nobody had measured it on the slide** — the
+artefact that actually gets projected. There it was **4.88 pt at a full slide**,
+2.44 pt at half, because on that render it was not a banner at all but the header
+of the scale column, sized at 0.95 × the column title and then fitted down by the
+column's own budget. "Present at 6 px in a corner" was round 1's phrase for the
+same failure by a different route. It surfaced only because round 2's fix made
+the app number good enough that the gap became obvious.
+
+The second finding is where Puck's animation ask landed: the drawer was 5,621 px
+of flat scroll — 6.25 viewports — with no navigation, no collapse, and a
+28 × 39 px close button. And 61 strings on the page sat at 11.5 px against the
+12.0 px floor.
+
+Fixed (`5b24186`): the slide draws the claim as its own banner sized from the
+slide's final width, so the column cannot re-fit it down; the drawer is eight
+`<details>` sections with the three it exists for open on arrival, each closed
+one stating its own count, and the untrusted-source caveats kept in the summary
+outside the collapse so they read with the section shut; close button 44 × 44.
+Two assertions replace a sweep of font edits — no stylesheet rule sets type under
+the floor, and no rendered string does either.
+
+Measured after the fix, run `20260926T201344Z-64f760`:
+
+| | review | now |
+|---|---|---|
+| the claim, at a full slide | 4.88 pt | **10.00 pt** |
+| drawer scroll | 6.25 viewports | **3.19** |
+| close button | 28 × 39 px | **44 × 44 px** |
+| HTML strings under 12.0 px | 61 | **0** of 202 |
+| EXACT overlapping pairs | 0 | 0 |
+| tests | 530 | **545** |
+
+10.00 pt is a pass by 0.00 pt — the floor hit deliberately, with the assertion at
+`>= 10.0` so a regression fails a test instead of a review. At half a slide the
+claim is 5.00 pt and still under, which is A3's limit from round 1 and has not
+become achievable.
+
+Left open and named rather than swept: 4 bounding-box adjacencies on the slide
+render that were already there at round 2 and are not overprinted glyphs; the
+half-slide floor; and the export figure, where the screen floor is the wrong
+ruler because that artefact exists to be printed or opened at full size.
