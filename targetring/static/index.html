@@ -84,17 +84,45 @@
     </div>
 
     <div class="tabpane" id="pane-figure">
-      <div class="row">
-        <a id="dl-svg" class="btn" download>Download SVG</a>
-        <!-- UX B8: the PNG is written on every run and was already served; it
-             just had no button. For PowerPoint it is more predictable than a
-             matplotlib SVG. -->
-        <a id="dl-png" class="btn" download>Download PNG</a>
-        <a id="dl-slide" class="btn" download>Download slide SVG (16:9)</a>
-        <a id="dl-csv" class="btn" download>Download values CSV</a>
-        <!-- UX A3 -->
-        <a id="dl-ledger" class="btn" download>Download drop ledger CSV</a>
-        <a id="dl-manifest" class="btn" target="_blank">Run manifest</a>
+      <!-- v3.0. Was a row of six and v3.0 adds three artefacts, which would
+           have made it nine. Three menus instead, grouped by what you are
+           trying to walk away with rather than by file type: the figure, the
+           legend that goes on the next slide, and the data that lets somebody
+           check it. Everything inside a menu names its format, so nothing is
+           hidden -- the row just stops being a wall.
+           The run id is repeated here because every one of these downloads is
+           only true of that run, and the legend most of all. -->
+      <div class="row dl-row">
+        <details class="dl">
+          <summary class="btn">Figure ▾</summary>
+          <div class="dl-menu">
+            <a id="dl-png" download>PNG — the full export, with every caveat</a>
+            <a id="dl-svg" download>SVG — same, editable in Illustrator</a>
+            <a id="dl-slide" download>Slide SVG (16:9)</a>
+            <a id="dl-slide-png" download>Slide PNG (16:9)</a>
+            <a id="dl-caption" download>caption.txt — paste under the slide</a>
+          </div>
+        </details>
+        <details class="dl">
+          <summary class="btn">Legend ▾</summary>
+          <div class="dl-menu">
+            <a id="dl-legend-png" download>PNG — the legend on its own slide</a>
+            <a id="dl-legend" download>SVG — same, editable</a>
+            <p class="hint">Twelve scales, the cell states and the caveats, 16:9.
+              It carries this run's id: only pair it with a figure that shows
+              the same one.</p>
+          </div>
+        </details>
+        <details class="dl">
+          <summary class="btn">Data ▾</summary>
+          <div class="dl-menu">
+            <a id="dl-csv" download>values.csv — every cell, with its Ensembl id</a>
+            <!-- UX A3 -->
+            <a id="dl-ledger" download>ledger.csv — every gene not on the figure</a>
+            <a id="dl-manifest" target="_blank">manifest.json — sources, versions, invariants</a>
+          </div>
+        </details>
+        <span id="dl-run" class="hint"></span>
         <span class="hint">Click a gene label or any of its cells to open the drawer.</span>
       </div>
       <div id="figure"></div>

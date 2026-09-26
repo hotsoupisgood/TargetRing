@@ -1070,3 +1070,279 @@ class TestV29EnsemblIdsNextToTheGeneName:
         assert withid > room, (
             f"an id now fits ({withid:.0f} px in {room:.0f}) — re-decide the rule "
             f"and rewrite the footer sentence")
+
+
+class TestV30TheExportAndTheAppMayDiffer:
+    """v3.0. Puck: *"download figure and the online figure can be different.
+    also we could have the download download legend as a separate image."*
+
+    That releases a constraint every render has worked under: one artefact had
+    to serve a screen that already showed most of the caveats in its own
+    furniture AND a colleague reading a PNG with nobody to ask. The two now go
+    in opposite directions — and every test here exists because divergence is
+    only safe if three things are pinned:
+
+      * the cells are identical (`assert_renders_agree`);
+      * each file is the render its name promises
+        (`assert_artefacts_are_their_own_layout`);
+      * whatever else a render drops, it never drops the four claims that make
+        a circle honest on its own (`assert_figure_states_the_minimum`).
+    """
+
+    def _render(self, tmp_path: Path, layout: str, n: int = 14, **kw):
+        genes = [f"GENE{i:03d}" for i in range(n)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / f"v30-{layout}.svg"
+        kw.setdefault("ledger_counts", {"ambiguous": 1})
+        kw.setdefault("dropped_names", ["HBB"])
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Liver", out_svg=out, input_count=n + 1,
+                     rendered_count=n, ordering_note=ORDER_NOTE, layout=layout,
+                     provenance="run T1 · abc123", **kw)
+        return res, out
+
+    @staticmethod
+    def _text(svg: Path) -> str:
+        return re.sub(r"\s+", " ", " ".join(
+            "".join(el.itertext()) for el in
+            ET.parse(svg).getroot().iter("{http://www.w3.org/2000/svg}text")))
+
+    def test_the_two_renders_draw_the_same_cells(self, tmp_path: Path) -> None:
+        """The property that makes the divergence safe to say yes to. If one
+        cell were ever a different colour, the colleague with the PNG and the
+        person at the screen would be reading different figures and neither
+        would know."""
+        from targetring.figure import assert_renders_agree
+        _, audit = self._render(tmp_path, "audit")
+        _, web = self._render(tmp_path, "web")
+        assert_renders_agree(audit, web)
+
+    def test_a_single_recoloured_cell_is_caught(self, tmp_path: Path) -> None:
+        """The check earns its place only if it would fail. One hex digit."""
+        from targetring.figure import assert_renders_agree
+        _, audit = self._render(tmp_path, "audit")
+        _, web = self._render(tmp_path, "web")
+        body = web.read_text()
+        first = re.search(r'<g id="cell\|[^"]+">.*?style="fill: (#[0-9a-f]{6})',
+                          body, re.S)
+        tampered = tmp_path / "tampered.svg"
+        tampered.write_text(body.replace(first.group(1), "#123456", 1))
+        with pytest.raises(AssertionError, match="different colour"):
+            assert_renders_agree(audit, tampered)
+
+    def test_the_app_render_is_leaner_and_the_export_is_fuller(
+            self, tmp_path: Path) -> None:
+        """Opposite directions, which is the point. The app drops only what the
+        page itself already carries; the export gains the one fact a downloaded
+        PNG could never state — that the invariants were checked and held."""
+        summary = "INVARIANTS 7/7 PASS · every check held"
+        _, audit = self._render(tmp_path, "audit", invariant_summary=summary)
+        _, web = self._render(tmp_path, "web", invariant_summary=summary)
+        a, w = self._text(audit), self._text(web)
+
+        assert summary.split(" · ")[0] in a, "the export does not stamp its invariants"
+        assert "Mouse-phenotype ring" in a, "the export dropped the caveat footer"
+        assert "HBB" in a, "the export does not name the gene it left out"
+
+        assert "Mouse-phenotype ring" not in w, "the app render still carries the footer"
+        assert summary.split(" · ")[0] not in w, "the app has an Invariants tab"
+        assert len(w) < len(a), (len(w), len(a))
+        # And it points at where the PAGE keeps them, not at a caption file a
+        # reader of a web page has never been handed.
+        assert "Drop ledger tab" in w and "What this is not tab" in w
+        assert "the caption" not in w
+        # The canvas is 1.8 in shorter, which is what the app gets out of it:
+        # the same circle (it is width-bound on both) filling more of the screen
+        # at a given page width.
+        from targetring.figure import AUDIT, WEB
+        assert WEB.figsize[1] < AUDIT.figsize[1]
+        assert _viewbox(web)[1] < _viewbox(audit)[1]
+
+    @pytest.mark.parametrize("layout", ["audit", "web", "slide"])
+    def test_no_render_may_drop_the_irreducible_minimum(
+            self, tmp_path: Path, layout: str) -> None:
+        """Puck's condition on the divergence: *"the figure alone must still not
+        lie."* Someone will have the circle and no legend file, no page around
+        it and nobody to ask."""
+        from targetring.figure import COMPARABILITY_CLAIM
+        _, svg = self._render(tmp_path, layout)
+        t = self._text(svg)
+        assert "targetring" in t, "what it is"
+        assert COMPARABILITY_CLAIM in t, "that colours do not carry between rings"
+        assert "15 genes in" in t and "14 rendered" in t, "submitted vs rendered"
+
+    def test_a_filtered_render_says_so_on_every_layout(self, tmp_path: Path) -> None:
+        note = "literature >= 2 removed 3 genes"
+        for layout in ("audit", "web", "slide"):
+            _, svg = self._render(tmp_path, layout, filter_notes=[note])
+            assert "FILTERED" in self._text(svg), layout
+
+    def test_the_minimum_check_would_catch_a_render_that_dropped_one(self) -> None:
+        from targetring.figure import assert_figure_states_the_minimum as chk
+        full = "targetring v2\nEACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS\n" \
+               "15 genes in, 14 rendered"
+        chk(full, 15, 14, [], "test")
+        with pytest.raises(AssertionError, match="colours do not carry|own scale"):
+            chk(full.replace("EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS", ""),
+                15, 14, [], "test")
+        with pytest.raises(AssertionError, match="how many genes were submitted"):
+            chk(full, 99, 14, [], "test")
+        with pytest.raises(AssertionError, match="threshold filters"):
+            chk(full, 15, 14, ["literature >= 2"], "test")
+
+
+class TestV30TheLegendAsItsOwnImage:
+    """v3.0. "circle on one slide, legend on another, sized independently"."""
+
+    def _legend(self, tmp_path: Path, **kw):
+        from targetring.figure import render_legend
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / "legend.svg"
+        kw.setdefault("run_id", "run T1")
+        kw.setdefault("ordering_note", ORDER_NOTE)
+        render_legend(cells_by_ring=spec, region="Liver", out_svg=out,
+                      input_count=15, rendered_count=14, **kw)
+        return out
+
+    @staticmethod
+    def _text(svg: Path) -> str:
+        return re.sub(r"\s+", " ", " ".join(
+            "".join(el.itertext()) for el in
+            ET.parse(svg).getroot().iter("{http://www.w3.org/2000/svg}text")))
+
+    def test_it_carries_every_ring_in_the_radial_order(self, tmp_path: Path) -> None:
+        """Two columns of six, numbered 1..12 — not 1..6 twice. A ring number
+        that does not match the radial order is a wrong figure, and the first
+        draft of the second column restarted at 1."""
+        from targetring.figure import RING_SPECS
+        t = self._text(self._legend(tmp_path))
+        for i, spec in enumerate(RING_SPECS, start=1):
+            assert f"{i}. {spec.label.split(' — ')[0][:18]}" in t, (i, spec.key)
+        assert t.count("1. logFC") == 1
+
+    def test_it_is_16_by_9_so_it_is_a_slide(self, tmp_path: Path) -> None:
+        """pycirclize sets `savefig.bbox='tight'`; without `SAVE_RC` the legend
+        saved at 16.44 x 8.94 in — 1.84:1, letterboxed on the slide it exists
+        for."""
+        w, h = _viewbox(self._legend(tmp_path))
+        assert abs(w / h - 16 / 9) < 0.01, f"{w / h:.3f}"
+
+    def test_it_names_its_run_and_says_why_that_matters(self, tmp_path: Path) -> None:
+        """Puck's condition: the figure and its legend must be impossible to
+        mismatch. Nine of the twelve ranges move with the submitted set, so
+        last week's legend would misread every cell on those nine and look
+        entirely normal doing it."""
+        t = self._text(self._legend(tmp_path, run_id="run V30-ABC"))
+        assert "run V30-ABC" in t
+        assert "true only of the run named above" in t
+        assert "check the run id" in t
+
+    def test_a_figure_and_its_legend_name_the_same_run(self, tmp_path: Path) -> None:
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        fig_svg = tmp_path / "f.svg"
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+               region="Liver", out_svg=fig_svg, input_count=15, rendered_count=14,
+               ledger_counts={}, ordering_note=ORDER_NOTE, layout="audit",
+               provenance="run V30-ABC · deadbeef")
+        leg = self._legend(tmp_path, run_id="run V30-ABC",
+                           provenance="run V30-ABC · deadbeef")
+        for svg in (fig_svg, leg):
+            assert "run V30-ABC" in self._text(svg), svg.name
+
+    def test_it_carries_the_caveats_and_the_source_links(self, tmp_path: Path) -> None:
+        """Everything a reader needs to decode a cell, and nothing that needs
+        the circle to make sense."""
+        from targetring import sources
+        svg = self._legend(tmp_path)
+        t, body = self._text(svg), svg.read_text()
+        assert "Mouse-phenotype ring" in t, "the caveat block is not on the legend"
+        assert "no data — never measured here" in t, "the cell states are not on it"
+        hrefs = set(re.findall(r'<a xlink:href="([^"]+)"', body))
+        assert hrefs == {d.url for d in sources.RING_SOURCE_DOCS.values()}
+
+    def test_the_cell_state_box_does_not_print_over_the_scales(
+            self, tmp_path: Path) -> None:
+        """The legend canvas has no circle, so `assert_no_text_over_the_rings`
+        does not apply to it and the first draft printed the box straight across
+        the first scale column with nothing objecting. The obstacle here is the
+        box, so the box is what is checked."""
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Patch
+        from targetring.figure import assert_legend_panels_do_not_overlap
+
+        self._legend(tmp_path)  # the real one must pass, and does
+        fig = plt.figure(figsize=(4, 3))
+        box = fig.legend(handles=[Patch(facecolor="#fff", label="x" * 60)],
+                         loc="upper left", bbox_to_anchor=(0.05, 0.95))
+        clash = fig.text(0.10, 0.90, "a scale row")
+        try:
+            with pytest.raises(AssertionError, match="over the legend's own scales"):
+                assert_legend_panels_do_not_overlap(fig, box, [clash])
+        finally:
+            plt.close(fig)
+
+
+class TestV30TheArtefactSet:
+    """Which file is which. The export and the app render may differ; which one
+    a name refers to may not."""
+
+    def test_every_artefact_is_the_layout_its_name_promises(
+            self, tmp_path: Path) -> None:
+        """Written for a real bug: the web render was asked for with `png=None`,
+        which already meant "the default path, figure.png", so the LEAN render
+        overwrote the export's PNG. `figure.svg` had the caveat footer and the
+        invariant stamp and `figure.png` did not, and comparing the two SVGs
+        passed because the SVGs were fine."""
+        from targetring.figure import (AUDIT, SLIDE, WEB,
+                                       assert_artefacts_are_their_own_layout,
+                                       render_legend)
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        common = dict(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                      region="Liver", input_count=14, rendered_count=14,
+                      ledger_counts={}, ordering_note=ORDER_NOTE,
+                      provenance="run T1 · abc")
+        render(out_svg=tmp_path / "figure.svg",
+               out_png=tmp_path / "figure.png", layout="audit", **common)
+        render(out_svg=tmp_path / "figure-web.svg", out_png=None,
+               layout="web", **common)
+        render(out_svg=tmp_path / "figure-slide.svg",
+               out_png=tmp_path / "figure-slide.png", layout="slide", **common)
+        render_legend(cells_by_ring=spec, region="Liver",
+                      out_svg=tmp_path / "legend.svg",
+                      out_png=tmp_path / "legend.png", run_id="run T1",
+                      ordering_note=ORDER_NOTE, input_count=14, rendered_count=14)
+        assert_artefacts_are_their_own_layout(tmp_path)
+
+        # And it fails when a file is the wrong render, which is the bug.
+        render(out_svg=tmp_path / "spare.svg", out_png=tmp_path / "figure.png",
+               layout="web", **common)
+        with pytest.raises(AssertionError, match="figure.png"):
+            assert_artefacts_are_their_own_layout(tmp_path)
+        assert AUDIT.figsize != WEB.figsize != SLIDE.figsize
+
+    def test_the_lean_render_is_not_in_the_download_set(self) -> None:
+        """A file that drops the caveat footer must never be the one somebody
+        sends to a colleague. It is served, because the page fetches it; it is
+        not offered."""
+        html = (Path(__file__).resolve().parent.parent / "targetring" / "static"
+                / "index.html").read_text()
+        js = (Path(__file__).resolve().parent.parent / "targetring" / "static"
+              / "app.js").read_text()
+        assert "figure-web" not in html
+        assert 'dl["web' not in js and '"dl-web"' not in js
+        # The page inlines it, though.
+        assert "b.web_url" in js
+
+    def test_the_download_row_is_grouped_not_a_wall_of_buttons(self) -> None:
+        """Puck: "make the download buttons make sense with the new set rather
+        than accumulating one per artefact ... do not leave it a row of nine."
+        Ten artefacts are offered behind three controls."""
+        html = (Path(__file__).resolve().parent.parent / "targetring" / "static"
+                / "index.html").read_text()
+        top_level = re.findall(r'<summary class="btn">([^<]+)</summary>', html)
+        assert len(top_level) == 3, top_level
+        offered = re.findall(r'<a id="dl-[a-z-]+"', html)
+        assert len(offered) >= 9, offered

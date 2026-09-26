@@ -170,12 +170,25 @@ function render(b) {
       : "") +
     (b.warnings.length ? `<div class="note warn">${b.warnings.map(esc).join("<br>")}</div>` : "");
 
-  $("#dl-svg").href = b.svg_url;
-  $("#dl-png").href = b.png_url;
-  $("#dl-slide").href = b.slide_url;
-  $("#dl-csv").href = b.csv_url;
-  $("#dl-ledger").href = b.ledger_url;
-  $("#dl-manifest").href = b.manifest_url;
+  // v3.0. Three menus, one link each. `web_url` is deliberately NOT here: it is
+  // the lean render this page inlines, and a file that drops the caveat footer
+  // must never be the one somebody sends to a colleague.
+  const dl = {
+    "dl-svg": b.svg_url, "dl-png": b.png_url,
+    "dl-slide": b.slide_url, "dl-slide-png": b.slide_png_url,
+    "dl-caption": b.caption_url,
+    "dl-legend": b.legend_url, "dl-legend-png": b.legend_png_url,
+    "dl-csv": b.csv_url, "dl-ledger": b.ledger_url,
+    "dl-manifest": b.manifest_url,
+  };
+  for (const [id, href] of Object.entries(dl)) {
+    const el = $("#" + id);
+    if (el && href) el.href = href;
+  }
+  // Puck's condition: a figure and its legend must be impossible to mismatch.
+  // The id is on both images and in both filenames; this is the third place,
+  // beside the buttons, where the two get separated in the first place.
+  $("#dl-run").textContent = `All downloads are run ${b.run_id}.`;
 
   renderLedger(b);
   renderInvariants(b);
@@ -189,7 +202,13 @@ function render(b) {
   // UX B4: after a run the figure was below the fold and the scroll did not move.
   $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
 
-  fetch(b.svg_url).then((r) => r.text()).then((svg) => {
+  // v3.0. The page inlines the WEB render, not the export. Same cells --
+  // `assert_renders_agree` fails the run if a single one differs -- but no
+  // footer block and no dropped-gene list in the hole, because this page
+  // already carries both in the `What this is not` and `Drop ledger` tabs. The
+  // circle gets the space instead. Falls back to the export if an older run is
+  // still in memory without a web render.
+  fetch(b.web_url || b.svg_url).then((r) => r.text()).then((svg) => {
     $("#figure").innerHTML = svg;
     wireFigure();
   });

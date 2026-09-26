@@ -116,6 +116,37 @@ class InvariantReport:
         out += [f"{head} — {why}" for head, why in self.conditions]
         return out
 
+    def summary_line(self) -> str:
+        """v3.0. One line, for the EXPORT to stamp on itself.
+
+        AGENTS.md: "a morning screenshot that cannot be audited is not a
+        deliverable." A FAIL was always shouted in red across the figure and a
+        PASS said nothing at all, so on a downloaded PNG a clean run and a run
+        nobody checked were the same picture. The person the export exists for
+        has no Invariants tab and no manifest open beside them.
+
+        Stated per outcome rather than as "all good": NOT_EVALUATED is not a
+        pass (UX A1), and a line that rounded it to one would be the exact
+        conflation the two-channel design exists to prevent.
+        """
+        n = len(self.results)
+        if not n:
+            return ""
+        passed = sum(1 for r in self.results if r.outcome == "PASS")
+        bits = [f"INVARIANTS {passed}/{n} PASS"]
+        if self.failures:
+            bits.append(f"{len(self.failures)} FAILED "
+                        f"({', '.join(r.id for r in self.failures)}) — "
+                        f"do not trust the numbers on this figure")
+        if self.unchecked:
+            bits.append(f"{len(self.unchecked)} NOT CHECKED "
+                        f"({', '.join(r.id for r in self.unchecked)}) — not "
+                        f"a failure and not a pass; see manifest.json")
+        if not self.failures and not self.unchecked:
+            bits.append("every check this build can make, made and held; "
+                        "per-check detail in manifest.json")
+        return " · ".join(bits)
+
     def as_json(self) -> list[dict[str, str]]:
         return [{"id": r.id, "name": r.name, "outcome": r.outcome,
                  "detail": r.detail, "affects": r.affects}

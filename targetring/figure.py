@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import itertools
 import math
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
@@ -327,6 +328,15 @@ ACTIVITY_LABELS: dict[float, str] = {
 # both renders rather than trusted to a label that something downstream might
 # truncate.
 SAFETY_RING_CAVEAT = "NOT evidence of safety"
+
+# v3.0. Named, because it is now the load-bearing sentence in two places at once.
+# Puck let the app render and the exported one diverge, and the rule he attached
+# to that is "the figure alone must still not lie" -- so this claim has to be on
+# every render of the circle whatever else is dropped, including the one whose
+# legend has been detached into its own file. `assert_figure_states_the_minimum`
+# is what enforces it; this constant is what both the drawing and the check read,
+# so the check cannot pass against a sentence the figure no longer draws.
+COMPARABILITY_CLAIM = "EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS"
 
 RING_SPECS: tuple[RingSpec, ...] = (
     # V17. logFC is signed, zero is meaningful, and up and down are opposite
@@ -958,11 +968,79 @@ AUDIT = Layout("audit", (19.5, 14.0), 8.0, (0.225, 0.205, 0.475, 0.755),
 # label in a 14- or 50-gene run, and `assert_no_text_over_the_rings` refused
 # x=0.655 with the source line 14.3 px inside it (`logs/v28-slide-sweep.txt`,
 # `-sweep2`). The gap belongs to the longest spoke label, not to the column.
-SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.075, 0.345, 0.86),
+#
+# v3.0 raises the bottom margin 0.075 -> 0.105, and it costs NOTHING, which is
+# part of why it went so long unnoticed: the circle is width-bound here too --
+# 0.345 x 16 = 5.52 in against 0.83 x 9 = 7.47 in of height -- so the radius is
+# 2.76 in before and after.
+#
+# What it fixes PREDATES v3.0 and no test had it. With a filter active
+# `slide_line` grows a second line upward, and at 3, 7 and 14 genes that line
+# landed 1.6 px under the bottom spoke label, so
+# `assert_no_text_over_the_rings` refused the render. The design worked -- the
+# failure was a crash, not a misleading figure -- but a filtered 14-gene slide
+# could not be drawn at all. Found by the new
+# `test_a_filtered_render_says_so_on_every_layout`, which is the first test to
+# render every layout WITH filters; the filtered matrix run happened to use
+# seven genes whose shorter labels cleared it.
+SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.105, 0.345, 0.83),
                False, False, 0.0, 1.15, False, (0.700, 0.026, 0.290, 0.912),
                8.4, 7.6, 52, False, False,
                wedge_deg=0.0, wedge_label_size=8.4)
-LAYOUTS = {"audit": AUDIT, "slide": SLIDE}
+# v3.0, Puck: *"download figure and the online figure can be different."*
+#
+# Until now one artefact had to serve both, so it carried every caveat the
+# export needs while being read on a screen that already showed most of them in
+# its own furniture. Released from that, the two go in OPPOSITE directions and
+# that is the point:
+#
+#   `audit` -- the EXPORT. Gains, rather than loses: the seven-line caveat
+#              footer it always had, plus the invariant summary, because the
+#              person reading the downloaded PNG has no Invariants tab to click
+#              and no one standing next to them.
+#   `web`   -- the APP. Drops exactly what the page itself already says, and
+#              nothing else. The footer block is the `What this is not` tab; the
+#              dropped-gene names in the hole are the `Drop ledger` tab; the
+#              amber run-conditions box is the `#conditions` banner above the
+#              figure. All three are one click or zero clicks away, on screen,
+#              always. What it keeps is the irreducible minimum -- the title and
+#              region, the comparability claim, the in/rendered counts and any
+#              active filter -- because `assert_figure_states_the_minimum`
+#              refuses to draw a circle without them, on every layout.
+#
+# The 1.9 in of canvas the footer gave back goes to the circle, which is the
+# whole point on a screen: the axes box grows from 0.755 to 0.885 of a shorter
+# canvas. Nothing about the CELLS differs between the two, and that is asserted
+# rather than trusted -- `assert_renders_agree` compares every `cell|` gid and
+# fill in the two SVGs and fails the run if one pixel of data disagrees.
+# The axes box looks like it should be as tall as the canvas allows and it is
+# not, because the circle is WIDTH-bound on both: 0.475 x 19.5 = 9.26 in against
+# 0.815 x 12.2 = 9.94 in of height, so the radius is 4.63 in here and 4.63 in on
+# the audit canvas -- identical. Nothing is gained by pushing the box taller and
+# `assert_no_text_over_the_rings` charged for trying: at bottom=0.045 the
+# one-line footer landed 1.6 px under `GENE007 (k=9/9)`. What the app actually
+# gains is the 1.8 in of empty canvas below the circle, so the same circle fills
+# more of the screen at a given page width.
+WEB = Layout("web", (19.5, 12.2), 8.0, (0.225, 0.115, 0.475, 0.815),
+             True, False, 0.0, 1.0, False, (0.762, 0.035, 0.232, 0.930),
+             7.4, 6.6, 42, True, False,
+             wedge_deg=26.0, wedge_label_size=7.4)
+
+# v3.0, Puck: *"we could have the download download legend as a separate
+# image"* -- "circle on one slide, legend on another, sized independently".
+#
+# Not a Layout for `render`: there is no circle on it, so `render_legend` draws
+# it. The Layout exists so the scale column code is the SAME code, called twice
+# with two `scale_box`es for two columns of six. A legend whose ramps or ticks
+# came from a second implementation could disagree with its figure, which is the
+# one new failure mode a detachable legend introduces and the one worth spending
+# structure on.
+LEGEND = Layout("legend", (16.0, 9.0), 8.0, (0.0, 0.0, 0.01, 0.01),
+                True, True, 7.2, 1.0, False, (0.360, 0.045, 0.300, 0.845),
+                9.0, 8.0, 46, True, False,
+                wedge_deg=0.0, wedge_label_size=8.0)
+
+LAYOUTS = {"audit": AUDIT, "slide": SLIDE, "web": WEB}
 
 
 @dataclass
@@ -1000,6 +1078,7 @@ def render(
     provenance: str = "",
     layout: str = "audit",
     gene_ids: dict[str, str] | None = None,
+    invariant_summary: str = "",
 ) -> FigureResult:
     assert_fills_disjoint()
     assert_greyscale_disjoint()
@@ -1012,17 +1091,7 @@ def render(
     if not genes:
         raise ValueError("no genes to render")
 
-    rings = [r for r in RING_SPECS if r.key in cells_by_ring]
-    # v2.6: one colormap per ring, chosen by the ring's data type. The check that
-    # no two rings outside a declared-comparable family can paint the same
-    # colour runs on the rings this render is actually drawing, because a render
-    # of a subset is the case where two families could end up adjacent that are
-    # not adjacent in the full twelve.
-    cmaps = {r.key: ring_cmap(r) for r in rings}
-    assert_rings_are_distinguishable(rings)
-    for r in rings:
-        assert_within_domain(r, cells_by_ring[r.key])
-    norms = {r.key: _norm_for(r, cells_by_ring[r.key]) for r in rings}
+    rings, norms, cmaps = _rings_norms_cmaps(cells_by_ring)
 
     # UX B1: pycirclize raises "Too large sector space size is set!!" at
     # n >= 181 with space=2, which reached the user as a raw traceback after
@@ -1213,8 +1282,15 @@ def render(
     wnote, clock = wedge_note(lay, len(genes), space), clock_phrase(lay)
     notes = _stamp_notes(ordering_note, filter_notes, region, cells_by_ring,
                          gene_flags, subtitle, wnote, clock)
+    # v3.0. The export gets MORE, not less, and this is the clearest instance:
+    # "all seven invariants PASS" is the single fact that makes a downloaded PNG
+    # auditable, and until now it was only in manifest.json and in a tab. The
+    # person the export exists for has neither. A failure was always shouted in
+    # red; a pass was silent, which left the two indistinguishable on paper.
+    if invariant_summary:
+        notes.insert(0, invariant_summary)
     cap = caption(rings, norms, region, provenance, ordering_note, filter_notes,
-                  gene_flags, dropped_names, wnote, clock)
+                  gene_flags, dropped_names, wnote, clock, invariant_summary)
     assert_footer_is_true(notes + cap.splitlines(), ordering_note, filter_notes,
                           wnote)
     assert_the_id_rule_is_kept(spoke_labels, notes)
@@ -1228,7 +1304,10 @@ def render(
     text_blocks += _draw_legend(fig, rings, norms, cmaps, lay)
     text_blocks += _draw_stamps(fig, notes, provenance, lay,
                                 slide_line(ordering_note, filter_notes,
-                                           wedge_note(lay, len(genes), space, short=True)))
+                                           wedge_note(lay, len(genes), space, short=True),
+                                           where=("see the What this is not tab"
+                                                  if lay.name == "web"
+                                                  else "see the caption")))
     if invariant_failures:
         _draw_banner(fig, invariant_failures)
     if run_conditions and lay.draw_conditions:
@@ -1252,6 +1331,13 @@ def render(
     assert_wedge_labels_fit(fig, ax, wedge_labels, wedge,
                             obstacles=[t for t in ax.texts
                                        if t.get_text() and t not in wedge_labels])
+    # v3.0. The four claims a circle may never be without, checked against the
+    # text this render actually drew. The centre block is measured last because
+    # `fit_centre_to_the_hole` may have rewritten nothing but has certainly
+    # resized it, and the counts line has to be legible, not merely present.
+    assert_figure_states_the_minimum(
+        "\n".join(t.get_text() for t in text_blocks + centre_blocks),
+        input_count, rendered_count, filter_notes, lay.name)
 
     out_svg.parent.mkdir(parents=True, exist_ok=True)
     # `bbox_inches=None` is not enough: matplotlib resolves a None kwarg from
@@ -1274,6 +1360,30 @@ def render(
                         caption=cap,
                         ordering_note=ordering_note,
                         filter_notes=list(filter_notes))
+
+
+def _rings_norms_cmaps(cells_by_ring):
+    """The three things every render of this data has to agree about.
+
+    v3.0 factors this out of `render` because `render_legend` draws the same
+    scales onto a different canvas, and a legend whose ramps or ticks were
+    computed by a second code path would be a legend that could disagree with
+    its figure -- which is the one failure mode a detachable legend introduces.
+    They are derived from `cells_by_ring` and nothing else, so two renders of one
+    run cannot differ here.
+    """
+    rings = [r for r in RING_SPECS if r.key in cells_by_ring]
+    # v2.6: one colormap per ring, chosen by the ring's data type. The check that
+    # no two rings outside a declared-comparable family can paint the same
+    # colour runs on the rings this render is actually drawing, because a render
+    # of a subset is the case where two families could end up adjacent that are
+    # not adjacent in the full twelve.
+    cmaps = {r.key: ring_cmap(r) for r in rings}
+    assert_rings_are_distinguishable(rings)
+    for r in rings:
+        assert_within_domain(r, cells_by_ring[r.key])
+    norms = {r.key: _norm_for(r, cells_by_ring[r.key]) for r in rings}
+    return rings, norms, cmaps
 
 
 def _add_wedge_tooltips(out_svg: Path, rings: Sequence[RingSpec],
@@ -1357,8 +1467,13 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
     # half. The names now travel with the figure.
     y = y0
     if dropped_names and lay is not None and not lay.centre_detail:
+        # v3.0: where "named" points depends on which render this is, and being
+        # wrong about it is COUNCIL V5. The slide is handed out with a
+        # `caption.txt`; the web render is inside a page with a Drop ledger tab
+        # and no caption anywhere. The audit render names them outright.
+        where = "in the Drop ledger tab" if lay.name == "web" else "in the caption"
         out.append(ax.text(0.5, y, f"the {len(dropped_names)} not shown are named "
-                                   f"in the caption", ha="center", va="top",
+                                   f"{where}", ha="center", va="top",
                            size=7.5 * k, transform=ax.transAxes, color="#8a4b00"))
         y -= 0.024
     elif dropped_names:
@@ -1428,7 +1543,8 @@ def _scale_ticks(spec: RingSpec, norm) -> list[tuple[float, str]]:
     return [(t, _fmt(_unscaled(spec, lo + (hi - lo) * t))) for t in stops]
 
 
-def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
+def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
+                      start: int = 1) -> list:
     """UX A5, and the reason it was "the one that gets a question you can't
     answer": there was no colour bar anywhere, and the only statement of a
     ring's range was 6.6 pt monospace in the left margin -- 3.3 pt on a slide.
@@ -1473,7 +1589,10 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
     def _source(spec):
         return "\n".join(textwrap.wrap(spec.source_line, lay.scale_wrap + 6) or [""])
 
-    titles = {sp.key: _title(i, sp) for i, sp in enumerate(rings, start=1)}
+    # v3.0: `start` so the legend file's second column continues 7..12 rather
+    # than restarting at 1. A ring number that does not match the radial order
+    # is a wrong figure, not a cosmetic slip.
+    titles = {sp.key: _title(i, sp) for i, sp in enumerate(rings, start=start)}
     notes = {sp.key: _note(sp) for sp in rings}
     srcs = {sp.key: _source(sp) for sp in rings}
 
@@ -1504,14 +1623,19 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay) -> list:
     # Split on purpose rather than wrapped: the first line is the claim and it
     # has to survive being read out of the SVG in one piece, which is how
     # tests/test_presentation.py checks it is on the figure and not clipped.
-    blocks.append(fig.text(
-        x0, y0 + h + line(ts) * 0.5,
-        "EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS\n"
-        "a colour means nothing outside its own ring",
-        fontsize=ts * 0.95, va="bottom", ha="left", color="#8a4b00", weight="bold"))
+    # v3.0: `header=False` on the legend file's second column. The sentence is
+    # the most important one in the column and it is drawn once per column
+    # everywhere else; two identical amber blocks side by side on one canvas
+    # read as two different warnings.
+    if header:
+        blocks.append(fig.text(
+            x0, y0 + h + line(ts) * 0.5,
+            COMPARABILITY_CLAIM + "\n"
+            "a colour means nothing outside its own ring",
+            fontsize=ts * 0.95, va="bottom", ha="left", color="#8a4b00", weight="bold"))
 
     top = y0 + h
-    for i, spec in enumerate(rings, start=1):
+    for i, spec in enumerate(rings, start=start):
         # QA-v2-retest §5's mechanism, reused rather than reinvented: a ring
         # label whose tail is a caveat ("\u2014 NOT evidence of safety") wraps
         # onto a continuation line. Truncation is never the answer for a caveat,
@@ -1989,7 +2113,7 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
 
 
 def slide_line(ordering_note: str, filter_notes: Sequence[str],
-               wedge_short: str = "") -> str:
+               wedge_short: str = "", where: str = "see the caption") -> str:
     """UX A4: the one line the slide render carries instead of the footer block.
 
     The filters are on it, first, when there are any. A slide is the artefact
@@ -2000,7 +2124,13 @@ def slide_line(ordering_note: str, filter_notes: Sequence[str],
     base = " · ".join([f"the safety ring is {SAFETY_RING_CAVEAT}",
                            ordering_note,
                            "rings are scaled independently of one another",
-                           "see the caption"])
+                           # v3.0: where the rest of it is depends on which
+                           # render this is. A slide is handed out with a
+                           # caption.txt; the web render is inside a page whose
+                           # tabs carry the same text and which has no caption
+                           # anywhere. Pointing a reader at a file that does not
+                           # exist for them is COUNCIL V5 in one clause.
+                           where])
     # v2.7. Its own line rather than a fifth clause: at 10 pt on a 1600 px canvas
     # the four clauses already run to ~900 px and `assert_text_within_canvas` is
     # what caught the last sentence that was appended to a line that was full
@@ -2044,14 +2174,306 @@ def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
     return out
 
 
+def render_legend(
+    *,
+    cells_by_ring: dict[str, dict[str, Cell]],
+    region: str,
+    out_svg: Path,
+    out_png: Path | None = None,
+    run_id: str = "",
+    provenance: str = "",
+    ordering_note: str = "",
+    filter_notes: Sequence[str] = (),
+    input_count: int = 0,
+    rendered_count: int = 0,
+    gene_flags: dict[str, list[str]] | None = None,
+) -> Path:
+    """The legend as its own image, for the slide that is not the circle.
+
+    Puck: *"we could have the download download legend as a separate image"*,
+    for "circle on one slide, legend on another, sized independently".
+
+    What is on it is everything a reader needs to decode a cell and nothing that
+    needs the circle to make sense: the twelve scales in their own colours and
+    units with their source links, the four cell states, the three categorical
+    states, and the caveat block. 16:9, two columns of six, so it is a slide.
+
+    **The pairing is the risk this artefact introduces**, and it is the thing to
+    get right: a legend is only true of the run that produced it, and the colour
+    ranges on nine of the twelve rings move with the submitted set, so last
+    week's legend against this week's figure would misread every cell on those
+    nine and look perfectly normal doing it. So the run id is drawn **large and
+    first**, in the same string the figure stamps, with a line that says in
+    words what has to match. `test_a_figure_and_its_legend_name_the_same_run`
+    checks the two files carry the same id; a reader checks the two slides.
+
+    Returns the SVG path.
+    """
+    import dataclasses
+
+    rings, norms, cmaps = _rings_norms_cmaps(cells_by_ring)
+    lay = LEGEND
+    fig = plt.figure(figsize=lay.figsize, dpi=100)
+    fig.patch.set_facecolor("#ffffff")
+    blocks = []
+
+    # --- the pairing block, top left, before anything it is a legend TO -----
+    blocks.append(fig.text(0.035, 0.955, f"targetring v2 — legend", fontsize=19,
+                           weight="bold", va="top", ha="left", color="#111111"))
+    blocks.append(fig.text(0.035, 0.905, f"{region} · {input_count} genes in, "
+                                         f"{rendered_count} rendered",
+                           fontsize=11, va="top", ha="left", color="#333333"))
+    blocks.append(fig.text(0.035, 0.872, run_id or provenance, fontsize=13,
+                           weight="bold", va="top", ha="left", color="#8a4b00"))
+    blocks.append(fig.text(
+        0.035, 0.842,
+        "This legend is true only of the run named above. Nine of the twelve\n"
+        "ranges move with the submitted gene set — check the run id on the\n"
+        "figure matches this one before reading a colour off it.",
+        fontsize=8.2, va="top", ha="left", color="#8a4b00"))
+    if provenance and provenance != run_id:
+        blocks.append(fig.text(0.995, 0.995, provenance, fontsize=7.0, va="top",
+                               ha="right", color="#666666", family="monospace"))
+
+    # --- cell states, reusing the figure's own handles ----------------------
+    handles = [
+        Patch(facecolor=s["fc"], hatch=s["hatch"], edgecolor=s["ec"], label=s["label"])
+        for s in STATE_STYLE.values()
+    ]
+    handles.append(Patch(facecolor="none", edgecolor="#111111", linestyle="--",
+                         label="value — decode it against THAT ring's own scale"))
+    for spec in rings:
+        if not spec.categorical:
+            continue
+        for v, colour in sorted(spec.categorical.items()):
+            # The ring's SHORT label here, not its full one. On the figure the
+            # box sits in a corner with the whole canvas to spread into; on this
+            # canvas "Pipeline: current activity (Open Targets clinicalReports)"
+            # three times over made the box 0.42 of the width and it printed
+            # straight across the first scale column. The ring is numbered and
+            # named in full two inches to the right, so the prefix here only has
+            # to say which ring, not describe it.
+            handles.append(Patch(
+                facecolor=colour, edgecolor="#ffffff",
+                label=f"{spec.wedge_label}: "
+                      f"{(spec.category_labels or {}).get(v, str(v))}"))
+    legend_box = fig.legend(handles=handles, loc="upper left",
+                            bbox_to_anchor=(0.030, 0.760), fontsize=8.0,
+                            frameon=True, title="cell states", title_fontsize=9)
+
+    # --- the caveats, which is what the slide render drops ------------------
+    notes = _stamp_notes(ordering_note, filter_notes, region, cells_by_ring,
+                         gene_flags, "", "", clock_phrase(AUDIT))
+    assert_footer_is_true(notes, ordering_note, filter_notes)
+    import textwrap
+    wrapped = "\n".join("\n".join(textwrap.wrap(n, 74)) for n in notes)
+    blocks.append(fig.text(0.030, 0.585, wrapped, fontsize=6.4, va="top",
+                           ha="left", color="#333333"))
+
+    # --- the scales: one code path, two columns -----------------------------
+    half = (len(rings) + 1) // 2
+    x0, y0, w, h = lay.scale_box
+    left = dataclasses.replace(lay, scale_box=(x0, y0, w, h))
+    right = dataclasses.replace(lay, scale_box=(x0 + 0.325, y0, w, h))
+    blocks += _draw_ring_scales(fig, rings[:half], norms, cmaps, left, start=1)
+    blocks += _draw_ring_scales(fig, rings[half:], norms, cmaps, right,
+                                header=False, start=half + 1)
+
+    assert_text_within_canvas(fig, blocks)
+    assert_legend_panels_do_not_overlap(fig, legend_box, blocks)
+    out_svg.parent.mkdir(parents=True, exist_ok=True)
+    # `SAVE_RC`, for the reason at the top of this module: pycirclize sets
+    # `savefig.bbox="tight"` with half an inch of padding, and a "16:9" legend
+    # saved without it comes out 16.44 x 8.94 in -- 1.84:1, letterboxed on the
+    # slide it exists to go on. `assert_artefacts_are_their_own_layout` is what
+    # found it, ten minutes after being written for a different bug.
+    with plt.rc_context(SAVE_RC):
+        fig.savefig(out_svg, format="svg")
+        if out_png:
+            fig.savefig(out_png, format="png", dpi=110)
+    plt.close(fig)
+    return out_svg
+
+
+def assert_legend_panels_do_not_overlap(fig, legend_box, blocks) -> None:
+    """v3.0. The legend file's own UX A6.
+
+    The figure has `assert_no_text_over_the_rings` because the thing text must
+    not land on there is the circle. On the legend canvas there is no circle and
+    that assertion does not apply -- so the first draft printed the cell-state
+    box straight across the first scale column and nothing objected. The
+    obstacle here is the box, so the box is what is checked.
+
+    `fig.legend` returns the artist, which is why it is captured rather than
+    called for effect: its bbox is only knowable after a draw.
+    """
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    box = legend_box.get_window_extent(renderer=r)
+    offenders = []
+    for t in blocks:
+        bb = t.get_window_extent(renderer=r)
+        if bb.x1 > box.x0 and bb.x0 < box.x1 and bb.y1 > box.y0 and bb.y0 < box.y1:
+            offenders.append(f"{t.get_text().splitlines()[0][:40]!r}")
+    if offenders:
+        raise AssertionError(
+            "the cell-state box is drawn over the legend's own scales: "
+            + "; ".join(offenders[:4])
+            + ". A legend that overprints itself is worse than no legend file, "
+              "because the reader cannot tell which half is missing.")
+
+
+def assert_figure_states_the_minimum(drawn: str, input_count: int,
+                                     rendered_count: int,
+                                     filter_notes: Sequence[str],
+                                     layout: str) -> None:
+    """v3.0. What every render of the circle must say, however lean it gets.
+
+    Puck's condition on letting the app render and the export diverge: *"the
+    figure alone must still not lie. If someone has the circle and not the
+    legend -- which will happen -- it still has to say what it is, that each
+    ring has its own scale so colours mean nothing across rings, how many genes
+    were submitted versus rendered, and whether filters were active."*
+
+    That is the whole of this check, and it runs on the text the render actually
+    drew rather than on the intent of the code that drew it. It is the guard
+    that makes the divergence safe: `web` may drop the footer block and the
+    dropped-gene list, and a future layout may drop more, but none of them can
+    drop these four and still render.
+    """
+    missing = []
+    if "targetring" not in drawn:
+        missing.append("what it is (the title)")
+    if COMPARABILITY_CLAIM not in drawn:
+        missing.append("that each ring has its own scale and colours do not "
+                       "carry between rings")
+    if f"{input_count} genes in" not in drawn:
+        missing.append(f"how many genes were submitted ({input_count})")
+    if f"{rendered_count} rendered" not in drawn:
+        missing.append(f"how many were rendered ({rendered_count})")
+    if filter_notes and "FILTERED" not in drawn:
+        missing.append("that threshold filters removed genes from this plot")
+    if missing:
+        raise AssertionError(
+            f"the {layout} render does not state: " + "; ".join(missing)
+            + ". A reader may have this circle and nothing else -- no legend "
+              "file, no page around it, nobody to ask -- and it must still be "
+              "true on its own."
+        )
+
+
+def assert_artefacts_are_their_own_layout(runs_dir: Path) -> None:
+    """v3.0. Every artefact is the render it is named after.
+
+    Written because it was not. The web render was asked for with `png=None`,
+    which in `do_render` already meant "the default path, figure.png" rather
+    than "no PNG", so the lean render wrote itself over the EXPORT's PNG:
+    `figure.svg` carried the caveat footer and the invariant stamp and
+    `figure.png` -- the file most people actually send -- did not.
+    `assert_renders_agree` compared the two SVGs and passed, because the SVGs
+    were fine. Nothing in the run noticed.
+
+    A canvas size is the cheapest thing that distinguishes these renders and it
+    is decided entirely by the Layout, so it is what gets checked. Every layout
+    here has a different one, deliberately: 19.5x14 audit, 19.5x12.2 web,
+    16x9 slide and legend.
+    """
+    from PIL import Image
+
+    expect = {
+        "figure.svg": AUDIT, "figure.png": AUDIT,
+        "figure-web.svg": WEB,
+        "figure-slide.svg": SLIDE, "figure-slide.png": SLIDE,
+        "legend.svg": LEGEND, "legend.png": LEGEND,
+    }
+    wrong = []
+    for name, lay in expect.items():
+        path = runs_dir / name
+        if not path.exists():
+            wrong.append(f"{name} was not written")
+            continue
+        if name.endswith(".svg"):
+            root = __import__("xml.etree.ElementTree", fromlist=["x"]).parse(path).getroot()
+            _, _, w, h = (float(v) for v in root.get("viewBox").split())
+            got, want = (w / 72.0, h / 72.0), lay.figsize
+        else:
+            with Image.open(path) as im:
+                got, want = (im.width, im.height), (lay.figsize[0] * 110,
+                                                    lay.figsize[1] * 110)
+        if abs(got[0] - want[0]) > max(2.0, want[0] * 0.01) or \
+           abs(got[1] - want[1]) > max(2.0, want[1] * 0.01):
+            wrong.append(f"{name} is {got[0]:.0f}x{got[1]:.0f}, but the "
+                         f"{lay.name} layout is {want[0]:.0f}x{want[1]:.0f}")
+    if wrong:
+        raise AssertionError(
+            "an artefact is not the render its name promises: " + "; ".join(wrong)
+            + ". The export and the app render may differ; which file is which "
+              "may not.")
+
+
+def assert_renders_agree(a_svg: Path, b_svg: Path) -> None:
+    """v3.0. Two renders of one run may differ in furniture, never in data.
+
+    This is what makes "the download and the online figure can be different"
+    safe to say yes to. The app inlines `figure-web.svg` and the colleague opens
+    `figure.png`; if a cell were ever a different colour between them, the two
+    people would be reading different figures and neither would know. So every
+    `cell|<ring>|<index>|<gene>` group in both files is compared by id and by
+    fill, and any difference fails the run.
+
+    Furniture is expected to differ and is not compared: the footer, the hole's
+    drop list, the canvas size.
+    """
+    import xml.etree.ElementTree as ET
+
+    def cells(p: Path) -> dict[str, str]:
+        # Parsed rather than matched with a regex: a cell's `<path d=…>` runs to
+        # several thousand characters of arc, so any bounded pattern between the
+        # gid and the fill silently matches nothing and the check passes on an
+        # empty comparison. It did, the first time.
+        out = {}
+        for el in ET.parse(p).getroot().iter():
+            gid = el.get("id") or ""
+            if not gid.startswith("cell|"):
+                continue
+            style = ""
+            for child in el.iter():
+                style = child.get("style") or style
+                if "fill" in style:
+                    break
+            m = re.search(r"fill:\s*(#[0-9a-fA-F]{6})", style)
+            out[gid] = m.group(1).lower() if m else "?"
+        return out
+
+    a, b = cells(a_svg), cells(b_svg)
+    if not a:
+        raise AssertionError(f"{a_svg.name} has no cell groups to compare")
+    if a.keys() != b.keys():
+        only_a = sorted(a.keys() - b.keys())[:3]
+        only_b = sorted(b.keys() - a.keys())[:3]
+        raise AssertionError(
+            f"{a_svg.name} and {b_svg.name} draw different cells — "
+            f"only in {a_svg.name}: {only_a}; only in {b_svg.name}: {only_b}")
+    differ = [k for k in a if a[k] != b[k]]
+    if differ:
+        k = differ[0]
+        raise AssertionError(
+            f"{len(differ)} cell(s) are a different colour in {a_svg.name} and "
+            f"{b_svg.name} — e.g. {k}: {a[k]} vs {b[k]}. The two renders may "
+            f"differ in furniture, never in data.")
+
+
 def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
-            gene_flags=None, dropped_names=(), wedge="", clock="") -> str:
+            gene_flags=None, dropped_names=(), wedge="", clock="",
+            invariant_summary="") -> str:
     """UX A4. Everything the slide render drops, as text to paste underneath.
 
     The full audit stamps stay on the audit render, which is the right artefact
     for the morning review. This is what makes the slide render honest anyway.
     """
     lines = [f"targetring \u2014 {region}. {provenance}", ""]
+    if invariant_summary:
+        lines += [invariant_summary, ""]
     lines.append("Rings, outermost first (scale is per-ring; a colour means nothing "
                  "between two rings):")
     for i, spec in enumerate(rings, start=1):
@@ -2515,4 +2937,8 @@ __all__ = ["render", "RING_SPECS", "RingSpec", "STATE_STYLE", "VALUE_CMAP",
            "WEDGE_TEXT_MARGIN_DEG", "WEDGE_MIN_SCALE", "wedge_note",
            "fit_wedge_labels", "assert_wedge_labels_fit",
            "assert_no_text_over_the_rings", "assert_centre_fits_the_hole",
-           "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE"]
+           "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE",
+           "WEB", "LEGEND", "render_legend", "COMPARABILITY_CLAIM",
+           "assert_figure_states_the_minimum", "assert_renders_agree",
+           "assert_artefacts_are_their_own_layout", "assert_legend_panels_do_not_overlap",
+           "assert_the_id_rule_is_kept"]

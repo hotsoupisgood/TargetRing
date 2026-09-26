@@ -129,3 +129,26 @@ ul.tight li { margin: 2px 0; }
 /* The exported canvas is 17.5in wide; scale it to the panel rather than
    letting the colour bar run off the right edge on a laptop. */
 #figure svg { width: 100%; height: auto; display: block; }
+
+/* v3.0. The download row was six buttons and the new artefacts would have made
+   it nine, so it is three menus grouped by what you are walking away with: the
+   figure, the legend for the next slide, and the data to check it with.
+   `<details>` rather than a JS dropdown — it opens with the keyboard, closes on
+   Escape and needs no script, which is the same reasoning that put the SVG
+   tooltips and the source links in the file rather than in app.js. */
+.dl-row { align-items: flex-start; }
+.dl { position: relative; }
+.dl > summary { list-style: none; cursor: pointer; user-select: none; }
+.dl > summary::-webkit-details-marker { display: none; }
+.dl[open] > summary { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12) inset; }
+.dl-menu {
+  position: absolute; z-index: 20; min-width: 21rem; margin-top: 6px;
+  background: #fff; border: 1px solid #d4d4d4; border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13); padding: 6px;
+}
+.dl-menu a {
+  display: block; padding: 7px 10px; border-radius: 6px;
+  color: var(--accent); text-decoration: none; font-size: 13.5px;
+}
+.dl-menu a:hover, .dl-menu a:focus { background: #f1f4f9; text-decoration: underline; }
+.dl-menu .hint { padding: 2px 10px 6px; margin: 0; }

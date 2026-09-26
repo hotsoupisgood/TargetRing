@@ -159,6 +159,12 @@ def _summarise(r) -> dict[str, Any]:
         "slide_png_url": f"/api/run/{r.run_id}/figure-slide.png",
         "caption_url": f"/api/run/{r.run_id}/caption.txt",
         "ledger_url": f"/api/run/{r.run_id}/ledger.csv",
+        # v3.0. `web_url` is what the page inlines and is deliberately not in
+        # the download set: it is the lean render, and a file that drops the
+        # caveat footer must never be the one somebody sends to a colleague.
+        "web_url": f"/api/run/{r.run_id}/figure-web.svg",
+        "legend_url": f"/api/run/{r.run_id}/legend.svg",
+        "legend_png_url": f"/api/run/{r.run_id}/legend.png",
         "gene_order": r.gene_order,
         "counts": {
             "input": m.input_row_count,
@@ -265,20 +271,28 @@ async def gene_drawer(run_id: str, gene: str) -> JSONResponse:
 
 @app.get("/api/run/{run_id}/{filename}")
 async def artefact(run_id: str, filename: str) -> FileResponse:
-    if filename not in ("figure.svg", "figure.png", "values.csv", "manifest.json",
-                        "ledger.csv", "figure-slide.svg", "figure-slide.png",
-                        "caption.txt"):
+    # v3.0 adds three: `figure-web.svg`, which the page inlines and nobody
+    # downloads, and `legend.svg` / `legend.png`, the legend as its own image.
+    types = {
+        "figure.svg": "image/svg+xml", "figure.png": "image/png",
+        "figure-web.svg": "image/svg+xml",
+        "legend.svg": "image/svg+xml", "legend.png": "image/png",
+        "values.csv": "text/csv", "manifest.json": "application/json",
+        "ledger.csv": "text/csv", "figure-slide.svg": "image/svg+xml",
+        "figure-slide.png": "image/png", "caption.txt": "text/plain",
+    }
+    if filename not in types:
         raise HTTPException(404, "unknown artefact")
     path = RUNS_DIR / run_id / filename
     if not path.exists():
         raise HTTPException(404, f"{filename} not found for run {run_id}")
-    media = {
-        "figure.svg": "image/svg+xml", "figure.png": "image/png",
-        "values.csv": "text/csv", "manifest.json": "application/json",
-        "ledger.csv": "text/csv", "figure-slide.svg": "image/svg+xml",
-        "figure-slide.png": "image/png", "caption.txt": "text/plain",
-    }[filename]
-    return FileResponse(path, media_type=media, filename=f"targetring-{run_id}-{filename}")
+    # The run id is in the DOWNLOADED name, not only inside the file. Puck's
+    # condition on a detachable legend is that a figure and its legend must be
+    # impossible to mismatch, and the first place they get separated is a
+    # downloads folder: `targetring-<run>-legend.png` sorts next to
+    # `targetring-<run>-figure.png` and away from yesterday's.
+    return FileResponse(path, media_type=types[filename],
+                        filename=f"targetring-{run_id}-{filename}")
 
 
 @app.get("/api/health")

@@ -467,14 +467,23 @@ async def run_analysis(
 
     def do_render(failures: list[str], conds: list[str] = [],
                   layout: str = "audit", svg: Path | None = None,
-                  png: Path | None = None) -> figure.FigureResult:
+                  png: Path | None = None, write_png: bool = True,
+                  invariant_summary: str = "") -> figure.FigureResult:
         return figure.render(
             genes=gene_order,
             cells_by_ring=cells_by_ring,
             stats=stats,
             region=region,
             out_svg=svg or svg_path,
-            out_png=png if png is not None else runs_dir / "figure.png",
+            # v3.0: `write_png=False` is a THIRD state and it has to be, because
+            # `png=None` already means "the default, figure.png". The web render
+            # passed None meaning "no PNG" and silently overwrote the export's
+            # PNG with the lean render -- `figure.svg` was the export and
+            # `figure.png` was not, and `assert_renders_agree` compared the SVGs
+            # so nothing objected. `assert_artefacts_are_their_own_layout`
+            # exists because of this bug.
+            out_png=(None if not write_png
+                     else png if png is not None else runs_dir / "figure.png"),
             layout=layout,
             input_count=parsed.input_row_count,
             rendered_count=rendered_count,
@@ -493,6 +502,7 @@ async def run_analysis(
             # for `values.csv` and for the footer sentence that says where they
             # are. They are deliberately NOT on the rim -- see `_ID_NOTE`.
             gene_ids={g: by_gene[g][1].ensembl_id for g in gene_order},
+            invariant_summary=invariant_summary,
         )
 
     fig_result = do_render([])
@@ -532,17 +542,51 @@ async def run_analysis(
     ]
     # Amber, below the rings: a check could not be run, or a source was down.
     conds = invariants.condition_lines()
-    if banner or conds:
-        # Re-render. The figure must not look clean when it is not -- and must
-        # not look broken when it is not either.
-        fig_result = do_render(banner, conds)
+    # v3.0. The export always re-renders, where it used to re-render only when
+    # something was wrong. What it gains is `invariant_summary`: a downloaded
+    # PNG could always SHOUT a failure in red and had no way to say a pass, so
+    # on paper a clean run and an unchecked one looked identical. The second
+    # audit render costs ~1.0 s on a 50-gene run against a 60 s budget.
+    inv_summary = invariants.summary_line()
+    fig_result = do_render(banner, conds, invariant_summary=inv_summary)
+
+    # v3.0, Puck: "download figure and the online figure can be different."
+    # The app inlines THIS one. Same cells, no footer block and no dropped-gene
+    # list in the hole, because the page carries both in its own furniture and
+    # the 1.9 in they cost goes to the circle instead.
+    web_svg = runs_dir / "figure-web.svg"
+    do_render(banner, conds, layout="web", svg=web_svg, write_png=False,
+              invariant_summary=inv_summary)
+    # ...and this is what makes saying yes to that safe. The two renders may
+    # differ in furniture; if one CELL ever differed, the colleague reading the
+    # PNG and the person at the screen would be reading different figures and
+    # neither would know.
+    figure.assert_renders_agree(svg_path, web_svg)
 
     # UX A4: the slide render. Same data, 16:9, type that survives projection,
     # with the ring key and the caveats moved into the caption beside it. The
     # audit render above keeps every stamp and stays the morning artefact.
     slide_result = do_render(banner, conds, layout="slide",
                              svg=runs_dir / "figure-slide.svg",
-                             png=runs_dir / "figure-slide.png")
+                             png=runs_dir / "figure-slide.png",
+                             invariant_summary=inv_summary)
+
+    # v3.0, Puck: "we could have the download download legend as a separate
+    # image" -- circle on one slide, legend on another. The run id is on both,
+    # large, because a legend paired with the wrong run misreads every cell on
+    # the nine rings whose range moves with the submitted set.
+    figure.render_legend(
+        cells_by_ring=cells_by_ring, region=region,
+        out_svg=runs_dir / "legend.svg", out_png=runs_dir / "legend.png",
+        run_id=f"run {run_id}",
+        provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
+        ordering_note=ordering_note, filter_notes=filter_notes,
+        input_count=parsed.input_row_count, rendered_count=rendered_count,
+        gene_flags=severe_liability_flags)
+
+    # Seven files, four layouts, one data set. This says each file is the render
+    # its name promises -- see the function for the bug that earned it.
+    figure.assert_artefacts_are_their_own_layout(runs_dir)
     # v2.7: the caption is the SLIDE's caption, not the audit's. It always was
     # the slide's artefact -- "everything the slide render drops, as text to
     # paste underneath" -- and until now the two were word for word identical,
