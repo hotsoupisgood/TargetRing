@@ -548,6 +548,7 @@ async def run_analysis(
     # on paper a clean run and an unchecked one looked identical. The second
     # audit render costs ~1.0 s on a 50-gene run against a 60 s budget.
     inv_summary = invariants.summary_line()
+    t_exports = time.time()
     fig_result = do_render(banner, conds, invariant_summary=inv_summary)
 
     # v3.0, Puck: "download figure and the online figure can be different."
@@ -587,6 +588,11 @@ async def run_analysis(
     # Seven files, four layouts, one data set. This says each file is the render
     # its name promises -- see the function for the bug that earned it.
     figure.assert_artefacts_are_their_own_layout(runs_dir)
+    # v3.0 renders four layouts where v2.9 rendered two, and `render_s` above
+    # only ever measured the first pass. Timed separately rather than folded in,
+    # so the cost of the new artefacts is visible in every manifest instead of
+    # being discovered later as "the run got slower".
+    timings["exports_s"] = round(time.time() - t_exports, 2)
     # v2.7: the caption is the SLIDE's caption, not the audit's. It always was
     # the slide's artefact -- "everything the slide render drops, as text to
     # paste underneath" -- and until now the two were word for word identical,

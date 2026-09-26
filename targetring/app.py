@@ -32,19 +32,33 @@ _regions_cache: list[str] = []
 STATIC = Path(__file__).parent / "static"
 
 
+# v3.0. `no-store` on the three files that make up the page.
+#
+# This is a local dev server and the browser was caching them: after the v3.0
+# change the page kept inlining `figure.svg` instead of `figure-web.svg` and
+# rendered the new download menus unstyled, because it still had the previous
+# `app.js` and `app.css`. It cost a screenshot run to notice, and the same trap
+# is waiting for anyone who edits the front end and reloads -- they would see
+# old behaviour and go looking for it in new code. Correctness beats caching on
+# a server that only ever serves one person on loopback.
+_NO_STORE = {"Cache-Control": "no-store, max-age=0"}
+
+
 @app.get("/", response_class=HTMLResponse)
-async def index() -> str:
-    return (STATIC / "index.html").read_text()
+async def index_nocache() -> HTMLResponse:
+    return HTMLResponse((STATIC / "index.html").read_text(), headers=_NO_STORE)
 
 
 @app.get("/app.js")
 async def appjs() -> FileResponse:
-    return FileResponse(STATIC / "app.js", media_type="application/javascript")
+    return FileResponse(STATIC / "app.js", media_type="application/javascript",
+                        headers=_NO_STORE)
 
 
 @app.get("/app.css")
 async def appcss() -> FileResponse:
-    return FileResponse(STATIC / "app.css", media_type="text/css")
+    return FileResponse(STATIC / "app.css", media_type="text/css",
+                        headers=_NO_STORE)
 
 
 @app.get("/api/regions")

@@ -94,6 +94,16 @@ def main() -> int:
         ctx = browser.contexts[0] if browser.contexts else browser.new_context()
         page = ctx.new_page()
         page.set_viewport_size({"width": 1680, "height": 1250})
+        # v3.0. The CDP Chrome runs off a persistent profile, so it had a disk
+        # copy of `app.js` and `app.css` from before the front end changed and
+        # kept serving them: the shots came back with the old inline render and
+        # the new download menus unstyled, and the app looked broken when it was
+        # not. The server sends `no-store` now, which stops it recurring, but a
+        # copy cached under the OLD headers is still valid to reuse -- so the
+        # cache is cleared once here, before the first navigation.
+        cdp = ctx.new_cdp_session(page)
+        cdp.send("Network.clearBrowserCache")
+        cdp.send("Network.setCacheDisabled", {"cacheDisabled": True})
 
         # 1. A real DE-like gene list.
         print("1/8 figure for a realistic DE list")
@@ -167,6 +177,19 @@ def main() -> int:
         top(page)
         page.wait_for_timeout(400)
         shot(page, "7b-ring-scales-and-sources.png")
+
+        # v3.0. The download row is three grouped menus rather than the row of
+        # nine the new artefacts would otherwise have made it, and the shot has
+        # to show one OPEN or it shows nothing: a closed `<details>` looks like
+        # fewer downloads rather than like the same set, organised.
+        print("5c2/10 the grouped downloads, Figure menu open")
+        page.evaluate("document.querySelectorAll('details.dl')[0].open = true")
+        page.wait_for_timeout(400)
+        top(page)
+        page.wait_for_timeout(400)
+        shot(page, "12-downloads-grouped.png")
+        page.evaluate(
+            "document.querySelectorAll('details.dl').forEach(d => d.open = false)")
 
         # 3d. v2.5 item 2: the same list, filtered. Two thresholds, one of them
         #     on a ring several of these genes have no value for, so the figure
