@@ -461,3 +461,165 @@ opening of round 2 rather than fixed now.
    three times was a defect for the same reason.
 
 ---
+
+# Round 2
+
+## 2.1 Review
+
+Round 1 measured the artefacts. This round measures **the page a reader
+actually works in** — where things are, how far apart, and how much of it can
+be seen at once — because that is where round 1's re-review left two findings
+and where three of Puck's six words (*usability*, *button placement*,
+*animations*) live.
+
+Driven live at 1440 × 900 against the restarted server on `e1ca4cf`; the same
+council list, the same fixture, the same instruments.
+Evidence: `logs/ux-v3-r2-probe.json`, `logs/ux-v3-r2-repeats.json`,
+`logs/ux-v3-r1fix-typesizes.txt`, `docs/reviews/ux-v3-shots/r1-*`.
+
+The page, measured (document coordinates, 1440 × 900 viewport):
+
+| | y | height |
+|---|---|---|
+| the input form | 0 | **1,053 px** |
+| `#counts` | 1,053 | 26 |
+| the tab row | 1,095 | 40 |
+| the download row | 1,159 | 39 |
+| the amber comparability band | 1,210 | 61 |
+| **the figure** | **1,279** | **1,148 px** |
+| the decode panel | 1,279 | 1,016 |
+| the whole document | | **2,487 px** |
+
+### A. Would embarrass him in front of colleagues
+
+#### A4. The figure no longer fits on the screen, and round 1's fix is the reason
+**Cost: high. It is the first thing anyone does with this page.**
+
+The app render is **1,148 px tall in a 900 px viewport**. There is no scroll
+position at which the circle is whole: it is 248 px taller than the window, and
+it begins at y = 1,279 on a 2,487 px page, so a reader arrives at the top of a
+figure whose bottom third — four spoke labels and the caveat line — is below the
+fold. `r1-3-figure-viewport.png` is the evidence: `#counts` scrolled to the top
+of the window and the circle cut through `GFAP` and `SERPINA1`.
+
+**Round 1 did this, and it did it while fixing A2.** The canvas went
+19.5 × 12.2 in to 9.6 × 10.6 in to buy type size — a 0.626 aspect became 0.906
+— and at a fixed panel width an aspect change is a height change:
+
+| | canvas | panel | rendered height | fits 900 px? |
+|---|---|---|---|---|
+| before round 1 | 19.5 × 12.2 in | 1388 px | **869 px** | yes |
+| after round 1 | 9.6 × 10.6 in | 1040 px | **1,148 px** | no |
+
+The type size is a function of *width* only — `scale = 1040 / 691.2 = 1.5046`
+— so the canvas can lose height without costing a single point of legibility.
+What height costs is the circle: the axes box is width-bound at 7.30 in against
+7.42 in of height today, and shortening the canvas makes it height-bound.
+
+The arithmetic says this is nearly free. At 8.2 in of canvas the figure is
+**888 px** — one viewport — and the circle is about **648 px** across against
+**659 px before round 1** and 790 px now. So: a circle the size it was in v3.0,
+with type 1.5× the size it was, whole on the screen. That is not a trade, it is
+a strictly better point that round 1 walked past because it was measuring
+strings rather than the window.
+
+**Change:** shorten the `web` canvas until the figure fits one 1440 × 900
+viewport, and let the existing geometry assertions arbitrate the margins.
+
+#### A5. The app calls itself v1. The figure inside it calls itself v2.
+**Cost: high for what it costs to fix, which is two words.**
+
+`index.html:5` is `<title>targetring v1</title>` and `index.html:10` is
+`<h1>targetring <span class="ver">v1</span></h1>`. Every artefact this build
+draws says `targetring v2` — it is a named constant checked by
+`assert_figure_states_the_minimum` — so on `r1-2-result-full.png` the page
+header reads **v1** and the middle of the circle 1,400 px below it reads **v2**,
+in the same screenshot.
+
+This is COUNCIL V5's defect in the chrome rather than on the figure: an artefact
+making a false claim about itself. It is also exactly the kind of thing that
+gets noticed by the one person in the room who was not going to read the
+caveats. Nothing in the repo asserts the two agree, which is why it survived
+v2.1 through v3.1.
+
+**Change:** one named version string, read by the page and by the render, and an
+assertion that the page and the figure cannot disagree about it.
+
+#### A6. The comparability sentence is now printed twice, eight pixels apart
+**Cost: medium-high, and round 1 caused it.**
+
+Round 1's A2 promoted the sentence out of a 6.14 px corner **and** added a
+full-width amber HTML band. Both landed. The result on screen
+(`logs/ux-v3-r2-repeats.json`, and plainly visible in `r1-2-result-full.png`):
+
+| | where | size | first line |
+|---|---|---|---|
+| 1 | the HTML band, `#comparability` | 14.5 px | `EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS` |
+| 2 | the render's top-left corner | 16.55 px | `EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS` |
+
+Two amber blocks, both bold, stacked with 8 px of gap, whose first lines are the
+same 47 characters. `UX-v1-mvp.md`'s own noise list condemned exactly this shape
+— *"the counts appear three times… on screen all three are visible at once"* —
+and a reader who sees a claim twice does not read it twice, they wonder which
+one is the real one.
+
+Only one of the two fixes was needed. The round-1 objection to the in-SVG copy
+was *"178 × 7 CSS px of amber in the top-right corner — not behind a click, and
+not seen either"*, and that was an objection to its **size**, which the canvas
+change answered by itself: it is 16.55 px now, above the 12.0 px floor, in the
+top-left, above the circle, encountered before any cell. The HTML band is the
+redundant one.
+
+**Change:** drop the HTML band and let the render's own banner be the sentence
+the reader meets. Move the band's extra clause — *"nine of the twelve ranges
+move with the gene set you submitted"* — to the decode panel, where the ranges
+are. **Rule 2 is tightened rather than loosened**: the assertion stops asking
+whether an HTML element exists and starts asking whether the sentence is drawn
+**above the 12.0 px floor at the width the app actually gives the figure**,
+which is what the rule was about and what the HTML test could not see.
+
+### B. Minor friction
+
+**B7. The controls are 1,053 px above the result, so the figure and the filters
+are never on screen together.** Round 1's B2, now measured against the whole
+page: the form is 42% of a 2,487 px document, four numbered sections with a
+paragraph of help each, and changing one threshold means scrolling up past all
+of it and back down 1,279 px. Every word of the help text is good and none of it
+is needed twice. This is *button placement*, which Puck named, and it is also
+the second-largest pile of information that is non-essential once you have a
+figure. **Round 2's fix takes it**, because it is inseparable from A4: the
+figure fitting the window is worth much less if the window has to be 1,279 px
+down the page to find it.
+
+**B8. The drawer is 5,621 px of flat scroll — 6.25 viewports — with nine
+headings, four tables and zero collapsibles, and its close button is 28 × 39 px.**
+Round 1's B1 and B5, measured on BRAF at 1440 × 900. It is the largest pile of
+hide-until-you-want-it information in the app and the animation ask lands on it
+harder than on anything else. Round 1 said it should not survive three rounds.
+**Not round 2's** — A4, A5, A6 and B7 are the page, and the drawer is its own
+surface. It is round 3's, named here so round 3 inherits it formally.
+
+**B9. Twenty-five HTML strings on the page are under the 12.0 px floor**, and
+they are all in the two tabs a reader goes to when something looks wrong: ten
+`<th>` and fifteen status pills at 11.5 px, including the `PASS` pills in the
+Invariants tab and the `not shown` pill in the Drop ledger. Pre-existing — the
+floor's own justification cites 11.5 px table headers as this build's smallest
+— but the floor is the floor, and the drop ledger is *"the best thing in this
+app"* per `UX-v1-mvp.md`. Round 3's.
+
+**B10. The web render states the spoke-ordering rule twice on one canvas**:
+at 10.23 px in the hole (wrapped onto two lines) and again at 15.05 px in the
+footer 40 px below. Two of round 1's three deliberate under-floor strings are
+this one duplicate, so removing the small copy removes the exception rather
+than arguing for it. Round 3's.
+
+**B11. The slide render misses the 10 pt floor at a full slide by 0.42 pt.**
+11.5 pt in a 16 in canvas on a 13.33 in slide is 9.58 pt, so 114 of its 115
+strings are under — every one of them by a hair, and it is the artefact UX A4
+created to solve this. Different finding from A1, which was about collision.
+Round 3's.
+
+## 2.2 Fix
+
+Applied in this order. Nothing from round 3 was anticipated; B8–B11 were left
+alone on purpose.
