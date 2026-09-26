@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>targetring v1</title>
+  <!-- v3.2 / UX v3 round 2 A5: v1 here and `targetring v2` in the middle of the
+       circle this page inlines, in the same screenshot, from v2.1 to v3.1. The
+       version lives in `figure.FIGURE_TITLE` and
+       `test_the_page_and_the_figure_cannot_disagree_about_the_version` holds
+       these two strings to it. -->
+  <title>targetring v2</title>
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
 <header>
-  <h1>targetring <span class="ver">v1</span></h1>
+  <h1>targetring <span class="ver">v2</span></h1>
   <p class="sub">
     A gene set, rings of evidence, and a drawer per gene.
     <strong>Nothing here is ranked or scored.</strong>
@@ -17,6 +22,29 @@
 
 <main>
   <section id="input-panel">
+    <!-- v3.2 / UX v3 round 2 B7. This form is 1,053 px tall — 42% of a 2,487 px
+         document — so the figure began at y = 1,279 and changing one threshold
+         meant scrolling up past four sections of help text and back down again.
+         Puck named button placement and animations; this is both.
+
+         So it collapses, and it collapses AFTER the first run rather than being
+         closed to start with: before you have a figure the help text is the
+         point, and after you have one it is the thing between you and your own
+         result. `app.js` closes it on a successful render.
+
+         It is the third `<details>` on the page and the rule of this review
+         applies to it the same way: the summary says what it opens and how much
+         is behind it, so the closed state is not a dead end. Neither of the two
+         things that must survive whatever animates away is inside it — they are
+         in `#decode`, in `#result`, and
+         `TestUXv3TheTwoThingsThatSurviveWhateverAnimatesAway` asks about
+         ancestry rather than about strings, so it would have failed if this
+         wrapper had swallowed either. -->
+    <details id="controls" open>
+      <summary><span class="chev" aria-hidden="true">▾</span>
+        <b>The table, the region, the gene order and the filters</b>
+        — 4 sections</summary>
+      <div class="reveal">
     <h2>1. Differential expression table</h2>
     <p class="hint">Columns: gene symbol, logFC, adjusted p. CSV or TSV.
       Every row is either rendered or named in the drop ledger.<br>
@@ -66,7 +94,12 @@
     <label class="check"><input type="checkbox" id="drop-no-data">
       also drop genes with no data on a filtered ring (off by default)</label>
     <div id="filterable" class="hint"></div>
+      </div>
+    </details>
 
+    <!-- Outside the collapse on purpose: the button that acts on the form is not
+         part of the form's help text, and after B7 closes the sections it is the
+         one control that must still be where it was. -->
     <button id="go">Draw the figure</button>
     <div id="status"></div>
   </section>
@@ -131,17 +164,58 @@
 
            The two things Puck's rule protects are outside the collapse and stay
            outside it:
-             * the comparability sentence is a full-width band ABOVE the figure,
-               not a 178 x 7 px corner and not behind a disclosure;
+             * the comparability sentence is drawn large in the render's own
+               top-left corner, above the circle and before any cell — see
+               below;
              * the four cell states are always rendered open — `#cell-states`
                has no toggle at all, so there is no state of this page in which
                they are hidden.
            What animates is `#scales`, which is reference a reader consults when
            decoding a particular cell, and its summary says what it contains and
-           how many there are so the closed state is not a dead end. -->
-      <p id="comparability" class="comparability"></p>
+           how many there are so the closed state is not a dead end.
+
+           v3.2 / UX v3 round 2 A6. There WAS a full-width amber `#comparability`
+           band here, added by round 1 alongside the size fix that made the
+           render's own copy 16.55 px. Both landed, so the sentence was printed
+           twice with 8 px between them, two amber bold blocks whose first lines
+           were the same 47 characters -- which is `UX-v1-mvp.md`'s own noise
+           finding about the counts appearing three times, restored.
+
+           Only the size fix was needed. Round 1's objection to the in-SVG copy
+           was that it was "178 x 7 CSS px in the top-right corner -- not behind
+           a click, and not seen either", i.e. an objection to its SIZE, and the
+           canvas change answered that by itself. So the band is gone and rule 2
+           is held by the render, where the sentence also survives a screenshot.
+           The assertion got stronger rather than weaker: it now measures the
+           drawn size against the 12.0 px floor at the width the app gives the
+           figure, which is the question the rule was always asking and the one
+           an HTML-presence test could not see.
+
+           The band's extra clause -- that nine of the twelve ranges move with
+           the submitted set -- went into `#cell-states`, beside the ranges. -->
       <div class="figure-row">
-        <div id="figure"></div>
+        <div id="figure-col">
+          <div id="figure"></div>
+          <!-- v3.2 / UX v3 round 2 A4. The caveat clauses the app render used to
+               draw under its own circle. They were four to five wrapped lines of
+               10 pt — 0.83 in of the canvas — and they were the block that made
+               the figure 1,148 px tall in a 900 px viewport: every (height,
+               bottom margin, axes height) triple the geometry assertions were
+               offered failed on them or on the wedge names until both left.
+
+               This is A2's trade on a second block, and §v3.0's rule for this
+               layout rather than a new idea: the app render drops what the page
+               itself says, the page says it at 13 px, and the export keeps every
+               word. Directly under the circle, in document order, not inside a
+               <details> — a caveat behind a click is a caveat nobody read.
+
+               The one clause that did NOT move is FILTERED. It is the difference
+               between this circle being the submitted set and being a subset of
+               it, and the only other copy of it on the figure is the centre's at
+               9.8 CSS px, under this review's floor. See
+               `figure.caveats_for_the_page`. -->
+          <p id="figure-caveats" class="figure-caveats"></p>
+        </div>
         <aside id="decode">
           <div id="cell-states"></div>
           <details id="scales" open>

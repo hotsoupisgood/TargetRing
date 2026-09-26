@@ -1147,10 +1147,24 @@ class TestV30TheExportAndTheAppMayDiffer:
         assert "Mouse-phenotype ring" not in w, "the app render still carries the footer"
         assert summary.split(" · ")[0] not in w, "the app has an Invariants tab"
         assert len(w) < len(a), (len(w), len(a))
-        # And it points at where the PAGE keeps them, not at a caption file a
+        # And where it points, it points at the PAGE -- never at a caption file a
         # reader of a web page has never been handed.
-        assert "Drop ledger tab" in w and "What this is not tab" in w
+        #
+        # v3.2 / round 2 A4: the `What this is not` pointer used to be a clause on
+        # this render's own caveat line, and that line is what had to leave the
+        # canvas for the circle to fit a 900 px window. It is on the page now, in
+        # `#figure-caveats`, directly under the circle and at 13 px rather than
+        # 15.05 -- checked in `TestUXv3Round2ThePageAReaderWorksIn`. What is
+        # unchanged, and is the half of this assertion that was ever load-bearing,
+        # is that the app render does not send its reader to a file.
+        assert "Drop ledger tab" in w, (
+            "the app render's own pointer to where the dropped genes are")
         assert "the caption" not in w
+        from targetring.figure import caveats_for_the_page
+        assert any("What this is not tab" in c for c in
+                   caveats_for_the_page(ORDER_NOTE, [], "")[1]), (
+            "the clauses this render handed to the page no longer point at the "
+            "tab that holds the rest")
         # The canvas is 1.8 in shorter, which is what the app gets out of it:
         # the same circle (it is width-bound on both) filling more of the screen
         # at a given page width.
@@ -1449,28 +1463,62 @@ class TestUXv3TheTwoThingsThatSurviveWhateverAnimatesAway:
         assert '$("#cell-states").innerHTML' in js
         assert "the four cell states" in js
 
-    def test_the_comparability_sentence_is_never_behind_a_click(self) -> None:
-        """Rule 2, first clause. It is a full-width band of its own, above the
-        figure row."""
-        html = _html()
-        assert not _inside_a_disclosure(html, "comparability")
-        assert html.index('id="comparability"') < html.index('class="figure-row"'), (
-            "a first-time viewer must meet the sentence before the figure, not "
-            "after scrolling past it")
+    def test_the_comparability_sentence_clears_the_floor_on_the_app_render(
+            self, tmp_path: Path) -> None:
+        """Rule 2, and v3.2 / round 2 A6 is where this test changed shape.
 
-    def test_the_comparability_sentence_is_also_on_the_circle_itself(self) -> None:
-        """Rule 2, second clause, and the one A2 was actually failing: the
-        sentence was in the SVG at 6.14 CSS px in a corner. Collapsed is not the
-        same as absent, and neither is present-and-unreadable. It is on the page
-        at 14.5 px AND still on the render, where
-        `assert_figure_states_the_minimum` will not let any layout drop it."""
-        from targetring.figure import COMPARABILITY_CLAIM
-        js, html = _js(), _html()
-        assert "s.comparability" in js
-        assert 'id="comparability"' in html
-        # and the app render still carries it, so a screenshot of the figure
-        # alone is not a figure that lies.
-        assert COMPARABILITY_CLAIM  # named constant, read by drawing and check
+        Round 1 held rule 2 by asking whether an amber HTML band existed and
+        whether it preceded the figure row. Round 2's A6 found that the band and
+        the render's own banner were BOTH there, eight pixels apart, printing the
+        same 47 characters — `UX-v1-mvp.md`'s noise finding restored — and that
+        only one of the two fixes had been needed: round 1's objection to the
+        in-SVG copy was that it was *"178 x 7 CSS px in the top-right corner"*,
+        an objection to its SIZE, which the canvas change answered by itself.
+
+        So the band went and this assertion got STRONGER rather than weaker. It
+        no longer asks whether an element is in the markup — a question a grep
+        answers and a reader cannot — it measures the sentence as it is actually
+        drawn, at the 1040 px the app gives the figure, against this review's own
+        12.0 CSS px floor. That is what rule 2 was always about: "present at
+        6 px in a corner" was never compliance.
+        """
+        from targetring.figure import COMPARABILITY_CLAIM, WEB, WEB_BANNER_PT
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / "web.svg"
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+               region="Lung", out_svg=out, input_count=14, rendered_count=14,
+               ordering_note=ORDER_NOTE, layout="web", ledger_counts={},
+               provenance="run T1 · abc123")
+        text = " ".join("".join(el.itertext()) for el in ET.parse(out).getroot()
+                        .iter("{http://www.w3.org/2000/svg}text"))
+        assert COMPARABILITY_CLAIM in re.sub(r"\s+", " ", text), (
+            "the app render does not carry the sentence at all, and it is the "
+            "only copy of it on the screen since A6 removed the HTML band")
+        # 1040 px is the panel the app gives the figure once the 330 px decode
+        # panel and the 18 px gap are taken; `ux_v3_measure.py` carries the same
+        # constant and round 1's re-review is where it was corrected from 1388.
+        as_seen = WEB_BANNER_PT * (1040.0 / (WEB.figsize[0] * 72.0))
+        assert as_seen >= 12.0, (
+            f"the comparability sentence is drawn at {as_seen:.2f} CSS px on a "
+            f"1440x900 laptop, under this review's 12.0 px floor. Rule 2 says "
+            f"it is never behind a click, and round 1 established that 'present "
+            f"at 6 px in a corner' is the same outcome by another route")
+
+    def test_the_sentence_is_not_printed_twice_on_the_same_screen(self) -> None:
+        """A6 itself, held by a test so round 3 cannot restore the band while
+        tidying. The render draws it; the page must not draw it again."""
+        html, css, js = _html(), (STATIC / "app.css").read_text(), _js()
+        assert 'id="comparability"' not in html, (
+            "the amber HTML band is back: it and the render's own banner are the "
+            "same 47 characters eight pixels apart (round 2 A6)")
+        assert "s.comparability" not in js, (
+            "the page is drawing the comparability sentence again as well as the "
+            "render")
+        # Comments stripped first: this file explains at length why the band went,
+        # and a rule and a paragraph about a rule are different things.
+        rules = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+        assert ".comparability" not in rules
 
     def test_the_one_thing_that_may_collapse_says_what_it_opens(self) -> None:
         """No dead end. `#scales` is the reference a reader consults for a
@@ -1684,3 +1732,245 @@ class TestUXv3A1TextMayNotPrintOverText:
         from targetring.figure import SLIDE
         assert SLIDE.centre_scale == 1.15
         self._render(tmp_path, "slide", n=14)
+
+
+class TestUXv3Round2ThePageAReaderWorksIn:
+    """UX v3 round 2. Round 1 measured the artefacts; round 2 measured the page —
+    where things are, how far apart, and how much of it is visible at once —
+    and found three category-A defects, two of which round 1 had caused.
+
+    Each of these is the assertion that would have caught its finding before a
+    screenshot did, which is the only reason three rounds are worth running.
+    """
+
+    def _web(self, tmp_path: Path, n: int = 14, **kw):
+        genes = [f"GENE{i:03d}" for i in range(n)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / f"web-{n}.svg"
+        kw.setdefault("ledger_counts", {})
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+               region="Lung", out_svg=out, input_count=n, rendered_count=n,
+               ordering_note=ORDER_NOTE, layout="web",
+               provenance="run T1 · abc123", **kw)
+        return out
+
+    # --- A4: the figure fits one laptop viewport -------------------------------
+
+    def test_the_app_figure_fits_a_1440x900_viewport(self) -> None:
+        """A4. Round 1 bought type size by trading a 19.5 x 12.2 in canvas for a
+        nearly square 9.6 x 10.6, and at a fixed panel width an aspect change IS
+        a height change: the figure came out 1,148 px tall in a 900 px window, so
+        there was no scroll position at which the circle was whole.
+
+        The floor and the ceiling are both asserted. A canvas that fits but is
+        tiny would pass a height check and fail the review, so the circle has a
+        minimum too.
+        """
+        from targetring.figure import WEB
+        scale = 1040.0 / (WEB.figsize[0] * 72.0)
+        height_px = WEB.figsize[1] * 72.0 * scale
+        assert height_px <= 900.0, (
+            f"the app render is {height_px:.0f} px tall on a 1440x900 laptop; "
+            f"round 2 A4 is that there is then no scroll position at which the "
+            f"circle is whole")
+        circle_px = min(WEB.axes_box[2] * WEB.figsize[0],
+                        WEB.axes_box[3] * WEB.figsize[1]) * 72.0 * scale
+        assert circle_px >= 600.0, (
+            f"the circle is {circle_px:.0f} px across. A4's argument was that "
+            f"height was nearly free -- v3.0 drew it at 659 px -- so a canvas "
+            f"that fits the window by shrinking the figure has missed the point")
+
+    def test_type_size_did_not_pay_for_the_height(self) -> None:
+        """The arithmetic A4 rests on: `scale = panel_px / (width_in * 72)` has
+        no height term in it, so shortening the canvas costs no legibility at
+        all. Held as a test because it is the reason this fix was allowed to be
+        a canvas change rather than a compromise."""
+        from targetring.figure import WEB
+        scale = 1040.0 / (WEB.figsize[0] * 72.0)
+        assert WEB.figsize[0] == 9.6, "the width is what sets the type size"
+        assert WEB.label_size * scale >= 12.0, (
+            f"the gene labels are {WEB.label_size * scale:.2f} CSS px, under the "
+            f"12.0 floor -- round 1's whole A2 fix was buying this")
+
+    def test_the_render_still_states_the_minimum_with_the_caveats_on_the_page(
+            self, tmp_path: Path) -> None:
+        """A4's fix moved four caveat clauses off this canvas, and the guard that
+        makes such a move safe is `assert_figure_states_the_minimum`. It runs
+        inside `render`, so this test is that the web render draws at all -- but
+        FILTERED is the clause that had to stay, so it is checked by name on the
+        drawn text rather than trusted to the move."""
+        out = self._web(tmp_path, 14,
+                        filter_notes=["logfc >= 1.0 (kept genes with no value)"])
+        text = re.sub(r"\s+", " ", " ".join(
+            "".join(el.itertext()) for el in ET.parse(out).getroot()
+            .iter("{http://www.w3.org/2000/svg}text")))
+        assert "FILTERED" in text, (
+            "the app render no longer says it is filtered. That clause is the "
+            "difference between this circle being the submitted set and being a "
+            "subset of it, and it is the one A4 kept on the canvas")
+        assert "logfc >= 1.0" in text
+
+    def test_the_clauses_that_moved_are_handed_over_rather_than_dropped(
+            self) -> None:
+        """`caveats_for_the_page` returns both halves, and the page half is
+        non-empty and carries the safety caveat and the spoke order. A fix that
+        deleted them instead of moving them would be this review producing the
+        defect it exists to find."""
+        from targetring.figure import SAFETY_RING_CAVEAT, caveats_for_the_page
+        keep, page = caveats_for_the_page(ORDER_NOTE, [], "a FIXED 26° gap")
+        assert keep == "", "nothing to say about filters on an unfiltered run"
+        body = " ".join(page)
+        assert SAFETY_RING_CAVEAT in body
+        assert ORDER_NOTE in body
+        assert "26°" in body
+        keep, page = caveats_for_the_page(ORDER_NOTE, ["logfc >= 1.0"], "")
+        assert keep.startswith("FILTERED") and "logfc >= 1.0" in keep
+
+    def test_the_page_draws_the_handed_over_clauses_and_not_behind_a_click(
+            self) -> None:
+        html, js = _html(), _js()
+        assert 'id="figure-caveats"' in html
+        assert not _inside_a_disclosure(html, "figure-caveats"), (
+            "a caveat behind a click is a caveat nobody read")
+        assert html.index('id="figure"') < html.index('id="figure-caveats"'), (
+            "the caveats belong under the circle they are about")
+        assert "s.figure_caveats" in js, (
+            "the page must draw what the render handed it, not a second copy of "
+            "the same sentences written out in JavaScript")
+
+    def test_the_wedge_gap_survives_even_where_its_names_do_not(self) -> None:
+        """A4's other half. The 26° gap is what keeps 12 o'clock clear of spoke
+        labels, which is what lets the comparability banner be drawn large in the
+        corner at all -- at `wedge_deg=0` a spoke label moves to the top and the
+        banner lands 20.7 px inside it. So the gap stays on the app render and
+        only the twelve names leave, to the panel that draws them at 13 px."""
+        from targetring.figure import AUDIT, SLIDE, WEB
+        assert WEB.wedge_deg == 26.0
+        assert WEB.wedge_labels_in_svg is False
+        assert AUDIT.wedge_labels_in_svg is True
+        # The slide has no gap at all, so the flag is moot there and must not be
+        # the thing that decides it.
+        assert SLIDE.wedge_deg == 0.0
+
+    def test_the_render_does_not_claim_a_ring_name_gap_it_did_not_fill(
+            self, tmp_path: Path) -> None:
+        """COUNCIL V5, one word in. The gap is reserved on the app render and
+        holds no names, so a figure that calls it "the ring-name gap" or says the
+        names are "inside the circle" is describing a geometry it does not have.
+        `wedge_note` and `clock_phrase` derive the wording from the layout."""
+        from targetring.figure import AUDIT, WEB, clock_phrase, wedge_note
+        assert "reserved gap" in clock_phrase(WEB)
+        assert "ring-name gap" in clock_phrase(AUDIT)
+        web = wedge_note(WEB, 14, 2.0, short=True)
+        assert "reserved at 12 o'clock" in web
+        assert "inside the circle" not in web
+        assert "panel beside this figure" in web
+        # and it still states what the gap cost, which was Puck's condition on
+        # the wedge existing at all.
+        assert "°" in web and "full circle" in web
+        out = self._web(tmp_path, 14)
+        names = [el.get("{http://www.w3.org/2000/svg}id") or el.get("id")
+                 for el in ET.parse(out).getroot().iter()]
+        assert not [n for n in names if n and n.startswith("ringname|")], (
+            "the twelve wedge ring names are back in the app SVG at 9.07 px, "
+            "which is round 1's largest under-floor exception restored")
+
+    def test_the_export_keeps_its_ring_names_inside_the_circle(
+            self, tmp_path: Path) -> None:
+        """The other side of the same flag: the audit render is a file that
+        leaves the app and has no panel beside it."""
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / "audit.svg"
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+               region="Lung", out_svg=out, input_count=14, rendered_count=14,
+               ordering_note=ORDER_NOTE, layout="audit", ledger_counts={},
+               provenance="run T1 · abc123")
+        ids = [el.get("id") for el in ET.parse(out).getroot().iter()]
+        assert len([i for i in ids if i and i.startswith("ringname|")]) == 12, (
+            "the export lost the ring names; UX-v1-mvp.md A5 is binding on it")
+
+    # --- A5: the page and the figure cannot disagree about the version ---------
+
+    def test_the_page_and_the_figure_cannot_disagree_about_the_version(
+            self) -> None:
+        """A5. `index.html` said `targetring v1` in its `<title>` and its `<h1>`
+        while every artefact drew `targetring v2`, so one screenshot carried both
+        — the header at the top and the middle of the circle 1,400 px below it.
+        COUNCIL V5's defect in the chrome: an artefact making a false claim about
+        itself. It survived v2.1 through v3.1 because nothing asserted the two
+        agreed, so this is that assertion rather than two corrected words."""
+        from targetring.figure import FIGURE_TITLE, TOOL_NAME, TOOL_VERSION
+        html = _html()
+        assert FIGURE_TITLE == f"{TOOL_NAME} {TOOL_VERSION}"
+        title = re.search(r"<title>(.*?)</title>", html, re.S)
+        assert title and title.group(1).strip() == FIGURE_TITLE, (
+            f"<title> says {title and title.group(1).strip()!r}; the figure "
+            f"draws {FIGURE_TITLE!r}")
+        h1 = re.search(r"<h1>(.*?)</h1>", html, re.S)
+        assert h1, "the page has no <h1>"
+        words = " ".join(re.sub(r"<[^>]+>", " ", h1.group(1)).split())
+        assert words == FIGURE_TITLE, (
+            f"the <h1> reads {words!r} and the circle inside it reads "
+            f"{FIGURE_TITLE!r}")
+
+    def test_every_artefact_reads_the_version_from_the_one_constant(self) -> None:
+        """The literal was in `_draw_centre` and again in `render_legend` and a
+        third time in the page. Two of the three agreed, which is how the third
+        survived eleven releases."""
+        import inspect
+        from targetring import figure as F
+        for fn in (F._draw_centre, F.render_legend):
+            src = inspect.getsource(fn)
+            assert "targetring v" not in src, (
+                f"{fn.__name__} still hard-codes a version string")
+            assert "FIGURE_TITLE" in src
+
+    # --- B7: the controls and the result on one screen -------------------------
+
+    def test_the_form_collapses_once_there_is_a_figure(self) -> None:
+        """B7. The form is 1,053 px of a 2,487 px document, so the figure began
+        at y = 1,279 and changing one threshold meant scrolling past four
+        sections of help text and back. It collapses after the first render —
+        after, not before, because until you have a figure the help is the page.
+        """
+        html, js = _html(), _js()
+        assert 'id="controls"' in html
+        assert _inside_a_disclosure(html, "filterable"), (
+            "the filter help is not inside the collapse, so B7's 1,053 px are "
+            "still between the reader and their figure")
+        assert '<details id="controls" open>' in html, (
+            "it must start open: a first-time reader meets the help, not a "
+            "closed box")
+        assert re.search(r'\$\("#controls"\)[\s\S]{0,80}open = false', js), (
+            "nothing closes it after a run, so B7 is unfixed at the moment it "
+            "matters")
+
+    def test_the_collapsed_form_is_not_a_dead_end(self) -> None:
+        """The same contract `#scales` has, because this review's rule about dead
+        ends is about the page and not about one panel: the control that reopens
+        it is visible, says what it opens, and says how much is behind it."""
+        html = _html()
+        m = re.search(r'<details id="controls"[^>]*>\s*<summary>(.*?)</summary>',
+                      html, re.S)
+        assert m, "the collapse has no summary at all"
+        words = " ".join(re.sub(r"<[^>]+>", " ", m.group(1)).split())
+        assert re.search(r"\d", words), (words, "no count in the closed state")
+        for word in ("table", "region", "order", "filter"):
+            assert word in words.lower(), (word, words)
+
+    def test_the_button_that_draws_the_figure_stays_outside_the_collapse(
+            self) -> None:
+        """Button placement, which Puck named. The help text is what collapses;
+        the control that acts on it is not part of it."""
+        html = _html()
+        assert not _inside_a_disclosure(html, "go")
+        assert not _inside_a_disclosure(html, "status")
+
+    def test_neither_survivor_was_swallowed_by_the_new_collapse(self) -> None:
+        """The failure mode a third `<details>` on this page introduces, named
+        and checked rather than noticed later."""
+        html = _html()
+        assert not _inside_a_disclosure(html, "cell-states")
+        assert not _inside_a_disclosure(html, "figure")
+        assert not _inside_a_disclosure(html, "counts")

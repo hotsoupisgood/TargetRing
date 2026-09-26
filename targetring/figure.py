@@ -338,6 +338,32 @@ SAFETY_RING_CAVEAT = "NOT evidence of safety"
 # so the check cannot pass against a sentence the figure no longer draws.
 COMPARABILITY_CLAIM = "EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS"
 
+# v3.2 / UX v3 round 2 A5. What this tool calls itself, in one place.
+#
+# It was a literal in `_draw_centre` and another in `render_legend`, and the page
+# had a third opinion: `index.html` said `targetring v1` in its `<title>` and its
+# `<h1>` from v2.1 through v3.1, so a screenshot of the app carried "v1" in the
+# header and "v2" in the middle of the circle 1,400 px below it. Nothing asserted
+# they agreed, which is how it survived eleven releases.
+#
+# `test_the_page_and_the_figure_cannot_disagree_about_the_version` reads this
+# constant and the page's own markup, so the next disagreement is a red test
+# rather than a screenshot somebody notices.
+TOOL_NAME = "targetring"
+TOOL_VERSION = "v2"
+FIGURE_TITLE = f"{TOOL_NAME} {TOOL_VERSION}"
+
+# v3.2 / UX v3 round 2 A4 and A6. The point size of the comparability banner on
+# the app render, which since A6 is the ONLY copy of that sentence a reader
+# meets. It is a named constant because it is now load-bearing twice over: rule 2
+# of this review requires it above the 12.0 CSS px floor at the width the app
+# gives the figure (scale 1.5046, so 7.98 pt is the floor and this is the margin
+# above it), and A4's vertical budget is decided partly by how many lines it
+# takes. `scripts/ux_v3_web_fit.py` reads it, and
+# `test_the_comparability_sentence_clears_the_floor_on_the_app_render` holds it
+# to the floor rather than to a number somebody remembered to update.
+WEB_BANNER_PT = 11.0
+
 RING_SPECS: tuple[RingSpec, ...] = (
     # V17. logFC is signed, zero is meaningful, and up and down are opposite
     # rather than more and less of one thing -- so a sequential ramp on it is
@@ -938,6 +964,36 @@ class Layout:
     # unless it says otherwise -- the safe direction for a flag whose wrong
     # value produces a figure a reader cannot decode.
     scales_in_svg: bool = True
+    # v3.2 / UX v3 round 2 A4. Whether the twelve ring names are drawn INSIDE the
+    # 12 o'clock gap, or only in the surface's own furniture. `wedge_deg` decides
+    # whether the gap exists; this decides whether it holds text.
+    #
+    # They are two questions and round 2 is where that became visible. A4 wanted
+    # the app figure inside one 1440 x 900 viewport, which caps the canvas at
+    # 8.31 in and the circle at about 640 px. The names need much more than that:
+    # the gap is a triangle, so a name's room is `r · tan(13°)`, and
+    # `Tractability (suggested)` sits on ring 3 at a small radius —
+    # `assert_wedge_labels_fit` refused every circle under roughly 790 px, which
+    # is the 10.6 in canvas A4 exists to shorten (`logs/v32-web-fit-sweep2.txt`,
+    # 14 more candidates after the footer stopped being the binding wall).
+    #
+    # So on the app render the gap stays and the names go. The gap is doing a
+    # second job there that is worth its 26°: it keeps 12 o'clock clear of spoke
+    # labels, which is what lets the comparability banner be drawn large in the
+    # corner at all — with `wedge_deg=0` a spoke label moves to the top and the
+    # banner lands 20.7 px inside it.
+    #
+    # Nothing is lost and one thing is gained. The names were round 1's LARGEST
+    # deliberate exception to the 12.0 px floor — twelve strings at 9.07 px,
+    # justified by "all twelve are numbered and named at 13 px in the panel",
+    # which is the same reasoning A6 used to delete the duplicated comparability
+    # band. Keeping an unreadable copy of a legible thing is what this review is
+    # against. `wedge_note` states which arrangement this render has, derived
+    # from the layout rather than written down twice (COUNCIL V5).
+    #
+    # Default True: a layout added later names its own rings unless it can say
+    # where else they are.
+    wedge_labels_in_svg: bool = True
 
 
 # v2.6 widens the audit canvas from 17.5 to 19.5 in and narrows the axes box to
@@ -1079,10 +1135,51 @@ SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.105, 0.345, 0.83),
 # refuses to draw this circle without the comparability claim -- which
 # `_draw_legend` now draws large in the corner instead of as a 6 px column
 # header.
-WEB = Layout("web", (9.6, 10.6), 8.0, (0.120, 0.175, 0.760, 0.700),
+# v3.2 / UX v3 round 2 A4. The canvas keeps its width and gives back its
+# height: 9.6 x 10.6 in becomes 9.6 x 8.2.
+#
+# Round 1 bought type size by trading a 19.5 x 12.2 in canvas for a nearly
+# square one, and at a fixed panel width an aspect change IS a height change.
+# The figure came out 1,148 px tall in a 900 px viewport -- so there was no
+# scroll position at which the circle was whole, on a page that put its top at
+# y = 1,279. Round 1 measured what a reader can read and not what a reader can
+# see at once.
+#
+# It costs nothing it did not have to cost, and the arithmetic is why:
+# `scale = panel_px / (width_in * 72)` involves no height at all, so every
+# string keeps its 1.5046 and its 12.04 CSS px. What height buys is the circle,
+# because the axes box stops being width-bound: 0.760 x 9.6 = 7.30 in of width
+# against 0.715 x 8.25 = 5.90 in of height, so the radius is height-bound now at
+# 2.95 in where it was width-bound at 3.65.
+#
+#   before round 1   19.5 x 12.2 in   869 px tall   circle 659 px   type 7.91 px
+#   after round 1     9.6 x 10.6 in  1148 px tall   circle 790 px   type 12.04 px
+#   now               9.6 x  8.25 in  894 px tall   circle 639 px   type 12.04 px
+#
+# Nearly the circle v3.0 had, with type 1.5x the size it was, whole inside one
+# laptop viewport with 6 px to spare. A 900 px viewport caps the canvas at
+# 8.31 in and this is 8.25, deliberately not 8.30: `figure 899 px` also passed
+# every assertion and one pixel is not a margin.
+#
+# **The margins were not guessed and they were not free either.** A4 said to let
+# the geometry assertions arbitrate them; they arbitrated 97 candidates and
+# rejected all 97 (`logs/v32-web-sweep.txt`, `logs/v32-web-fit-sweep.txt`), and
+# two blocks had to leave this canvas before any triple passed. Both are in
+# `docs/reviews/UX-v3-rounds.md` §2.2, both follow §v3.0's own rule for this
+# layout -- *drop exactly what the page already says* -- and neither relaxes an
+# assertion: the four-to-five-line caveat block (`caveats_for_the_page`) and the
+# twelve ring names in the wedge (`Layout.wedge_labels_in_svg`). What is left
+# above the circle is the comparability banner and what is left below it is the
+# FILTERED clause and the spoke labels' overhang, and
+# `assert_no_text_over_the_rings`, `assert_text_within_canvas` and
+# `assert_text_does_not_overprint_text` are what settled 0.140 and 0.145 --
+# 0.725 of axes height was refused at 50 genes with the banner 4.0 px off
+# `GENE049 (k=9/9)`, which is the clearance exactly and therefore not a margin.
+WEB = Layout("web", (9.6, 8.25), 8.0, (0.120, 0.145, 0.760, 0.715),
              False, False, 0.0, 1.0, False, (0.762, 0.035, 0.232, 0.930),
              7.4, 6.6, 42, True, False,
-             wedge_deg=26.0, wedge_label_size=7.4, scales_in_svg=False)
+             wedge_deg=26.0, wedge_label_size=7.4, scales_in_svg=False,
+             wedge_labels_in_svg=False)
 
 # v3.0, Puck: *"we could have the download download legend as a separate
 # image"* -- "circle on one slide, legend on another, sized independently".
@@ -1126,6 +1223,13 @@ class FigureResult:
     # the run actually did rather than trusting the renderer.
     ordering_note: str = ""
     filter_notes: list[str] = field(default_factory=list)
+    # v3.2 / UX v3 round 2 A4. The caveat clauses the app render handed to the
+    # page instead of drawing them under its own circle. Returned rather than
+    # recomputed by the page for the reason `scale_rows` exists: the wedge clause
+    # contains this run's own spoke angles, and a second implementation of it
+    # could describe a geometry the figure does not have (COUNCIL V5). Empty on
+    # every layout that draws its own footer.
+    web_caveats: list[str] = field(default_factory=list)
 
 
 def render(
@@ -1322,8 +1426,12 @@ def render(
     #
     # deg=0 is 12 o'clock, which is the middle of the gap by construction
     # (sectors run from wedge/2 to 360-wedge/2).
+    # v3.2 / UX v3 round 2 A4. The gap is reserved on every layout that asks for
+    # one; the NAMES inside it are drawn only where there is nowhere else to put
+    # them. See `Layout.wedge_labels_in_svg` for why the app render is the one
+    # place there is somewhere else.
     wedge_labels = []
-    if wedge > 0:
+    if wedge > 0 and lay.wedge_labels_in_svg:
         for spec in rings:
             t = ax.text(0.0, ring_mid_r[spec.key], spec.wedge_label,
                         size=lay.wedge_label_size, ha="center", va="center",
@@ -1380,12 +1488,15 @@ def render(
     # run. At three genes the footer block reaches y=112 px and the column's
     # last line, `derived`, sits at y=103: the column printed into the footer
     # and every assertion passed. Measured rather than re-guessed.
-    stamps = _draw_stamps(fig, notes, provenance, lay,
-                          slide_line(ordering_note, filter_notes,
-                                     wedge_note(lay, len(genes), space, short=True),
-                                     where=("see the What this is not tab"
-                                            if lay.name == "web"
-                                            else "see the caption")))
+    wshort = wedge_note(lay, len(genes), space, short=True)
+    footer_line = slide_line(ordering_note, filter_notes, wshort,
+                             where=("see the What this is not tab"
+                                    if lay.name == "web" else "see the caption"))
+    web_caveats: list[str] = []
+    if not lay.draw_footer and not lay.scales_in_svg:
+        footer_line, web_caveats = caveats_for_the_page(
+            ordering_note, filter_notes, wshort)
+    stamps = _draw_stamps(fig, notes, provenance, lay, footer_line)
     text_blocks += _draw_legend(fig, rings, norms, cmaps,
                                 _column_above_the_footer(fig, lay, stamps),
                                 banner_width=_free_width_beside(fig, stamps, 0.018))
@@ -1448,7 +1559,8 @@ def render(
     return FigureResult(out_svg, csv_rows, cell_ids, len(cell_ids),
                         caption=cap,
                         ordering_note=ordering_note,
-                        filter_notes=list(filter_notes))
+                        filter_notes=list(filter_notes),
+                        web_caveats=web_caveats)
 
 
 def _rings_norms_cmaps(cells_by_ring):
@@ -1552,7 +1664,7 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
     # adjust the centre would adjust the dead one.
     Y = 0.5
     out = [
-        ax.text(0.5, Y, "targetring v2", ha="center", va="center", size=15 * k,
+        ax.text(0.5, Y, FIGURE_TITLE, ha="center", va="center", size=15 * k,
                 weight="bold", transform=ax.transAxes),
         ax.text(0.5, Y, region, ha="center", va="center", size=11 * k,
                 transform=ax.transAxes, color="#333333"),
@@ -1969,12 +2081,22 @@ def _draw_legend(fig, rings, norms, cmaps, lay, banner_width: float = 1.0) -> li
         # to the canvas. See `_free_width_beside` -- the two corners met when the
         # canvas went from 19.5 in to 9.6, and the new overprint check is what
         # said so rather than a screenshot three rounds later.
-        pt = 11.0
+        pt = WEB_BANNER_PT
+        # v3.2 / round 2 A4. Two lines, not three, and the line it lost was
+        # bought with 13 px of top margin rather than with type size.
+        #
+        # This banner is one of the two blocks the circle was trapped between:
+        # at three lines it reached to within 0.6 px of `GENE000 (k=9/9)`, the
+        # top spoke label, on every canvas height where the circle was still
+        # large enough for `fit_wedge_labels` to place twelve ring names in the
+        # 26° gap (`logs/v32-web-sweep.txt` — 83 candidates, none passing). The
+        # second sentence said the same thing in 89 characters that it says in
+        # 78, and the shorter one wraps to one line at the width left beside the
+        # run-id stamp.
         text = _wrap_to_canvas(
             fig,
             COMPARABILITY_CLAIM + "\n"
-            "a colour means nothing outside its own ring — the scale for each "
-            "one is beside this figure",
+            "decode every cell against that ring's own scale, on the right",
             pt, margin=(1.0 - banner_width) / 2.0)
         return [fig.text(0.018, 0.988, text, fontsize=pt, va="top", ha="left",
                          color="#8a4b00", weight="bold")]
@@ -2147,7 +2269,12 @@ def clock_phrase(lay) -> str:
     the sentence is derived from the layout instead of written down twice.
     """
     if lay.wedge_deg > 0:
-        return "runs clockwise from the ring-name gap at 12 o'clock"
+        # v3.2 / round 2 A4: the gap is reserved on the app render too, and it is
+        # still where the circle starts — but it holds no names there, so calling
+        # it the ring-name gap would be V5 again, one word further in.
+        return ("runs clockwise from the ring-name gap at 12 o'clock"
+                if lay.wedge_labels_in_svg else
+                "runs clockwise from the reserved gap at 12 o'clock")
     return "starts at 12 o'clock and runs clockwise"
 
 
@@ -2187,6 +2314,25 @@ def wedge_note(lay, n_genes: int, space: float, short: bool = False) -> str:
         )
     got = (360.0 - lay.wedge_deg - (n_genes - 1) * space) / n_genes
     full = (360.0 - n_genes * space) / n_genes
+    if not lay.wedge_labels_in_svg:
+        # v3.2 / round 2 A4. The app render: the gap is reserved and costs the
+        # spokes exactly what it costs on the audit render, and it holds no
+        # names. Both halves are said, because a reader who can see a gap and is
+        # told nothing about it has been left to guess — Puck's own condition on
+        # the wedge — and because a reader who is told the names are "inside the
+        # circle" on a render where they are not is reading COUNCIL V5.
+        where = ("each ring is numbered and named in the panel beside this "
+                 "figure, with its own scale")
+        if short:
+            return (f"a FIXED {lay.wedge_deg:g}° gap is reserved at 12 o'clock — so spokes "
+                    f"are {got:.2f}°, not the {full:.2f}° of a full circle; {where}")
+        return (
+            f"A {lay.wedge_deg:g}° gap is reserved at 12 o'clock. It is FIXED — it does not "
+            f"shrink as genes are added — so the spokes carry the cost: {n_genes} spokes at "
+            f"{got:.2f}° against the {full:.2f}° a full circle would give "
+            f"({(got / full - 1) * 100:+.1f}%).\nThe ring names are not drawn inside it on "
+            f"this render: {where}."
+        )
     if short:
         # UX A4's rule for the slide: one line, and it has to carry the claim
         # rather than point at a caption somebody has to be handed. The three
@@ -2349,6 +2495,52 @@ def slide_line(ordering_note: str, filter_notes: Sequence[str],
             + "\n" + base)
 
 
+def caveats_for_the_page(ordering_note: str, filter_notes: Sequence[str],
+                        wedge_short: str = "") -> tuple[str, list[str]]:
+    """v3.2 / UX v3 round 2 A4. Split the app render's caveat line in two: what
+    the circle keeps, and what the page draws in HTML beside it.
+
+    Returns `(what the render still draws, what the page must draw)`.
+
+    A4 asked for a `web` canvas short enough that the circle is whole in a
+    1440 x 900 viewport, and said to let the geometry assertions arbitrate the
+    margins. They arbitrated and returned nothing: 83 (height, bottom,
+    axes-height) triples in `logs/v32-web-sweep.txt` and 14 more in
+    `logs/v32-web-fit-sweep.txt`, and every one failed. The walls are 25 px
+    apart — under a bottom margin of about 0.21 this line lands inside the
+    bottom spoke labels, and over it the circle is too small for
+    `assert_wedge_labels_fit` to place twelve ring names in the 26° gap. Neither
+    is a margin that can be nudged; the line itself is four to five wrapped
+    lines of 10 pt, 0.83 in of a 8.2 in canvas, and that is what had to give.
+
+    So this is A2's move applied to the footer, and §v3.0's own rule for this
+    layout carried out rather than half-carried-out: *"`web` drops exactly what
+    the page itself already says"*. What the render keeps is the one clause a
+    reader must not miss and the page cannot state as loudly — **FILTERED** —
+    because it is the difference between this circle being the submitted set and
+    a subset of it, and the only other copy of it is the centre's 6.5 pt one
+    (9.8 CSS px, under this review's floor). The rest goes to the page at 13 px,
+    in document order directly under the circle, not behind a click.
+
+    **Nothing is relaxed by this and that is checkable rather than asserted in a
+    comment.** `assert_figure_states_the_minimum` still passes on the web render
+    on its own strings: the title and the comparability claim from the banner,
+    both counts from the hole, and `FILTERED` from this line and from the centre.
+    `assert_footer_is_true` reads `notes + caption`, which are unchanged — the
+    audit render and `caption.txt` carry every clause they always did, and the
+    slide render is not touched at all.
+    """
+    keep = ("FILTERED — not your whole submitted set: " + " · ".join(filter_notes)
+            if filter_notes else "")
+    page = [f"The safety ring is {SAFETY_RING_CAVEAT}.",
+            ordering_note,
+            "Rings are scaled independently of one another."]
+    if wedge_short:
+        page.append(wedge_short[0].upper() + wedge_short[1:])
+    page.append("Every caveat this run carries is in the What this is not tab.")
+    return keep, [p for p in page if p]
+
+
 def _column_above_the_footer(fig, lay, stamps) -> "Layout":
     """Raise the scale column's floor to clear the footer this run produced.
 
@@ -2473,8 +2665,15 @@ def _draw_stamps(fig, notes: Sequence[str], provenance: str, lay=None,
         # the first line ran 43 pt off the left edge and 43 off the right, and
         # `assert_text_within_canvas` refused the render. Re-wrapping rather
         # than shrinking, because shrinking here is UX A4.
-        out.append(fig.text(0.5, 0.008, _wrap_to_canvas(fig, slide_text, 10.0),
-                            fontsize=10, ha="center", va="bottom", color="#8a4b00"))
+        # v3.2 / round 2 A4: on the app render this is the FILTERED clause alone
+        # and nothing else, so on an unfiltered run there is no line to draw at
+        # all. Not drawn rather than drawn empty: an empty artist still has a
+        # box, and `_free_width_beside` and `_column_above_the_footer` both
+        # measure boxes.
+        if slide_text:
+            out.append(fig.text(0.5, 0.008, _wrap_to_canvas(fig, slide_text, 10.0),
+                                fontsize=10, ha="center", va="bottom",
+                                color="#8a4b00"))
     else:
         out.append(fig.text(0.5, 0.008, "\n".join(notes),
                             fontsize=(lay.footer_size if lay else 7.5),
@@ -2615,7 +2814,7 @@ def render_legend(
     # caveat wall. It was small *and* empty. Three bands now: identity and cell
     # states top-left, three scale columns filling the width, caveats along the
     # bottom in three columns of their own.
-    blocks.append(fig.text(0.025, 0.994, "targetring v2 — legend", fontsize=21,
+    blocks.append(fig.text(0.025, 0.994, f"{FIGURE_TITLE} — legend", fontsize=21,
                            weight="bold", va="top", ha="left", color="#111111"))
     blocks.append(fig.text(0.025, 0.947, f"{region} · {input_count} genes in, "
                                          f"{rendered_count} rendered",
@@ -2783,7 +2982,7 @@ def assert_figure_states_the_minimum(drawn: str, input_count: int,
     drop these four and still render.
     """
     missing = []
-    if "targetring" not in drawn:
+    if TOOL_NAME not in drawn:
         missing.append("what it is (the title)")
     if COMPARABILITY_CLAIM not in drawn:
         missing.append("that each ring has its own scale and colours do not "
@@ -2816,7 +3015,7 @@ def assert_artefacts_are_their_own_layout(runs_dir: Path) -> None:
 
     A canvas size is the cheapest thing that distinguishes these renders and it
     is decided entirely by the Layout, so it is what gets checked. Every layout
-    here has a different one, deliberately: 19.5x14 audit, 19.5x12.2 web,
+    here has a different one, deliberately: 19.5x14 audit, 9.6x8.25 web,
     16x9 slide and legend.
     """
     from PIL import Image
@@ -3503,4 +3702,5 @@ __all__ = ["render", "RING_SPECS", "RingSpec", "STATE_STYLE", "VALUE_CMAP",
            "assert_figure_states_the_minimum", "assert_renders_agree",
            "assert_artefacts_are_their_own_layout", "assert_legend_panels_do_not_overlap",
            "assert_the_id_rule_is_kept", "assert_text_does_not_overprint_text",
+           "FIGURE_TITLE", "TOOL_NAME", "TOOL_VERSION",
            "stack_centre_blocks", "CENTRE_BLOCK_MID", "scale_rows", "STATE_STYLE"]

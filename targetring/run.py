@@ -124,6 +124,13 @@ class RunResult:
     # figure beside it, which is the failure mode a detachable legend has and
     # an attached one should not.
     cells_by_ring: dict[str, Any] = field(default_factory=dict)
+    # v3.2 / UX v3 round 2 A4. The caveat clauses the app render stopped drawing
+    # under its own circle so that the circle would fit one 1440 x 900 viewport.
+    # Taken from the web render's own `FigureResult` rather than rebuilt here, for
+    # the same reason `cells_by_ring` is: one of these sentences states this run's
+    # own spoke angles, and a second implementation of it could describe a
+    # geometry the figure does not have (COUNCIL V5).
+    web_caveats: list[str] = field(default_factory=list)
 
 
 async def run_analysis(
@@ -563,8 +570,8 @@ async def run_analysis(
     # list in the hole, because the page carries both in its own furniture and
     # the 1.9 in they cost goes to the circle instead.
     web_svg = runs_dir / "figure-web.svg"
-    do_render(banner, conds, layout="web", svg=web_svg, write_png=False,
-              invariant_summary=inv_summary)
+    web_result = do_render(banner, conds, layout="web", svg=web_svg,
+                           write_png=False, invariant_summary=inv_summary)
     # ...and this is what makes saying yes to that safe. The two renders may
     # differ in furniture; if one CELL ever differed, the colleague reading the
     # PNG and the person at the screen would be reading different figures and
@@ -737,7 +744,7 @@ async def run_analysis(
         manifest_path=manifest_path, manifest=man, invariants=invariants,
         gene_order=gene_order, drawers=drawers, ledger=ledger, warnings=warnings,
         ordering=ordering, active_filters=filters_mod.as_dicts(active_filters),
-        cells_by_ring=cells_by_ring,
+        cells_by_ring=cells_by_ring, web_caveats=web_result.web_caveats,
     )
 
 

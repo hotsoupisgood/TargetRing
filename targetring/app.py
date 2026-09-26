@@ -309,6 +309,12 @@ async def scales(run_id: str) -> JSONResponse:
     return JSONResponse({
         "run_id": run_id,
         "comparability": COMPARABILITY_CLAIM,
+        # v3.2 / UX v3 round 2 A4. The caveat clauses the app render handed over
+        # so that its circle would fit one 1440 x 900 viewport. The page draws
+        # them at 13 px directly under the figure and never behind a click --
+        # A2's trade for the scale column, applied to the one remaining block
+        # that was forcing the canvas taller than the window.
+        "figure_caveats": r.web_caveats,
         "states": [{"key": k, "label": s["label"], "fill": s["fc"],
                     "hatch": s["hatch"], "edge": s["ec"]}
                    for k, s in STATE_STYLE.items()],

@@ -199,6 +199,14 @@ function render(b) {
   const sl = $("#show-ledger");
   if (sl) sl.onclick = () => showTab("ledger");
 
+  // v3.2 / UX v3 round 2 B7. The form is 1,053 px of a 2,487 px page and every
+  // word of its help text is worth reading exactly once. Closed on the first
+  // successful render — not on load, because before you have a figure the help
+  // IS the page — so the result starts near the top of the document instead of
+  // 1,279 px down it. The summary stays visible and says what it reopens.
+  const ctl = $("#controls");
+  if (ctl) ctl.open = false;
+
   // UX B4: after a run the figure was below the fold and the scroll did not move.
   $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -223,15 +231,11 @@ function render(b) {
 // scales. Read the CSS beside `.figure-row` for why only one of the three is
 // allowed to collapse.
 function renderDecode(s) {
-  $("#comparability").innerHTML =
-    `${esc(s.comparability)}<span>A colour means nothing outside its own ring —
-     read every cell against that ring's own scale, on the right. Nine of the
-     twelve ranges move with the gene set you submitted.</span>`;
-
-  // Always open, no toggle: rule 1 of the two this review holds across all
-  // three rounds. The three trial-activity colours are a separate group under
-  // a rule, because they belong to ring 8 and the four states belong to every
-  // ring — one box with seven undifferentiated rows was reading as one list.
+  // v3.2 / round 2 A6: no amber band here any more. The render draws the
+  // comparability sentence at 16.55 px in its own top-left corner and that is
+  // the copy the reader meets; a second one 8 px above it was the same claim
+  // twice. What the band had that the render does not is the range-drift
+  // clause, and it belongs beside the ranges.
   const act = s.rings.find((r) => r.key === "clinical_activity");
   $("#cell-states").innerHTML =
     `<h5>the four cell states</h5>` +
@@ -250,7 +254,21 @@ function renderDecode(s) {
       act.colours.map((c, i) => `<div class="state">
         <span class="sw" style="background:${esc(c)}"></span>
         <span>${esc(act.categories[i] || "")}</span></div>`).join("") +
-      `</div>` : "");
+      `</div>` : "") +
+    `<p class="drift">Nine of the twelve ranges move with the gene set you
+     submitted, so a colour is only true of this run.</p>`;
+
+  // v3.2 / UX v3 round 2 A4. The caveat clauses the app render handed to the
+  // page so that its circle would fit one 1440 x 900 viewport. Read from the
+  // render's own `FigureResult`, not rebuilt here: one of them states this run's
+  // spoke angles, and a second implementation of that sentence could describe a
+  // geometry the figure does not have (COUNCIL V5). 13 px, under the circle, no
+  // disclosure around it.
+  const cav = $("#figure-caveats");
+  if (cav) {
+    cav.innerHTML = (s.figure_caveats || [])
+      .map((c) => `<span>${esc(c)}</span>`).join("");
+  }
 
   $("#scale-rows").innerHTML = s.rings.map((r) => `
     <div class="scale">
