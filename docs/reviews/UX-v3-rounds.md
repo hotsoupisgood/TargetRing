@@ -826,3 +826,133 @@ screenshot.
    not behind a click, both of which it had to be, but B3's finding — *"two
    sentences with different jobs reading as one grey run-on"* — applies to five
    of them stacked. Round 3's.
+
+---
+
+# Round 3
+
+## 3.1 Review
+
+Rounds 1 and 2 took the app: round 1 the type on the artefacts, round 2 the page
+a reader works in. **Round 3 takes the two surfaces neither of them touched** —
+the artefact that gets projected, and the drawer — and then the strings that
+have been under the floor since before this review started and were deferred
+twice on purpose.
+
+Driven live at 1440 × 900 against the restarted server on `8db7106`; the same
+council list, the same fixture, the same instruments. Evidence:
+`logs/ux-v3-r2fix-typesizes.txt`, `logs/ux-v3-r3-probe.json`,
+`docs/reviews/ux-v3-shots/r2-*`.
+
+This is the last round, so it also inherits formally: **B8** (the drawer),
+**B9** (the 11.5 px strings), **B10** (the spoke-order duplicate), **B11** (the
+slide's 0.42 pt), and round 2's two hand-offs.
+
+### A. Would embarrass him in front of colleagues
+
+#### A7. On the slide — the artefact that gets projected — the comparability claim is 4.88 pt
+**Cost: highest. This is rule 2 failing on the one surface this review has never measured it on.**
+
+The rule that holds for all three rounds says *"each ring has its own scale;
+colours do not compare across rings" is never behind a click*, and round 1
+established what that means in practice: *"present at 6 px in a corner"* is the
+same outcome by a different route. Round 1 applied that to the app and fixed it
+there. **Nobody applied it to the slide.**
+
+Measured at the size the artefact exists for
+(`logs/ux-v3-r2fix-typesizes.txt`, `figure-slide.svg`):
+
+| string | in the file | at a full slide | at half a slide |
+|---|---|---|---|
+| **the comparability claim** | 5.86 pt | **4.88 pt** | **2.44 pt** |
+| the four cell states | 9.00 pt | 7.50 pt | 3.75 pt |
+| the gene labels | 11.50 pt | 9.58 pt | 4.79 pt |
+| `targetring v2` | 17.25 pt | 14.37 pt | 7.19 pt |
+
+It is 4.88 pt because it is not a banner on this render — it is the **header of
+the scale column**, sized at `scale_title_size × 0.95` and then fitted down by
+the column's own budget. On the app render the same sentence is 16.55 px and is
+the first thing above the circle. On the artefact that goes in front of other
+people it is a line of small print at the top of a column, and a reader at the
+back of a room cannot see it at all.
+
+This is the defect round 1 called A2, on the one render A2 did not cover,
+found only because round 2's fix made the app number so much better that the
+comparison became obvious.
+
+**Change:** the slide draws the claim at a size that clears **10.0 pt at a full
+slide** — 12.0 pt in a 16 in file — and the existing geometry assertions
+arbitrate where it goes. Half a slide is not claimed: A3 established in round 1
+that the half-slide floor and a dense 16:9 artefact are arithmetically
+incompatible, and this round does not get to quietly pretend otherwise.
+
+#### A8. The drawer is 5,621 px of flat scroll with no navigation, no collapse and a 28 × 39 px close button
+**Cost: high, and it is where Puck's animation ask lands hardest.**
+
+Measured live on BRAF at 1440 × 900 (`logs/ux-v3-r3-probe.json`):
+
+| | |
+|---|---|
+| scroll height | **5,621 px** |
+| viewports at 900 px | **6.25** |
+| headings | 8 `<h4>` plus the gene's own | 
+| tables | 4 |
+| collapsible sections | **0** |
+| close button | **28 × 39 px** (under the 44 px target) |
+| strings under 12.0 px inside it | **36** (24 `<th>`, 12 pills, all 11.5 px) |
+
+The sections are `your measurement`, `drug pipeline`,
+`trials — Open Targets clinicalReports`, `literature`,
+`mouse phenotype lead`, `safety liabilities`, `ChEMBL mechanisms` and
+`every ring, with its state`. A reader opens this to answer one question — what
+is this gene's pipeline, or what does the literature say — and gets all eight,
+in one column, in a fixed order, with no contents and nothing that closes.
+
+Round 1 called it B1 and said it *"should not survive three rounds"*. Round 2
+called it B8 and handed it here. This is the last round.
+
+**Change:** one `<details>` per section, the ones the drawer exists for
+(`your measurement`, `drug pipeline`, `literature`) open and the rest closed,
+each summary naming its contents and its count so no closed state is a dead end
+— the same contract `#scales` and `#controls` already hold. **The two untrusted
+sections carry their caveat in the summary rather than behind it**: a
+`mouse phenotype lead` collapsed to a bare heading would put COUNCIL M4's
+*"a lead, not a verdict"* one click away from a number, and AGENTS.md rule 6 is
+not a thing to hide. Close button to 44 × 44.
+
+### B. Minor friction
+
+**B12. Sixty-one strings on the page are 11.5 px** — B9's twenty-five in the
+Invariants and Drop ledger tabs, plus thirty-six more inside the drawer that
+B9 did not count because nobody had opened it with an instrument. They are all
+one rule: `th` and `.pill` at 11.5 px. The floor's own justification cites
+*"11.5 px table headers"* as this build's smallest existing thing — but the
+floor is 12.0, the drop ledger is *"the best thing in this app"* per
+`UX-v1-mvp.md`, and the gap is half a pixel. **Round 3's fix takes it**, because
+0.5 px is not a trade-off, it is an oversight with a long tail.
+
+**B13. The app render's last under-floor string is the spoke-order note in the
+hole, at 10.23 px.** Round 2's B10 described it as one of a pair and proposed
+deleting the small copy; round 2's own fix removed the other half when the
+caveat line left the canvas, so **deleting it now would leave the app render
+stating no spoke order at all on its own canvas**, which PLAN §3.1 requires and
+§v3.0's *"the figure alone must still not lie"* is about. So the fix is the
+other one: make it legible. Round 3's.
+
+**B14. The caveat strip is five clauses of the same weight.** Round 2's own
+hand-off. It is 13 px, under the circle, not behind a click — all of which it
+had to be — but a safety caveat and a note about spoke geometry are different
+kinds of statement and they read as one block. B3's finding, one surface along.
+
+**B15. 155 px of page furniture sits between `#counts` and the figure**, so the
+frame this review photographs each round still clips a figure that is itself
+894 px and whole. Round 2's hand-off. The furniture is the tab row and the
+download row and a reader needs both; what is wrong is where the page puts the
+reader after a run, not that the rows exist.
+
+**B16. The legend is still a full-slide artefact and still says so.** Round 1's
+A3 conclusion is unchanged and this round found no reason to revisit it: 160
+strings, 5 clearing 10.0 pt at a full slide, 0 at half. The arithmetic there —
+a 16 in canvas at half a slide is scaled 0.4167, so 10.0 pt as seen needs 24.0
+pt in the file — did not move because nothing about it can. Whether the legend
+becomes two slides is still Puck's call.
