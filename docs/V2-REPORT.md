@@ -3276,3 +3276,148 @@ not tried to pre-empt it.
    own file.** *Still open 12.* This is the one I would most like an answer to.
 2. **Whether the legend and slide should be generated on demand.** *Still open 11.*
 3. Everything already in §6 and §v2.1–§v2.9, unchanged.
+
+---
+
+## v3.1 — UX v3 round 1: the slide stops printing on itself, the app stops being 6 px
+
+Wren II, 2026-09-25. Local only, nothing deployed, nothing pushed, no money
+spent (LLM triage still unbuilt, $5.00 of $5.00 unspent), `~/ytpt` untouched,
+the OpenClaw gateway not restarted. Three commits and this section: the review
+(`62d40a3`), the fix (`e7e5aea`), the re-review. The dev server on :8811 was
+restarted onto the fix and confirmed with a live request before any screenshot.
+
+Puck's words: *"have ux panel review. do 3 rounds of review the visual once
+finished with current work, fix review fix. consider usability. readability of
+text. font size. button placement. legend font size and if there is overlap.
+annimations to hide non-neccissary info."*
+
+**Tests: 516 passed** (490 before; 26 new). 7/7 invariants on all seven cold
+runs (`logs/v31-matrix.txt`). Full findings in
+`docs/reviews/UX-v3-rounds.md` §1.
+
+### Read this first: what is still broken
+
+**1. The legend does not meet the 10 pt floor at half a slide, and it cannot.**
+Half a slide scales a 16 in canvas by 0.4167, so 10.0 pt as seen needs **24.0 pt
+in the file** — and the legend carries twelve scales with ramps, ticks, units
+and source lines, plus the cell states and the whole caveat block. Everything
+went up (ring names 9.00 → 11.04 pt, the caveat block 6.40 → 9.40, the
+comparability sentence 8.55 → 15.00 and it leads now instead of sitting under
+the ring names it qualifies) and the dead 18.7% of canvas was spent — 0.00% ink
+in that block became 9.11% — and that bought 2.4 pt. **The legend is a
+full-slide artefact.** Whether it should be two slides is yours to say.
+
+**2. A2's fix made the figure taller than a laptop viewport.** The canvas traded
+width for type size and is now 9.6 × 10.6 in; at 1040 px wide that is 1149 px
+tall against a 900 px viewport, so the bottom third of the circle is below the
+fold. Round 1 measured what a reader can read and not what a reader can see at
+once. It is round 2's, formally, and it is the clearest thing the three-round
+shape has bought so far.
+
+**3. The comparability sentence is on screen twice, a centimetre apart.** The
+amber HTML band above the figure and the render's own top-left corner, both
+added by this fix for the same rule from opposite directions. Round 2's.
+
+**4. One of my own instruments was wrong in the flattering direction.**
+`ux_v3_measure.py` fitted the app render to a 1388 px panel — the width it had
+when the figure owned the whole column. A2's fix gave 330 px of that row to the
+decode panel. Read at 1388 the script reported **0 of 41 strings under the
+floor**; the live DOM says 1040 px and **15 of 41**. Corrected and split in two,
+because only one of the two measurements moved. Worth saying plainly: for about
+an hour this work had a measurement saying it was done.
+
+### What the three findings were, and what each fix was
+
+| # | finding | fix |
+|---|---|---|
+| **A1** | `figure-slide.svg` printed text over text in five places, and had since v2.6 — `Lung` struck through `15 genes in, 14 rendered`, ring 12's scale lines inside the slide's caveat line | the centre block is stacked by measured line height instead of placed at 0.575 / 0.542 / 0.512 with only the font sizes scaled by `centre_scale` 1.15; `assert_text_does_not_overprint_text` is new. **0 EXACT overlapping pairs on all four artefacts**, from 5 |
+| **A2** | 148 of the app figure's 149 strings were under 12.0 CSS px on a 1440 × 900 laptop, including both must-survive items | the scale column and the cell-state box leave the app's SVG and the page draws them as HTML at 12–13 px from `/api/run/{id}/scales`; the canvas shrinks 19.5 × 12.2 → 9.6 × 10.6 in, so file pt → CSS px goes 0.9886 → **1.5046**. **15 of 41 under the floor**, and each of the fifteen is on the page again at or above it |
+| **A3** | the legend was the smallest type in the set — 139 of 139 runs under 10 pt at half a slide, ring names at 3.75 pt — while 18.7% of its own canvas held no ink | four columns of three, caveats in three balanced columns along the bottom, type raised throughout. See *Read this first* 1 |
+
+**Overlap, which Puck asked about by name:** there was none on the legend (0 of
+139 pairs, measured pairwise, and the legend has no rotated text so that result
+is exact) and five on the slide. The legend's problem was type size and wasted
+space; the slide's was a spacing bug that no assertion was looking for.
+
+### The two things an animation may never take away
+
+Puck asked for animations that hide non-essential information, and §v3.0 made
+that free: nothing hidden in the browser reaches `figure.svg`, `figure-slide.*`,
+`legend.*` or `caption.txt`. The rule is in `docs/reviews/UX-v3-rounds.md` and
+holds unchanged through rounds 2 and 3:
+
+1. the **four cell-state legend** stays reachable with no dead end;
+2. **"each ring has its own scale; colours do not compare across rings"** is
+   never behind a click.
+
+`#cell-states` has no toggle at all and `#comparability` is a full-width band
+above the figure. What animates is `#scales`, the twelve-row reference panel,
+on a `<details>` — keyboard, Escape and `prefers-reduced-motion` for free, the
+same argument v3.0 made for the download menus. Both rules are **twenty-six
+tests** that parse the page and ask about ancestry, not about the presence of a
+string: `TestUXv3TheTwoThingsThatSurviveWhateverAnimatesAway`. §1's promise that
+they would be checked by assertion rather than by care was not kept by the
+staged work; it is now.
+
+### What the fix needed beyond what round 1 had planned
+
+The interesting three are all the same shape — a name that stopped describing
+what it decided, with nothing checking that it still did.
+
+* **`draw_key` had not meant "draw the scale column" since v2.6.** It decides
+  the provenance stamp's font size, and it is `False` on `slide`, which draws a
+  full column. Read as the layout question it took the slide's twelve scales
+  away and printed an 11 pt banner across its own spoke labels: thirteen tests
+  red, every one of them the slide. Split into `stamp_size_small` and a new
+  `scales_in_svg` that defaults `True`.
+* **The new overprint check then refused the web render**, the banner 62 × 4 px
+  into the run-id stamp once the canvas was 9.6 in wide rather than 19.5.
+  `_free_width_beside` measures instead of assuming.
+* **The centre's y arithmetic was still in the file and dead**, overwritten by
+  the stack. Two layout models with the live one invisible is what the next
+  person tunes the wrong half of.
+* **Ring 8's three states printed as `-1 / 0 / 1`** in the new panel, read off
+  the ring's numeric ticks — COUNCIL V12 arriving in HTML, three colours off
+  every ramp labelled with positions on one. Found by looking at the round-1
+  screenshot.
+
+### Verification
+
+* **516 tests** (490 before). Twenty-six new across three classes, including the
+  negatives: two strings at one point must fail the overprint check, the four
+  cell states must fail if they are put inside a `<details>`, the categorical
+  ring must fail if the panel goes back to reading its numeric ticks.
+* **7/7 invariants on all seven cold runs** (`logs/v31-matrix.txt`), counts
+  unchanged: 15 in / 14 / 1 on the council list, 16 in / 7 / 9 on the broken
+  fixture, 15 in / 7 / 8 filtered.
+* Every existing assertion unchanged and passing —
+  `assert_no_text_over_the_rings`, `assert_centre_fits_the_hole`,
+  `assert_text_within_canvas`, `assert_wedge_labels_fit`,
+  `assert_legend_panels_do_not_overlap`, `assert_renders_agree`,
+  `assert_artefacts_are_their_own_layout`, `assert_figure_states_the_minimum`,
+  `assert_the_id_rule_is_kept`, the greyscale disjointness check and the seven
+  invariants. **No invariant relaxed, no test deleted, no assertion weakened.**
+  Two assertions refused my own work during this and both refusals were correct.
+* Round-1 screenshots at 1440 × 900 in `docs/reviews/ux-v3-shots/r1-*`, on a
+  restarted server with the browser cache disabled.
+
+### Still open, added to §v3.0
+
+14. **The legend cannot meet the half-slide floor.** *Read this first* 1.
+15. **The app figure is taller than a 1440 × 900 viewport.** *Read this first*
+    2. Round 2's.
+16. **The comparability sentence appears twice on the app screen.** *Read this
+    first* 3. Round 2's.
+17. **The slide render's own type is under the 10 pt floor at a full slide** —
+    11.5 pt in a 16 × 9 file is 9.58 pt on a 13.33 in slide, so 114 of its 115
+    strings miss by a fraction. Measured during this round, not fixed in it: it
+    is a different finding from A1 and it belongs to a later round.
+
+### What you need to decide
+
+1. **Whether the legend should become two slides.** *Read this first* 1. One
+   16:9 canvas and twelve scales cannot both meet the half-slide floor.
+2. Everything already in §6 and §v2.1–§v3.0, unchanged: licensing before any
+   workplace use, the Delta E gate, the `neg_log10_padj` log domain, the muted
+   gauge, whether the slide should drop its scale column.

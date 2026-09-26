@@ -254,11 +254,210 @@ Applied, in this order. Nothing from round 2 or 3 was anticipated.
    banner over the figure. `assert_figure_states_the_minimum` still runs on the
    web layout — the sentence is still *in* the SVG, it is simply no longer the
    only place it appears.
-3. **A3 — the legend is three columns of four, and the caveats are headed
-   groups.** Type raised throughout; the dead 18.7% is what pays for it.
+3. **A3 — the legend is four columns of three, and the caveats are three
+   balanced columns along the bottom.** Type raised throughout; the dead 18.7%
+   is what pays for it.
+
+### What the fix turned out to need beyond the above
+
+Recorded because an interruption should not lose it, and because three of the
+four are the same shape: a name or a constant that stopped describing what it
+decided, and nothing checking that it still did.
+
+4. **`draw_key` had not meant "draw the scale column" since v2.6.** It decides
+   the provenance stamp's font size, and it is `False` on `slide` — which draws
+   a full column. Read as the layout question, it took the slide's scales away
+   and printed an 11 pt banner across its own spoke labels: thirteen tests red,
+   all of them the slide. Split into `stamp_size_small` and a new
+   `scales_in_svg`, which is `True` on both exported renders and `False` on
+   `web` alone, and defaults `True` so a layout added later carries its own
+   decode furniture unless it says otherwise.
+5. **The new overprint check then refused the web render.** The comparability
+   banner is top-left and the run-id stamp top-right; on a 19.5 in canvas that
+   is two corners with a continent between them, and at 9.6 in they met by
+   62 × 4 px. `_free_width_beside` measures the free width and wraps the banner
+   to it, rather than a constant that today's run id clears and a longer one
+   walks through.
+6. **The centre's y arithmetic was still in the file, dead.** Both
+   `_draw_centre` and `_draw_ordering_and_filters` computed positions that
+   `stack_centre_blocks` then overwrote. Left in, the file would have had two
+   layout models with the live one invisible, and the next person to adjust the
+   centre would have adjusted the other.
+7. **Ring 8's three states printed as `-1 / 0 / 1` in the new panel**, read off
+   the ring's numeric ticks — three colours that are off every ramp, labelled
+   with positions on one. COUNCIL V12 in HTML. Found by looking at the
+   screenshot, which is the argument for taking one per round.
+8. **The two survive-rules were not actually asserted.** §1's rule says "checked
+   by an assertion, not by care, from round 1 onward" and nothing checked them.
+   They are twenty-six new tests now, and they ask about *ancestry* in the
+   parsed page rather than for the presence of a string, because "is this behind
+   a click" is a question a grep answers wrongly.
+9. **The measurement instrument was measuring a width the app no longer has.**
+   `ux_v3_measure.py` fitted the app render to 1388 px; A2's own fix made it
+   1040. Corrected, not rebuilt — see §1.3 A2.
 
 ## 1.3 Re-review
 
-Below, after the work.
+Driven live at 1440 × 900 against the restarted server on `e7e5aea`
+(`GET /` → 200, `/api/regions` → the GTEx panel, `app.js` served with
+`renderDecode` in it before any screenshot). Evidence:
+`logs/ux-v3-r1fix-typesizes.txt`, `logs/ux-v3-r1fix-overlap.txt`,
+`logs/ux-v3-r1fix-live.json`, `logs/v31-matrix.txt`, `r1-1-*` … `r1-5-*`.
+
+**516 tests pass** (490 at `62d40a3`; 26 new). 7/7 invariants on all seven cold
+runs. Every existing assertion unchanged and passing: the seven invariants,
+`assert_no_text_over_the_rings`, `assert_centre_fits_the_hole`,
+`assert_text_within_canvas`, `assert_wedge_labels_fit`,
+`assert_legend_panels_do_not_overlap`, `assert_renders_agree`,
+`assert_artefacts_are_their_own_layout`, `assert_figure_states_the_minimum`,
+`assert_the_id_rule_is_kept`, `assert_greyscale_disjoint`,
+`assert_ramp_luminance_is_monotone`, `assert_rings_are_distinguishable`.
+Nothing relaxed, nothing deleted.
+
+### A1 — fixed, and it was not ten minutes
+
+**0 EXACT overlapping pairs on all four artefacts**, against five on
+`figure-slide.svg` (`logs/ux-v3-r1fix-overlap.txt`):
+
+| artefact | text runs | EXACT pairs, before → after |
+|---|---|---|
+| `figure.svg` | 158 | 0 → 0 |
+| `figure-web.svg` | 41 | 0 → 0 |
+| `figure-slide.svg` | 115 | **5 → 0** |
+| `legend.svg` | 160 | 0 → 0 |
+
+The eight `aabb-only` hits remaining on the slide are rotated spoke labels
+against the scale column's source lines; a label at 37° has an axis-aligned box
+far larger than its ink, which is why the instrument says which kind a hit is,
+and `assert_no_text_over_the_rings` does the real geometry on those and passes.
+
+§v2.6 *Still open* 2 closes. The estimate in it was wrong in the way that
+matters: the collision was a spacing bug and the *fix* was ten minutes, but the
+thing that let it live through four releases was that **no check compared a
+drawn string with another drawn string**, and that is what took the time.
+`assert_text_does_not_overprint_text` refused two renders during this work —
+the web one, once the canvas shrank and the corner banner met the run-id stamp,
+and the three-gene audit one, where the footer grows under the scale column.
+Neither would have been found by eye at fourteen genes.
+
+### A2 — fixed, with three strings left under the floor on purpose
+
+Measured live at 1440 × 900 and confirmed against the file, which is where the
+round-1 numbers came from too:
+
+| | round 1 | now |
+|---|---|---|
+| figure panel | 1388 px | **1040 px** (the decode panel takes 330 + 18) |
+| canvas | 19.5 × 12.2 in | **9.6 × 10.6 in** |
+| scale, file pt → CSS px | 0.9886 | **1.5046** |
+| SVG strings under 12.0 px | **148 of 149** | **15 of 41** |
+| the comparability sentence | 6.14 px, in a corner | **14.5 px** HTML band + 16.55 px on the render |
+| the four cell states | 8.90 px, in a 570 px box | **13 px** HTML, always open |
+| ring scale ticks | 5.76 px | **12.0 px** |
+| ring scale titles | 6.47 px | **13 px** |
+
+The fifteen still under the floor are three strings, and each is on the page
+again at or above it — which is the only reason they are acceptable:
+
+* **the twelve wedge ring names at 9.07 px.** Geometry-bound, not chosen: at
+  twelve rings the binding budget is the band's *height*, so widening the gap
+  buys nothing and `assert_wedge_labels_fit` refuses it — v2.7's finding,
+  arriving on a third layout. All twelve are numbered and named at 13 px in the
+  panel, and the SVG keeps its v2.7.1 tooltips.
+* **the spoke-order note at 10.23 px.** The counts line above the figure says
+  it at 14 px.
+* **`the 1 not shown are named in the Drop ledger tab` at 11.28 px.** The tab
+  itself is 14 px and two inches away.
+
+**A correction to round 1's own instrument, which flattered this result before
+it was caught.** `ux_v3_measure.py` fitted `figure-web.svg` to 1388 px, the
+width the figure had when it owned the whole column. It does not any more. Read
+at 1388 the script said *0 of 41 under the floor*; the live DOM says 1040 px and
+*15 of 41*. The constant is corrected and split in two, because only one of the
+two measurements moved — the export opened full width still gets 1388. An
+instrument that reports the app 33% more legible than it is, is wrong in the one
+direction this review cannot afford.
+
+**Both must-survive items hold, and by assertion.**
+`TestUXv3TheTwoThingsThatSurviveWhateverAnimatesAway` parses the page and asks
+about *ancestry*, not about the presence of a string: neither `#comparability`
+nor `#cell-states` is inside a `<details>`, the sentence precedes
+`.figure-row` in document order, and the one panel that may animate names its
+contents and its count in the closed state. Verified live as well as
+statically: with `#scales` collapsed, both survivors are still on screen and
+the reopen control is visible and reads *"The 12 ring scales — what a colour
+means, ring by ring"*.
+
+### A3 — improved by a long way, and the 10 pt floor is **not met at half a slide**
+
+This is the one finding whose stated target was not reached, and it was not
+reachable. Round 1 wrote *"every size raised until nothing on the legend is
+under 10 pt at half a slide — or, where a string genuinely cannot make that,
+say which and why rather than shrink it."* This is that clause being used.
+
+| | v3.0 | now |
+|---|---|---|
+| ring names in the file | 9.00 pt | **11.04 pt** |
+| the comparability sentence | 8.55 pt, under the names it qualifies | **15.00 pt, leading** |
+| the caveat block | 6.40 pt, 22 unbroken lines | **9.40 pt, three balanced columns** |
+| ink on the canvas | 9.3% | **11.48%** |
+| the 616 × 297 px dead block | **0.00% ink** | **9.11% ink** |
+| ink bounding box, bottom | row 875 of 990 | **row 977 of 990** |
+| clearing 10 pt at a full slide | 2 of 139 | **5 of 160** |
+| clearing 10 pt at half a slide | 0 of 139 | **0 of 160** |
+
+Why no string can make it: half a slide is 6.67 in wide, so a 16 in canvas is
+scaled 0.4167 and **10.0 pt as seen requires 24.0 pt in the file**. The legend
+carries twelve scales with their own ramps, ticks, units and source lines plus
+the cell states and the whole caveat block; at 24 pt the ring titles alone would
+not fit on 16 × 9, never mind the rest. The arithmetic says the half-slide floor
+and a twelve-scale legend on one 16:9 canvas are incompatible, and no amount of
+whitespace-spending changes it — the space was spent, and it bought 2.4 pt.
+
+So the honest statement, and it goes on the artefact rather than only here:
+**the legend is a full-slide artefact.** At a full slide its largest four
+strings clear the floor and its ring names read at 9.20 pt, against 7.50 pt in
+v3.0 and 3.75 pt at the half-slide size round 1 measured. Whether that is
+acceptable or whether the legend should become *two* slides is Puck's call and
+it is in §v3.1's *What you need to decide*. Round 2 does not get to quietly
+shrink something to close it.
+
+### The B items, and what round 1 did to them incidentally
+
+Round 1 fixed **B4** as a side effect of A2 rather than by intent — the
+cell-state box no longer mixes two taxonomies, because the panel draws the four
+states under one heading and ring 8's three under their own, separated by a
+rule. It also **introduced and then fixed a defect of its own inside B4's
+territory**: the panel's first version printed ring 8's three states as
+`-1 / 0 / 1`, read off the ring's numeric tick labels, beside three colours that
+are not positions on any ramp. That is COUNCIL V12 exactly, arriving in HTML;
+`scale_rows` carries the names now, off the same sort as the colours so a colour
+cannot be paired with the wrong state.
+
+**B1, B2, B3, B5 and B6 are untouched, deliberately.** They are round 2's and
+round 3's, and mixing them in here would remove the only thing that makes three
+rounds a check on each other.
+
+### What this re-review found that round 1 did not, and hands to round 2
+
+Two things, and the first is the more serious. Both are recorded here as the
+opening of round 2 rather than fixed now.
+
+1. **The figure no longer fits in one laptop viewport.** A2 traded canvas width
+   for type size and the canvas is now taller than wide — 9.6 × 10.6 in at
+   1040 px is 1149 px tall against a 900 px viewport, so
+   `r1-3-figure-viewport.png` shows the top two thirds of the circle and the
+   bottom third is below the fold. Round 1 measured what a reader *can read* and
+   did not measure what a reader *can see at once*. This is A2's fix producing
+   a new instance of the same class of problem, which is the best possible
+   argument for the rounds existing.
+2. **The comparability sentence is now on screen twice, ten millimetres apart** —
+   once in the amber HTML band and once at 16.55 px in the render's top-left
+   corner. Both were added by the same fix, for the same rule, from opposite
+   directions: the band because the page must state it, the corner because
+   `assert_figure_states_the_minimum` will not let the circle be drawn without
+   it. Neither is wrong; together they are a reader wondering which one is the
+   real one, and the UX-v1 review's own noise list says the counts appearing
+   three times was a defect for the same reason.
 
 ---
