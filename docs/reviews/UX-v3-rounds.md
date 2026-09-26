@@ -623,3 +623,206 @@ Round 3's.
 
 Applied in this order. Nothing from round 3 was anticipated; B8–B11 were left
 alone on purpose.
+
+Applied in this order. Nothing from round 3 was anticipated; B8–B11 were left
+alone on purpose.
+
+1. **A4 — the `web` canvas is 9.6 × 8.25 in, axes box `(0.120, 0.145, 0.760,
+   0.715)`.** 894 px in a 900 px viewport, circle 639 px, type unchanged at
+   1.5046 — `scale = panel_px / (width_in * 72)` has no height term in it, which
+   is the whole reason A4 called this nearly free.
+2. **A5 — one version string.** `TOOL_NAME` / `TOOL_VERSION` / `FIGURE_TITLE`,
+   read by `_draw_centre`, by `render_legend` and by the page.
+3. **A6 — the amber `#comparability` band is gone.** The render's own 16.55 px
+   banner is the copy the reader meets; the band's range-drift clause moved into
+   the decode panel beside the ranges it is about.
+4. **B7 — the form collapses after the first render.** Not before: until you
+   have a figure the help text is the page.
+
+### What the fix turned out to need beyond the above
+
+A4 said *"let the existing geometry assertions arbitrate the margins"*. They
+arbitrated and returned nothing. **97 (canvas height, bottom margin, axes
+height) triples were offered and all 97 were refused** — 83 in
+`logs/v32-web-sweep.txt` from the interrupted attempt, 14 more in
+`logs/v32-web-fit-sweep.txt` — by two walls twenty-five thousandths of a canvas
+apart:
+
+| bottom margin | what refuses it |
+|---|---|
+| ≤ 0.185 | `assert_no_text_over_the_rings`: the caveat line lands 32–56 px **inside** the bottom spoke labels |
+| ≥ 0.210 | `assert_wedge_labels_fit`: the circle is too small to fit twelve ring names in the 26° gap |
+
+Neither is a margin that can be nudged, so the arithmetic had already decided
+something: **two blocks had to leave this canvas.** Both left by §v3.0's own
+rule for this layout — *"`web` drops exactly what the page itself already
+says"* — and neither is an assertion relaxed. The first attempt at this fix,
+the uncommitted diff this session inherited, shortened the banner by eleven
+characters and left the canvas at 8.2 × 0.735; **eleven tests were red**, nine
+of them this geometry, and the sweep log it cites in its own comment is the log
+that says so.
+
+5. **The app render's caveat block went to the page** (`caveats_for_the_page`,
+   `#figure-caveats`). It was four to five wrapped lines of 10 pt — 0.83 in of
+   an 8.2 in canvas — and it is 13 px of selectable HTML now, directly under the
+   circle, in document order, not inside a `<details>`. This is A2's trade
+   applied to the one block still forcing the canvas taller than the window.
+
+   **`FILTERED` did not move.** It is the difference between this circle being
+   the submitted set and being a subset of it, and the only other copy of it on
+   the figure is the centre's at 6.5 pt — 9.8 CSS px, under this review's own
+   floor. A fix that sent it to the page would have been this review producing
+   the defect it exists to find.
+
+6. **The twelve wedge ring names left the app SVG** (`Layout.wedge_labels_in_svg`,
+   `False` on `web` alone). The gap is a triangle, so a name's room is
+   `r · tan(13°)`, and `Tractability (suggested)` sits on ring 3 at a small
+   radius: `assert_wedge_labels_fit` refused **every** circle under roughly
+   790 px, which is the 10.6 in canvas A4 exists to shorten. The names were
+   round 1's **largest** deliberate exception to the 12.0 px floor — twelve
+   strings at 9.07 px, justified by *"all twelve are numbered and named at 13 px
+   in the panel"* — which is the same reasoning A6 used to delete the duplicated
+   band. An unreadable copy of a legible thing is what this review is against.
+
+   **The 26° gap itself stays, and that was measured rather than assumed.** At
+   `wedge_deg=0` a spoke label moves to 12 o'clock and the comparability banner
+   lands **20.7 px inside it**; the gap is doing a second job worth its 26°.
+
+7. **The figure then had to stop describing a geometry it no longer has.**
+   `clock_phrase` said *"runs clockwise from the ring-name gap"* and
+   `wedge_note` said the names were *"inside the circle"*. Both are derived from
+   the layout now — COUNCIL V5 is one word wide, and this is the third round in
+   which a name outlived what it named.
+
+8. **`test_the_page_and_the_figure_cannot_disagree_about_the_version` did not
+   exist.** The inherited diff's own comments referenced it, in `figure.py` and
+   again in `index.html`, and nothing in `tests/` defined it. A5's change was
+   *"one named version string **and an assertion** that the page and the figure
+   cannot disagree"*, and without the second half A5 is two corrected words that
+   drift apart again.
+
+9. **Rule 2's assertion had to be rewritten, not deleted.** A6 removes the
+   element two round-1 tests were written against, and the lazy repair is to
+   drop them. They ask the measured question instead: the sentence is read back
+   out of the drawn SVG and its size checked against the 12.0 px floor **at the
+   1040 px the app actually gives the figure**. That is what rule 2 was always
+   about — "present at 6 px in a corner" was never compliance — and it is a
+   question an HTML-presence test could not answer.
+
+## 2.3 Re-review
+
+Driven live at 1440 × 900 against the restarted server on `f93a3d7`
+(`GET /` → 200, `/api/regions` → the GTEx panel, and `app.js` served with
+`figure_caveats` and `index.html` with `#controls` **before** any screenshot).
+Evidence: `logs/ux-v3-r2fix-typesizes.txt`, `logs/ux-v3-r2fix-overlap.txt`,
+`logs/ux-v3-r2fix-live.json`, `logs/v32-web-fit-sweep3.txt`,
+`docs/reviews/ux-v3-shots/r2-1-*` … `r2-5-*`.
+
+**530 tests pass** (516 at `e1ca4cf`; 14 new). Every assertion round 1 listed is
+unchanged and passing — the seven invariants, `assert_no_text_over_the_rings`,
+`assert_centre_fits_the_hole`, `assert_text_within_canvas`,
+`assert_wedge_labels_fit`, `assert_legend_panels_do_not_overlap`,
+`assert_renders_agree`, `assert_artefacts_are_their_own_layout`,
+`assert_figure_states_the_minimum`, `assert_the_id_rule_is_kept`,
+`assert_greyscale_disjoint`, `assert_ramp_luminance_is_monotone`,
+`assert_rings_are_distinguishable`, `assert_text_does_not_overprint_text`,
+`assert_centre_lines_do_not_collide`. Nothing relaxed, nothing deleted.
+
+### A4 — fixed, and the arithmetic held
+
+Measured live in the DOM (`logs/ux-v3-r2fix-live.json`), not read off the
+stylesheet:
+
+| | before round 1 | after round 1 | now |
+|---|---|---|---|
+| canvas | 19.5 × 12.2 in | 9.6 × 10.6 in | **9.6 × 8.25 in** |
+| the figure, rendered | 869 px | **1,148 px** | **894 px** |
+| fits a 900 px viewport | yes | **no** | **yes**, 6 px to spare |
+| the circle | 659 px | 790 px | **639 px** |
+| gene labels, as seen | 7.91 px | 12.04 px | **12.04 px** |
+| SVG strings under 12.0 px | 148 of 149 | 15 of 41 | **2 of 16** |
+
+**A4's claim that height was nearly free was right, and its estimate of the
+price was not.** It predicted 8.2 in and a 648 px circle with no other change;
+what it cost was 8.25 in, a 639 px circle, and two blocks off the canvas. The
+figure it produces is the one A4 described — nearly v3.0's circle, type 1.5× the
+size it was, whole on the screen.
+
+**2 of 16 strings are under the floor and they are one string.** The spoke-order
+note in the hole at 10.23 px, wrapped onto two lines. That is round 1's
+exception 2 and round 2's **B10**, which said removing the duplicate removes the
+exception rather than arguing for it; it is round 3's. Round 1's other two
+exceptions are gone: the twelve wedge names left with item 6 above, and
+`the 1 not shown are named in the Drop ledger tab` now measures 14.29 px.
+
+**No overlap anywhere** (`logs/ux-v3-r2fix-overlap.txt`), so A1 is intact
+through a canvas change that moved every block on this render:
+
+| artefact | text runs | EXACT pairs |
+|---|---|---|
+| `figure.svg` | 150 | 0 |
+| `figure-web.svg` | 16 | 0 |
+| `figure-slide.svg` | 107 | 0 |
+| `legend.svg` | 160 | 0 |
+
+### A5 — fixed, and now it is checked
+
+`<title>`, `<h1>` and the string in the middle of the circle all read
+`targetring v2`, off one constant, and
+`test_the_page_and_the_figure_cannot_disagree_about_the_version` fails if any of
+the three drifts. `test_every_artefact_reads_the_version_from_the_one_constant`
+refuses a hard-coded `targetring v` in `_draw_centre` or `render_legend`, which
+is where two of the three literals were.
+
+### A6 — fixed, and the assertion is stronger than the one it replaced
+
+One copy of the sentence on the screen, at **16.55 px**, in the render's own
+top-left corner, met before any cell (`r2-3-figure-viewport.png`). The band's
+range-drift clause is in the decode panel at 12.5 px beside the ranges it
+qualifies.
+
+Rule 2 is held by measurement now rather than by markup:
+`test_the_comparability_sentence_clears_the_floor_on_the_app_render` reads the
+sentence back out of the rendered SVG and checks its drawn size against 12.0 px
+at 1040 px of panel. `test_the_sentence_is_not_printed_twice_on_the_same_screen`
+is new and stops round 3 restoring the band while tidying.
+
+### B7 — fixed, and it is the largest number on the page
+
+| | round 2's review | now |
+|---|---|---|
+| the input form | 1,053 px | **130 px** (collapsed) |
+| the figure's top | y = 1,279 | **y = 403** |
+| the whole document | 2,487 px | **1,529 px** |
+
+The summary reads *"The table, the region, the gene order and the filters — 4
+sections"*, so the closed state names what it opens and how much is behind it —
+the same contract `#scales` has. `Draw the figure` stays outside the collapse:
+the help text is what animates away, not the control that acts on it.
+
+### Both must-survive rules held, through a change that moved both of them
+
+Rule 1: `#cell-states` is still outside every `<details>` — including the new
+one — and still 13 px, always open. Verified live with `#scales` collapsed:
+the states are still on screen and the reopen control reads *"The 12 ring scales
+— what a colour means, ring by ring"*.
+
+Rule 2: the sentence is at 16.55 px on the render, above the circle, in one
+place. `test_neither_survivor_was_swallowed_by_the_new_collapse` exists because
+B7 added a third `<details>` to this page and that is exactly how a rule like
+this gets broken — while tidying, by an accident nobody would notice in a
+screenshot.
+
+### What this re-review found that round 2 did not, and hands to round 3
+
+1. **The figure fits the viewport; the frame round 1 photographs does not frame
+   it.** `r2-3-figure-viewport.png` pins `#counts` to the top of the window, and
+   the tab row and the download row put 155 px between it and the figure — so
+   the shot still clips the bottom 149 px of a figure that is itself 894 px and
+   whole one scroll-notch lower. A4 is fixed as A4 stated it. What is left is a
+   band of page furniture above the figure, which is B7's argument arriving
+   twenty pixels further down.
+2. **The caveat strip is five clauses in one grey block.** It is 13 px and it is
+   not behind a click, both of which it had to be, but B3's finding — *"two
+   sentences with different jobs reading as one grey run-on"* — applies to five
+   of them stacked. Round 3's.
