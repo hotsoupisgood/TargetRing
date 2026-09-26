@@ -3083,3 +3083,196 @@ the sentence has to be rewritten, which is the right way round.
 10. **The id is not on the rim and cannot be without giving up the scale
     column.** *Read this first* 2 and 3. If you ever want it on the rim more than
     you want the per-ring scales, that is a real trade and it is yours.
+
+---
+
+# v3.0 — the export and the app stop being the same picture
+
+Your words: *"download figure and the online figure can be different. also we
+could have the download download legend as a separate image."*
+
+Wren II, 2026-09-25. Local only, nothing deployed, nothing pushed, no money
+spent, `~/ytpt` untouched, the gateway not restarted. Two commits and this
+section. Dev server restarted before the screenshots.
+
+**Tests: 490 passed** (473 before; 17 new). 7/7 invariants on all seven cold
+runs. **Cold 50 genes: 30.4 s against a 60 s target**, up from 21.8 s — see
+*Read this first* 4.
+
+## Read this first: what is broken, and what is newly uncertain
+
+**1. I shipped a bug into this work and an assertion caught it, which is the
+only reason you are reading about it rather than finding it.** The web render
+is asked for with `png=None` — and in `do_render`, `png=None` already meant
+"the default path, `figure.png`". So the **lean render overwrote the export's
+PNG**: `figure.svg` had the caveat footer and the invariant stamp and
+`figure.png`, the file most people actually send, did not.
+`assert_renders_agree` compared the two SVGs and passed, because the SVGs were
+fine. I wrote `assert_artefacts_are_their_own_layout` — every file must be the
+render its name promises, checked by canvas size — and it failed on the next
+run. Ten minutes later it failed again on something else: `render_legend` saved
+without `SAVE_RC`, so pycirclize's `savefig.bbox="tight"` made the "16:9" legend
+**16.44 × 8.94 in, 1.84:1** — letterboxed on the slide it exists for. Both are
+fixed. The lesson I would draw: this artefact set is now big enough that
+"which file is which" needs a check, not care.
+
+**2. A defect that predates this work: a filtered slide could not be drawn at
+3, 7 or 14 genes.** With a filter active `slide_line` grows a second line
+upward, and it landed 1.6 px under the bottom spoke label, so
+`assert_no_text_over_the_rings` refused the render. The design worked — the
+failure was a crash, not a misleading figure — but the render simply failed.
+Nothing had caught it because no test rendered every layout *with* filters, and
+the filtered matrix run happens to use seven genes whose real symbols (TTR,
+APOB) are shorter than the `GENE007` fixture. The slide's bottom margin goes
+0.075 → 0.105 and **the circle does not shrink**: it is width-bound at 0.345 ×
+16 = 5.52 in against 7.47 in of height, so the radius is 2.76 in before and
+after.
+
+**3. The lean render is served but never offered, and that is deliberate.**
+`figure-web.svg` drops the caveat footer. A file that drops the caveat footer
+must not be the one somebody attaches to an email, so it is not in the download
+set at all — the page fetches it, nothing links it, and
+`test_the_lean_render_is_not_in_the_download_set` holds that.
+
+**4. The cold 50-gene run went 21.8 s → 30.4 s.** Four render passes where
+there were two, and `render_s` never measured any but the first. It is
+`exports_s` in every manifest now — **11.2 s** of the 30.4 — because "the run
+got slower" should be a number in the artefact, not a discovery. Still 49%
+under the target. If you would rather the legend and the slide were generated
+on demand rather than every run, say so; it is a small change and it would take
+about 6 s back.
+
+**5. The browser was serving stale `app.js` and `app.css`.** After the front-end
+change the page kept inlining `figure.svg` and drew the new menus unstyled — it
+looked as though the work had not landed. `/`, `/app.js` and `/app.css` send
+`no-store` now. Worth knowing because it would have done the same to you.
+
+## The file set
+
+| file | layout | what it is | offered? |
+|---|---|---|---|
+| `figure.png` / `figure.svg` | audit, 19.5 × 14 in | **the export.** Circle, scale column with source links, the full caveat footer, counts, dropped genes by name, active filters, and now the invariant summary | **yes**, Figure ▾ |
+| `figure-web.svg` | web, 19.5 × 12.2 in | **the app render.** Same cells, no footer block, no dropped-gene list in the hole | no — served, never linked |
+| `legend.png` / `legend.svg` | legend, 16 × 9 in | **the legend on its own slide.** Twelve scales in two columns with their sources and links, the cell states, the caveat block, the run id | **yes**, Legend ▾ |
+| `figure-slide.png` / `.svg` | slide, 16 × 9 in | the circle for a slide, with its own scales and one caveat line | **yes**, Figure ▾ |
+| `caption.txt` | — | what the slide drops, to paste underneath | **yes**, Figure ▾ |
+| `values.csv` | — | every cell, with its Ensembl id (v2.9), plus the ledger and the filter settings | **yes**, Data ▾ |
+| `ledger.csv` | — | every gene not on the figure, and why | **yes**, Data ▾ |
+| `manifest.json` | — | sources, versions, invariants, ring citations, timings | **yes**, Data ▾ |
+
+## Opposite directions, which is the point
+
+**The export gained** the one fact a downloaded PNG could never state: it has
+always been able to SHOUT a failure in red and had no way to say a pass, so on
+paper a clean run and a run nobody checked were the same picture. The first
+footer line now reads:
+
+> INVARIANTS 7/7 PASS · every check this build can make, made and held;
+> per-check detail in manifest.json
+
+Stated per outcome, never rounded: `NOT_EVALUATED` gets its own clause, because
+collapsing it into "pass" is exactly the conflation UX A1's two channels exist
+to prevent.
+
+**The app render dropped** only what the page itself already carries, and each
+drop has a named home on screen: the caveat footer is the *What this is not*
+tab, the dropped-gene list is the *Drop ledger* tab, the amber conditions box is
+the banner above the figure. The canvas loses 1.8 in of height. **The circle is
+the same size** — it is width-bound on both layouts, 0.475 × 19.5 = 9.26 in, so
+the radius is 4.63 in either way — what the app gains is the whitespace, so the
+same circle fills more of the screen at a given page width. Two sentences follow
+the render they are on rather than being copied: the hole says "named in the
+**Drop ledger tab**" and the footer line ends "see the **What this is not** tab",
+where the export and the slide say "in the caption". Pointing a web reader at a
+file they have never been handed is COUNCIL V5 in one clause.
+
+## What makes the divergence safe rather than merely allowed
+
+Three assertions, and the middle one exists because I needed it:
+
+* **`assert_renders_agree(figure.svg, figure-web.svg)`**, on every run. Every
+  `cell|<ring>|<index>|<gene>` group compared by id and by fill. They may differ
+  in furniture; if one cell ever differed, the colleague with the PNG and the
+  person at the screen would be reading different figures and neither would
+  know. 168 cells on the council run.
+* **`assert_artefacts_are_their_own_layout(runs_dir)`** — see *Read this first* 1.
+* **`assert_figure_states_the_minimum(...)`**, on every layout, against the text
+  the render actually drew. Your four: what it is, that each ring has its own
+  scale so colours mean nothing across rings, submitted versus rendered, and any
+  active filter. `web` may drop the footer and a future layout may drop more;
+  none of them can drop these and still render. The comparability sentence is
+  one named constant read by both the drawing and the check, so the check cannot
+  pass against a sentence the figure no longer draws.
+
+## The legend, and the pairing
+
+16:9, two columns of six. It carries the twelve scales in their own colours and
+units with their v2.8 source links, the four cell states, the three categorical
+states, and the whole caveat block — everything needed to decode a cell and
+nothing that needs the circle to make sense.
+
+**The pairing is the risk this artefact introduces and it gets three defences.**
+Nine of the twelve ranges move with the submitted set, so last week's legend
+against this week's figure misreads every cell on those nine *and looks entirely
+normal doing it*. So: the run id is drawn large, third line, above everything it
+is a legend to, with the sentence *"This legend is true only of the run named
+above… check the run id on the figure matches this one before reading a colour
+off it"*; the same id is stamped on the figure; and the id is in the **downloaded
+filename** (`targetring-<run>-legend.png`), because the first place the two get
+separated is a downloads folder.
+
+Two bugs found by eye and then given checks: the second column restarted its
+numbering at 1 rather than continuing 7–12 — a ring number that does not match
+the radial order is a wrong figure — and the cell-state box printed straight
+across the first scale column, because the legend canvas has no circle and
+`assert_no_text_over_the_rings` therefore does not apply to it.
+`assert_legend_panels_do_not_overlap` is its equivalent: on this canvas the
+obstacle is the box.
+
+## The downloads
+
+Six buttons, and this work would have made it ten. Three `<details>` menus
+grouped by **what you are walking away with** rather than by file type — Figure,
+Legend, Data — with `All downloads are run <id>.` beside them. Every item names
+its format, so nothing is hidden; the row just stops being a wall. `<details>`
+rather than a scripted dropdown for the same reason the tooltips and the source
+links are in the SVG: it works with the keyboard, closes on Escape, and needs no
+JavaScript. Two tests hold the shape — three top-level controls, at least nine
+items behind them — but **the placement is yours and the UX review's**; I have
+not tried to pre-empt it.
+
+## Verification
+
+* **490 tests** (473 before). Seventeen new across three classes, including the
+  negative ones: a single recoloured cell must fail `assert_renders_agree`, a
+  wrong-layout file must fail the artefact check, a dropped minimum claim must
+  fail the minimum check, and an overlapping legend box must fail its own.
+* 7/7 invariants on all seven cold runs (`logs/v30-matrix.txt`); cold 50 in
+  30.4 s with `exports_s` 11.2 s (`logs/cold50-v30.json`).
+* v2.8's source links re-verified after all of it: 9/9 resolve live, and all
+  nine still clickable in the running app (`logs/v30-live-links.txt`).
+* Screenshots retaken on restarted code with the browser cache cleared. New:
+  `12-downloads-grouped.png`, `13-legend-as-its-own-image.png`.
+* No invariant relaxed, no test deleted, no assertion weakened. Two assertions
+  refused my own work during it and both refusals were correct.
+
+## Still open, added to §v2.9
+
+11. **Four render passes cost 11.2 s of a 30.4 s cold 50-gene run.** *Read this
+    first* 4. Generating the legend and the slide on demand would take ~6 s back.
+12. **The slide render still carries its own scale column.** Now that the legend
+    is its own file, the two-slide layout you described could have a slide that
+    is only the circle, with a bigger circle. I did **not** do that: A5 is a
+    binding UX-review requirement that both renders carry a scale per ring, and
+    a slide with no scales fails your own "the figure alone must not lie" harder
+    than anything else here. It is a real trade and it is yours.
+13. **The invariant summary is on the export and not on the slide.** The slide's
+    one line is already four clauses; a fifth is UX A4. Say the word if a
+    projected figure should assert its own checks.
+
+## What you need to decide
+
+1. **Whether the slide should drop its scale column now that the legend is its
+   own file.** *Still open 12.* This is the one I would most like an answer to.
+2. **Whether the legend and slide should be generated on demand.** *Still open 11.*
+3. Everything already in §6 and §v2.1–§v2.9, unchanged.
