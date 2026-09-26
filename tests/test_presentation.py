@@ -1161,7 +1161,7 @@ class TestV30TheExportAndTheAppMayDiffer:
             "the app render's own pointer to where the dropped genes are")
         assert "the caption" not in w
         from targetring.figure import caveats_for_the_page
-        assert any("What this is not tab" in c for c in
+        assert any("What this is not tab" in c["text"] for c in
                    caveats_for_the_page(ORDER_NOTE, [], "")[1]), (
             "the clauses this render handed to the page no longer point at the "
             "tab that holds the rest")
@@ -1819,7 +1819,8 @@ class TestUXv3Round2ThePageAReaderWorksIn:
         from targetring.figure import SAFETY_RING_CAVEAT, caveats_for_the_page
         keep, page = caveats_for_the_page(ORDER_NOTE, [], "a FIXED 26° gap")
         assert keep == "", "nothing to say about filters on an unfiltered run"
-        body = " ".join(page)
+        assert {c["kind"] for c in page} <= {"warn", "how"}, page
+        body = " ".join(c["text"] for c in page)
         assert SAFETY_RING_CAVEAT in body
         assert ORDER_NOTE in body
         assert "26°" in body
@@ -1974,3 +1975,242 @@ class TestUXv3Round2ThePageAReaderWorksIn:
         assert not _inside_a_disclosure(html, "cell-states")
         assert not _inside_a_disclosure(html, "figure")
         assert not _inside_a_disclosure(html, "counts")
+
+
+class TestUXv3Round3TheProjectedArtefactAndTheDrawer:
+    """UX v3 round 3, the last round. Rounds 1 and 2 took the app; this takes the
+    two surfaces neither of them measured — the artefact that gets projected and
+    the drawer — and the strings that were deferred twice on purpose.
+    """
+
+    SLIDE_SCALE = 10.0 / 12.0   # a 16 in canvas on a full 13.33 in slide
+
+    # --- A7: rule 2 on the artefact that gets projected -----------------------
+
+    def test_the_slide_states_the_claim_at_the_size_a_slide_is_read_at(
+            self, tmp_path: Path) -> None:
+        """A7. The rule that holds for all three rounds says the comparability
+        claim is never behind a click, and round 1 established that *"present at
+        6 px in a corner"* is the same outcome by another route. It was 5.86 pt
+        on `figure-slide.svg` — **4.88 pt at a full slide, 2.44 at half** —
+        because it was the scale column's header, sized at
+        `scale_title_size * 0.95` and then fitted DOWN with the rows. The one
+        sentence this review protects everywhere was sized by how much unrelated
+        text happened to be beside it.
+        """
+        from targetring.figure import SLIDE
+        assert SLIDE.claim_size is not None, (
+            "the slide's claim is back on the fitted row titles")
+        as_seen = SLIDE.claim_size * self.SLIDE_SCALE
+        assert as_seen >= 10.0, (
+            f"the comparability claim is {as_seen:.2f} pt at a full slide, under "
+            f"the review's 10.0 pt floor for a projected artefact")
+
+    def test_the_slide_gene_labels_clear_the_floor_at_a_full_slide(self) -> None:
+        """B11, round 2's. 11.5 pt was 9.58 pt as seen — missing by 0.42 pt on
+        the artefact `UX-v1-mvp.md` A4 created to solve exactly this."""
+        from targetring.figure import SLIDE
+        as_seen = SLIDE.label_size * self.SLIDE_SCALE
+        assert as_seen >= 10.0, f"{as_seen:.2f} pt at a full slide"
+        assert as_seen > 10.0, (
+            "12.0 pt lands on 10.00 exactly and a figure one hundredth of a "
+            "point either way of compliant has not met a floor")
+
+    def test_the_claim_is_still_one_run_in_the_slide_svg(self,
+                                                         tmp_path: Path) -> None:
+        """The reason it is right-anchored rather than wrapped. At 12 pt the
+        47-character claim is 535 px wide and the column is 464, so left-aligned
+        it ran off a 1600 px canvas; wrapping it would have been the other fix
+        and it is the wrong one, because three tests read this sentence back out
+        of the SVG in one piece and a reader has to as well."""
+        from targetring.figure import COMPARABILITY_CLAIM
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / "slide.svg"
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+               region="Lung", out_svg=out, input_count=14, rendered_count=14,
+               ordering_note=ORDER_NOTE, layout="slide", ledger_counts={},
+               provenance="run V33-A-DELIBERATELY-LONG-RUN-ID · abc123def456")
+        runs = [re.sub(r"\s+", " ", "".join(el.itertext())).strip()
+                for el in ET.parse(out).getroot()
+                .iter("{http://www.w3.org/2000/svg}text")]
+        assert any(r.startswith(COMPARABILITY_CLAIM) for r in runs), (
+            "the claim is no longer a single unbroken run in the slide SVG")
+
+    def test_the_slide_still_draws_with_a_filter_and_at_three_genes(
+            self, tmp_path: Path) -> None:
+        """Where A7 and B11 actually cost something. Bigger labels reach further
+        down, and with a filter active `slide_line` grows a line upward:
+        `assert_no_text_over_the_rings` refused 0.105 and then 0.125 of bottom
+        margin at 3 and 7 genes before 0.145 held. §v3.0's own finding, arriving
+        one type size later."""
+        for n in (3, 7, 14):
+            genes = [f"GENE{i:03d}" for i in range(n)]
+            spec = _full_ring_spec(genes)
+            render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                   region="Lung", out_svg=tmp_path / f"s{n}.svg",
+                   input_count=n + 1, rendered_count=n, layout="slide",
+                   ordering_note=ORDER_NOTE, ledger_counts={"ambiguous": 1},
+                   dropped_names=["HBB"], provenance="run T1 · abc123",
+                   filter_notes=["logfc >= 1.0 (kept genes with no value)"])
+
+    def test_the_circle_did_not_pay_for_any_of_it(self) -> None:
+        """The slide's radius is width-bound — 0.345 × 16 = 5.52 in against
+        0.79 × 9 = 7.11 in of height — so every point of type this round bought
+        came out of height the circle was never using. Asserted because the next
+        person to adjust these numbers should find out here rather than in a
+        screenshot."""
+        from targetring.figure import SLIDE
+        w = SLIDE.axes_box[2] * SLIDE.figsize[0]
+        h = SLIDE.axes_box[3] * SLIDE.figsize[1]
+        assert w < h, (w, h, "the slide circle has become height-bound, so the "
+                             "bottom margin is now charged to the radius")
+        assert abs(w / 2 - 2.76) < 0.01, w / 2
+
+    # --- A8: the drawer -------------------------------------------------------
+
+    def test_the_drawer_sections_collapse_and_say_what_they_hold(self) -> None:
+        """A8. 5,621 px, 6.25 viewports, nine headings, four tables and zero
+        collapsibles. Round 1 called it B1 and said it should not survive three
+        rounds; round 2 called it B8 and handed it here."""
+        js = _js()
+        assert "function sectionise" in js
+        assert re.search(r'\$\("#drawer-body"\)\.innerHTML\s*=\s*sectionise\(', js), (
+            "the drawer is rendered without being sectioned")
+        assert '<details class="sect"' in js
+        assert "DRAWER_OPEN" in js and "sectionCount" in js
+
+    def test_the_three_sections_the_drawer_exists_for_start_open(self) -> None:
+        """PLAN §1: *"clicking a gene opens a drawer with its drug pipeline and
+        its literature"*. Plus the reader's own measurement, which is what they
+        arrived holding."""
+        js = _js()
+        m = re.search(r"const DRAWER_OPEN = \[(.*?)\];", js, re.S)
+        assert m, "the open set is not a named list any more"
+        names = re.findall(r'"([^"]+)"', m.group(1))
+        assert names == ["your measurement", "drug pipeline", "literature"], names
+
+    def test_the_untrusted_sections_keep_their_caveat_outside_the_collapse(
+            self) -> None:
+        """The failure mode this fix could have introduced, and the reason it
+        did not. A `mouse phenotype lead` collapsed to a bare heading puts
+        COUNCIL M4's *"a lead, not a verdict"* one click further from the number
+        it qualifies than the number is, and AGENTS.md rule 6 is not a thing to
+        hide. Same for PLAN §8's ChEMBL warning."""
+        js = _js()
+        m = re.search(r"const DRAWER_CAVEATS = \[(.*?)\];", js, re.S)
+        assert m, "nothing carries a caveat onto the summary any more"
+        block = m.group(1)
+        for section in ("mouse phenotype lead", "ChEMBL mechanisms",
+                        "safety liabilities"):
+            assert f'"{section}"' in block, section
+        assert "a lead, not a verdict" in block
+        assert "untrusted" in block
+        # and the caveat is interpolated into the summary, not into the body
+        assert 'class="caveat"' in js
+        assert re.search(r"\$\{caveat\}[\s\S]{0,160}</summary>", js), (
+            "the caveat is inside the collapse, which is where it must not be")
+
+    def test_every_closed_section_says_how_much_is_behind_it(self) -> None:
+        """No dead end — the same contract `#scales` and `#controls` hold."""
+        js = _js()
+        assert re.search(r'<summary>[\s\S]{0,300}class="count"', js)
+        assert "sectionCount" in js
+        for word in ("row", "item", "field"):
+            assert f'"{word}"' in js, word
+
+    def test_the_close_button_meets_the_target(self) -> None:
+        """Round 1's B5, measured at 28 × 39 px. A desktop-only app, so it is
+        genuinely minor — and it is the one control on a 5,621 px surface."""
+        css = (STATIC / "app.css").read_text()
+        block = css[css.index("#drawer-close {"):]
+        block = block[:block.index("}")]
+        assert "width: 44px" in block and "height: 44px" in block, block
+
+    # --- B12, B13, B14: the strings ------------------------------------------
+
+    def test_no_stylesheet_rule_sets_type_under_the_floor(self) -> None:
+        """B12. Sixty-one strings at 11.5 px — round 2's B9 counted 25 in the
+        two diagnostic tabs and the drawer holds 36 more that B9 could not see
+        because nobody had opened it with an instrument. The floor's own
+        justification cites 11.5 px table headers as this build's smallest
+        existing thing, which is how they survived two rounds; half a pixel is
+        not a trade-off."""
+        css = re.sub(r"/\*.*?\*/", "", (STATIC / "app.css").read_text(), flags=re.S)
+        small = [(m.group(0), float(m.group(1)))
+                 for m in re.finditer(r"font-size:\s*([0-9.]+)px", css)
+                 if float(m.group(1)) < 12.0]
+        assert not small, (
+            f"{len(small)} stylesheet rule(s) set type under the 12.0 px floor "
+            f"this review measures against: {small}")
+
+    def test_the_app_render_has_no_string_left_under_the_floor(
+            self, tmp_path: Path) -> None:
+        """B13, and the end of round 1's list of three deliberate exceptions.
+
+        The wedge names went with round 2's A4 and `the N not shown are named in
+        the Drop ledger tab` came up with the canvas; the spoke-order note in
+        the hole was the last one, at 10.23 px. Round 2's B10 proposed deleting
+        it — but round 2's own fix removed the other copy when the caveat line
+        left the canvas, so deleting it would leave the app render stating no
+        spoke order at all, which PLAN §3.1 requires it to state.
+        """
+        from targetring.figure import WEB
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / "web.svg"
+        render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+               region="Lung", out_svg=out, input_count=14, rendered_count=14,
+               ordering_note=ORDER_NOTE, layout="web", ledger_counts={},
+               provenance="run T1 · abc123")
+        scale = 1040.0 / (WEB.figsize[0] * 72.0)
+        under = []
+        for el in ET.parse(out).getroot().iter("{http://www.w3.org/2000/svg}text"):
+            m = re.search(r"font-size:\s*([0-9.]+)px", el.get("style") or "")
+            if not m:
+                continue
+            as_seen = float(m.group(1)) * scale
+            if as_seen < 12.0:
+                under.append((round(as_seen, 2),
+                              "".join(el.itertext())[:40]))
+        assert not under, (
+            f"{len(under)} string(s) on the app render are under the 12.0 CSS px "
+            f"floor at 1440x900: {under}")
+
+    def test_the_page_does_not_restate_the_banners_claim_a_third_time(
+            self) -> None:
+        """B14's other half, and it is A6 restored by A6's own fix. Round 2 moved
+        `slide_line`'s clauses to the page and one of them —
+        *"rings are scaled independently of one another"* — is the comparability
+        claim in other words, so the page carried it 13 px under a 16.55 px
+        banner making the same claim. The slide keeps the clause; the page does
+        not."""
+        from targetring.figure import caveats_for_the_page, slide_line
+        page = " ".join(c["text"] for c in
+                        caveats_for_the_page(ORDER_NOTE, [], "")[1]).lower()
+        assert "scaled independently" not in page, page
+        # ...and the slide, which has no banner, still says it.
+        assert "scaled independently" in slide_line(ORDER_NOTE, [], "").lower()
+
+    def test_the_caveats_are_two_kinds_of_statement_not_five_grey_lines(
+            self) -> None:
+        """B14. A safety caveat and a note about where the ring names are are
+        not the same kind of thing, and round 2 shipped them at one weight."""
+        from targetring.figure import caveats_for_the_page
+        page = caveats_for_the_page(ORDER_NOTE, [], "a FIXED 26° gap")[1]
+        kinds = [c["kind"] for c in page]
+        assert kinds[0] == "warn", "the safety caveat leads"
+        assert set(kinds) == {"warn", "how"}, kinds
+        css = (STATIC / "app.css").read_text()
+        assert ".figure-caveats span.warn" in css
+        assert ".figure-caveats span.how" in css
+        assert "esc(c.kind)" in _js()
+
+    def test_the_reader_lands_on_a_whole_figure(self) -> None:
+        """B15, round 2's hand-off. The figure is 894 px and whole; the page put
+        the reader 155 px of tab row and download row above it, so the first
+        thing anyone does with this page still ended in a clipped circle."""
+        js = _js()
+        assert re.search(r"getBoundingClientRect\(\)\.height <= window\.innerHeight",
+                         js), "nothing measures whether the figure fits"
+        assert re.search(r'fig\.scrollIntoView', js)

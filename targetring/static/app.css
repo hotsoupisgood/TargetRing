@@ -85,11 +85,21 @@ table { border-collapse: collapse; width: 100%; font-size: 12.5px; background: #
 #drawer td, #drawer th { padding: 5px 7px; }
 th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line);
          vertical-align: top; }
-th { background: #f2f3f5; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
+/* v3.3 / UX v3 round 3 B12. 11.5px -> 12px on both of these, and it is 61
+   strings: round 2's B9 counted 25 in the Invariants and Drop ledger tabs, and
+   the drawer holds 36 more that B9 did not see because nobody had opened it
+   with an instrument.
+
+   The floor's own justification cites "11.5 px table headers" as this build's
+   smallest existing thing, which is how they were grandfathered through two
+   rounds. Half a pixel is not a trade-off, and the drop ledger is "the best
+   thing in this app" per UX-v1-mvp.md -- it should not be the part of it set
+   below the floor the same document's review established. */
+th { background: #f2f3f5; font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
      color: var(--muted); position: sticky; top: 0; }
 td.reason { color: var(--muted); }
 
-.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px;
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
         font-weight: 600; }
 .pill.ok { background: #e3f3e9; color: var(--ok); }
 .pill.bad { background: #fdE7ea; color: var(--bad); }
@@ -102,11 +112,47 @@ td.reason { color: var(--muted); }
   background: #fff; border-left: 1px solid var(--line); box-shadow: -6px 0 24px rgba(0,0,0,.12);
   padding: 22px 26px 60px; z-index: 50;
 }
-#drawer-close { position: absolute; top: 12px; right: 16px; background: none; border: none;
-                color: var(--muted); font-size: 26px; padding: 0 6px; }
+/* v3.3 / round 3 A8: 28 x 39 px, measured, against a 44 px target. It is a
+   desktop-only app so this was round 1's B5 and genuinely minor, but it is the
+   one control on a 5,621 px surface and it cost two CSS declarations. */
+#drawer-close { position: absolute; top: 10px; right: 12px; background: none; border: none;
+                color: var(--muted); font-size: 26px; padding: 0;
+                width: 44px; height: 44px; line-height: 44px; border-radius: 6px; }
+#drawer-close:hover { background: #f4f6f8; }
 #drawer h3 { margin: 0 0 2px; font-size: 20px; }
 #drawer h4 { margin: 22px 0 6px; font-size: 12px; text-transform: uppercase;
              letter-spacing: .06em; color: var(--muted); }
+
+/* v3.3 / UX v3 round 3 A8. The drawer was 5,621 px of flat scroll -- 6.25
+   viewports at 900 px, nine headings, four tables, zero collapsibles. A reader
+   opens it to answer one question and is given all eight sections in a fixed
+   order with no contents and nothing that closes.
+
+   Same contract as `#scales` and `#controls`: every summary names its section
+   and says how much is behind it, so no closed state is a dead end. The three
+   the drawer exists for -- PLAN §1's "its drug pipeline and its literature",
+   plus the reader's own measurement -- start open.
+
+   `.caveat` in the summary is not decoration. A `mouse phenotype lead` collapsed
+   to a bare heading would put COUNCIL M4's "a lead, not a verdict" one click
+   away from the number it qualifies, and AGENTS.md rule 6 is not a thing to
+   hide. The caveat is outside the collapse; the rows are inside it. */
+#drawer .sect { border-top: 1px solid var(--line); }
+#drawer .sect > summary { list-style: none; cursor: pointer; padding: 11px 4px;
+                          font-size: 13px; user-select: none; }
+#drawer .sect > summary::-webkit-details-marker { display: none; }
+#drawer .sect > summary:hover { background: #f4f6f8; }
+#drawer .sect > summary:focus-visible { outline: 2px solid var(--accent);
+                                        outline-offset: -2px; }
+#drawer .sect:not([open]) .chev { transform: rotate(-90deg); }
+#drawer .sect[open] .reveal { animation: reveal .22s ease-out; }
+#drawer .sect > summary .caveat { color: var(--warn); font-weight: 600; }
+#drawer .sect > summary .count { color: var(--muted); font-size: 12px; }
+#drawer .sect > div.reveal { padding: 0 4px 14px; }
+#drawer .sect h4 { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  #drawer .sect[open] .reveal { animation: none; }
+}
 .kv { display: grid; grid-template-columns: 175px 1fr; gap: 3px 12px; font-size: 13px; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; }
@@ -185,11 +231,18 @@ ul.tight li { margin: 2px 0; }
    No disclosure around it, and directly after `#figure` in document order: a
    caveat behind a click is a caveat nobody read. The export keeps all of them at
    full size — `figure.svg`, `figure-slide.svg` and `caption.txt` are untouched. */
-.figure-caveats { margin: 10px 0 0; font-size: 13px; line-height: 1.5;
-                  color: #5a3b00; }
+/* v3.3 / round 3 B14, which is round 2's own hand-off: five clauses of one
+   weight read as one grey block, and a safety caveat and a note about spoke
+   geometry are not the same kind of statement. They are two groups now, in the
+   order a reader needs them -- what this figure does not claim, then how it is
+   drawn -- and only the first group is amber. B3's finding, one surface along:
+   two sentences with different jobs must not read as one run-on. */
+.figure-caveats { margin: 10px 0 0; font-size: 13px; line-height: 1.5; }
 .figure-caveats span { display: block; }
 .figure-caveats span + span { margin-top: 3px; padding-top: 3px;
                               border-top: 1px dotted var(--line); }
+.figure-caveats span.warn { color: #5a3b00; font-weight: 600; }
+.figure-caveats span.how { color: var(--muted); font-weight: 400; }
 
 /* Always open, no control, no state in which it is not on screen: it is one of
    the two things the UX-v3 rule says an animation may never take away. */

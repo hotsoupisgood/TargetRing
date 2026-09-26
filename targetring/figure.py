@@ -994,6 +994,18 @@ class Layout:
     # Default True: a layout added later names its own rings unless it can say
     # where else they are.
     wedge_labels_in_svg: bool = True
+    # v3.3 / UX v3 round 3 A7. The point size of the comparability claim on this
+    # layout's scale column, or None to keep it tied to the fitted row titles.
+    #
+    # Tied is how it was, and on the slide that is how it became 4.88 pt at the
+    # size the artefact exists for. The header was `scale_title_size * 0.95` and
+    # `scale_title_size` is fitted DOWN until twelve rows fit the column, so the
+    # one sentence this review protects on every surface was sized by how much
+    # unrelated text happened to be beside it. On a 16 in canvas at a full 13.33
+    # in slide the scale is 0.8333, so 12.0 pt here is 10.0 pt as seen: the
+    # floor, met deliberately, by a number that does not move when a ring label
+    # grows a caveat.
+    claim_size: float | None = None
 
 
 # v2.6 widens the audit canvas from 17.5 to 19.5 in and narrows the axes box to
@@ -1059,10 +1071,46 @@ AUDIT = Layout("audit", (19.5, 14.0), 8.0, (0.225, 0.205, 0.475, 0.755),
 # `test_a_filtered_render_says_so_on_every_layout`, which is the first test to
 # render every layout WITH filters; the filtered matrix run happened to use
 # seven genes whose shorter labels cleared it.
-SLIDE = Layout("slide", (16.0, 9.0), 11.5, (0.245, 0.105, 0.345, 0.83),
-               False, False, 0.0, 1.15, False, (0.700, 0.026, 0.290, 0.912),
+# v3.3 / UX v3 round 3. Two numbers on this line changed and both are the same
+# measurement: what a string on this artefact is at the size the artefact exists
+# for. A full 13.33 in slide scales a 16 in canvas by 0.8333, so the 10.0 pt
+# floor is 12.0 pt in the file.
+#
+#   A7  the comparability claim   5.86 pt -> 4.88 pt as seen.  `claim_size=12.0`
+#       makes it 10.00, and it is a constant rather than `scale_title_size *
+#       0.95` because the old value was decided by how much text was beside it.
+#   B11 the gene labels           11.50 pt -> 9.58 pt as seen, missing the floor
+#       by 0.42 pt on the artefact UX A4 created to solve exactly this. 12.1 pt
+#       is 10.08, and the extra 0.1 is not a rounding fudge: 12.0 lands on 10.00
+#       and `ux_v3_measure.py` reports `>=` the floor, so a figure one hundredth
+#       of a point either way of compliant is not a figure that has met a floor.
+#
+# Half a slide is not claimed on this artefact and round 1's A3 is why: 10.0 pt
+# as seen at 0.4167 needs 24.0 pt in the file, and a twelve-ring circle with a
+# twelve-scale column does not hold 24 pt type on 16x9. The slide render exists
+# so a FULL slide works; A3 said the same thing about the legend and said it
+# rather than shrinking something to close it.
+# Two more numbers moved and neither costs the circle anything, which is the
+# same arithmetic §v3.0 found when it raised this bottom margin the first time:
+# the radius here is WIDTH-bound -- 0.345 x 16 = 5.52 in against 0.79 x 9 =
+# 7.11 in of height -- so it is 2.76 in before and after.
+#
+#   bottom margin 0.105 -> 0.145, axes height 0.83 -> 0.79. At 12.1 pt the gene
+#   labels reach further down than they did at 11.5, and with a filter active
+#   `slide_line` grows a line upward: `assert_no_text_over_the_rings` refused
+#   the render at 3, 7 and 14 genes, and then refused 0.125 at 3 and 7. This is
+#   §v3.0's own finding arriving one type size later, and the fix it used is the
+#   one that still works -- bought twice over from height the circle never had.
+#
+#   scale column height 0.912 -> 0.885. The claim is 12 pt now and it is drawn
+#   above the column, so at the old height it reached the run-id stamp and
+#   `assert_text_does_not_overprint_text` refused every slide render. Measured
+#   with a deliberately long run id, because round 1's item 5 is that a constant
+#   which clears today's stamp is a constant a longer one walks through.
+SLIDE = Layout("slide", (16.0, 9.0), 12.1, (0.245, 0.145, 0.345, 0.79),
+               False, False, 0.0, 1.15, False, (0.700, 0.026, 0.290, 0.885),
                8.4, 7.6, 52, False, False,
-               wedge_deg=0.0, wedge_label_size=8.4)
+               wedge_deg=0.0, wedge_label_size=8.4, claim_size=12.0)
 # v3.0, Puck: *"download figure and the online figure can be different."*
 #
 # Until now one artefact had to serve both, so it carried every caveat the
@@ -1851,12 +1899,33 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
     # everywhere else; two identical amber blocks side by side on one canvas
     # read as two different warnings.
     if header:
-        blocks.append(fig.text(
-            x0, y0 + h + line(ts) * 0.5,
-            COMPARABILITY_CLAIM + "\n"
-            "a colour means nothing outside its own ring",
-            fontsize=header_size or ts * 0.95, va="bottom", ha="left",
-            color="#8a4b00", weight="bold"))
+        # v3.3 / UX v3 round 3 A7. Where a layout sizes this claim for its own
+        # surface rather than letting the fitted row titles decide, it stops
+        # being the column's header and becomes the figure's banner -- which is
+        # what it always was, and what round 1's A2 turned it into on the app.
+        #
+        # It is anchored to the RIGHT edge rather than to the column's left one.
+        # At 12 pt the 47-character claim is 535 px wide and the column is 464,
+        # so left-anchored it ran 55 px off a 1600 px canvas and
+        # `assert_text_within_canvas` refused every slide render. Wrapping was
+        # the other option and it is the wrong one: the claim has to survive
+        # being read back out of the SVG in one piece, which is how three tests
+        # check it is on the figure at all.
+        claim_pt = header_size or lay.claim_size or ts * 0.95
+        if lay.claim_size is not None and header_size is None:
+            blocks.append(fig.text(
+                0.995, y0 + h + line(ts) * 0.5,
+                COMPARABILITY_CLAIM + "\n"
+                "a colour means nothing outside its own ring",
+                fontsize=claim_pt, va="bottom", ha="right",
+                color="#8a4b00", weight="bold"))
+        else:
+            blocks.append(fig.text(
+                x0, y0 + h + line(ts) * 0.5,
+                COMPARABILITY_CLAIM + "\n"
+                "a colour means nothing outside its own ring",
+                fontsize=claim_pt, va="bottom", ha="left",
+                color="#8a4b00", weight="bold"))
 
     top = y0 + h
     for i, spec in enumerate(rings, start=start):
@@ -2032,8 +2101,27 @@ def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[st
     # `assert_centre_fits_the_hole` refuses to render instead of clipping, and a
     # filter statement that stops the figure being drawn helps nobody.
     if ordering_note:
+        # v3.3 / UX v3 round 3 B13. 6.8 pt is 10.23 CSS px on the app render and
+        # it was the LAST string under this review's 12.0 px floor there.
+        #
+        # Round 2's B10 proposed deleting it: it was one of a pair, said again
+        # at 15.05 px in the footer 40 px below, and removing the small copy
+        # removes the exception rather than arguing for it. Round 2's own fix
+        # then removed the other half of the pair when the caveat line left the
+        # canvas (A4), so deleting this one now would leave the app render
+        # stating no spoke order at all on its own canvas -- which PLAN §3.1
+        # requires ("decided, stated on the figure, and checked in the
+        # artefact") and which §v3.0's "the figure alone must still not lie" is
+        # exactly about. So the remaining fix is the other one: make it legible.
+        #
+        # 8.0 pt is 12.04 px at the app's 1.5046, the same arithmetic that set
+        # the gene labels. The hole is not being asked to find the room out of
+        # nowhere -- `fit_centre_to_the_hole` still shrinks the whole block to
+        # the innermost ring and `assert_centre_fits_the_hole` still refuses the
+        # render rather than clipping, so this is a request, not an override.
         out.append(ax.text(0.5, y, textwrap.fill(ordering_note, 34),
-                           ha="center", va="top", size=6.8 * k,
+                           ha="center", va="top",
+                           size=(8.0 if lay and not lay.scales_in_svg else 6.8) * k,
                            transform=ax.transAxes, color="#444444"))
     if filter_notes:
         n_marked = sum(1 for s in (stats or {}).values() if s.unfiltered_rings)
@@ -2529,16 +2617,29 @@ def caveats_for_the_page(ordering_note: str, filter_notes: Sequence[str],
     `assert_footer_is_true` reads `notes + caption`, which are unchanged — the
     audit render and `caption.txt` carry every clause they always did, and the
     slide render is not touched at all.
+
+    v3.3 / UX v3 round 3 B14. The clauses come back CLASSIFIED, as
+    `{"kind": "warn"|"how", "text": ...}`. A safety caveat and a note about
+    where the ring names are are not the same kind of statement, and round 2
+    shipped five of them at one weight -- `UX-v1-mvp.md` B3's "two sentences
+    with different jobs reading as one grey run-on", one surface along.
+
+    And one clause is gone rather than reclassified. `slide_line` carries
+    *"rings are scaled independently of one another"*, which is the
+    comparability claim in other words; on the slide that is the only statement
+    of it below the column header, and on the app it sat 13 px under a 16.55 px
+    banner making the same claim. That is **A6 restored by A6's own fix**, found
+    by round 3 reading round 2's output. The slide keeps it; the page does not.
     """
     keep = ("FILTERED — not your whole submitted set: " + " · ".join(filter_notes)
             if filter_notes else "")
-    page = [f"The safety ring is {SAFETY_RING_CAVEAT}.",
-            ordering_note,
-            "Rings are scaled independently of one another."]
+    page = [("warn", f"The safety ring is {SAFETY_RING_CAVEAT}."),
+            ("how", ordering_note)]
     if wedge_short:
-        page.append(wedge_short[0].upper() + wedge_short[1:])
-    page.append("Every caveat this run carries is in the What this is not tab.")
-    return keep, [p for p in page if p]
+        page.append(("how", wedge_short[0].upper() + wedge_short[1:]))
+    page.append(("how", "Every caveat this run carries is in the "
+                        "What this is not tab."))
+    return keep, [{"kind": k, "text": t} for k, t in page if t]
 
 
 def _column_above_the_footer(fig, lay, stamps) -> "Layout":

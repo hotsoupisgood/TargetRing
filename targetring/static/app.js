@@ -208,6 +208,15 @@ function render(b) {
   if (ctl) ctl.open = false;
 
   // UX B4: after a run the figure was below the fold and the scroll did not move.
+  //
+  // v3.3 / UX v3 round 3 B15. Where it moves TO is the finding round 2's
+  // re-review handed here: `#counts` at the top of the window leaves 155 px of
+  // tab row and download row above the figure, so a figure that is itself
+  // 894 px and whole was still clipped by 149 px at the position this page
+  // chose for the reader. The figure is what the reader came for, so once the
+  // SVG is in and its height is known, it gets the viewport if it fits in one.
+  // Measured rather than assumed: if a future canvas does not fit, the scroll
+  // falls back to `#result` and nothing silently crops.
   $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
 
   // v3.0. The page inlines the WEB render, not the export. Same cells --
@@ -219,6 +228,12 @@ function render(b) {
   fetch(b.web_url || b.svg_url).then((r) => r.text()).then((svg) => {
     $("#figure").innerHTML = svg;
     wireFigure();
+    // B15, continued: now the figure's height is a measurement rather than a
+    // guess about a canvas constant.
+    const fig = $("#figure");
+    if (fig.getBoundingClientRect().height <= window.innerHeight) {
+      fig.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   });
 
   // v3.1 / UX v3 A2. The scale column and the cell-state box are no longer in
@@ -266,8 +281,11 @@ function renderDecode(s) {
   // disclosure around it.
   const cav = $("#figure-caveats");
   if (cav) {
+    // v3.3 / round 3 B14: two groups, not five equal lines. `kind` comes from
+    // the render, so what is a caveat and what is a note about the drawing is
+    // decided once, where the sentences are written.
     cav.innerHTML = (s.figure_caveats || [])
-      .map((c) => `<span>${esc(c)}</span>`).join("");
+      .map((c) => `<span class="${esc(c.kind)}">${esc(c.text)}</span>`).join("");
   }
 
   $("#scale-rows").innerHTML = s.rings.map((r) => `
@@ -373,10 +391,57 @@ function renderCaveats(b) {
 
 // ---------- drawer ----------
 
+// v3.3 / UX v3 round 3 A8. The three sections the drawer exists for: PLAN §1 is
+// "clicking a gene opens a drawer with its drug pipeline and its literature",
+// and a reader's own measurement is what they arrived holding.
+const DRAWER_OPEN = ["your measurement", "drug pipeline", "literature"];
+
+// The two sections whose caveat is load-bearing. Collapsed to a bare heading,
+// COUNCIL M4's "a lead, not a verdict" and PLAN §8's "any ChEMBL-backed ring is
+// untrusted on day one" would be one click further from the numbers they
+// qualify than the numbers are. So the caveat rides on the summary, outside the
+// collapse, and only the rows go behind it. Matched on a prefix because the
+// trials heading carries its source and that source changed under this build
+// once already (v2.4).
+const DRAWER_CAVEATS = [
+  ["mouse phenotype lead", "a lead, not a verdict"],
+  ["ChEMBL mechanisms", "untrusted — resolution unprobed"],
+  ["safety liabilities", "absence is weak evidence of safety"],
+];
+
+function sectionCount(body) {
+  const rows = (body.replace(/<thead>[\s\S]*?<\/thead>/g, "").match(/<tr>/g) || []).length;
+  const items = (body.match(/<li>/g) || []).length;
+  const pairs = (body.match(/<dt>/g) || []).length;
+  const n = rows || items || pairs;
+  const what = rows ? "row" : items ? "item" : pairs ? "field" : "";
+  return n ? `${n} ${what}${n === 1 ? "" : "s"}` : "a note";
+}
+
+// One `<details>` per `<h4>`, built by splitting the finished HTML rather than
+// by threading a wrapper through nine `h +=` sites. The sections are written in
+// nine places and closed in none of them; doing it here is why this fix could
+// not introduce an unbalanced tag into one of them.
+function sectionise(html) {
+  return html.split(/(?=<h4>)/).map((part) => {
+    const m = part.match(/^<h4>([\s\S]*?)<\/h4>([\s\S]*)$/);
+    if (!m) return part;                       // the gene header, before any <h4>
+    const title = m[1].replace(/<[^>]+>/g, "").trim();
+    const body = m[2];
+    const open = DRAWER_OPEN.some((t) => title.startsWith(t)) ? " open" : "";
+    const hit = DRAWER_CAVEATS.find(([t]) => title.startsWith(t));
+    const caveat = hit ? ` <span class="caveat">— ${esc(hit[1])}</span>` : "";
+    return `<details class="sect"${open}>` +
+      `<summary><span class="chev" aria-hidden="true">▾</span> <b>${esc(title)}</b>` +
+      `${caveat} <span class="count">${esc(sectionCount(body))}</span></summary>` +
+      `<div class="reveal">${body}</div></details>`;
+  }).join("");
+}
+
 async function openDrawer(gene) {
   const d = await fetch(`/api/run/${RUN.run_id}/gene/${encodeURIComponent(gene)}`)
     .then((r) => r.json());
-  $("#drawer-body").innerHTML = drawerHtml(d);
+  $("#drawer-body").innerHTML = sectionise(drawerHtml(d));
   $("#drawer").hidden = false;
   $("#scrim").hidden = false;
   $("#drawer").scrollTop = 0;
