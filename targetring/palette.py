@@ -17,10 +17,13 @@ So colour here is derived, not picked, and the derivation is the point:
   the ramps are *built* rather than taken from matplotlib's collection —
   `plasma`, `Blues` and `YlOrBr` have three different luminance spans, and
   stacking twelve of those reopens the collision the v2.2 truncation closed.
-* **Hue carries ring identity; lightness carries magnitude.** Within a ring,
-  darker is always less and lighter is always more (or, on a diverging ring,
-  darker is further from zero in the direction the hue names). Between rings,
-  hue says "this is a different measurement with a different scale".
+* **Hue carries ring identity; lightness and chroma carry magnitude.** Within a
+  ring, pale and washed out is always less and dark and saturated is always more
+  (v3.4, Puck's call -- it ran the other way until then). On a diverging ring
+  the same sentence already held: the midpoint is the palest colour and each arm
+  darkens away from zero in the direction its hue names, so diverging rings did
+  not move. Between rings, hue says "this is a different measurement with a
+  different scale".
 * **A ring with few levels gets few colours.** An ordinal with four steps drawn
   on a 256-step ramp invites a reader to interpolate between steps that do not
   exist. `clinical_phase`, `tdl`, `chemical_probe` and `rodent` are drawn as
@@ -109,6 +112,13 @@ RAMP_CHROMA = 0.138
 # fails the categorical chroma floor, and that is the intended statement.
 GAUGE_CHROMA = 0.042
 
+# The chroma the pale end of a sequential ramp keeps. Zero would put the low
+# end on the neutral axis, where a washed-out value sits beside the hatched grey
+# `no_data` fill and gets read as missing -- the same failure `diverging_hexes`
+# guards its midpoint against, for the same reason. This is the floor that keeps
+# "low" legible as a measurement.
+LOW_END_CHROMA = 0.022
+
 RAMP_STEPS = 256
 
 
@@ -164,6 +174,34 @@ def oklch_to_rgb(L: float, C: float, h_deg: float) -> tuple[float, float, float]
     return tuple(min(1.0, max(0.0, _linear_to_srgb(min(1.0, max(0.0, v))))) for v in lin)
 
 
+def linear_rgb_to_oklab(r: float, g: float, b: float) -> tuple[float, float, float]:
+    """Ottosson's inverse, so a colour claim can be measured off the hex.
+
+    v3.4 needs this: the assertion that the low end of a ramp is desaturated has
+    to read the chroma of the colour that was actually produced, not the chroma
+    that was asked for. `oklch_to_rgb` reduces chroma until the colour fits in
+    sRGB, so the two are not the same number and the difference is the whole
+    point of checking.
+    """
+    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    s_ = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_, m_, s_c = l ** (1 / 3), m ** (1 / 3), s_ ** (1 / 3)
+    return (
+        0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_c,
+        1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_c,
+        0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_c,
+    )
+
+
+def oklch_from_hex(hex_colour: str) -> tuple[float, float, float]:
+    """(L, C, hue degrees) of a hex colour."""
+    from matplotlib.colors import to_rgb
+    r, g, b = (_srgb_to_linear(c) for c in to_rgb(hex_colour))
+    L, a, bb = linear_rgb_to_oklab(r, g, b)
+    return L, math.hypot(a, bb), math.degrees(math.atan2(bb, a)) % 360.0
+
+
 def relative_luminance(rgb: tuple[float, float, float]) -> float:
     """WCAG relative luminance — what a colour becomes in greyscale."""
     r, g, b = rgb
@@ -215,10 +253,36 @@ def _luminance_targets(n: int, lum: tuple[float, float]) -> list[float]:
 def sequential_hexes(hue: str, n: int = RAMP_STEPS,
                      chroma: float = RAMP_CHROMA,
                      lum: tuple[float, float] = RAMP_LUM) -> list[str]:
-    """Dark -> light in one hue, spanning exactly the shared luminance band."""
+    """Pale -> dark in one hue, spanning exactly the shared luminance band.
+
+    v3.4, Puck's call: low is washed out and high is saturated and dark, which
+    is the polarity every sequential colormap a reader has already seen uses.
+    Before this the ramp ran the other way.
+
+    Two things carry the magnitude together rather than one:
+
+    * **lightness**, running from the light end of `RAMP_LUM` down to the dark
+      end as the value rises;
+    * **chroma**, running from `LOW_END_CHROMA` up to `chroma` over the same
+      span, so the low end is genuinely desaturated rather than merely pale.
+
+    The light end stops at `RAMP_LUM[1]` and does not reach white, and that is
+    not a stylistic compromise. White is `not_applicable` and #e8e8e8 is
+    `no_data`; a value drawn at either is a value a reader can mistake for a
+    missing one, which is rule 1. `LOW_END_CHROMA` is the same guard in the
+    other channel -- it keeps the pale end visibly *on the scale* rather than
+    letting it drift to a neutral that reads as the grey no-data fill.
+    """
     h = HUE[hue]
-    return [to_hex(oklch_to_rgb(_lightness_for_luminance(t, chroma, h), chroma, h))
-            for t in _luminance_targets(n, lum)]
+    targets = list(reversed(_luminance_targets(n, lum)))
+    if n == 1:
+        return [to_hex(oklch_to_rgb(
+            _lightness_for_luminance(targets[0], chroma, h), chroma, h))]
+    out = []
+    for i, t in enumerate(targets):
+        c = LOW_END_CHROMA + (chroma - LOW_END_CHROMA) * i / (n - 1)
+        out.append(to_hex(oklch_to_rgb(_lightness_for_luminance(t, c, h), c, h)))
+    return out
 
 
 def diverging_hexes(low_hue: str, high_hue: str, n: int = RAMP_STEPS,
@@ -256,10 +320,20 @@ def discrete_hexes(hue: str, levels: int, chroma: float = RAMP_CHROMA) -> list[s
 
     Two levels get the two ends, so a binary ring is two colours a long way
     apart rather than two neighbouring steps of a ramp nobody can read.
+
+    v3.4: same polarity as `sequential_hexes` -- the first level is the pale,
+    desaturated one and the last is dark and saturated.
     """
     h = HUE[hue]
-    return [to_hex(oklch_to_rgb(_lightness_for_luminance(t, chroma, h), chroma, h))
-            for t in _luminance_targets(levels, RAMP_LUM)]
+    targets = list(reversed(_luminance_targets(levels, RAMP_LUM)))
+    if levels == 1:
+        return [to_hex(oklch_to_rgb(
+            _lightness_for_luminance(targets[0], chroma, h), chroma, h))]
+    out = []
+    for i, t in enumerate(targets):
+        c = LOW_END_CHROMA + (chroma - LOW_END_CHROMA) * i / (levels - 1)
+        out.append(to_hex(oklch_to_rgb(_lightness_for_luminance(t, c, h), c, h)))
+    return out
 
 
 def cmap_from(hexes: list[str], name: str) -> LinearSegmentedColormap:

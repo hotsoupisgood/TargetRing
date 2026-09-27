@@ -3516,3 +3516,54 @@ Left open and named rather than swept: 4 bounding-box adjacencies on the slide
 render that were already there at round 2 and are not overprinted glyphs; the
 half-slide floor; and the export figure, where the screen floor is the wrong
 ruler because that artefact exists to be printed or opened at full size.
+
+# v3.4 — low is pale, high is dark
+
+Puck: *"change the colour scheme so low is desaturated/white and dark is
+saturated high on every scale."* The ramps ran the other way until now — the
+module's own rule was "darker is always less" — so this is a polarity flip, and
+it matches the convention every sequential colormap a reader has already seen.
+
+Two channels carry magnitude instead of one. Lightness runs from the light end
+of the shared luminance band down to the dark end as the value rises, and chroma
+runs from `LOW_END_CHROMA` 0.022 up to the family's own chroma over the same
+span — so the low end is genuinely washed out rather than merely pale. Before
+this, chroma was flat across a ramp and only lightness moved.
+
+| family | low | high |
+|---|---|---|
+| padj | `#e0d0d9` | `#822b68` |
+| tractability | `#e0d2c6` | `#734100` |
+| specificity | `#d2d6c6` | `#475300` |
+| knowledge | `#dad4c4` | `#604b00` |
+| pipeline | `#c4d8d7` | `#005755` |
+| rodent | `#c8d8ce` | `#005a35` |
+| gauge | `#c4d8d9` | `#2f5355` |
+
+**Diverging rings did not move, and did not need to.** logFC and safety were
+already palest at zero and darkest at both extremes, which is the same sentence
+Puck asked for applied to a signed quantity. Flipping them would have been the
+V17 error — putting "strongly down-regulated" at the pale end where every other
+ring puts "nothing here".
+
+**The pale end stops short of white, and that is load-bearing.** White is
+`not_applicable` and `#e8e8e8` is `no_data`. The lightest value colour any ring
+can paint sits at luminance 0.660, which is 0.1468 below the `no_data` fill
+against a required margin of 0.05. Going to literal white would put a low value
+where a missing value lives, and rule 1 is that missing is not low.
+`LOW_END_CHROMA` is the same guard in the other channel: at zero chroma the pale
+end would sit on the neutral axis next to the hatched grey, so it keeps just
+enough colour to read as being on a scale.
+
+Measured either side of the change, ring separation is close to a wash: the
+worst touching-ring pair went **dE 1.4 → 2.3**, and the boundaries clearing the
+dE 8 target went **6 of 10 → 5 of 10**. That target is at a geometric ceiling
+and is reported rather than asserted, for the reasons in
+`assert_rings_are_distinguishable`. The luminance envelope is unchanged at
+0.074–0.660 and every greyscale guarantee still holds.
+
+`assert_ramp_luminance_is_monotone` now asserts the *direction*, not just the
+monotonicity: a single ring running the other way is worse than all twelve
+running either way, because a reader who has learned the figure reads that one
+ring backwards and is never told. 547 tests pass (545 before; 2 new, one for
+each channel of the claim).

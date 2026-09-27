@@ -730,12 +730,19 @@ def assert_fills_disjoint() -> None:
 
 
 def assert_ramp_luminance_is_monotone() -> None:
-    """Within a ring, darker must always mean less.
+    """Within a ring, darker must always mean more (v3.4; it was less before).
 
-    Sequential ramps are monotone end to end. A diverging ramp is monotone along
-    each arm and symmetric about the middle, which is the property that makes
-    "equally far from zero" look equally far from zero -- and the property that
-    a sequential ramp on signed data (V17) does not have.
+    Sequential ramps are monotone end to end, and after v3.4 they run *down* in
+    luminance: pale is low, dark is high. The direction is asserted, not merely
+    the monotonicity, because a single ring running the other way is worse than
+    all twelve running either way -- a reader who has learned the figure reads
+    that one ring backwards and is never told.
+
+    A diverging ramp is monotone along each arm and symmetric about the middle,
+    which is the property that makes "equally far from zero" look equally far
+    from zero -- and the property that a sequential ramp on signed data (V17)
+    does not have. Diverging rings were already pale-at-zero and dark-at-the-
+    extremes, so v3.4 did not move them.
     """
     for name, fam in FAMILIES.items():
         lums = [_luminance(to_rgb(h)) for h in fam.hexes]
@@ -753,10 +760,10 @@ def assert_ramp_luminance_is_monotone() -> None:
                     f"the {name!r} family's two arms do not meet at the same luminance "
                     f"({arms[0][-1]:.4f} vs {arms[1][-1]:.4f}), so equal and opposite "
                     f"values are drawn at different distances from the middle")
-        elif not all(b >= a - 1e-6 for a, b in zip(lums, lums[1:])):
+        elif not all(b <= a + 1e-6 for a, b in zip(lums, lums[1:])):
             raise AssertionError(
-                f"the {name!r} family is not monotone in luminance, so a darker cell on "
-                f"that ring does not reliably mean a smaller number")
+                f"the {name!r} family does not fall monotonically in luminance, so a "
+                f"darker cell on that ring does not reliably mean a larger number")
 
 
 def assert_rings_are_distinguishable(rings: Sequence[RingSpec] | None = None) -> None:

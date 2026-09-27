@@ -357,14 +357,43 @@ class TestGreyscaleDisjointness:
             "colormaps would reopen the collision one truncated ramp closed")
 
     def test_every_ramp_is_monotone_in_luminance(self) -> None:
-        """Within a ring, darker must always mean less -- on every family, and
-        on each arm of a diverging one."""
+        """Within a ring, darker must always mean more -- on every family, and
+        on each arm of a diverging one. v3.4 flipped this; before it, darker
+        meant less."""
         assert_ramp_luminance_is_monotone()
         for name, fam in FAMILIES.items():
             if fam.kind != "sequential":
                 continue
             lums = [relative_luminance(h) for h in fam.hexes]
-            assert all(b >= a - 1e-6 for a, b in zip(lums, lums[1:])), name
+            assert all(b <= a + 1e-6 for a, b in zip(lums, lums[1:])), name
+
+    def test_the_low_end_is_pale_and_desaturated_and_the_high_end_is_not(self) -> None:
+        """v3.4, Puck's ask: low reads washed out, high reads saturated and
+        dark. Asserted on both channels, because lightness alone was what the
+        ramp already had and it is not what he asked for."""
+        from targetring.palette import oklch_from_hex
+        for name, fam in FAMILIES.items():
+            if fam.kind != "sequential":
+                continue
+            lums = [relative_luminance(h) for h in fam.hexes]
+            assert lums[0] > lums[-1], f"{name}: the low end is not the pale one"
+            c_lo = oklch_from_hex(fam.hexes[0])[1]
+            c_hi = oklch_from_hex(fam.hexes[-1])[1]
+            assert c_hi > c_lo, f"{name}: the high end is not the more saturated one"
+
+    def test_the_pale_end_keeps_enough_chroma_to_read_as_a_measurement(self) -> None:
+        """The guard on the flip. A low value drawn at zero chroma sits on the
+        neutral axis beside the hatched grey `no_data` fill, and rule 1 says
+        missing is not low. The floor is what stops the pale end drifting
+        there."""
+        from targetring.palette import LOW_END_CHROMA, oklch_from_hex
+        for name, fam in FAMILIES.items():
+            if fam.kind != "sequential":
+                continue
+            c_lo = oklch_from_hex(fam.hexes[0])[1]
+            assert c_lo >= LOW_END_CHROMA - 1e-3, (
+                f"{name}: the pale end fell to chroma {c_lo:.4f}, below the "
+                f"{LOW_END_CHROMA} floor that keeps it off the neutral axis")
 
     def test_the_check_would_catch_a_family_that_left_the_envelope(self) -> None:
         """A check that has never been seen to fail is not a check."""
