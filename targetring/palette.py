@@ -39,7 +39,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from matplotlib.colors import LinearSegmentedColormap, to_hex
+from matplotlib.colors import LinearSegmentedColormap, to_hex, to_rgb
 
 # The band every value colour lives in, as WCAG relative luminance.
 #
@@ -49,12 +49,12 @@ from matplotlib.colors import LinearSegmentedColormap, to_hex
 # `figure.GREYSCALE_MIN_DELTA` (0.05). v2.5 achieved the same thing by
 # truncating viridis to [0.16, 0.92], which put one ramp in [0.056, 0.663];
 # this is that interval, generalised to every ramp and enforced by construction.
-RAMP_LUM: tuple[float, float] = (0.075, 0.660)
+RAMP_LUM: tuple[float, float] = (0.075, 0.740)
 
 # A diverging ramp's midpoint is its lightest colour, and the midpoint of a
 # *signed* ring means "zero", so it must not be mistaken for the `no_data` grey
 # at 0.8069. Held below the sequential ceiling to widen that gap to 0.207.
-DIVERGING_MID_LUM = 0.600
+DIVERGING_MID_LUM = 0.700
 
 # OKLCh hue angles, degrees, chosen by `scripts/hue_search.py` rather than by
 # eye. Ten chromatic identities for twelve rings: `tractable`/`chemical_probe`
@@ -250,6 +250,35 @@ def _luminance_targets(n: int, lum: tuple[float, float]) -> list[float]:
 # Ramps
 # --------------------------------------------------------------------------
 
+def _hex_inside_envelope(target: float, C: float, h_deg: float,
+                        lum: tuple[float, float]) -> str:
+    """The hex for (target, C, hue), nudged until the *quantised* colour is
+    inside the envelope.
+
+    `_lightness_for_luminance` bisects to 1e-12, so the colour it picks hits its
+    target. `to_hex` then rounds to 8 bits, which moves the luminance by up to
+    about 0.002 -- and a step at the very top of the band can round outward past
+    the ceiling. v3.4 raised that ceiling from 0.660 to 0.740 and
+    `test_one_luminance_envelope_is_what_makes_room` caught exactly that: a
+    family reaching 0.7424 against a 0.742 tolerance.
+
+    Relaxing the tolerance would have hidden it. Instead the emitted colour is
+    checked and walked back in L until it is inside, so the envelope is a
+    property of what is drawn rather than of what was requested.
+    """
+    L = _lightness_for_luminance(target, C, h_deg)
+    for _ in range(64):
+        hex_colour = to_hex(oklch_to_rgb(L, C, h_deg))
+        lum_seen = relative_luminance(to_rgb(hex_colour))
+        if lum_seen > lum[1]:
+            L -= 1e-3
+        elif lum_seen < lum[0]:
+            L += 1e-3
+        else:
+            return hex_colour
+    return hex_colour
+
+
 def sequential_hexes(hue: str, n: int = RAMP_STEPS,
                      chroma: float = RAMP_CHROMA,
                      lum: tuple[float, float] = RAMP_LUM) -> list[str]:
@@ -281,7 +310,7 @@ def sequential_hexes(hue: str, n: int = RAMP_STEPS,
     out = []
     for i, t in enumerate(targets):
         c = LOW_END_CHROMA + (chroma - LOW_END_CHROMA) * i / (n - 1)
-        out.append(to_hex(oklch_to_rgb(_lightness_for_luminance(t, c, h), c, h)))
+        out.append(_hex_inside_envelope(t, c, h, lum))
     return out
 
 
@@ -332,7 +361,7 @@ def discrete_hexes(hue: str, levels: int, chroma: float = RAMP_CHROMA) -> list[s
     out = []
     for i, t in enumerate(targets):
         c = LOW_END_CHROMA + (chroma - LOW_END_CHROMA) * i / (levels - 1)
-        out.append(to_hex(oklch_to_rgb(_lightness_for_luminance(t, c, h), c, h)))
+        out.append(_hex_inside_envelope(t, c, h, RAMP_LUM))
     return out
 
 

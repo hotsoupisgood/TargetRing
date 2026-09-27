@@ -3548,15 +3548,35 @@ ring puts "nothing here".
 
 **The pale end stops short of white, and that is load-bearing.** White is
 `not_applicable` and `#e8e8e8` is `no_data`. The lightest value colour any ring
-can paint sits at luminance 0.660, which is 0.1468 below the `no_data` fill
+can paint sits at luminance 0.740, which is 0.067 below the `no_data` fill
 against a required margin of 0.05. Going to literal white would put a low value
 where a missing value lives, and rule 1 is that missing is not low.
 `LOW_END_CHROMA` is the same guard in the other channel: at zero chroma the pale
 end would sit on the neutral axis next to the hatched grey, so it keeps just
 enough colour to read as being on a scale.
 
+**The pale ceiling then moved again, in answer to Puck's "white -> color as a
+gradient. does this not work?"** It does work — it is what every sequential
+colormap does — and the only thing stopping it here is that this figure spends
+white on `not_applicable` and `#e8e8e8` on `no_data`. But `RAMP_LUM`'s ceiling
+of 0.660 was set when light meant *high*, where nothing needed it near white.
+With the polarity flipped it was simply unused headroom, so it went to **0.740**
+and `DIVERGING_MID_LUM` to 0.700. The pale end is now `#ebdbe4`-ish rather than
+`#e0d0d9`-ish and reads as white on a screen; the gap to `no_data` is 0.067
+against a required 0.05.
+
+Raising it surfaced a real defect the old ceiling had been hiding.
+`to_hex` rounds to 8 bits, which moves luminance by up to ~0.002, and a step at
+the very top of the band can round *outward* past the ceiling. At 0.660 that
+never mattered; at 0.740 one family reached 0.7424 against a 0.742 tolerance and
+`test_one_luminance_envelope_is_what_makes_room` failed. Widening the tolerance
+would have buried it. Instead `_hex_inside_envelope` checks the *quantised*
+colour and walks L back until it is inside, so the envelope is now a property of
+what is drawn rather than of what was asked for. Value colours span
+0.0747–0.7398 inside an envelope of 0.075–0.740.
+
 Measured either side of the change, ring separation is close to a wash: the
-worst touching-ring pair went **dE 1.4 → 2.3**, and the boundaries clearing the
+worst touching-ring pair went **dE 1.4 → 2.1**, and the boundaries clearing the
 dE 8 target went **6 of 10 → 5 of 10**. That target is at a geometric ceiling
 and is reported rather than asserted, for the reasons in
 `assert_rings_are_distinguishable`. The luminance envelope is unchanged at
