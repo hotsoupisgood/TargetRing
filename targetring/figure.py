@@ -20,9 +20,9 @@ from __future__ import annotations
 import itertools
 import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as dc_replace
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import matplotlib
 
@@ -1001,6 +1001,21 @@ class Layout:
     # Default True: a layout added later names its own rings unless it can say
     # where else they are.
     wedge_labels_in_svg: bool = True
+    # v3.5. The as-seen floor a ring name drawn inside the gap must clear on this
+    # layout, in CSS pixels, or None where this layout's type is measured against
+    # a different floor.
+    #
+    # It is set on `web` alone and it is the whole difference between v3.5 and
+    # round 1. Round 1 DID draw the twelve names in the app's gap -- at 9.07 CSS
+    # px, because `fit_wedge_labels` shrank 7.4 pt until the geometry accepted it
+    # -- and round 2 deleted them for exactly that: "an unreadable copy of a
+    # legible thing is what this review is against". So a layout that is read in
+    # the browser declares the floor here, `assert_wedge_names_clear_the_floor`
+    # measures the DRAWN artists against it after the fit loop has had its way,
+    # and a render that could only fit the names by going under it refuses them.
+    # `audit` and `slide` are files, measured against the 10.0 pt presentation
+    # floor on the surface they are presented at (§v3.3), so they leave it None.
+    wedge_label_floor_px: float | None = None
     # v3.3 / UX v3 round 3 A7. The point size of the comparability claim on this
     # layout's scale column, or None to keep it tied to the fitted row titles.
     #
@@ -1230,11 +1245,36 @@ SLIDE = Layout("slide", (16.0, 9.0), 12.1, (0.245, 0.145, 0.345, 0.79),
 # `assert_text_does_not_overprint_text` are what settled 0.140 and 0.145 --
 # 0.725 of axes height was refused at 50 genes with the banner 4.0 px off
 # `GENE049 (k=9/9)`, which is the clearance exactly and therefore not a margin.
+# v3.5, Puck: *"the names should appear automatically when the viewport allows a
+# circle big enough to hold them honestly, and stay off when it does not."*
+#
+# So this Layout stops being the app render and becomes the app render **in one
+# window** -- a 1440 x 900 laptop, which is the window round 2 A4 measured and
+# the one every number in the comment above is still true of.
+# `web_layout_for_viewport` derives the canvas for any other window from it, and
+# `render_naming_the_rings_if_they_fit` decides the names by rendering them and
+# keeping the result only if the assertions accept it.
+#
+# Two fields on this line changed and neither is a nudge.
+#
+#   `wedge_label_size` 7.4 -> 8.0. 7.4 was inherited from the audit render, whose
+#   canvas is twice as wide; here the scale is fixed at 1.5046 CSS px per point
+#   (`WEB_PX_PER_IN`, below), so 7.4 pt is 11.13 CSS px -- under the floor before
+#   the fit loop has shrunk anything, which is round 1's 9.07 px exception with
+#   two thirds of the gap between it and legibility already spent. 8.0 pt is
+#   12.04 px: the same arithmetic, and the same number, as `label_size`.
+#
+#   `wedge_label_floor_px` 12.0. The names are allowed back only at a size a
+#   reader can read, measured on the drawn artists rather than on this constant.
+#
+# `wedge_labels_in_svg` stays False HERE, and that is not a leftover: at this
+# canvas the names do not fit at 8.0 pt and the gap stays empty, exactly as round
+# 2 left it. What is new is that 9.6 x 8.25 in is no longer the only canvas.
 WEB = Layout("web", (9.6, 8.25), 8.0, (0.120, 0.145, 0.760, 0.715),
              False, False, 0.0, 1.0, False, (0.762, 0.035, 0.232, 0.930),
              7.4, 6.6, 42, True, False,
-             wedge_deg=26.0, wedge_label_size=7.4, scales_in_svg=False,
-             wedge_labels_in_svg=False)
+             wedge_deg=26.0, wedge_label_size=8.0, scales_in_svg=False,
+             wedge_labels_in_svg=False, wedge_label_floor_px=12.0)
 
 # v3.0, Puck: *"we could have the download download legend as a separate
 # image"* -- "circle on one slide, legend on another, sized independently".
@@ -1264,6 +1304,152 @@ LEGEND = Layout("legend", (16.0, 9.0), 8.0, (0.0, 0.0, 0.01, 0.01),
                 wedge_deg=0.0, wedge_label_size=8.0)
 
 LAYOUTS = {"audit": AUDIT, "slide": SLIDE, "web": WEB}
+
+# v3.5. The app render, at any window size.
+#
+# The panel the app gave the figure on Puck's laptop, and the window that panel
+# was measured in: 1440 px wide, minus 52 px of `main` padding and the 330 + 18
+# px decode column, is 1040 px, and round 2's viewport was 900 px tall
+# (`docs/reviews/UX-v3-rounds.md` §2, `scripts/ux_v3_measure.py`). Everything
+# `WEB` declares is true at this pair and only at this pair, so they are named
+# here rather than left as two magic numbers in three files.
+WEB_REFERENCE_PANEL_PX = 1040.0
+WEB_REFERENCE_VIEWPORT_PX = 900.0
+# CSS pixels per canvas inch on the app render, and the one number that makes a
+# responsive canvas safe. `scale = panel_px / (width_in * 72)` is what turns a
+# point in the file into a pixel on the screen, so holding `panel_px / width_in`
+# CONSTANT holds every string's as-seen size constant: the canvas grows with the
+# window and 8.0 pt is 12.04 CSS px at 1040 px and at 1500. A canvas that grew
+# without this would buy circle at the price of the floor round 1 paid to reach.
+WEB_PX_PER_IN = WEB_REFERENCE_PANEL_PX / WEB.figsize[0]      # 108.33 px / in
+# The CSS pixels a point of this layout is drawn at, everywhere, by construction.
+WEB_CSS_SCALE = WEB_PX_PER_IN / 72.0                          # 1.5046
+# Held back from the height budget, because one pixel is not a margin -- round 2
+# rejected an 8.30 in canvas that also passed every assertion for the same
+# reason and took 8.25.
+WEB_VIEWPORT_SLACK_PX = 6.0
+
+
+def web_layout_for_viewport(panel_px: float = WEB_REFERENCE_PANEL_PX,
+                            viewport_px: float = WEB_REFERENCE_VIEWPORT_PX,
+                            *, name_the_rings: bool = False) -> Layout:
+    """v3.5. The `web` canvas for the window this render is going to be read in.
+
+    Round 2 A4 pinned this layout to one canvas because one canvas was all a
+    fixed figure could have, and picked the one that fits a 1440 x 900 laptop
+    whole. That is the right canvas for that laptop and it is 640 px of circle on
+    a 27 in monitor, where the same page has a thousand more pixels in both
+    directions and spends them on white margin. It is also what emptied the 26°
+    gap: the names need a bigger circle than 900 px of height can carry, so
+    pinning the canvas to the smallest supported window pinned the *arrangement*
+    to it too.
+
+    Two inputs, both measured by the browser and handed over rather than derived
+    from a copy of the stylesheet in Python (`app.js`, `/api/analyse`):
+
+      `panel_px`     the width `#figure` actually got, in CSS px.
+      `viewport_px`  `window.innerHeight`, in CSS px.
+
+    and each decides one side of the canvas:
+
+      width   `panel_px / WEB_PX_PER_IN`, which is the constant-scale rule above:
+              the canvas is exactly as many inches as the panel will draw at
+              1.5046 px per point, so every string keeps its 12.04 CSS px.
+      height  what is left of the window, in the same currency. This is A4's own
+              rule -- "the whole figure fits with no scrolling" -- applied to
+              whatever window it is instead of to the one window.
+
+    with two limits and both of them matter:
+
+      **Never smaller than `WEB`.** A window narrower or shorter than the laptop
+      A4 measured gets the laptop's canvas, scaled down by the browser as it
+      always was. Shrinking the canvas instead would put the spoke labels --
+      which are points, and do not shrink with it -- straight through
+      `assert_no_text_over_the_rings`, so the app would answer a narrow window
+      with no figure at all.
+
+      **Never taller than the width can use.** The circle is
+      `min(0.760 * w, 0.715 * h)` inches, so past `h = 0.760/0.715 * w` more
+      height is empty canvas that makes the figure harder to fit in the window
+      and the circle no larger. Derived from `axes_box` rather than written down,
+      because those two fractions were arbitrated by the geometry assertions and
+      a constant here would not follow them if they moved.
+
+    Rounded DOWN to a hundredth of an inch (1.08 px): the budget is a ceiling,
+    and 8.2523 in is not a truer canvas than 8.25 in.
+    """
+    def down(x: float) -> float:
+        return math.floor(x * 100.0) / 100.0
+
+    w = max(WEB.figsize[0], down(panel_px / WEB_PX_PER_IN))
+    tall_enough_to_be_width_bound = w * WEB.axes_box[2] / WEB.axes_box[3]
+    h = min(max(WEB.figsize[1],
+                down((viewport_px - WEB_VIEWPORT_SLACK_PX) / WEB_PX_PER_IN)),
+            down(tall_enough_to_be_width_bound))
+    return dc_replace(WEB, figsize=(w, h), wedge_labels_in_svg=name_the_rings)
+
+
+def web_css_scale(lay: Layout, panel_px: float = WEB_REFERENCE_PANEL_PX) -> float:
+    """CSS pixels per canvas point, as the browser will actually draw this canvas
+    in this panel. Equal to `WEB_CSS_SCALE` for every canvas
+    `web_layout_for_viewport` derived from the same panel, and smaller than it in
+    the one case that function clamps: a window narrower than the laptop A4
+    measured, which keeps the laptop's canvas and is scaled down to fit -- exactly
+    as it was before v3.5, and the reason this is a function and not the constant.
+    """
+    return panel_px / (lay.figsize[0] * 72.0)
+
+
+def web_circle_px(lay: Layout, panel_px: float = WEB_REFERENCE_PANEL_PX) -> float:
+    """The circle's diameter in CSS px, in a panel this wide.
+
+    One expression, one place, and deliberately in the SAME currency as every
+    circle size already in the record: the shorter side of the axes box, which is
+    the 639 px of round 2, the 790 px of round 1 and the 659 px of v3.0
+    (`docs/reviews/UX-v3-rounds.md` §2.2). The drawn rings stop at 97 of the
+    polar axes' 105, so the coloured band's own outer edge is 0.924 of this.
+    """
+    square_in = min(lay.axes_box[2] * lay.figsize[0], lay.axes_box[3] * lay.figsize[1])
+    return square_in * 72.0 * web_css_scale(lay, panel_px)
+
+
+def render_naming_the_rings_if_they_fit(
+    render_one: "Callable[[Layout], FigureResult]",
+    *,
+    panel_px: float = WEB_REFERENCE_PANEL_PX,
+    viewport_px: float = WEB_REFERENCE_VIEWPORT_PX,
+) -> tuple["FigureResult", Layout]:
+    """v3.5. Draw the app render with the ring names in the gap if they fit it,
+    and without them if they do not. Returns the result and the layout that
+    produced it.
+
+    **The names are not decided by a threshold in this function.** They are
+    decided by drawing them and keeping the drawing only if
+    `assert_wedge_labels_fit` and `assert_wedge_names_clear_the_floor` both
+    accept it -- the first that every name is inside the empty wedge and clear of
+    its neighbours by `LABEL_CLEARANCE_PX`, the second that `fit_wedge_labels`
+    did not buy that by shrinking the type under this surface's floor. Neither is
+    relaxed, widened or special-cased here; the only thing that is new is what
+    happens when one of them refuses, and what happens is round 2's arrangement,
+    which is the honest one: the gap stays empty and `wedge_note` says so.
+
+    A predicted threshold would have been cheaper by one render and wrong the
+    first time `RING_SPECS` grew a thirteenth ring or a ring grew a longer
+    `short_label`, because the binding budget is a band's height against a line
+    of type and both move. The cost is one extra `render` -- about a second, on a
+    run whose network work is 20-60 s -- and only on the windows where the names
+    do not fit.
+    """
+    wanted = web_layout_for_viewport(panel_px, viewport_px, name_the_rings=True)
+    try:
+        return render_one(wanted), wanted
+    except RingNamesDoNotFit:
+        # The failed render never reached `savefig`, so nothing was written; it
+        # did leave its matplotlib figure open, and this is a server that draws
+        # one figure at a time and runs for weeks.
+        plt.close("all")
+    without = dc_replace(wanted, wedge_labels_in_svg=False)
+    return render_one(without), without
 
 
 @dataclass
@@ -1306,7 +1492,12 @@ def render(
     gene_flags: dict[str, list[str]] | None = None,
     subtitle: str = "",
     provenance: str = "",
-    layout: str = "audit",
+    # v3.5. A name in `LAYOUTS`, or a Layout itself. The app render's canvas is a
+    # function of the window it will be read in (`web_layout_for_viewport`), so
+    # there is a layout per window and the registry cannot hold it. Everything
+    # downstream reads `lay.name`, which `dataclasses.replace` preserves, so a
+    # resized `web` is still the `web` render to every branch and every sentence.
+    layout: "str | Layout" = "audit",
     gene_ids: dict[str, str] | None = None,
     invariant_summary: str = "",
 ) -> FigureResult:
@@ -1315,7 +1506,7 @@ def render(
     assert_ramp_luminance_is_monotone()
     # v2.8. Before a link is drawn, not after a reader follows one.
     SOURCES.assert_registry_is_coherent()
-    lay = LAYOUTS[layout]
+    lay = layout if isinstance(layout, Layout) else LAYOUTS[layout]
     filter_notes = list(filter_notes)
     genes = list(genes)
     if not genes:
@@ -1579,6 +1770,10 @@ def render(
     assert_wedge_labels_fit(fig, ax, wedge_labels, wedge,
                             obstacles=[t for t in ax.texts
                                        if t.get_text() and t not in wedge_labels])
+    # v3.5, and it has to be after the fit loop rather than beside the font size:
+    # "these names fit" and "these names are readable" are two claims and round 1
+    # shipped the first while failing the second.
+    assert_wedge_names_clear_the_floor(fig, wedge_labels, lay)
     # v3.1 / UX v3 A1. Last of the geometry checks, because every block has now
     # reached its final size and position: the centre has been fitted and
     # re-stacked, the wedge labels have been shrunk to fit, the stamps are
@@ -3110,7 +3305,7 @@ def assert_figure_states_the_minimum(drawn: str, input_count: int,
         )
 
 
-def assert_artefacts_are_their_own_layout(runs_dir: Path) -> None:
+def assert_artefacts_are_their_own_layout(runs_dir: Path, web: Layout = WEB) -> None:
     """v3.0. Every artefact is the render it is named after.
 
     Written because it was not. The web render was asked for with `png=None`,
@@ -3125,12 +3320,18 @@ def assert_artefacts_are_their_own_layout(runs_dir: Path) -> None:
     is decided entirely by the Layout, so it is what gets checked. Every layout
     here has a different one, deliberately: 19.5x14 audit, 9.6x8.25 web,
     16x9 slide and legend.
+
+    v3.5: `web` is the one canvas that is not a constant any more -- it is a
+    function of the window the render was asked for (`web_layout_for_viewport`) --
+    so the caller passes the layout the run actually used. The check is the same
+    check: `figure-web.svg` must be the app canvas this run chose and not, as it
+    once was, the export written to the app's name.
     """
     from PIL import Image
 
     expect = {
         "figure.svg": AUDIT, "figure.png": AUDIT,
-        "figure-web.svg": WEB,
+        "figure-web.svg": web,
         "figure-slide.svg": SLIDE, "figure-slide.png": SLIDE,
         "legend.svg": LEGEND, "legend.png": LEGEND,
     }
@@ -3427,6 +3628,74 @@ def fit_wedge_labels(fig, ax, labels, wedge_deg: float, band_px: float) -> float
     return scale
 
 
+class RingNamesDoNotFit(AssertionError):
+    """v3.5. This geometry cannot name its rings from inside the 12 o'clock gap.
+
+    An `AssertionError` still, and with the same message it always had: nothing
+    about what refuses a render has changed, and every caller that catches
+    `AssertionError` -- `/api/analyse`'s invariant_abort, `ux_v3_web_fit.py` --
+    behaves exactly as before. What the class buys is that
+    `render_naming_the_rings_if_they_fit` can offer a canvas the names and take
+    the refusal as an answer, without catching an `AssertionError` raised by one
+    of the fourteen other things this render asserts. A bare `except
+    AssertionError` there would have swallowed a genuine collision and drawn a
+    figure with no names and no complaint, which is this repo's one rule.
+    """
+
+
+class RingNamesUnderTheFloor(RingNamesDoNotFit):
+    """The names fit the gap only by being too small to read on this surface.
+
+    A subclass, because to the caller asking "can this canvas name its rings"
+    these are one answer: round 1's names were *inside* the gap and 9.07 CSS px,
+    and round 2 deleted them for the second half of that sentence.
+    """
+
+
+def assert_wedge_names_clear_the_floor(fig, labels, lay: Layout) -> None:
+    """v3.5. On a surface with a declared floor, a ring name is either legible or
+    it is not there.
+
+    `fit_wedge_labels` shrinks to `WEDGE_MIN_SCALE` (0.80) and wraps, and both
+    knobs make a name *fit* while making it smaller. That is the right behaviour
+    on a 19.5 in export read at full size and it is how round 1 ended up drawing
+    twelve strings at 9.07 CSS px in the app, which round 2 called "an
+    unreadable copy of a legible thing" and deleted.
+
+    So: measured on the artists that were actually drawn, after the fit loop, in
+    the CSS pixels a reader sees -- `WEB_CSS_SCALE` is constant by construction
+    (see `web_layout_for_viewport`), so a point here is 1.5046 px in the browser
+    on every canvas this layout is ever given. A layout that declares no floor
+    (`audit`, `slide`, `legend`) is not measured here at all: they are files, and
+    §v3.3 measures them against the 10.0 pt presentation floor instead.
+    """
+    if not labels or not lay.wedge_label_floor_px:
+        return
+    floor = lay.wedge_label_floor_px
+    # `WEB_CSS_SCALE` and not `web_css_scale(lay, panel)`: this layout's canvas is
+    # sized so that the two are the same number, and the one window where they are
+    # not -- narrower than the laptop, where the canvas is clamped and scaled down
+    # -- is a window whose circle `assert_wedge_labels_fit` has already refused,
+    # because clamping the width caps the circle at the 7.30 in that round 2
+    # measured as too small. Nothing reaches here on a canvas the constant would
+    # flatter.
+    small = sorted(
+        (t.get_fontsize() * WEB_CSS_SCALE, t.get_text().replace("\n", " "))
+        for t in labels if t.get_fontsize() * WEB_CSS_SCALE < floor
+    )
+    if small:
+        raise RingNamesUnderTheFloor(
+            f"{len(small)} of {len(labels)} ring names fit the {lay.wedge_deg:g}° gap only "
+            f"under the {floor:g} CSS px floor of the {lay.name} surface: "
+            + "; ".join(f"{name!r} at {px:.2f} px" for px, name in small[:4])
+            + f". `fit_wedge_labels` shrinks to {WEDGE_MIN_SCALE:g} of the declared "
+              f"{lay.wedge_label_size:g} pt to make a name fit, and a name that fits by "
+              f"being unreadable is not a name the reader has. Draw a bigger circle -- on "
+              f"this layout that means a larger window -- or leave the gap empty and let "
+              f"`wedge_note` say where the names are."
+        )
+
+
 def assert_wedge_labels_fit(fig, ax, labels, wedge_deg: float, obstacles=()) -> None:
     """Every ring name is inside the gap, clear of the first and last sector.
 
@@ -3477,7 +3746,11 @@ def assert_wedge_labels_fit(fig, ax, labels, wedge_deg: float, obstacles=()) -> 
                     f"{LABEL_CLEARANCE_PX:g} px of {ot.get_text()[:30]!r}")
                 break
     if offenders:
-        raise AssertionError(
+        # v3.5: `RingNamesDoNotFit` is an `AssertionError` with this same message.
+        # The condition, the clearance and the wording are untouched; the class is
+        # how `render_naming_the_rings_if_they_fit` can tell this refusal from the
+        # fourteen other assertions on this render without matching on prose.
+        raise RingNamesDoNotFit(
             "a ring name does not fit the 12 o'clock gap and would be drawn over the "
             "first or last spoke: " + "; ".join(offenders)
             + ". `fit_wedge_labels` has already tried wrapping it onto more lines and "
@@ -3804,6 +4077,11 @@ __all__ = ["render", "RING_SPECS", "RingSpec", "STATE_STYLE", "VALUE_CMAP",
            "slide_line", "assert_text_within_canvas", "WEDGE_DEG", "clock_phrase",
            "WEDGE_TEXT_MARGIN_DEG", "WEDGE_MIN_SCALE", "wedge_note",
            "fit_wedge_labels", "assert_wedge_labels_fit",
+           "assert_wedge_names_clear_the_floor", "RingNamesDoNotFit",
+           "RingNamesUnderTheFloor", "web_layout_for_viewport", "web_circle_px",
+           "render_naming_the_rings_if_they_fit", "WEB_PX_PER_IN", "WEB_CSS_SCALE",
+           "WEB_REFERENCE_PANEL_PX", "WEB_REFERENCE_VIEWPORT_PX",
+           "WEB_VIEWPORT_SLACK_PX",
            "assert_no_text_over_the_rings", "assert_centre_fits_the_hole",
            "fit_centre_to_the_hole", "caption", "Layout", "LAYOUTS", "AUDIT", "SLIDE",
            "WEB", "LEGEND", "render_legend", "COMPARABILITY_CLAIM",

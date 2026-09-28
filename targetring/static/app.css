@@ -19,7 +19,23 @@ h1 .ver { color: var(--muted); font-weight: 400; font-size: 15px; }
 h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
      margin: 20px 0 6px; }
 .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-main { padding: 20px 26px 60px; max-width: 1500px; }
+/* v3.5. `main` was `max-width: 1500px`, which capped the figure panel at 1100 px
+   however large the window was — so on a 27 in monitor the circle stopped growing
+   400 px before the window did, and the 26° gap could never be big enough to hold
+   the ring names honestly (`assert_wedge_labels_fit` wants a circle of 930 CSS px;
+   a 1100 px panel tops out at 772). The cap was there for the PROSE, which is
+   what it keeps doing: 1500 px is about 95 characters of the 14 px body text, and
+   a help paragraph 2,500 px wide is unreadable in a different way.
+
+   So the measure moves off `main` and onto the blocks that are text. The figure
+   row is the one block that is not text, and it gets the window. */
+:root { --prose: 1500px; }
+main { padding: 20px 26px 60px; }
+#input-panel, #banner, #conditions, .counts, .tabs,
+#pane-ledger, #pane-invariants, #pane-caveats { max-width: var(--prose); }
+/* Not the figure row, and not the download row above it, which sits in the same
+   column as the circle and would otherwise float away from it. */
+.dl-row { max-width: var(--prose); }
 .hint { color: var(--muted); font-size: 12.5px; margin: 4px 0; }
 
 textarea {

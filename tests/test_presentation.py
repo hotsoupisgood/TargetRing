@@ -2214,3 +2214,353 @@ class TestUXv3Round3TheProjectedArtefactAndTheDrawer:
         assert re.search(r"getBoundingClientRect\(\)\.height <= window\.innerHeight",
                          js), "nothing measures whether the figure fits"
         assert re.search(r'fig\.scrollIntoView', js)
+
+
+# The windows these tests measure at. The laptop is round 2's own viewport, and
+# `BIG` is the smallest of the three that earns the ring names in the sweep
+# (`logs/v35-web-window-sweep.txt`): a 1440p monitor with the browser full screen.
+LAPTOP_WINDOW = (1040.0, 900.0)          # (panel px, viewport px) — measured live
+BIG_WINDOW = (2160.0, 1440.0)
+# The window where they fit the gap and are not readable in it: the fit loop takes
+# two 0.96 steps off 8.0 pt and the twelve names land at 11.09 CSS px.
+NEARLY_WINDOW = (1280.0, 1250.0)
+
+
+class TestV35TheCircleGrowsWithTheWindow:
+    """v3.5, Puck: *"the names should appear automatically when the viewport
+    allows a circle big enough to hold them honestly, and stay off when it does
+    not."*
+
+    Round 2 A4 pinned the app canvas to one 9.6 x 8.25 in so that the figure
+    would be whole in a 1440 x 900 laptop. It is the right canvas for that laptop,
+    and pinning it also pinned the ARRANGEMENT: the twelve ring names need a
+    bigger circle than 900 px of height can carry, so the 26° gap has been drawn
+    and empty on every screen since, including the ones with a thousand pixels to
+    spare.
+
+    So the canvas is a function of the window (`web_layout_for_viewport`) and the
+    names are decided by drawing them and keeping the drawing only if
+    `assert_wedge_labels_fit` and `assert_wedge_names_clear_the_floor` accept it.
+    These tests are the two halves of that sentence — on above the threshold, off
+    below it — plus A4, which still holds at the window it was written for.
+    """
+
+    def _render_web(self, tmp_path: Path, window, *, name_the_rings: bool,
+                    n: int = 14, tag: str = ""):
+        from targetring.figure import web_layout_for_viewport
+        lay = web_layout_for_viewport(*window, name_the_rings=name_the_rings)
+        genes = [f"GENE{i:03d}" for i in range(n)]
+        spec = _full_ring_spec(genes)
+        out = tmp_path / f"web-{int(window[0])}x{int(window[1])}-{tag}.svg"
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Lung", out_svg=out, input_count=n, rendered_count=n,
+                     ledger_counts={}, ordering_note=ORDER_NOTE, layout=lay,
+                     provenance="run T35 · abc123")
+        return lay, out, res
+
+    def _ring_names(self, svg: Path) -> dict[str, float]:
+        """Every ring name drawn inside the gap, by gid, with its size in CSS px.
+
+        Read out of the artefact rather than off the artists, because the size a
+        reader gets is the size in the file times the scale the browser draws it
+        at, and that product is the whole claim being made here.
+        """
+        from targetring.figure import WEB_CSS_SCALE
+        body = svg.read_text()
+        out = {}
+        for m in re.finditer(r'<g id="ringname\|([a-z0-9_]+)">(.*?)</g>', body, re.S):
+            sizes = [float(s) for s in re.findall(r"font-size:\s*([0-9.]+)px", m.group(2))]
+            out[m.group(1)] = max(sizes) * WEB_CSS_SCALE if sizes else 0.0
+        return out
+
+    # --- A4 still holds, at the window it was written for ----------------------
+
+    def test_the_laptop_gets_exactly_the_canvas_round_2_measured(self) -> None:
+        """A4 is not weakened by making the canvas a function: the laptop is one
+        point in the function's domain and it maps to 9.6 x 8.25 in. Held as an
+        identity rather than as an inequality, because a responsive canvas that
+        happened to land near round 2's is not the same thing as one that lands
+        on it."""
+        from targetring.figure import WEB, web_layout_for_viewport
+        lay = web_layout_for_viewport(*LAPTOP_WINDOW)
+        assert lay.figsize == WEB.figsize == (9.6, 8.25)
+        assert lay.axes_box == WEB.axes_box
+        assert lay.wedge_labels_in_svg is False, (
+            "the gap is empty on the laptop and that is the measured answer, not "
+            "a default: see the fit test below")
+
+    def test_the_figure_fits_every_window_it_is_drawn_for(self) -> None:
+        """A4's rule, applied to whatever window it is instead of to one window:
+        the whole figure fits with no scrolling. Checked at the laptop — 894 px in
+        900, round 2's own six pixels of slack — and up a range of larger ones,
+        because the height budget is the thing this feature spends."""
+        from targetring.figure import web_css_scale, web_layout_for_viewport
+        laptop = web_layout_for_viewport(*LAPTOP_WINDOW)
+        px = laptop.figsize[1] * 72.0 * web_css_scale(laptop, LAPTOP_WINDOW[0])
+        assert 888.0 <= px <= 900.0, f"the laptop figure is {px:.0f} px tall"
+        for panel, window_h in [(880, 800), (1040, 900), (1112, 982), (1280, 1250),
+                                (1520, 1080), (1520, 1413), (2160, 1440),
+                                (2608, 1692)]:
+            lay = web_layout_for_viewport(panel, window_h)
+            tall = lay.figsize[1] * 72.0 * web_css_scale(lay, panel)
+            assert tall <= window_h, (
+                f"a {panel} x {window_h} window draws a {tall:.0f} px figure, so "
+                f"there is no scroll position at which the circle is whole")
+
+    def test_a_bigger_window_buys_circle_and_never_type(self) -> None:
+        """The arithmetic the whole feature rests on. `scale = panel_px /
+        (width_in * 72)`, so a canvas whose width tracks the panel holds every
+        string at 12.04 CSS px while the circle grows — which is round 2's own
+        observation about height, used in the other direction."""
+        from targetring.figure import (WEB, web_circle_px, web_css_scale,
+                                       web_layout_for_viewport)
+        seen = []
+        for panel, window_h in [(1040, 900), (1112, 982), (1280, 1250),
+                                (1520, 1413), (2160, 1440)]:
+            lay = web_layout_for_viewport(panel, window_h)
+            scale = web_css_scale(lay, panel)
+            assert abs(lay.label_size * scale - 12.04) < 0.02, (
+                f"{panel}x{window_h}: the gene labels are {lay.label_size * scale:.2f} "
+                f"CSS px, so the canvas bought circle with legibility")
+            seen.append(round(web_circle_px(lay, panel), 1))
+        assert seen == sorted(seen), seen
+        assert seen[0] == round(web_circle_px(WEB), 1) == 639.0
+        assert seen[-1] > 1000.0, ("a 1440p monitor gets no more circle than a "
+                                   "laptop, which is the defect this fixes")
+
+    def test_a_window_smaller_than_the_laptop_keeps_the_laptop_canvas(self) -> None:
+        """The floor, and it is not tidiness. The spoke labels are points and do
+        not shrink with the canvas, so a canvas cut to a narrow window walks them
+        into `assert_no_text_over_the_rings` and the app answers a small window
+        with no figure at all. Small windows scale the laptop canvas down, exactly
+        as they did before v3.5."""
+        from targetring.figure import WEB, web_layout_for_viewport
+        for panel, window_h in [(600, 500), (880, 800), (1039, 899)]:
+            assert web_layout_for_viewport(panel, window_h).figsize == WEB.figsize
+
+    def test_height_past_the_point_the_width_can_use_is_not_taken(self) -> None:
+        """The ceiling. The circle is `min(0.760 w, 0.715 h)`, so past
+        `h = 0.760/0.715 w` more height is empty canvas: it makes the figure
+        harder to fit in the window and the circle no larger."""
+        from targetring.figure import WEB, web_circle_px, web_layout_for_viewport
+        tall = web_layout_for_viewport(1520, 4000)
+        enough = web_layout_for_viewport(1520, 1500)
+        assert tall.figsize[1] <= WEB.axes_box[2] / WEB.axes_box[3] * tall.figsize[0] + 0.01
+        assert web_circle_px(tall, 1520) == pytest.approx(
+            web_circle_px(web_layout_for_viewport(1520, 3000), 1520))
+        assert enough.figsize[1] < tall.figsize[1]
+
+    # --- the names: on above the threshold, off below it ----------------------
+
+    def test_the_names_come_back_when_the_circle_is_big_enough(
+            self, tmp_path: Path) -> None:
+        """The deliverable. Twelve names, inside the gap, each at or above the
+        12.0 CSS px floor this review measures the app against — which is what
+        round 1's twelve names at 9.07 px were not."""
+        from targetring.figure import RING_SPECS, web_circle_px
+        lay, svg, _ = self._render_web(tmp_path, BIG_WINDOW, name_the_rings=True,
+                                       tag="on")
+        names = self._ring_names(svg)
+        assert set(names) == {s.key for s in RING_SPECS}, sorted(names)
+        assert min(names.values()) >= 12.0, (
+            f"the smallest ring name is {min(names.values()):.2f} CSS px: "
+            f"{sorted(names.items(), key=lambda kv: kv[1])[:3]}")
+        assert web_circle_px(lay, BIG_WINDOW[0]) > 1000.0
+
+    def test_the_names_stay_off_on_the_laptop_and_the_refusal_is_the_reason(
+            self, tmp_path: Path) -> None:
+        """The other half, and the half that must not be a preference. Asking the
+        laptop canvas for the names raises from `assert_wedge_labels_fit` itself,
+        so what keeps the gap empty there is the geometry and not a flag somebody
+        set."""
+        from targetring.figure import RingNamesDoNotFit
+        with pytest.raises(RingNamesDoNotFit) as e:
+            self._render_web(tmp_path, LAPTOP_WINDOW, name_the_rings=True,
+                             tag="refused")
+        assert "does not fit the 12 o'clock gap" in str(e.value)
+        import matplotlib.pyplot as plt
+        plt.close("all")
+        _, svg, _ = self._render_web(tmp_path, LAPTOP_WINDOW, name_the_rings=False,
+                                     tag="off")
+        assert self._ring_names(svg) == {}
+
+    def test_names_that_only_fit_by_shrinking_under_the_floor_are_refused(
+            self, tmp_path: Path) -> None:
+        """The trap this feature could most easily have fallen into, and the one
+        round 1 did fall into: `fit_wedge_labels` makes a name *fit* by shrinking
+        it, so a circle just under the threshold can pass the geometry check with
+        twelve unreadable strings in the gap. At this window it does — the loop
+        takes two 0.96 steps off 8.0 pt and the names land at 11.09 CSS px, inside
+        the gap and under the floor — and the render refuses rather than drawing
+        them. The threshold is therefore sharp on purpose: the names are drawn at
+        8.0 pt or not at all, because the first step down from it is already under
+        the floor."""
+        from targetring.figure import RingNamesUnderTheFloor
+        with pytest.raises(RingNamesUnderTheFloor) as e:
+            self._render_web(tmp_path, NEARLY_WINDOW, name_the_rings=True,
+                             tag="nearly")
+        assert "under the 12 CSS px floor" in str(e.value)
+        import matplotlib.pyplot as plt
+        plt.close("all")
+
+    def test_the_floor_check_is_measured_on_the_drawn_artists(self) -> None:
+        """A unit test of the check itself, because a check that cannot fail is
+        not a check. 8.0 pt clears the floor at this layout's scale and 7.0 pt
+        does not, and the only difference between them is the number in the file.
+        """
+        import matplotlib.pyplot as plt
+        from targetring.figure import (WEB, RingNamesUnderTheFloor,
+                                       assert_wedge_names_clear_the_floor)
+        fig = plt.figure(figsize=(4, 4))
+        ok = fig.text(0.5, 0.5, "Tractability (suggested)", size=8.0)
+        assert_wedge_names_clear_the_floor(fig, [ok], WEB)
+        small = fig.text(0.5, 0.4, "Tractability (suggested)", size=7.0)
+        with pytest.raises(RingNamesUnderTheFloor):
+            assert_wedge_names_clear_the_floor(fig, [small], WEB)
+        # ...and a layout that declares no floor is not measured here at all: the
+        # export is measured against the 10.0 pt presentation floor instead.
+        assert AUDIT.wedge_label_floor_px is None
+        assert_wedge_names_clear_the_floor(fig, [small], AUDIT)
+        plt.close(fig)
+
+    def test_the_arrangement_is_read_off_the_layout_not_written_down_twice(
+            self, tmp_path: Path) -> None:
+        """COUNCIL V5, which is the rule this feature most endangers: there are
+        two arrangements now and one run can draw either, so every sentence about
+        where the ring names are has to come from the render that drew them.
+
+        On this layout that sentence is handed to the page rather than drawn under
+        the circle (round 2's A4 move), so it is read back off the render's own
+        `FigureResult` -- which is what `app.js` draws and therefore the actual
+        claim a reader meets.
+        """
+        from targetring.figure import clock_phrase, web_layout_for_viewport
+        on_lay = web_layout_for_viewport(*BIG_WINDOW, name_the_rings=True)
+        off_lay = web_layout_for_viewport(*LAPTOP_WINDOW)
+        assert "ring-name gap" in clock_phrase(on_lay)
+        assert "reserved gap" in clock_phrase(off_lay)
+
+        _, _, on = self._render_web(tmp_path, BIG_WINDOW, name_the_rings=True,
+                                    tag="says-on")
+        _, _, off = self._render_web(tmp_path, LAPTOP_WINDOW, name_the_rings=False,
+                                     tag="says-off")
+        said_on = " ".join(c["text"] for c in on.web_caveats)
+        said_off = " ".join(c["text"] for c in off.web_caveats)
+        assert "inside the circle" in said_on, said_on
+        assert "inside the circle" not in said_off, said_off
+        assert "reserved at 12 o'clock" in said_off, said_off
+        # Both say what the gap cost the spokes -- Puck's condition on it existing
+        # at all -- and both say the scales are in the panel, because they are on
+        # this layout whichever arrangement the names are in.
+        for said in (said_on, said_off):
+            assert "26°" in said and "full circle" in said, said
+            assert "panel beside this figure" in said, said
+
+    def test_the_two_arrangements_differ_in_furniture_and_never_in_a_cell(
+            self, tmp_path: Path) -> None:
+        """What makes drawing the same run two ways safe, and it is the assertion
+        v3.0 already wrote for "the export and the app render may differ"."""
+        from targetring.figure import assert_renders_agree
+        _, on, _ = self._render_web(tmp_path, BIG_WINDOW, name_the_rings=True, tag="a")
+        _, off, _ = self._render_web(tmp_path, LAPTOP_WINDOW, name_the_rings=False,
+                                     tag="b")
+        assert_renders_agree(on, off)
+
+    def test_the_probe_keeps_the_arrangement_the_assertions_accepted(
+            self, tmp_path: Path) -> None:
+        """`render_naming_the_rings_if_they_fit` is the only thing that decides
+        this, and it decides it by rendering: names first, round 2's arrangement
+        if the render refuses them. Tested through a fake `render_one` so the
+        control flow is visible without six renders of a real figure."""
+        from targetring.figure import (RingNamesDoNotFit,
+                                       render_naming_the_rings_if_they_fit)
+        asked: list[bool] = []
+
+        def refuse_the_names(lay):
+            asked.append(lay.wedge_labels_in_svg)
+            if lay.wedge_labels_in_svg:
+                raise RingNamesDoNotFit("no room")
+            return "drawn"
+
+        got, lay = render_naming_the_rings_if_they_fit(
+            refuse_the_names, panel_px=LAPTOP_WINDOW[0],
+            viewport_px=LAPTOP_WINDOW[1])
+        assert (got, lay.wedge_labels_in_svg) == ("drawn", False)
+        assert asked == [True, False], "the names have to be tried, not predicted"
+
+        got, lay = render_naming_the_rings_if_they_fit(
+            lambda lay: "drawn", panel_px=BIG_WINDOW[0], viewport_px=BIG_WINDOW[1])
+        assert (got, lay.wedge_labels_in_svg) == ("drawn", True)
+
+    def test_an_unrelated_assertion_is_not_swallowed_by_the_probe(self) -> None:
+        """The reason `RingNamesDoNotFit` is a class and not a message match. A
+        bare `except AssertionError` here would answer a genuine collision — text
+        over the rings, a centre block out of its hole — by drawing the same
+        figure with no names and no complaint, which is this repo's one rule."""
+        from targetring.figure import render_naming_the_rings_if_they_fit
+        with pytest.raises(AssertionError, match="a spoke label is over the rings"):
+            render_naming_the_rings_if_they_fit(
+                lambda lay: (_ for _ in ()).throw(
+                    AssertionError("a spoke label is over the rings")))
+
+    # --- the page measures the window; nothing here guesses at CSS ------------
+
+    def test_the_page_measures_the_panel_and_hands_it_over(self) -> None:
+        """`#figure-col` is a flex child with `min-width: 0` beside a 330 px
+        panel inside a padded `main`, so its width is not the sum of four
+        constants. The page measures it and the server is told; a Python guess at
+        it would be a second implementation of `app.css` that could disagree with
+        the real one."""
+        import inspect
+        from targetring import app as A
+        from targetring import figure as F
+        js = _js()
+        assert "getBoundingClientRect().width" in js and "figurePanelPx" in js
+        assert 'fd.append("panel_px"' in js and 'fd.append("viewport_px"' in js
+        assert "panel_px" in inspect.signature(A.analyse).parameters
+        src = inspect.getsource(F.web_layout_for_viewport)
+        src = src[src.rindex('"""') + 3:]          # the code, not the reasoning
+        for css_constant in ("330", "1500"):
+            assert css_constant not in src, (
+                f"{css_constant} is a stylesheet number and this function must "
+                f"not contain one: the browser measures, this sizes")
+
+    def test_a_resize_redraws_the_app_figure_and_only_that(self) -> None:
+        """Without this the feature is "the names appear if the window was
+        already big when you pressed the button". The endpoint redraws the app
+        render for the same run — no source fetched, no export rewritten — and the
+        page asks for it when the resize settles."""
+        import inspect
+        from targetring import app as A
+        js = _js()
+        assert "addEventListener(\"resize\"" in js
+        assert "redrawForThisWindow" in js and "RESIZE_SETTLE_MS" in js
+        routes = {r.path: r for r in A.app.routes if hasattr(r, "methods")}
+        route = routes.get("/api/run/{run_id}/web-figure")
+        assert route is not None and "POST" in route.methods
+        src = inspect.getsource(A.rewidth_web_figure)
+        assert "rerender_for_window" in src
+        # The one artefact a run can rewrite after serving it must not be cached.
+        assert "figure-web.svg" in inspect.getsource(A.artefact)
+        assert "_NO_STORE" in inspect.getsource(A.artefact)
+
+    def test_the_figure_row_is_no_longer_capped_at_1500_px(self) -> None:
+        """The cap that made a 27 in monitor pointless: `main` was 1500 px, so
+        the panel topped out at 1100 px and the circle at 772 — under the 1,006 px
+        the names need, on every window there is. The measure stays on the prose,
+        which is what it was for."""
+        css = (STATIC / "app.css").read_text()
+        assert not re.search(r"main\s*\{[^}]*max-width:\s*1500px", css), (
+            "the figure row is still inside a 1500 px cap")
+        assert "--prose: 1500px" in css
+        assert re.search(r"#input-panel[^{]*\{[^}]*max-width:\s*var\(--prose\)", css)
+        assert not re.search(r"\.figure-row[^{]*\{[^}]*max-width", css)
+
+    def test_the_export_layouts_are_untouched_by_all_of_this(self) -> None:
+        """The blast radius. `audit` and `slide` are files, sized for a screen at
+        full size and for a projector, and neither has a window."""
+        from targetring.figure import AUDIT, LEGEND, SLIDE
+        assert AUDIT.figsize == (19.5, 14.0) and SLIDE.figsize == (16.0, 9.0)
+        assert AUDIT.wedge_label_size == 7.4 and AUDIT.wedge_labels_in_svg is True
+        for lay in (AUDIT, SLIDE, LEGEND):
+            assert lay.wedge_label_floor_px is None

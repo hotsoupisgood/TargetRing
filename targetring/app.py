@@ -20,7 +20,9 @@ from .cache import Cache
 from .config import RUNS_DIR
 from .de_input import InputRejected
 from .filters import FilterRejected
-from .figure import COMPARABILITY_CLAIM, STATE_STYLE, scale_rows
+from .figure import (COMPARABILITY_CLAIM, STATE_STYLE, WEB_REFERENCE_PANEL_PX,
+                     WEB_REFERENCE_VIEWPORT_PX, scale_rows, web_circle_px,
+                     web_css_scale)
 from .http import HardFailure, Http
 from .order import ALPHABETICAL, RING_PREFIX, SUBMITTED
 from .run import DEFAULT_REGION, FILTERABLE_RINGS, available_regions, run_analysis
@@ -117,6 +119,15 @@ async def analyse(
     region: str = Form(DEFAULT_REGION),
     ordering: str = Form(SUBMITTED),
     filters: str = Form(""),
+    # v3.5. The window this figure is going to be read in, MEASURED by the page
+    # (`app.js`) rather than derived here from a copy of the stylesheet: the panel
+    # is a flex child with `min-width: 0`, so its width is not a sum of
+    # constants, and a Python guess at it would be a second implementation of
+    # `app.css` that could disagree with the real one (COUNCIL V5's shape, in a
+    # layout). The defaults are the 1440 x 900 laptop, so a client that sends
+    # nothing gets the canvas v3.4 drew.
+    panel_px: float = Form(WEB_REFERENCE_PANEL_PX),
+    viewport_px: float = Form(WEB_REFERENCE_VIEWPORT_PX),
     file: UploadFile | None = None,
 ) -> JSONResponse:
     raw: bytes | str
@@ -129,7 +140,8 @@ async def analyse(
 
     try:
         result = await run_analysis(table=raw, region=region,
-                                    ordering=ordering, filters=filters)
+                                    ordering=ordering, filters=filters,
+                                    panel_px=panel_px, viewport_px=viewport_px)
     except FilterRejected as e:
         # The filter settings themselves are unusable — a ring that does not
         # exist, a threshold that is not a number. Nothing was fetched and
@@ -161,9 +173,36 @@ async def analyse(
     return JSONResponse(_summarise(result))
 
 
+def _web_render(r) -> dict[str, Any]:
+    """v3.5. What canvas the app render was drawn on, and whether this window
+    earned the twelve ring names.
+
+    Reported rather than inferred by the page for the same reason `web_caveats` is
+    handed over: the arrangement was decided by the render's own assertions, and a
+    page that worked out for itself whether the names *should* be there could
+    disagree with the figure it is drawing them beside. The sentence a reader sees
+    still comes from `wedge_note`, on the figure; this is the measurement, for the
+    screenshots, the sweeps and the tests.
+    """
+    lay, (panel, window_h) = r.web_layout, r.web_window
+    scale = web_css_scale(lay, panel)
+    return {
+        "panel_px": round(panel, 1),
+        "viewport_px": round(window_h, 1),
+        "canvas_in": [lay.figsize[0], lay.figsize[1]],
+        "figure_px": round(lay.figsize[1] * 72.0 * scale, 1),
+        "circle_px": round(web_circle_px(lay, panel), 1),
+        "type_px": round(lay.label_size * scale, 2),
+        "ring_names_in_figure": lay.wedge_labels_in_svg,
+        "ring_name_px": (round(lay.wedge_label_size * scale, 2)
+                         if lay.wedge_labels_in_svg else None),
+    }
+
+
 def _summarise(r) -> dict[str, Any]:
     m = r.manifest
     return {
+        "web_render": _web_render(r),
         "run_id": r.run_id,
         "region": r.region,
         "svg_url": f"/api/run/{r.run_id}/figure.svg",
@@ -288,6 +327,51 @@ async def gene_drawer(run_id: str, gene: str) -> JSONResponse:
     return JSONResponse(filled)
 
 
+@app.post("/api/run/{run_id}/web-figure")
+async def rewidth_web_figure(
+    run_id: str,
+    panel_px: float = Form(...),
+    viewport_px: float = Form(...),
+) -> JSONResponse:
+    """v3.5. Re-draw THIS run's app figure for a window of a different size.
+
+    Without this the feature would be "the names appear if the window was already
+    big when you pressed the button", which is not what was asked for: a figure
+    read in a window that has since been resized is a figure sized for a window
+    that no longer exists. The page calls this when the resize settles
+    (`app.js`), and only the app render is redrawn -- no source is fetched, no
+    export is rewritten, nothing is re-resolved.
+
+    The run's `web_caveats` are replaced with the new render's, because one of
+    those clauses states where the ring names are and the answer is exactly what
+    may have just changed. `assert_renders_agree` runs inside the re-render, so a
+    re-drawn circle is still cell-for-cell the export's.
+    """
+    r = _runs.get(run_id)
+    if r is None:
+        raise HTTPException(404, f"run {run_id} is not in memory; re-submit the table")
+    if r.rerender_for_window is None:
+        raise HTTPException(409, f"run {run_id} cannot be re-drawn in this process")
+    try:
+        result, lay = r.rerender_for_window(panel_px, viewport_px)
+    except AssertionError as e:
+        # Same rule as `/api/analyse`: a geometry this window cannot draw honestly
+        # is reported, and the figure already on screen is left alone. The one
+        # refusal that is NOT an error is the ring names', and it never reaches
+        # here -- `render_naming_the_rings_if_they_fit` answers it with the
+        # arrangement that fits.
+        return JSONResponse(
+            {"error": "invariant_abort", "message": str(e),
+             "note": "the app render was not redrawn; the figure on screen is the "
+                     "one this run drew for the window it was submitted in."},
+            status_code=500)
+    r.web_caveats, r.web_layout, r.web_window = (result.web_caveats, lay,
+                                                 (panel_px, viewport_px))
+    return JSONResponse({"run_id": run_id, "web_render": _web_render(r),
+                         "web_url": f"/api/run/{run_id}/figure-web.svg",
+                         "figure_caveats": r.web_caveats})
+
+
 @app.get("/api/run/{run_id}/scales")
 async def scales(run_id: str) -> JSONResponse:
     """v3.1 / UX v3 A2. The twelve scales, as data, for the page to draw.
@@ -344,7 +428,13 @@ async def artefact(run_id: str, filename: str) -> FileResponse:
     # impossible to mismatch, and the first place they get separated is a
     # downloads folder: `targetring-<run>-legend.png` sorts next to
     # `targetring-<run>-figure.png` and away from yesterday's.
-    return FileResponse(path, media_type=types[filename],
+    # v3.5. `figure-web.svg` is the one artefact a run can rewrite after it has
+    # been served: `/api/run/{id}/web-figure` redraws it when the window changes
+    # size. The browser was already being told not to cache the three page files
+    # for a smaller version of this trap (see `_NO_STORE`), and a cached app
+    # figure would show a circle sized for the window before last.
+    headers = _NO_STORE if filename == "figure-web.svg" else None
+    return FileResponse(path, media_type=types[filename], headers=headers,
                         filename=f"targetring-{run_id}-{filename}")
 
 

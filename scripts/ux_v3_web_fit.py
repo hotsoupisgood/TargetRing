@@ -18,6 +18,15 @@ thing that has to give can be chosen rather than guessed. Usage:
 Everything is reported in canvas points (1 pt = 1.5046 CSS px at the 1040 px
 panel the app gives the figure) so the numbers add up against the 598 pt that a
 900 px viewport allows.
+
+v3.5 adds `--windows`, which is the measurement for the other half of the same
+question: A4 pinned this canvas to the smallest supported window, which pinned
+the ARRANGEMENT to it, and the twelve ring names have been off since. That mode
+sweeps window sizes through `figure.web_layout_for_viewport`, renders each one
+with the names in the gap, and reports the window and the circle at which
+`assert_wedge_labels_fit` and `assert_wedge_names_clear_the_floor` stop refusing
+them -- plus `--bisect`, which finds that circle to the pixel instead of to the
+step of a grid. Nothing here relaxes either assertion: it asks them.
 """
 
 from __future__ import annotations
@@ -33,7 +42,20 @@ from targetring import figure as F  # noqa: E402
 from targetring.order import gene_stats  # noqa: E402
 from targetring.states import value  # noqa: E402
 
-PANEL_PX = 1040.0
+PANEL_PX = F.WEB_REFERENCE_PANEL_PX
+
+# The app's own arithmetic from a window to the panel `#figure` gets, used by
+# `--windows` only: the live app MEASURES this and hands it to `/api/analyse`, so
+# nothing in the product depends on these three numbers. They are here so a sweep
+# can be quoted in window sizes, which is the unit Puck's ask is in ("when the
+# viewport allows"), and they are anchored on the one live measurement this review
+# already has: 1440 px window, 1040 px panel (`logs/ux-v3-r1fix-live.json`).
+PAGE_PADDING_PX = 52.0                  # `main` 26 px either side
+DECODE_PANEL_PX = 330.0 + 18.0          # `#decode` and the flex gap
+
+
+def panel_for_window(window_w: float) -> float:
+    return window_w - PAGE_PADDING_PX - DECODE_PANEL_PX
 
 
 def full_spec(genes):
@@ -62,13 +84,97 @@ def one(tmp: Path, n: int, filters: bool, lay: F.Layout):
     try:
         F.render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
                  region="Lung", out_svg=tmp / f"web-{n}-{int(filters)}.svg",
-                 input_count=n + 1, rendered_count=n, layout="web",
+                 input_count=n + 1, rendered_count=n, layout=lay,
                  ordering_note="spoke order: the order of your submitted DE table",
                  provenance="run V32-COLD · 9305baf1", ledger_counts={"ambiguous": 1},
                  dropped_names=["HBB"], **kw)
         return "ok"
     except AssertionError as e:
+        F.plt.close("all")
         return str(e).split(": ", 1)[-1][:150]
+
+
+# --- v3.5: the window, the canvas, and whether the names are earned -----------
+
+WORST_CORNERS = [(n, f) for n in (3, 14, 50) for f in (False, True)]
+
+
+def names_verdict(tmp: Path, lay: F.Layout, corners=WORST_CORNERS) -> str:
+    """"ok" if every corner of this canvas draws the ring names, else the first
+    refusal. The corners are the ones round 2 swept: 3, 14 and 50 genes, with and
+    without a filter, because the centre block and the FILTERED clause are both
+    obstacles the names have to clear."""
+    for n, filters in corners:
+        r = one(tmp, n, filters, lay)
+        if r != "ok":
+            return f"n={n} f={int(filters)}: {r}"
+    return "ok"
+
+
+def describe(lay: F.Layout, window: tuple[float, float] | None = None) -> str:
+    """Every number as the browser will draw it, which means at the real panel
+    width rather than at the nominal one: below a 1440 px window the canvas is
+    clamped to `WEB`'s and scaled DOWN, so its strings are smaller than 12.04 px
+    there -- as they have been since round 2, and worth printing rather than
+    assuming away."""
+    w_in, h_in = lay.figsize
+    panel = panel_for_window(window[0]) if window else F.WEB_REFERENCE_PANEL_PX
+    scale = F.web_css_scale(lay, panel)
+    fig_px = h_in * 72.0 * scale
+    out = (f"canvas {w_in:5.2f} x {h_in:5.2f} in  circle "
+           f"{F.web_circle_px(lay, panel):4.0f} px  figure {fig_px:4.0f} px  "
+           f"type {lay.label_size * scale:5.2f} px  "
+           f"names {lay.wedge_label_size * scale:5.2f} px")
+    if window:
+        out = (f"window {window[0]:.0f} x {window[1]:.0f}  panel {panel:4.0f} px  "
+               + out + f"  fits {'yes' if fig_px <= window[1] else 'NO'}")
+    return out
+
+
+def windows_sweep(tmp: Path, windows) -> None:
+    print("Does the window earn the twelve ring names? `web_layout_for_viewport` "
+          "sizes the canvas; the render's own assertions answer.\n")
+    for vw, vh in windows:
+        lay = F.web_layout_for_viewport(panel_for_window(vw), vh, name_the_rings=True)
+        print(f"{describe(lay, (vw, vh))}\n    names: {names_verdict(tmp, lay)}")
+
+
+def bisect_on_height(tmp: Path, window_w: float, lo: float, hi: float,
+                     tol: float = 1.0) -> None:
+    """The window height at which the names turn on, at a fixed window width.
+
+    Height, because it is the side a reader can actually give the figure (the
+    width is spent on the decode panel and the page margins) and because it is the
+    side round 2 took away. Reported in both currencies: the window, and the
+    circle diameter in CSS px, which is the number `assert_wedge_labels_fit` is
+    really answering about.
+    """
+    panel = panel_for_window(window_w)
+    def ok(vh: float) -> bool:
+        lay = F.web_layout_for_viewport(panel, vh, name_the_rings=True)
+        return names_verdict(tmp, lay) == "ok"
+
+    if ok(lo):
+        print(f"the names already fit at {window_w:.0f} x {lo:.0f}")
+        return
+    if not ok(hi):
+        print(f"the names do not fit at {window_w:.0f} x {hi:.0f} either")
+        return
+    while hi - lo > tol:
+        mid = (lo + hi) / 2
+        if ok(mid):
+            hi = mid
+        else:
+            lo = mid
+    off = F.web_layout_for_viewport(panel, lo, name_the_rings=True)
+    on = F.web_layout_for_viewport(panel, hi, name_the_rings=True)
+    print(f"\nat a {window_w:.0f} px window the names turn on between "
+          f"{lo:.0f} and {hi:.0f} px of window height:")
+    print(f"  off  {describe(off, (window_w, lo))}")
+    print(f"  on   {describe(on, (window_w, hi))}")
+    print(f"  the threshold is a circle of {F.web_circle_px(on, panel):.0f} CSS px "
+          f"({on.axes_box[3] * on.figsize[1]:.2f} in of axes box); "
+          f"{F.web_circle_px(off, panel):.0f} px is refused")
 
 
 def main() -> int:
@@ -82,7 +188,29 @@ def main() -> int:
                    help="grid over (axes height, bottom margin) at a fixed "
                         "canvas height, reporting the worst case over the four "
                         "(gene count, filters) corners rather than one of them")
+    # v3.5.
+    p.add_argument("--windows", action="store_true",
+                   help="sweep window sizes through `web_layout_for_viewport` and "
+                        "report whether each one earns the twelve ring names")
+    p.add_argument("--bisect", nargs="?", const="1440", default=None,
+                   help="window WIDTH at which to find the window height, to the "
+                        "pixel, where the ring names turn on")
     a = p.parse_args()
+
+    if a.windows:
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            windows_sweep(Path(d), [
+                (1280, 800), (1440, 900), (1440, 1200), (1512, 982),
+                (1680, 1050), (1680, 1250), (1792, 1120), (1920, 1080),
+                (1920, 1200), (2056, 1329), (2560, 1440), (3008, 1692),
+            ])
+        return 0
+    if a.bisect is not None:
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            bisect_on_height(Path(d), float(a.bisect), 900.0, 2400.0)
+        return 0
 
     lay = F.WEB
     if a.h is not None:

@@ -2,6 +2,41 @@
 
 let RUN = null;
 
+// v3.5. The window the last figure was drawn for, as [panel px, viewport px], so
+// a resize that changes nothing costs nothing.
+let DREW_FOR = null;
+let RESIZE_TIMER = null;
+// A resize is settled after this long, and 20 px is the smallest change worth a
+// redraw: the canvas is quantised to 0.01 in, which is 1.08 px, and a figure
+// redrawn on every intermediate width of a window drag would be twenty renders.
+const RESIZE_SETTLE_MS = 450;
+const RESIZE_MIN_PX = 20;
+
+// The width `#figure` actually gets, measured rather than computed. `#figure-col`
+// is a flex child with `min-width: 0` beside a 330 px panel inside a padded
+// `main`, so its width is not the sum of four constants -- which is exactly why
+// the server is told this number instead of working it out from a copy of the
+// stylesheet. Measured with `#result` momentarily un-hidden when there is no
+// figure yet: synchronous, so nothing paints, and `hidden` is the only thing
+// standing between the element and its real width.
+function figurePanelPx() {
+  const result = $("#result");
+  const wasHidden = result.hidden;
+  if (wasHidden) result.hidden = false;
+  const w = $("#figure").getBoundingClientRect().width;
+  if (wasHidden) result.hidden = true;
+  return w;
+}
+
+// What to tell the server about this window, or null if the measurement is not
+// usable -- in which case the server draws the 1440 x 900 canvas it has always
+// drawn rather than trusting a zero.
+function windowMeasurement() {
+  const panel = figurePanelPx();
+  if (!(panel > 200) || !(window.innerHeight > 200)) return null;
+  return [panel, window.innerHeight];
+}
+
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -37,6 +72,14 @@ async function init() {
 
   document.querySelectorAll(".tab").forEach((t) => {
     t.onclick = () => showTab(t.dataset.tab);
+  });
+
+  // v3.5. The figure is sized for the window it is read in, so the window
+  // changing size is an input. Debounced, and a no-op when the change is smaller
+  // than the canvas quantum or when there is no run in memory to redraw.
+  window.addEventListener("resize", () => {
+    clearTimeout(RESIZE_TIMER);
+    RESIZE_TIMER = setTimeout(redrawForThisWindow, RESIZE_SETTLE_MS);
   });
 }
 
@@ -85,6 +128,15 @@ async function analyse() {
     .filter((l) => l.trim())
     .map((l) => l.trim() + (drop ? " drop_no_data" : "")).join("\n"));
   if ($("#file").files[0]) fd.append("file", $("#file").files[0]);
+  // v3.5. The canvas is a function of this window: the circle grows with it, and
+  // the twelve ring names come back into the 26° gap when the render's own
+  // geometry assertions accept them there at 12 CSS px. Measured here because the
+  // page is the only thing that knows how wide the panel came out.
+  const win = windowMeasurement();
+  if (win) {
+    fd.append("panel_px", win[0]);
+    fd.append("viewport_px", win[1]);
+  }
 
   let res, body;
   try {
@@ -225,21 +277,75 @@ function render(b) {
   // already carries both in the `What this is not` and `Drop ledger` tabs. The
   // circle gets the space instead. Falls back to the export if an older run is
   // still in memory without a web render.
-  fetch(b.web_url || b.svg_url).then((r) => r.text()).then((svg) => {
-    $("#figure").innerHTML = svg;
-    wireFigure();
-    // B15, continued: now the figure's height is a measurement rather than a
-    // guess about a canvas constant.
-    const fig = $("#figure");
-    if (fig.getBoundingClientRect().height <= window.innerHeight) {
-      fig.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  });
+  DREW_FOR = b.web_render ? [b.web_render.panel_px, b.web_render.viewport_px] : null;
+  inlineFigure(b.web_url || b.svg_url, true);
 
   // v3.1 / UX v3 A2. The scale column and the cell-state box are no longer in
   // the app's SVG; the page draws them, from the same norms and swatches the
   // renders use. Same information, 13 px instead of 5.8.
   if (b.scales_url) fetch(b.scales_url).then((r) => r.json()).then(renderDecode);
+}
+
+// v3.5. Inlining the SVG is now done twice -- once per run, and again whenever
+// the window is resized enough to change the canvas -- so it is one function.
+// `scroll` is false on a redraw: the reader is looking at the figure, and moving
+// the page under them because it got 80 px taller is not a service.
+async function inlineFigure(url, scroll) {
+  // The run rewrites `figure-web.svg` in place on a redraw, so the URL alone is
+  // not a new resource. The server sends `no-store` for this one artefact and
+  // this is the second belt: a stale circle sized for the window before last is
+  // the exact failure v3.0's `_NO_STORE` comment is about.
+  const svg = await fetch(url + (url.includes("?") ? "&" : "?") + "v=" + Date.now())
+    .then((r) => r.text());
+  $("#figure").innerHTML = svg;
+  wireFigure();
+  // B15, continued: now the figure's height is a measurement rather than a
+  // guess about a canvas constant.
+  const fig = $("#figure");
+  if (scroll && fig.getBoundingClientRect().height <= window.innerHeight) {
+    fig.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+// v3.5. The window changed size; this run's app figure was drawn for the old one.
+//
+// Only the app render is redrawn -- no source is fetched and no export is
+// rewritten -- and only when the change is big enough to change the canvas. If
+// the server refuses the new geometry, the figure on screen stays exactly as it
+// is: a circle drawn for a window 200 px shorter is a worse thing to look at than
+// no update, and it is not a wrong figure.
+async function redrawForThisWindow() {
+  if (!RUN || !RUN.run_id) return;
+  const win = windowMeasurement();
+  if (!win) return;
+  if (DREW_FOR && Math.abs(win[0] - DREW_FOR[0]) < RESIZE_MIN_PX
+      && Math.abs(win[1] - DREW_FOR[1]) < RESIZE_MIN_PX) return;
+  const was = $("#status").textContent;
+  $("#status").textContent = "redrawing the figure for this window…";
+  const fd = new FormData();
+  fd.append("panel_px", win[0]);
+  fd.append("viewport_px", win[1]);
+  let res, body;
+  try {
+    res = await fetch(`/api/run/${RUN.run_id}/web-figure`, { method: "POST", body: fd });
+    body = await res.json();
+  } catch (e) {
+    $("#status").textContent = was;
+    return;
+  }
+  if (!res.ok) {
+    $("#status").className = "err";
+    $("#status").textContent = (body.message || "the figure could not be redrawn")
+      + (body.note ? "\n\n" + body.note : "");
+    return;
+  }
+  DREW_FOR = [body.web_render.panel_px, body.web_render.viewport_px];
+  RUN.web_render = body.web_render;
+  await inlineFigure(body.web_url, false);
+  // The caveat clauses come from the render, and one of them says where the ring
+  // names are — which is the thing that may have just changed.
+  drawFigureCaveats(body.figure_caveats);
+  $("#status").textContent = was;
 }
 
 // v3.1. The comparability sentence, the four cell states, and the twelve
@@ -279,14 +385,7 @@ function renderDecode(s) {
   // spoke angles, and a second implementation of that sentence could describe a
   // geometry the figure does not have (COUNCIL V5). 13 px, under the circle, no
   // disclosure around it.
-  const cav = $("#figure-caveats");
-  if (cav) {
-    // v3.3 / round 3 B14: two groups, not five equal lines. `kind` comes from
-    // the render, so what is a caveat and what is a note about the drawing is
-    // decided once, where the sentences are written.
-    cav.innerHTML = (s.figure_caveats || [])
-      .map((c) => `<span class="${esc(c.kind)}">${esc(c.text)}</span>`).join("");
-  }
+  drawFigureCaveats(s.figure_caveats);
 
   $("#scale-rows").innerHTML = s.rings.map((r) => `
     <div class="scale">
@@ -306,6 +405,24 @@ function renderDecode(s) {
     </div>`).join("");
   $("#scales").querySelector("summary b").textContent =
     `The ${s.rings.length} ring scales`;
+}
+
+// v3.2 / UX v3 round 2 A4, its own function since v3.5 because a resize redraws
+// the figure and these clauses with it.
+//
+// Read from the render's own `FigureResult`, not rebuilt here: one of them states
+// this run's spoke angles and says whether the ring names are inside the circle or
+// beside it, and a second implementation of that sentence could describe a
+// geometry the figure does not have (COUNCIL V5). 13 px, no disclosure around it.
+//
+// v3.3 / round 3 B14: two groups, not five equal lines. `kind` comes from the
+// render, so what is a caveat and what is a note about the drawing is decided
+// once, where the sentences are written.
+function drawFigureCaveats(clauses) {
+  const cav = $("#figure-caveats");
+  if (!cav) return;
+  cav.innerHTML = (clauses || [])
+    .map((c) => `<span class="${esc(c.kind)}">${esc(c.text)}</span>`).join("");
 }
 
 function wireFigure() {

@@ -131,6 +131,29 @@ class RunResult:
     # own spoke angles, and a second implementation of it could describe a
     # geometry the figure does not have (COUNCIL V5).
     web_caveats: list[str] = field(default_factory=list)
+    # v3.5. The canvas the app render was actually drawn on, which is a function
+    # of the window that asked for it rather than one constant, and therefore not
+    # something the page or a later check may assume. It also carries the answer
+    # to the only question this feature exists to answer:
+    # `web_layout.wedge_labels_in_svg` is whether this window earned the twelve
+    # ring names, and it was decided by rendering them and keeping the render only
+    # if the geometry assertions accepted it.
+    web_layout: figure.Layout = figure.WEB
+    # The window that canvas was sized for, as `(panel_px, viewport_px)`, kept
+    # beside it because every as-seen number -- the circle in CSS px, the type in
+    # CSS px -- is a property of the pair and not of the canvas alone.
+    web_window: tuple[float, float] = (figure.WEB_REFERENCE_PANEL_PX,
+                                       figure.WEB_REFERENCE_VIEWPORT_PX)
+    # v3.5. Re-draw the app render for a window of a different size, for the same
+    # run: `(panel_px, viewport_px) -> (Path, web_caveats, Layout)`.
+    #
+    # A closure over the call that drew it, rather than a second call site with
+    # the twenty arguments copied: `assert_renders_agree` is what makes "the
+    # export and the app render may differ" safe, and a hand-copied argument list
+    # is exactly how the two would come to differ in something other than
+    # furniture. Not serialisable, so it is absent from the manifest and from
+    # `_summarise` -- it is a live handle on a run that is still in memory.
+    rerender_for_window: Any = None
 
 
 async def run_analysis(
@@ -144,6 +167,12 @@ async def run_analysis(
     with_triage: bool = False,
     ordering: str | None = None,
     filters: Any = None,
+    # v3.5. The window the figure is going to be read in, measured by the browser
+    # and handed over (`app.js`). The defaults are the 1440 x 900 laptop round 2
+    # A4 measured, so a caller that says nothing -- a test, a script, `make qa` --
+    # gets exactly the canvas v3.4 drew.
+    panel_px: float = figure.WEB_REFERENCE_PANEL_PX,
+    viewport_px: float = figure.WEB_REFERENCE_VIEWPORT_PX,
 ) -> RunResult:
     t0 = time.time()
     run_id = run_id or f"{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}-{uuid.uuid4().hex[:6]}"
@@ -480,7 +509,7 @@ async def run_analysis(
     t = time.time()
 
     def do_render(failures: list[str], conds: list[str] = [],
-                  layout: str = "audit", svg: Path | None = None,
+                  layout: "str | figure.Layout" = "audit", svg: Path | None = None,
                   png: Path | None = None, write_png: bool = True,
                   invariant_summary: str = "") -> figure.FigureResult:
         return figure.render(
@@ -569,14 +598,32 @@ async def run_analysis(
     # The app inlines THIS one. Same cells, no footer block and no dropped-gene
     # list in the hole, because the page carries both in its own furniture and
     # the 1.9 in they cost goes to the circle instead.
+    #
+    # v3.5: on the canvas this window has room for, with the twelve ring names
+    # back inside the 26° gap if -- and only if -- the geometry assertions accept
+    # them there at a size a reader can read. Puck: *"the names should appear
+    # automatically when the viewport allows a circle big enough to hold them
+    # honestly, and stay off when it does not."*
     web_svg = runs_dir / "figure-web.svg"
-    web_result = do_render(banner, conds, layout="web", svg=web_svg,
-                           write_png=False, invariant_summary=inv_summary)
-    # ...and this is what makes saying yes to that safe. The two renders may
-    # differ in furniture; if one CELL ever differed, the colleague reading the
-    # PNG and the person at the screen would be reading different figures and
-    # neither would know.
-    figure.assert_renders_agree(svg_path, web_svg)
+
+    def draw_the_app_render(panel: float, window_h: float):
+        """One call site for the app render, used by the run and again by a resize.
+
+        Returns `(FigureResult, Layout)`. `assert_renders_agree` is inside it on
+        purpose: a re-drawn app figure is a new file, and the claim it has to keep
+        is the same claim -- every cell identical to the export's, whatever the
+        canvas. That is what makes "the download and the online figure can be
+        different" safe to have said yes to.
+        """
+        result, lay = figure.render_naming_the_rings_if_they_fit(
+            lambda candidate: do_render(banner, conds, layout=candidate, svg=web_svg,
+                                        write_png=False,
+                                        invariant_summary=inv_summary),
+            panel_px=panel, viewport_px=window_h)
+        figure.assert_renders_agree(svg_path, web_svg)
+        return result, lay
+
+    web_result, web_layout = draw_the_app_render(panel_px, viewport_px)
 
     # UX A4: the slide render. Same data, 16:9, type that survives projection,
     # with the ring key and the caveats moved into the caption beside it. The
@@ -601,7 +648,7 @@ async def run_analysis(
 
     # Seven files, four layouts, one data set. This says each file is the render
     # its name promises -- see the function for the bug that earned it.
-    figure.assert_artefacts_are_their_own_layout(runs_dir)
+    figure.assert_artefacts_are_their_own_layout(runs_dir, web=web_layout)
     # v3.0 renders four layouts where v2.9 rendered two, and `render_s` above
     # only ever measured the first pass. Timed separately rather than folded in,
     # so the cost of the new artefacts is visible in every manifest instead of
@@ -745,6 +792,8 @@ async def run_analysis(
         gene_order=gene_order, drawers=drawers, ledger=ledger, warnings=warnings,
         ordering=ordering, active_filters=filters_mod.as_dicts(active_filters),
         cells_by_ring=cells_by_ring, web_caveats=web_result.web_caveats,
+        web_layout=web_layout, web_window=(panel_px, viewport_px),
+        rerender_for_window=draw_the_app_render,
     )
 
 
