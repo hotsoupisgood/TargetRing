@@ -260,6 +260,22 @@ ul.tight li { margin: 2px 0; }
 .figure-caveats span.warn { color: #5a3b00; font-weight: 600; }
 .figure-caveats span.how { color: var(--muted); font-weight: 400; }
 
+/* v3.5 item 2. The sentence that explains the gap at 12 o'clock, at the top of
+   the decode panel: beside the figure, at the height of the circle's own top,
+   so the hole and the reason for it are in one viewport.
+
+   Styled as a note about the drawing and not as a caveat — same job as
+   `.figure-caveats span.how`, 13 px and grey — because amber is what this page
+   uses for "this could mislead you", and an empty wedge is a fact about the
+   geometry. It is the same 13 px it was under the circle: this item moved it,
+   it did not promote it. */
+.wedge-note {
+  margin: 0 0 12px; padding: 9px 12px; font-size: 13px; line-height: 1.5;
+  color: var(--muted); background: #fff;
+  border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: 6px;
+}
+
 /* Always open, no control, no state in which it is not on screen: it is one of
    the two things the UX-v3 rule says an animation may never take away. */
 #cell-states { border: 1px solid var(--line); border-radius: 6px; background: #fff;

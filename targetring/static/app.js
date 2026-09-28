@@ -418,11 +418,24 @@ function renderDecode(s) {
 // v3.3 / round 3 B14: two groups, not five equal lines. `kind` comes from the
 // render, so what is a caveat and what is a note about the drawing is decided
 // once, where the sentences are written.
+// v3.5 item 2: `where` — the one clause that explains the 12 o'clock gap — is
+// drawn at the top of the decode panel beside the figure instead, because it is
+// the answer to a question a reader asks while looking at the gap, and under the
+// circle it was below the fold. Split by the kind the render gave it, so each
+// clause is drawn exactly once and `app.js` never has to recognise a sentence.
 function drawFigureCaveats(clauses) {
+  const all = clauses || [];
   const cav = $("#figure-caveats");
-  if (!cav) return;
-  cav.innerHTML = (clauses || [])
-    .map((c) => `<span class="${esc(c.kind)}">${esc(c.text)}</span>`).join("");
+  if (cav) {
+    cav.innerHTML = all.filter((c) => c.kind !== "where")
+      .map((c) => `<span class="${esc(c.kind)}">${esc(c.text)}</span>`).join("");
+  }
+  const note = $("#wedge-note");
+  if (note) {
+    const where = all.filter((c) => c.kind === "where");
+    note.innerHTML = where.map((c) => esc(c.text)).join(" ");
+    note.hidden = where.length === 0;
+  }
 }
 
 function wireFigure() {

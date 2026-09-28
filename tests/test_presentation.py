@@ -1819,7 +1819,10 @@ class TestUXv3Round2ThePageAReaderWorksIn:
         from targetring.figure import SAFETY_RING_CAVEAT, caveats_for_the_page
         keep, page = caveats_for_the_page(ORDER_NOTE, [], "a FIXED 26° gap")
         assert keep == "", "nothing to say about filters on an unfiltered run"
-        assert {c["kind"] for c in page} <= {"warn", "how"}, page
+        # v3.5 item 2 adds `where` -- the clause about the gap, which the page
+        # draws beside the figure rather than under it. Still a closed set, and
+        # still every clause handed over rather than dropped.
+        assert {c["kind"] for c in page} <= {"warn", "how", "where"}, page
         body = " ".join(c["text"] for c in page)
         assert SAFETY_RING_CAVEAT in body
         assert ORDER_NOTE in body
@@ -2200,7 +2203,11 @@ class TestUXv3Round3TheProjectedArtefactAndTheDrawer:
         page = caveats_for_the_page(ORDER_NOTE, [], "a FIXED 26° gap")[1]
         kinds = [c["kind"] for c in page]
         assert kinds[0] == "warn", "the safety caveat leads"
-        assert set(kinds) == {"warn", "how"}, kinds
+        # v3.5 item 2: three kinds, because the clause that explains the gap is
+        # not read in the same place as the ones about the data. B14's finding is
+        # unchanged -- what must not happen is clauses with different jobs drawn
+        # at one weight, and this splits them further rather than merging them.
+        assert set(kinds) == {"warn", "how", "where"}, kinds
         css = (STATIC / "app.css").read_text()
         assert ".figure-caveats span.warn" in css
         assert ".figure-caveats span.how" in css
@@ -2564,3 +2571,86 @@ class TestV35TheCircleGrowsWithTheWindow:
         assert AUDIT.wedge_label_size == 7.4 and AUDIT.wedge_labels_in_svg is True
         for lay in (AUDIT, SLIDE, LEGEND):
             assert lay.wedge_label_floor_px is None
+
+
+class TestV35TheEmptyWedgeExplainsItselfBesideTheFigure:
+    """v3.5 item 2. With the ring names off, the 26° gap reads as a rendering
+    bug — a wedge of white where every other spoke has twelve bands — and the
+    sentence that answers that was the third clause of the strip UNDER the
+    circle, 953 px down the document on the 1440 x 900 laptop this review
+    measures at. Below the fold, on the one page element whose job is to be read
+    at the same time as the thing it is about.
+
+    It is beside the figure now, at the top of the decode panel, and it is there
+    exactly once. Round 2's A6 is the reason that second half is a test: the
+    duplicated comparability band was a sentence that had been ADDED beside an
+    existing copy instead of moved, and two copies of a sentence that states this
+    run's own geometry is COUNCIL V5 waiting for one of them to go stale.
+    """
+
+    def test_the_clause_that_explains_the_gap_is_classified_not_recognised(
+            self) -> None:
+        """`app.js` must not have to know which sentence this is. The render
+        classifies it `where`, in the same function that writes it, so a clause
+        whose wording changes cannot end up in the wrong place — and there is
+        exactly one of them."""
+        from targetring.figure import caveats_for_the_page
+        page = caveats_for_the_page(ORDER_NOTE, [], "a FIXED 26° gap at 12 o'clock")[1]
+        where = [c for c in page if c["kind"] == "where"]
+        assert len(where) == 1, page
+        assert "26°" in where[0]["text"]
+        # ...and it is no longer in the group drawn under the circle.
+        assert all("26°" not in c["text"] for c in page if c["kind"] != "where")
+        # A layout with no gap hands over no such clause rather than an empty one.
+        assert [c for c in caveats_for_the_page(ORDER_NOTE, [], "")[1]
+                if c["kind"] == "where"] == []
+
+    def test_the_page_draws_it_beside_the_figure_and_not_below_it(self) -> None:
+        html, js = _html(), _js()
+        assert 'id="wedge-note"' in html
+        assert html.index('id="decode"') < html.index('id="wedge-note"'), (
+            "the note is not in the panel beside the figure")
+        assert html.index('id="wedge-note"') < html.index('id="cell-states"'), (
+            "it is below the twelve scales, which is the bottom of a 900 px "
+            "window again")
+        assert not _inside_a_disclosure(html, "wedge-note"), (
+            "an explanation behind a click is an explanation nobody read")
+        assert 'c.kind === "where"' in js and 'c.kind !== "where"' in js, (
+            "the page must split the clauses by the kind the render gave them")
+
+    def test_it_is_drawn_once_and_the_strip_below_no_longer_has_it(self) -> None:
+        """The no-duplication half, checked the way round 2's A6 had to be: by
+        counting where the sentence can reach, not by reading the page."""
+        js = _js()
+        # One producer: `drawFigureCaveats`, and the two groups it makes are
+        # complementary filters of one list.
+        assert js.count("#wedge-note") == 1, (
+            "two places write the note, so one of them can go stale")
+        body = js[js.index("function drawFigureCaveats"):]
+        body = body[:body.index("\nfunction ")]
+        assert body.count("figure_caveats") == 0 and "clauses" in body
+        assert "filter((c) => c.kind !== \"where\")" in body
+
+    def test_the_sentence_still_comes_from_the_render_that_drew_the_gap(
+            self, tmp_path: Path) -> None:
+        """COUNCIL V5, and the reason this item is a move rather than a line of
+        HTML: the sentence states this run's own spoke angles and which
+        arrangement the render is in. Moving it must not have turned it into
+        something the page writes."""
+        from targetring.figure import web_layout_for_viewport
+        lay = web_layout_for_viewport(*LAPTOP_WINDOW)
+        genes = [f"GENE{i:03d}" for i in range(14)]
+        spec = _full_ring_spec(genes)
+        res = render(genes=genes, cells_by_ring=spec, stats=gene_stats(spec),
+                     region="Lung", out_svg=tmp_path / "web.svg", input_count=14,
+                     rendered_count=14, ledger_counts={}, ordering_note=ORDER_NOTE,
+                     layout=lay, provenance="run T35 · abc123")
+        where = [c for c in res.web_caveats if c["kind"] == "where"]
+        assert len(where) == 1, res.web_caveats
+        # This run's numbers, not a constant: 14 spokes in 360 - 26 degrees.
+        assert "22.00°" in where[0]["text"], where[0]["text"]
+        assert "reserved at 12 o'clock" in where[0]["text"]
+        code = "\n".join(line for line in _js().splitlines()
+                         if not line.lstrip().startswith("//"))
+        assert "26°" not in code and "12 o'clock" not in code, (
+            "the page has started writing the sentence itself")

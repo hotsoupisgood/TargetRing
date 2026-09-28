@@ -2821,10 +2821,26 @@ def caveats_for_the_page(ordering_note: str, filter_notes: Sequence[str],
     slide render is not touched at all.
 
     v3.3 / UX v3 round 3 B14. The clauses come back CLASSIFIED, as
-    `{"kind": "warn"|"how", "text": ...}`. A safety caveat and a note about
+    `{"kind": "warn"|"how"|"where", "text": ...}`. A safety caveat and a note about
     where the ring names are are not the same kind of statement, and round 2
     shipped five of them at one weight -- `UX-v1-mvp.md` B3's "two sentences
     with different jobs reading as one grey run-on", one surface along.
+
+    v3.5 item 2. `where` is the third kind and it is one clause: the one that
+    explains the gap at 12 o'clock. It is classified rather than matched on,
+    because the page has to put it somewhere else and the alternative -- `app.js`
+    recognising the sentence by its words -- is a second implementation of which
+    sentence this is, in a file that cannot see when the sentence changes.
+
+    It needs a different place because of what it explains. The others are
+    caveats about the DATA and can be read after the figure; this one answers
+    "why is there a hole in my circle", which a reader asks while looking at the
+    hole. Under the circle it was 953 px down the document on a 900 px laptop --
+    below the fold, on the one page element whose whole job is to be read at the
+    same time as the thing it is about. The page draws it at the top of the
+    decode panel beside the figure (`#wedge-note`), and exactly once: this
+    function is the only place it comes from, and round 2's A6 is what happens
+    when a sentence is moved by copying it.
 
     And one clause is gone rather than reclassified. `slide_line` carries
     *"rings are scaled independently of one another"*, which is the
@@ -2838,7 +2854,7 @@ def caveats_for_the_page(ordering_note: str, filter_notes: Sequence[str],
     page = [("warn", f"The safety ring is {SAFETY_RING_CAVEAT}."),
             ("how", ordering_note)]
     if wedge_short:
-        page.append(("how", wedge_short[0].upper() + wedge_short[1:]))
+        page.append(("where", wedge_short[0].upper() + wedge_short[1:]))
     page.append(("how", "Every caveat this run carries is in the "
                         "What this is not tab."))
     return keep, [{"kind": k, "text": t} for k, t in page if t]

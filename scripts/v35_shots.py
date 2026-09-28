@@ -68,12 +68,22 @@ PROBE = """() => {
     web_render: (typeof RUN !== 'undefined' && RUN) ? RUN.web_render : null,
     caveats,
     wedge_note_beside_the_figure: aside ? aside.textContent.trim() : null,
+    // Document coordinates, which is the unit round 2 measured the page in:
+    // where each block sits relative to the top of the page, against a 900 px
+    // window. Item 2 is the distance between these two numbers.
+    figure_top_px: Math.round(fig.getBoundingClientRect().top + window.scrollY),
     caveats_top_px: (() => {
       const el = document.querySelector('#figure-caveats');
       if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return Math.round(r.top + window.scrollY);
+      return Math.round(el.getBoundingClientRect().top + window.scrollY);
     })(),
+    wedge_note_top_px: (() => {
+      const el = document.querySelector('#wedge-note');
+      if (!el || el.hidden) return null;
+      return Math.round(el.getBoundingClientRect().top + window.scrollY);
+    })(),
+    // The page as one document, so "was it on the screen at all" is measurable.
+    document_px: Math.round(document.documentElement.scrollHeight),
   };
 }"""
 
@@ -162,6 +172,9 @@ def main() -> int:
             print(f"  smallest name on screen: {min(sizes):.2f} CSS px")
         for c in pr["caveats"]:
             print(f"  caveat  {c[:110]}")
+        print(f"  figure top {pr['figure_top_px']} px · #wedge-note top "
+              f"{pr['wedge_note_top_px']} px · #figure-caveats top "
+              f"{pr['caveats_top_px']} px · document {pr['document_px']} px")
         if pr["wedge_note_beside_the_figure"]:
             print(f"  beside the figure: {pr['wedge_note_beside_the_figure'][:110]}")
     print(f"\nwrote {OUT}/v35-*.png and logs/v35-live-probe.json")
