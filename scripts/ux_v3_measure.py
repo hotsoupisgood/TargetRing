@@ -54,6 +54,14 @@ DECODE_PANEL_PX = 330.0
 FIGURE_ROW_GAP_PX = 18.0
 WEB_FIGURE_PX = LAPTOP_PANEL_PX - DECODE_PANEL_PX - FIGURE_ROW_GAP_PX
 
+# v3.5. CSS px per canvas inch on the app render, which is the constant the
+# responsive canvas is built on: the canvas grows with the window at a fixed
+# 1.5046 px per point, so a `figure-web.svg` states the panel it was drawn for in
+# its own viewBox. Imported rather than copied — 1040 / 9.6 in two files is two
+# numbers that can disagree.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from targetring.figure import WEB_PX_PER_IN  # noqa: E402
+
 FS = re.compile(r'font-size:\s*([0-9.]+)px')
 VIEWBOX = re.compile(r'viewBox="([0-9.\- ]+)"')
 # The size is on the <text> element itself, not on a wrapping <g>: matplotlib
@@ -105,6 +113,16 @@ def report(run: Path) -> dict:
         if not p.exists():
             continue
         w, h, sizes = svg_type_sizes(p)
+        if name == "figure-web.svg":
+            # v3.5. The app canvas is a function of the window the run was drawn
+            # for, so 1040 px is the panel of ONE of them. Read the panel back off
+            # the file instead: `web_layout_for_viewport` sizes the canvas at a
+            # fixed 108.33 CSS px per inch, so the canvas width IS the panel it
+            # was drawn for. A fixed 1040 here would report a render drawn for a
+            # 2160 px panel at 0.72 of its real size and call every string on it
+            # under the floor -- an instrument wrong in the one direction this
+            # file says it must never be wrong in.
+            target_units = w / 72.0 * WEB_PX_PER_IN
         scale = target_units / w
         floor = SCREEN_FLOOR_PX if floor_kind == "screen" else SLIDE_FLOOR_PT
         rows = []
