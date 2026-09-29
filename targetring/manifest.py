@@ -50,6 +50,16 @@ SOURCE_URLS: dict[str, str] = {
     # they could not agree about Pharos, because the manifest never mentioned
     # it.
     "pharos": config.PHAROS_GRAPHQL,
+    # Stage 1. AGENTS.md requires "every source URL" in the manifest, and these
+    # two are now read on a path a figure can be reached from: the disease
+    # autocomplete and the contrast picker. The Atlas entry is the per-experiment
+    # directory with the accession left as a placeholder, because the URL a run
+    # actually fetched is in its `ContrastRef` (`configuration_url`,
+    # `analytics_url`) -- naming one experiment here would name the wrong one.
+    "atlas_experiment": config.ATLAS_EXPERIMENT_BASE.format(acc="{ACC}"),
+    "atlas_catalogue": config.ATLAS_CATALOGUE_URL,
+    "ols4_select": config.OLS4_SELECT,
+    "ols4_terms": config.OLS4_ONTOLOGIES,
 }
 
 

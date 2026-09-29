@@ -1,0 +1,1521 @@
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	age	31 year
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	individual	subject_289
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694187_biopsy_1	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	age	51 year
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	individual	subject_74
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694188_biopsy_10	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	age	40 year
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	individual	subject_70
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	organism part	rectum	http://purl.obolibrary.org/obo/UBERON_0001052
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	factor	organism part	rectum	http://purl.obolibrary.org/obo/UBERON_0001052
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694189_biopsy_100	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	age	52 year
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	individual	subject_231
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	organism part	rectum	http://purl.obolibrary.org/obo/UBERON_0001052
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	factor	organism part	rectum	http://purl.obolibrary.org/obo/UBERON_0001052
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694190_biopsy_101	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	age	21 year
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	individual	subject_369
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694191_biopsy_102	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	age	36 year
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	individual	subject_101
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694198_biopsy_109	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	age	27 year
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	individual	subject_37
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694202_biopsy_112	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	age	55 year
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	individual	subject_32
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694203_biopsy_113	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	age	65 year
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	individual	subject_13
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694204_biopsy_114	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	age	60 year
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	individual	subject_179
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694205_biopsy_115	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	age	35 year
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	individual	subject_72
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694206_biopsy_116	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	age	35 year
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	individual	subject_72
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694207_biopsy_117	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	age	27 year
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	individual	subject_12
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694208_biopsy_118	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	age	48 year
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	individual	subject_281
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694209_biopsy_119	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	age	52 year
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	individual	subject_231
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694212_biopsy_121	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	age	35 year
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	individual	subject_5
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694213_biopsy_122	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	age	65 year
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	individual	subject_286
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694214_biopsy_123	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	individual	subject_282
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694215_biopsy_124	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	age	51 year
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	individual	subject_74
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694218_biopsy_127	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	age	42 year
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	individual	subject_288
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694219_biopsy_128	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	age	33 year
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	individual	subject_181
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694220_biopsy_129	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	individual	subject_370
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694221_biopsy_13	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	age	36 year
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	individual	subject_33
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694222_biopsy_130	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	individual	subject_370
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694223_biopsy_131	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	age	63 year
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	individual	subject_73
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694224_biopsy_132	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	individual	subject_36
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694226_biopsy_134	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	age	44 year
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	individual	subject_284
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694228_biopsy_136	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	age	45 year
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	individual	subject_123
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694229_biopsy_137	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	age	20 year
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	individual	subject_21
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694231_biopsy_139	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	age	20 year
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	individual	subject_21
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694233_biopsy_140	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	age	41 year
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	individual	subject_100
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694234_biopsy_141	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	age	39 year
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	individual	subject_85
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694235_biopsy_142	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	age	38 year
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	individual	subject_61
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694236_biopsy_143	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	age	38 year
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	individual	subject_56
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694241_biopsy_148	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	age	39 year
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	individual	subject_16
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694245_biopsy_151	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	age	34 year
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	individual	subject_127
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694247_biopsy_153	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	age	28 year
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	individual	subject_71
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694248_biopsy_154	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	age	40 year
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	individual	subject_70
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694249_biopsy_155	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	age	31 year
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	individual	subject_68
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694250_biopsy_156	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	age	39 year
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	individual	subject_85
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694254_biopsy_16	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	individual	subject_24
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694257_biopsy_162	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	age	35 year
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	individual	subject_371
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694258_biopsy_163	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	age	36 year
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	individual	subject_33
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694260_biopsy_165	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	age	60 year
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	individual	subject_221
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694265_biopsy_17	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	age	45 year
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	individual	subject_123
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694269_biopsy_173	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	individual	subject_370
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694271_biopsy_175	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	age	20 year
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	individual	subject_30
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694274_biopsy_178	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	age	36 year
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	individual	subject_33
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694276_biopsy_18	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	age	42 year
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	individual	subject_288
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694282_biopsy_185	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	age	33 year
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	individual	subject_181
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694283_biopsy_186	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	age	31 year
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	individual	subject_289
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694288_biopsy_190	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	age	51 year
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	individual	subject_232
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694292_biopsy_194	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	age	38 year
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	individual	subject_56
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694296_biopsy_198	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	age	48 year
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	individual	subject_281
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694299_biopsy_20	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	age	35 year
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	individual	subject_72
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694301_biopsy_201	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	age	19 year
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	individual	subject_97
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694307_biopsy_207	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	age	48 year
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	individual	subject_281
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694309_biopsy_209	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	individual	subject_291
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694310_biopsy_21	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	individual	subject_125
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694319_biopsy_218	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	age	21 year
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	individual	subject_99
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694322_biopsy_220	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	age	40 year
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	individual	subject_82
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694328_biopsy_226	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	age	34 year
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	individual	subject_80
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694329_biopsy_227	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	age	27 year
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	individual	subject_12
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694333_biopsy_230	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	age	51 year
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	individual	subject_232
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694350_biopsy_246	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	age	34 year
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	individual	subject_230
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694354_biopsy_25	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	age	34 year
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	individual	subject_230
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694359_biopsy_254	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	age	36 year
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	individual	subject_55
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694362_biopsy_257	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	age	76 year
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	individual	subject_41
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694364_biopsy_259	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	age	55 year
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	individual	subject_32
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694376_biopsy_27	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	age	31 year
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	individual	subject_289
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694377_biopsy_270	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	age	35 year
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	individual	subject_220
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694383_biopsy_276	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	age	63 year
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	individual	subject_73
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694384_biopsy_277	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	age	29 year
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	individual	subject_17
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694388_biopsy_280	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	age	29 year
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	individual	subject_17
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694389_biopsy_281	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	individual	subject_94
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694391_biopsy_283	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	age	42 year
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	individual	subject_183
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694397_biopsy_289	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	age	36 year
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	individual	subject_55
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694398_biopsy_29	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	age	42 year
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	individual	subject_183
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694400_biopsy_291	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	age	31 year
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	individual	subject_88
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694403_biopsy_294	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	age	46 year
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	individual	subject_373
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694404_biopsy_295	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	age	36 year
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	individual	subject_128
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694407_biopsy_298	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	individual	subject_130
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694412_biopsy_301	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	age	20 year
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	individual	subject_30
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694416_biopsy_305	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	individual	subject_34
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694417_biopsy_306	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	age	38 year
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	individual	subject_40
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694418_biopsy_307	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	age	31 year
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	individual	subject_372
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694420_biopsy_309	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	age	33 year
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	individual	subject_31
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694423_biopsy_311	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	age	33 year
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	individual	subject_31
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694424_biopsy_312	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	age	20 year
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	individual	subject_66
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694426_biopsy_314	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	individual	subject_130
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694433_biopsy_320	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	age	24 year
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	individual	subject_83
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694435_biopsy_322	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	individual	subject_35
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694438_biopsy_325	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	age	34 year
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	individual	subject_219
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694439_biopsy_326	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	age	32 year
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	individual	subject_98
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694440_biopsy_327	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	age	27 year
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	individual	subject_12
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694443_biopsy_33	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	individual	subject_291
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694447_biopsy_37	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	age	39 year
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	individual	subject_16
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694448_biopsy_38	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	age	35 year
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	individual	subject_371
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694450_biopsy_4	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	age	56 year
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	individual	subject_290
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694454_biopsy_43	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	age	20 year
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	individual	subject_30
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694456_biopsy_45	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	individual	subject_291
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	factor	organism part	transverse colon	http://purl.obolibrary.org/obo/UBERON_0001157
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694459_biopsy_48	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	age	42 year
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	individual	subject_235
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694465_biopsy_53	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	age	44 year
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	individual	subject_229
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694472_biopsy_6	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	age	48 year
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	individual	subject_53
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694477_biopsy_64	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	age	34 year
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	individual	subject_1
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694482_biopsy_69	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	age	34 year
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	individual	subject_127
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694483_biopsy_7	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	age	24 year
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	individual	subject_368
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694484_biopsy_70	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	age	43 year
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	individual	subject_54
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694489_biopsy_75	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	individual	subject_45
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694490_biopsy_76	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	age	32 year
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	individual	subject_98
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694492_biopsy_78	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	age	24 year
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	individual	subject_83
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694493_biopsy_79	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	age	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	individual	subject_24
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	characteristic	sex	not available
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	factor	organism part	ascending colon	http://purl.obolibrary.org/obo/UBERON_0001156
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694494_biopsy_8	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	age	51 year
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	individual	subject_95
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694497_biopsy_82	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	age	26 year
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	individual	subject_94
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694498_biopsy_83	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	age	24 year
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	individual	subject_84
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694499_biopsy_84	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	age	71 year
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	individual	subject_23
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	characteristic	sex	female	http://purl.obolibrary.org/obo/PATO_0000383
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	factor	sampling site	normal tissue adjacent to inflammation
+E-GEOD-100833	A-GEOD-13158	GSM2694509_biopsy_93	factor	time	0 week
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	age	55 year
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	individual	subject_43
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	factor	cohort	none	http://www.ebi.ac.uk/efo/EFO_0001461
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	factor	disease	inflammatory bowel disease	http://www.ebi.ac.uk/efo/EFO_0003767
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	factor	organism part	terminal ileum	http://www.ebi.ac.uk/efo/EFO_0005185
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	factor	sampling site	inflammation	http://purl.obolibrary.org/obo/GO_0006954
+E-GEOD-100833	A-GEOD-13158	GSM2694513_biopsy_97	factor	time	0 week

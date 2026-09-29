@@ -263,6 +263,85 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
     ),
 }
 
+# ---------------------------------------------------------------------------
+# Sources that are not rings
+# ---------------------------------------------------------------------------
+#
+# Stage 1 adds two sources that drive no ring: OLS4, which resolves a typed
+# disease name into the two id spaces this app has to keep apart, and Expression
+# Atlas, which supplies the contrasts a gene set is *selected from*. They are a
+# second dict rather than entries in `RING_SOURCE_DOCS` because they are not
+# rings: `as_manifest_rows` is keyed by ring, `assert_every_ring_resolves` asks
+# whether every drawn ring is accounted for, and filing `atlas.contrast` under
+# "ring" would make both of those answer a question nobody asked.
+#
+# This is NOT the second copy the module docstring warns about. That warning is
+# about the legend, the caption and the manifest disagreeing over where a RING's
+# number came from, and nothing reads a ring's citation from here. The `SourceDoc`
+# type is shared, `assert_registry_is_coherent` checks both dicts with the same
+# rules, and `scripts/check_source_links.py` fetches both.
+#
+# Both entries are rule 2's case, and it is worth being explicit about why:
+# **neither source publishes a server-rendered page documenting the field this
+# build reads.** Expression Atlas's help pages and OLS4's help page are both
+# client-rendered single-page applications (checked live 2026-09-29: one
+# occurrence of the word "differential" in the whole of `gxa/help/index.html`,
+# and 2,000 bytes of shell at `ols4/help`), and `spot/ols/docs/api` — which looks
+# exactly like the right citation — 302s to an EBI team page, which is the
+# plausible wrong citation this module exists to refuse. So each links the page
+# that names the resource, and each says in `why` what it does and does not
+# document. What is authoritative in both cases is a file this build reads and
+# prints rather than assumes: `-configuration.xml` for what a contrast is, and
+# the term record's own `term_replaced_by` for an obsoletion.
+DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
+    "atlas.contrast": SourceDoc(
+        name="Expression Atlas",
+        name_qualifier="contrast definitions and per-assay annotation",
+        domain="ebi.ac.uk/gxa",
+        url="https://www.ebi.ac.uk/gxa/help/index.html",
+        endpoint=config.ATLAS_EXPERIMENT_BASE.format(acc="{ACC}"),
+        version=(f"per-experiment files · configuration schema "
+                 f"v{config.SCHEMA_VERSIONS['atlas.configuration']} · condensed "
+                 f"SDRF v{config.SCHEMA_VERSIONS['atlas.condensed_sdrf']} · index "
+                 f"v{config.SCHEMA_VERSIONS['atlas.index']}"),
+        reads=("{ACC}-configuration.xml: contrast id, prose <name>, "
+               "reference_assay_group, test_assay_group, assay_group labels and "
+               "assays, array_design; {ACC}.condensed-sdrf.tsv: per-assay factor "
+               "and characteristic values with their ontology URIs"),
+        why=("Atlas's help pages are client-rendered and document neither file, so "
+             "this link names the resource and nothing more. What a contrast IS is "
+             "stated per experiment in its own -configuration.xml, which this build "
+             "reads and prints verbatim -- including the prose <name> -- rather "
+             "than reconstructing from the id. The id is {reference}_{test} and is "
+             "asserted every run (I8): eight of the Atlas's 1,126 human "
+             "differential contrasts fail that assertion, measured 2026-09-29"),
+    ),
+    "ols.disease": SourceDoc(
+        name="OLS4",
+        name_qualifier="EFO and MONDO term lookup",
+        domain="ebi.ac.uk/ols4",
+        url="https://www.ebi.ac.uk/ols4/help",
+        endpoint=config.OLS4_SELECT,
+        version=(f"api/select · ontologies {config.OLS4_ONTOLOGY_LIST} · select "
+                 f"schema v{config.SCHEMA_VERSIONS['ols.select']} · term schema "
+                 f"v{config.SCHEMA_VERSIONS['ols.term']}"),
+        reads=("/api/select?q=&ontology=efo,mondo for the query (its "
+               "responseHeader.params.q is asserted byte-identical, rule 4; "
+               "/api/search does NOT echo it) and "
+               "/api/ontologies/{ont}/terms/{iri} for is_obsolete, "
+               "term_replaced_by, synonyms and database_cross_reference"),
+        why=("OLS4 publishes no server-rendered documentation for the select "
+             "endpoint, and the page that looks like it does (spot/ols/docs/api) "
+             "redirects to a team page. The authoritative statement that "
+             "EFO_0000384 is obsolete and replaced by MONDO_0005011 is the term "
+             "record's own term_replaced_by, which this build fetches and asserts "
+             "rather than hard-coding: Atlas tags samples with the obsolete id and "
+             "Open Targets returns null for it, so a single-id disease record would "
+             "read the null as 'no disease data'"),
+    ),
+}
+
+
 # Stated, not omitted. A reader who sees links on ten rings and none on three is
 # entitled to know whether the other three were forgotten.
 #
@@ -364,7 +443,11 @@ def assert_registry_is_coherent(ring_keys: Iterable[str] = ()) -> None:
     whoever knows which rings are in play.
     """
     assert_every_ring_resolves(ring_keys)
-    for key, doc in RING_SOURCE_DOCS.items():
+    # v4.1 / stage 1: the same four structural rules over the non-ring sources
+    # too. They are a separate dict because they are not rings, and they are
+    # checked by the same code because a citation is a citation -- a homepage or
+    # an http URL is no more acceptable for Atlas than for GTEx.
+    for key, doc in {**RING_SOURCE_DOCS, **DATA_SOURCE_DOCS}.items():
         if not doc.url.startswith("https://"):
             raise AssertionError(f"{key}: source doc URL is not https: {doc.url}")
         host = doc.url.split("/", 3)[2]
@@ -393,7 +476,7 @@ def assert_registry_is_coherent(ring_keys: Iterable[str] = ()) -> None:
     # is the only thing telling a reader which measure a cell is. `druggability`
     # and `tractable` are the pair this exists for: four keys and three, one page.
     by_reads: dict[str, str] = {}
-    for key, doc in RING_SOURCE_DOCS.items():
+    for key, doc in {**RING_SOURCE_DOCS, **DATA_SOURCE_DOCS}.items():
         clash = by_reads.setdefault(doc.reads, key)
         if clash != key:
             raise AssertionError(
@@ -414,6 +497,26 @@ def assert_registry_is_coherent(ring_keys: Iterable[str] = ()) -> None:
                 f"measure a cell is")
 
 
-__all__ = ["SourceDoc", "RING_SOURCE_DOCS", "UNLINKED_RINGS",
-           "as_manifest_rows", "assert_registry_is_coherent",
+def data_source_rows(keys: Iterable[str]) -> list[dict[str, str]]:
+    """The manifest's and the picker's copy of a non-ring source's citation.
+
+    Raises on an unregistered key for the same reason `as_manifest_rows` does:
+    there is no row shape for "we do not know where this came from".
+    """
+    rows = []
+    for key in keys:
+        doc = DATA_SOURCE_DOCS.get(key)
+        if doc is None:
+            raise AssertionError(
+                f"source {key!r} has no entry in DATA_SOURCE_DOCS. Every source a "
+                f"page reads must resolve to a citation -- add one, and do not "
+                f"borrow a neighbouring source's URL to do it.")
+        rows.append({"source": key, "legend_text": doc.legend_text,
+                     "doc_url": doc.url, "endpoint": doc.endpoint,
+                     "version": doc.version, "reads": doc.reads, "reason": doc.why})
+    return rows
+
+
+__all__ = ["SourceDoc", "RING_SOURCE_DOCS", "DATA_SOURCE_DOCS", "UNLINKED_RINGS",
+           "as_manifest_rows", "assert_registry_is_coherent", "data_source_rows",
            "unresolved_rings", "assert_every_ring_resolves"]

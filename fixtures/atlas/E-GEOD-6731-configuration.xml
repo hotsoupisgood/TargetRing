@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration experimentType="microarray_1colour_mrna_differential" r_data="1">
+    <analytics>
+        <array_design>A-AFFY-1</array_design>
+        <assay_groups>
+            <assay_group id="g1" label="g1">
+                <assay>N65s2</assay>
+                <assay>N79s</assay>
+                <assay>N69s</assay>
+                <assay>N66s1</assay>
+            </assay_group>
+            <assay_group id="g2" label="g2">
+                <assay>CD-51-Aff</assay>
+                <assay>CD-59-un2</assay>
+                <assay>CD-45-un</assay>
+                <assay>CD-76-Aff1</assay>
+                <assay>CD-76-Aff2</assay>
+                <assay>CD-53-un</assay>
+                <assay>CD-33-Aff</assay>
+                <assay>CD-58-Aff</assay>
+                <assay>CD-58-un</assay>
+                <assay>CD-51-un</assay>
+                <assay>CD-49-Aff1</assay>
+                <assay>CD-49-un1</assay>
+                <assay>CD-33-un</assay>
+                <assay>CD-45-un2</assay>
+                <assay>CD-48-un</assay>
+                <assay>CD-76-un</assay>
+                <assay>CD-53-Aff</assay>
+                <assay>CD-48-un2</assay>
+                <assay>CD-59-un</assay>
+            </assay_group>
+            <assay_group id="g3" label="g3">
+                <assay>UC-38-un</assay>
+                <assay>UC-33-un</assay>
+                <assay>UC-32-un</assay>
+                <assay>UC-71-Aff</assay>
+                <assay>UC-55-Aff</assay>
+                <assay>UC-55-un</assay>
+                <assay>UC-35-Aff</assay>
+                <assay>UC-38-Aff</assay>
+                <assay>UC-32-Aff</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g1_g2" cttv_primary="1">
+                <name>'Crohn's disease' vs 'normal'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g2</test_assay_group>
+            </contrast>
+            <contrast id="g1_g3" cttv_primary="1">
+                <name>'ulcerative colitis' vs 'normal'</name>
+                <reference_assay_group>g1</reference_assay_group>
+                <test_assay_group>g3</test_assay_group>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>

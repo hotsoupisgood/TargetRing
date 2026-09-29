@@ -21,6 +21,43 @@
 </header>
 
 <main>
+  <!-- Stage 1. A second way in: start from a disease instead of from a table you
+       already have. It sits ABOVE the paste panel and the paste path stays the
+       default — this adds an entry point and replaces nothing.
+
+       The two things printed here that are not decoration:
+
+       * every hit carries BOTH ids. `EFO_0000384` is obsolete (Open Targets
+         returns null for it) and Expression Atlas still tags its samples with it,
+         so one id would make one of those two sources look empty. The row says
+         which id belongs to which source.
+       * every count carries the date its index was built. A contrast count is a
+         measurement from a crawl, and a month-old number rendered like a live one
+         is a small plausible wrong figure. -->
+  <section id="find-panel">
+    <details id="find" open>
+      <summary><span class="chev" aria-hidden="true">▾</span>
+        <b>Find genes from a disease</b>
+        — search Expression Atlas contrasts</summary>
+      <div class="reveal">
+        <p class="hint">Type a disease. Each hit shows how many Expression Atlas
+          <b>contrasts</b> exist for it — not experiments — with the date the local
+          index was built. Nothing is fetched from Atlas until you pick a contrast,
+          and no contrast is picked for you.</p>
+        <div class="row">
+          <input id="disease" spellcheck="false" size="34"
+                 placeholder="Crohn&#39;s disease">
+          <span id="disease-status" class="hint"></span>
+        </div>
+        <div id="disease-hits"></div>
+        <div id="disease-chosen" hidden></div>
+        <div id="contrast-panel" hidden></div>
+        <p id="index-note" class="hint"></p>
+        <div id="find-sources"></div>
+      </div>
+    </details>
+  </section>
+
   <section id="input-panel">
     <!-- v3.2 / UX v3 round 2 B7. This form is 1,053 px tall — 42% of a 2,487 px
          document — so the figure began at y = 1,279 and changing one threshold

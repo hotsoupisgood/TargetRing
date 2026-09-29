@@ -1,0 +1,16 @@
+E-FAKE-1		RUN_A1	characteristic	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_A1	factor	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_A2	characteristic	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_A2	factor	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_A3	characteristic	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_A3	factor	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_A4	characteristic	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_A4	factor	disease	Crohn's disease	http://www.ebi.ac.uk/efo/EFO_0000384
+E-FAKE-1		RUN_B1	characteristic	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-FAKE-1		RUN_B1	factor	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-FAKE-1		RUN_B2	characteristic	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-FAKE-1		RUN_B2	factor	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-FAKE-1		RUN_B3	characteristic	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-FAKE-1		RUN_B3	factor	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-FAKE-1		RUN_B4	characteristic	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-FAKE-1		RUN_B4	factor	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461

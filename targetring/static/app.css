@@ -640,3 +640,46 @@ ul.tight li { margin: 2px 0; }
 #table-ledger summary { cursor: pointer; font-size: 13px; }
 #table-ledger-details:not([open]) .chev { transform: rotate(-90deg); }
 #table-ledger .reveal { padding-top: 8px; }
+
+/* ------------------------------------------------------------------------ */
+/* Stage 1-2: find genes from a disease                                     */
+/* ------------------------------------------------------------------------ */
+/* Prose measure, like every other text block on the page: the contrast table
+   inside it is the one part allowed to be wider, and it scrolls sideways rather
+   than pushing the help text to 2,500 px. */
+#find-panel { max-width: var(--prose); }
+#find { border: 1px solid var(--line); border-radius: 6px; background: #fff;
+        margin-bottom: 16px; }
+#find > summary { list-style: none; cursor: pointer; padding: 9px 12px;
+                  font-size: 13px; color: var(--ink); user-select: none; }
+#find > summary::-webkit-details-marker { display: none; }
+#find > summary:hover { background: #f4f6f8; }
+#find > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#find:not([open]) .chev { transform: rotate(-90deg); }
+#find[open] .reveal { animation: reveal .22s ease-out; padding: 0 12px 14px; }
+@media (prefers-reduced-motion: reduce) { #find[open] .reveal { animation: none; } }
+#disease { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;
+           background: #fff; font-size: 13px; }
+
+/* The hit list. Buttons, not a `<datalist>`: a datalist can only carry a string
+   and every hit here carries two ids, a count and a build date. */
+ul.hits { list-style: none; margin: 8px 0; padding: 0; max-height: 40vh;
+          overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; }
+ul.hits li + li { border-top: 1px solid var(--line); }
+button.hit { display: block; width: 100%; text-align: left; background: #fff;
+             color: var(--ink); border: 0; border-radius: 0; padding: 8px 12px;
+             font-size: 13px; line-height: 1.45; }
+button.hit:hover { background: #f4f6f8; }
+button.hit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hit-count { color: var(--accent); font-weight: 600; margin-left: 6px; }
+/* Zero is a real answer and is printed as one, in the muted channel rather than
+   the red one: "Atlas has never studied this" is not an error. */
+.hit-count.zero { color: var(--muted); font-weight: 400; }
+.bad-text { color: var(--bad); }
+.note.bad { border-left-color: var(--bad); background: #fdf0f0; color: var(--ink); }
+
+details.src { margin-top: 10px; font-size: 12.5px; }
+details.src > summary { list-style: none; cursor: pointer; color: var(--muted); }
+details.src > summary::-webkit-details-marker { display: none; }
+details.src:not([open]) .chev { transform: rotate(-90deg); }
+details.src .reveal { padding-top: 6px; }

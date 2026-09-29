@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- HAND-WRITTEN. Not from the Atlas.
+
+     `c2`'s id is `g1_g2` while its reference is g2 and its test is g1, so
+     `id == f"{{ref}}_{{test}}"` fails and the sign of every log2FC in it is
+     unestablished. Eight real Atlas contrasts have exactly this defect
+     (measured 2026-09-29 over 1,126 contrasts), and the picker's requirement is
+     that such a row is shown as `INVALID - sign unsafe` rather than dropped:
+     a dropped row is a contrast a reader never learns about.
+
+     `c1` is well-formed, so one file covers both branches. -->
+<configuration experimentType="rnaseq_mrna_differential" r_data="1">
+    <analytics>
+        <assay_groups>
+            <assay_group id="g1" label="Crohn's disease">
+                <assay>RUN_A1</assay>
+                <assay>RUN_A2</assay>
+                <assay>RUN_A3</assay>
+                <assay>RUN_A4</assay>
+            </assay_group>
+            <assay_group id="g2" label="normal">
+                <assay>RUN_B1</assay>
+                <assay>RUN_B2</assay>
+                <assay>RUN_B3</assay>
+                <assay>RUN_B4</assay>
+            </assay_group>
+        </assay_groups>
+        <contrasts>
+            <contrast id="g2_g1">
+                <name>'Crohn's disease' vs 'normal'</name>
+                <reference_assay_group>g2</reference_assay_group>
+                <test_assay_group>g1</test_assay_group>
+            </contrast>
+            <contrast id="g1_g2">
+                <name>a contrast whose id disagrees with its groups</name>
+                <reference_assay_group>g2</reference_assay_group>
+                <test_assay_group>g1</test_assay_group>
+            </contrast>
+        </contrasts>
+    </analytics>
+</configuration>

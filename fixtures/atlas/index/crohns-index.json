@@ -1,0 +1,4296 @@
+{
+ "schema_version": "1",
+ "built_utc": "2026-09-29T22:15:59+00:00",
+ "n_experiments": 17,
+ "n_contrasts": 166,
+ "failed": [],
+ "population": [
+  "E-GEOD-100833",
+  "E-GEOD-101794",
+  "E-GEOD-102133",
+  "E-GEOD-112057",
+  "E-GEOD-16879",
+  "E-GEOD-57945",
+  "E-GEOD-59071",
+  "E-GEOD-66207",
+  "E-GEOD-6731",
+  "E-GEOD-69762",
+  "E-GEOD-83687",
+  "E-GEOD-93624",
+  "E-MEXP-2083",
+  "E-MTAB-2967",
+  "E-MTAB-5464",
+  "E-MTAB-5783",
+  "E-TABM-733"
+ ],
+ "contrasts": [
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g11_g10",
+   "ref_group": "g11",
+   "test_group": "g10",
+   "ref_label": "none; inflammatory bowel disease; terminal ileum; normal tissue adjacent to inflammation; 0 week",
+   "test_label": "none; inflammatory bowel disease; terminal ileum; inflammation; 0 week",
+   "n_ref": 29,
+   "n_test": 49,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'none; inflammatory bowel disease; terminal ileum' at '0 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_disease_ids": [
+    "EFO_0003767"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g13_g12",
+   "ref_group": "g13",
+   "test_group": "g12",
+   "ref_label": "none; inflammatory bowel disease; transverse colon; normal tissue adjacent to inflammation; 0 week",
+   "test_label": "none; inflammatory bowel disease; transverse colon; inflammation; 0 week",
+   "n_ref": 34,
+   "n_test": 17,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'none; inflammatory bowel disease; transverse colon' at '0 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_disease_ids": [
+    "EFO_0003767"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g14_g3",
+   "ref_group": "g14",
+   "test_group": "g3",
+   "ref_label": "none; normal; blood; normal tissue; 0 week",
+   "test_label": "none; inflammatory bowel disease; blood; normal tissue; 0 week",
+   "n_ref": 101,
+   "n_test": 204,
+   "name": "'inflammatory bowel disease' vs 'normal' in 'none; blood; normal tissue' at '0 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g15_g18",
+   "ref_group": "g15",
+   "test_group": "g18",
+   "ref_label": "placebo_none; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 3,
+   "n_test": 20,
+   "name": "'placebo_placebo' vs 'placebo_none' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g15_g24",
+   "ref_group": "g15",
+   "test_group": "g24",
+   "ref_label": "placebo_none; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 3,
+   "n_test": 25,
+   "name": "'placebo_ustekinumab' vs 'placebo_none' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g15_g43",
+   "ref_group": "g15",
+   "test_group": "g43",
+   "ref_label": "placebo_none; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 3,
+   "n_test": 81,
+   "name": "'ustekinumab_placebo' vs 'placebo_none' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g15_g70",
+   "ref_group": "g15",
+   "test_group": "g70",
+   "ref_label": "placebo_none; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 3,
+   "n_test": 69,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo_none' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g16_g41",
+   "ref_group": "g16",
+   "test_group": "g41",
+   "ref_label": "placebo_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "n_ref": 4,
+   "n_test": 10,
+   "name": "'ustekinumab_placebo' vs 'placebo_placebo' in 'ascending colon; normal tissue adjacent to inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g16_g68",
+   "ref_group": "g16",
+   "test_group": "g68",
+   "ref_label": "placebo_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "n_ref": 4,
+   "n_test": 15,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo_placebo' in 'ascending colon; normal tissue adjacent to inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g17_g23",
+   "ref_group": "g17",
+   "test_group": "g23",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 13,
+   "n_test": 30,
+   "name": "'placebo__ustekinumab' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g17_g42",
+   "ref_group": "g17",
+   "test_group": "g42",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 13,
+   "n_test": 77,
+   "name": "'ustekinumab_placebo' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g17_g69",
+   "ref_group": "g17",
+   "test_group": "g69",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 13,
+   "n_test": 72,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g18_g17",
+   "ref_group": "g18",
+   "test_group": "g17",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 20,
+   "n_test": 13,
+   "name": "'22 week' vs '4 week' in 'placebo_placebo; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g18_g19",
+   "ref_group": "g18",
+   "test_group": "g19",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 20,
+   "n_test": 19,
+   "name": "'6 week' vs '4 week' in 'placebo_placebo; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g18_g24",
+   "ref_group": "g18",
+   "test_group": "g24",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 20,
+   "n_test": 25,
+   "name": "'placebo__ustekinumab' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g18_g43",
+   "ref_group": "g18",
+   "test_group": "g43",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 20,
+   "n_test": 81,
+   "name": "'ustekinumab_placebo' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g18_g70",
+   "ref_group": "g18",
+   "test_group": "g70",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 20,
+   "n_test": 69,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g19_g17",
+   "ref_group": "g19",
+   "test_group": "g17",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 19,
+   "n_test": 13,
+   "name": "'22 week' vs '6 week' in 'placebo_placebo; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g19_g25",
+   "ref_group": "g19",
+   "test_group": "g25",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 19,
+   "n_test": 26,
+   "name": "'placebo__ustekinumab' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g19_g44",
+   "ref_group": "g19",
+   "test_group": "g44",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 19,
+   "n_test": 80,
+   "name": "'ustekinumab_placebo' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g19_g71",
+   "ref_group": "g19",
+   "test_group": "g71",
+   "ref_label": "placebo_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 19,
+   "n_test": 70,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo_placebo' in 'Crohn's disease; blood; normal tissue' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g20_g65",
+   "ref_group": "g20",
+   "test_group": "g65",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; ascending colon; inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; inflammation; 22 week",
+   "n_ref": 4,
+   "n_test": 6,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; ascending colon; inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g21_g20",
+   "ref_group": "g21",
+   "test_group": "g20",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; ascending colon; inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; ascending colon; inflammation; 22 week",
+   "n_ref": 3,
+   "n_test": 4,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; ascending colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g21_g66",
+   "ref_group": "g21",
+   "test_group": "g66",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; ascending colon; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; inflammation; 6 week",
+   "n_ref": 3,
+   "n_test": 6,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo_ustekinumab' in 'Crohn's disease; ascending colon; inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g22_g20",
+   "ref_group": "g22",
+   "test_group": "g20",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; ascending colon; inflammation; 22 week",
+   "n_ref": 3,
+   "n_test": 4,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'placebo_ustekinumab; Crohn's disease; ascending colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g22_g67",
+   "ref_group": "g22",
+   "test_group": "g67",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 3,
+   "n_test": 16,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; ascending colon; normal tissue adjacent to inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g23_g69",
+   "ref_group": "g23",
+   "test_group": "g69",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 30,
+   "n_test": 72,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; blood; normal tissue' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g24_g23",
+   "ref_group": "g24",
+   "test_group": "g23",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 25,
+   "n_test": 30,
+   "name": "'22 week' vs '4 week' in 'placebo_ustekinumab; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g24_g25",
+   "ref_group": "g24",
+   "test_group": "g25",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 25,
+   "n_test": 26,
+   "name": "'6 week' vs '4 week' in 'placebo_ustekinumab; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g24_g70",
+   "ref_group": "g24",
+   "test_group": "g70",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "n_ref": 25,
+   "n_test": 69,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; blood; normal tissue' at '4 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g25_g23",
+   "ref_group": "g25",
+   "test_group": "g23",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 26,
+   "n_test": 30,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g25_g71",
+   "ref_group": "g25",
+   "test_group": "g71",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 26,
+   "n_test": 70,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; blood; normal tissue' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g26_g72",
+   "ref_group": "g26",
+   "test_group": "g72",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; descending colon; inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; inflammation; 22 week",
+   "n_ref": 6,
+   "n_test": 4,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; descending colon; inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g27_g26",
+   "ref_group": "g27",
+   "test_group": "g26",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; descending colon; inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; descending colon; inflammation; 22 week",
+   "n_ref": 4,
+   "n_test": 6,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; descending colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g27_g73",
+   "ref_group": "g27",
+   "test_group": "g73",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; descending colon; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; inflammation; 6 week",
+   "n_ref": 4,
+   "n_test": 7,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; descending colon; inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g28_g76",
+   "ref_group": "g28",
+   "test_group": "g76",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; inflammation; 22 week",
+   "n_ref": 4,
+   "n_test": 6,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; rectum; inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g29_g28",
+   "ref_group": "g29",
+   "test_group": "g28",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; rectum; inflammation; 22 week",
+   "n_ref": 5,
+   "n_test": 4,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; rectum; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g29_g77",
+   "ref_group": "g29",
+   "test_group": "g77",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; inflammation; 6 week",
+   "n_ref": 5,
+   "n_test": 9,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; rectum; inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "none; inflammatory bowel disease; ascending colon; normal tissue adjacent to inflammation; 0 week",
+   "test_label": "none; inflammatory bowel disease; ascending colon; inflammation; 0 week",
+   "n_ref": 29,
+   "n_test": 19,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'none; inflammatory bowel disease; ascending colon' at '0 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_disease_ids": [
+    "EFO_0003767"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g30_g28",
+   "ref_group": "g30",
+   "test_group": "g28",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; rectum; inflammation; 22 week",
+   "n_ref": 5,
+   "n_test": 4,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'placebo_ustekinumab; Crohn's disease; rectum' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g30_g78",
+   "ref_group": "g30",
+   "test_group": "g78",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 5,
+   "n_test": 17,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; rectum; normal tissue adjacent to inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g31_g29",
+   "ref_group": "g31",
+   "test_group": "g29",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; rectum; inflammation; 6 week",
+   "n_ref": 6,
+   "n_test": 5,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'placebo_ustekinumab; Crohn's disease; rectum' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g31_g30",
+   "ref_group": "g31",
+   "test_group": "g30",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 6,
+   "n_test": 5,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g31_g79",
+   "ref_group": "g31",
+   "test_group": "g79",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "n_ref": 6,
+   "n_test": 23,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; rectum; normal tissue adjacent to inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g32_g80",
+   "ref_group": "g32",
+   "test_group": "g80",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 22 week",
+   "n_ref": 4,
+   "n_test": 3,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; sigmoid colon; inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g33_g32",
+   "ref_group": "g33",
+   "test_group": "g32",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 22 week",
+   "n_ref": 4,
+   "n_test": 4,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; sigmoid colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g33_g81",
+   "ref_group": "g33",
+   "test_group": "g81",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 6 week",
+   "n_ref": 4,
+   "n_test": 3,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; sigmoid colon; inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g34_g84",
+   "ref_group": "g34",
+   "test_group": "g84",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; terminal ileum; inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; inflammation; 22 week",
+   "n_ref": 6,
+   "n_test": 16,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; terminal ileum; inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g35_g34",
+   "ref_group": "g35",
+   "test_group": "g34",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; terminal ileum; inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; terminal ileum; inflammation; 22 week",
+   "n_ref": 7,
+   "n_test": 6,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; terminal ileum; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g35_g85",
+   "ref_group": "g35",
+   "test_group": "g85",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; terminal ileum; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; inflammation; 6 week",
+   "n_ref": 7,
+   "n_test": 17,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; terminal ileum; inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g36_g89",
+   "ref_group": "g36",
+   "test_group": "g89",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 5,
+   "n_test": 16,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; transverse colon; normal tissue adjacent to inflammation' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g37_g36",
+   "ref_group": "g37",
+   "test_group": "g36",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "placebo_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 8,
+   "n_test": 5,
+   "name": "'22 week' vs '6 week' in 'placebo_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g37_g90",
+   "ref_group": "g37",
+   "test_group": "g90",
+   "ref_label": "placebo_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 6 week",
+   "n_ref": 8,
+   "n_test": 17,
+   "name": "'ustekinumab_ustekinumab' vs 'placebo__ustekinumab' in 'Crohn's disease; transverse colon; normal tissue adjacent to inflammation' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g39_g38",
+   "ref_group": "g39",
+   "test_group": "g38",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; ascending colon; inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; ascending colon; inflammation; 22 week",
+   "n_ref": 6,
+   "n_test": 5,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; ascending colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g40_g38",
+   "ref_group": "g40",
+   "test_group": "g38",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; ascending colon; inflammation; 22 week",
+   "n_ref": 11,
+   "n_test": 5,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; ascending colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g41_g39",
+   "ref_group": "g41",
+   "test_group": "g39",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; ascending colon; inflammation; 6 week",
+   "n_ref": 10,
+   "n_test": 6,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; ascending colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g41_g40",
+   "ref_group": "g41",
+   "test_group": "g40",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 10,
+   "n_test": 11,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; ascending colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g43_g42",
+   "ref_group": "g43",
+   "test_group": "g42",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 81,
+   "n_test": 77,
+   "name": "'22 week' vs '4 week' in 'ustekinumab_placebo; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g43_g44",
+   "ref_group": "g43",
+   "test_group": "g44",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 81,
+   "n_test": 80,
+   "name": "'6 week' vs '4 week' in 'ustekinumab_placebo; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g44_g42",
+   "ref_group": "g44",
+   "test_group": "g42",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 80,
+   "n_test": 77,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g46_g45",
+   "ref_group": "g46",
+   "test_group": "g45",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; descending colon; inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; descending colon; inflammation; 22 week",
+   "n_ref": 4,
+   "n_test": 6,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; descending colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g47_g45",
+   "ref_group": "g47",
+   "test_group": "g45",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; descending colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; descending colon; inflammation; 22 week",
+   "n_ref": 5,
+   "n_test": 6,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; descending colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g47_g46",
+   "ref_group": "g47",
+   "test_group": "g46",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; descending colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; descending colon; inflammation; 6 week",
+   "n_ref": 5,
+   "n_test": 4,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; descending colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g48_g46",
+   "ref_group": "g48",
+   "test_group": "g46",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; descending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; descending colon; inflammation; 6 week",
+   "n_ref": 10,
+   "n_test": 4,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; descending colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g50_g49",
+   "ref_group": "g50",
+   "test_group": "g49",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; rectum; inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; rectum; inflammation; 22 week",
+   "n_ref": 9,
+   "n_test": 5,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; rectum; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g51_g49",
+   "ref_group": "g51",
+   "test_group": "g49",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; rectum; inflammation; 22 week",
+   "n_ref": 12,
+   "n_test": 5,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; rectum' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g52_g50",
+   "ref_group": "g52",
+   "test_group": "g50",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; rectum; inflammation; 6 week",
+   "n_ref": 13,
+   "n_test": 9,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; rectum' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g52_g51",
+   "ref_group": "g52",
+   "test_group": "g51",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 13,
+   "n_test": 12,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; rectum; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g54_g53",
+   "ref_group": "g54",
+   "test_group": "g53",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; inflammation; 22 week",
+   "n_ref": 5,
+   "n_test": 7,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; sigmoid colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g55_g53",
+   "ref_group": "g55",
+   "test_group": "g53",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; inflammation; 22 week",
+   "n_ref": 3,
+   "n_test": 7,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; sigmoid colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g56_g54",
+   "ref_group": "g56",
+   "test_group": "g54",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; inflammation; 6 week",
+   "n_ref": 6,
+   "n_test": 5,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; sigmoid colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g56_g55",
+   "ref_group": "g56",
+   "test_group": "g55",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 6,
+   "n_test": 3,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g58_g57",
+   "ref_group": "g58",
+   "test_group": "g57",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; inflammation; 22 week",
+   "n_ref": 12,
+   "n_test": 13,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; terminal ileum; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g59_g57",
+   "ref_group": "g59",
+   "test_group": "g57",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; inflammation; 22 week",
+   "n_ref": 8,
+   "n_test": 13,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; terminal ileum' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g5_g4",
+   "ref_group": "g5",
+   "test_group": "g4",
+   "ref_label": "none; inflammatory bowel disease; descending colon; normal tissue adjacent to inflammation; 0 week",
+   "test_label": "none; inflammatory bowel disease; descending colon; inflammation; 0 week",
+   "n_ref": 17,
+   "n_test": 22,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'none; inflammatory bowel disease; descending colon' at '0 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_disease_ids": [
+    "EFO_0003767"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g60_g58",
+   "ref_group": "g60",
+   "test_group": "g58",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; inflammation; 6 week",
+   "n_ref": 11,
+   "n_test": 12,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; terminal ileum' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g60_g59",
+   "ref_group": "g60",
+   "test_group": "g59",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 11,
+   "n_test": 8,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g62_g61",
+   "ref_group": "g62",
+   "test_group": "g61",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; transverse colon; inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; transverse colon; inflammation; 22 week",
+   "n_ref": 6,
+   "n_test": 5,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; transverse colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g63_g61",
+   "ref_group": "g63",
+   "test_group": "g61",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; transverse colon; inflammation; 22 week",
+   "n_ref": 11,
+   "n_test": 5,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; transverse colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g64_g62",
+   "ref_group": "g64",
+   "test_group": "g62",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; transverse colon; inflammation; 6 week",
+   "n_ref": 14,
+   "n_test": 6,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_placebo; Crohn's disease; transverse colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g64_g63",
+   "ref_group": "g64",
+   "test_group": "g63",
+   "ref_label": "ustekinumab_placebo; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_placebo; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 14,
+   "n_test": 11,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_placebo; Crohn's disease; transverse colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g66_g65",
+   "ref_group": "g66",
+   "test_group": "g65",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; inflammation; 22 week",
+   "n_ref": 6,
+   "n_test": 6,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; ascending colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g67_g65",
+   "ref_group": "g67",
+   "test_group": "g65",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; inflammation; 22 week",
+   "n_ref": 16,
+   "n_test": 6,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; ascending colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g68_g66",
+   "ref_group": "g68",
+   "test_group": "g66",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; inflammation; 6 week",
+   "n_ref": 15,
+   "n_test": 6,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; ascending colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g68_g67",
+   "ref_group": "g68",
+   "test_group": "g67",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 15,
+   "n_test": 16,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; ascending colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g70_g69",
+   "ref_group": "g70",
+   "test_group": "g69",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 69,
+   "n_test": 72,
+   "name": "'22 week' vs '4 week' in 'ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g70_g71",
+   "ref_group": "g70",
+   "test_group": "g71",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 4 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "n_ref": 69,
+   "n_test": 70,
+   "name": "'6 week' vs '4 week' in 'ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g71_g69",
+   "ref_group": "g71",
+   "test_group": "g69",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue; 22 week",
+   "n_ref": 70,
+   "n_test": 72,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; blood; normal tissue'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g73_g72",
+   "ref_group": "g73",
+   "test_group": "g72",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; inflammation; 22 week",
+   "n_ref": 7,
+   "n_test": 4,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; descending colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g74_g72",
+   "ref_group": "g74",
+   "test_group": "g72",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; inflammation; 22 week",
+   "n_ref": 10,
+   "n_test": 4,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; descending colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g75_g73",
+   "ref_group": "g75",
+   "test_group": "g73",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; inflammation; 6 week",
+   "n_ref": 11,
+   "n_test": 7,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; descending colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g75_g74",
+   "ref_group": "g75",
+   "test_group": "g74",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; descending colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 11,
+   "n_test": 10,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; descending colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g77_g76",
+   "ref_group": "g77",
+   "test_group": "g76",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; inflammation; 22 week",
+   "n_ref": 9,
+   "n_test": 6,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; rectum; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g78_g76",
+   "ref_group": "g78",
+   "test_group": "g76",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; inflammation; 22 week",
+   "n_ref": 17,
+   "n_test": 6,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; rectum' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g79_g77",
+   "ref_group": "g79",
+   "test_group": "g77",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; inflammation; 6 week",
+   "n_ref": 23,
+   "n_test": 9,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; rectum' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g79_g78",
+   "ref_group": "g79",
+   "test_group": "g78",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 23,
+   "n_test": 17,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; rectum; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g7_g6",
+   "ref_group": "g7",
+   "test_group": "g6",
+   "ref_label": "none; inflammatory bowel disease; rectum; normal tissue adjacent to inflammation; 0 week",
+   "test_label": "none; inflammatory bowel disease; rectum; inflammation; 0 week",
+   "n_ref": 38,
+   "n_test": 37,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'none; inflammatory bowel disease; rectum' at '0 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_disease_ids": [
+    "EFO_0003767"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g81_g80",
+   "ref_group": "g81",
+   "test_group": "g80",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 22 week",
+   "n_ref": 3,
+   "n_test": 3,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g82_g80",
+   "ref_group": "g82",
+   "test_group": "g80",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 22 week",
+   "n_ref": 10,
+   "n_test": 3,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; sigmoid colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g83_g81",
+   "ref_group": "g83",
+   "test_group": "g81",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; inflammation; 6 week",
+   "n_ref": 5,
+   "n_test": 3,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; sigmoid colon' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g83_g82",
+   "ref_group": "g83",
+   "test_group": "g82",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 5,
+   "n_test": 10,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; sigmoid colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g85_g84",
+   "ref_group": "g85",
+   "test_group": "g84",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; inflammation; 22 week",
+   "n_ref": 17,
+   "n_test": 16,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; terminal ileum; inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g86_g84",
+   "ref_group": "g86",
+   "test_group": "g84",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 22 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; inflammation; 22 week",
+   "n_ref": 15,
+   "n_test": 16,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; terminal ileum' at '22 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g87_g85",
+   "ref_group": "g87",
+   "test_group": "g85",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; inflammation; 6 week",
+   "n_ref": 13,
+   "n_test": 17,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; terminal ileum' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g87_g86",
+   "ref_group": "g87",
+   "test_group": "g86",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 13,
+   "n_test": 15,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; terminal ileum; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g90_g88",
+   "ref_group": "g90",
+   "test_group": "g88",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; transverse colon; inflammation; 6 week",
+   "n_ref": 17,
+   "n_test": 6,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'ustekinumab_ustekinumab; Crohn's disease; transverse colon' at '6 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g90_g89",
+   "ref_group": "g90",
+   "test_group": "g89",
+   "ref_label": "ustekinumab_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 6 week",
+   "test_label": "ustekinumab_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation; 22 week",
+   "n_ref": 17,
+   "n_test": 16,
+   "name": "'22 week' vs '6 week' in 'ustekinumab_ustekinumab; Crohn's disease; transverse colon; normal tissue adjacent to inflammation'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-100833",
+   "contrast_id": "g9_g8",
+   "ref_group": "g9",
+   "test_group": "g8",
+   "ref_label": "none; inflammatory bowel disease; sigmoid colon; normal tissue adjacent to inflammation; 0 week",
+   "test_label": "none; inflammatory bowel disease; sigmoid colon; inflammation; 0 week",
+   "n_ref": 16,
+   "n_test": 14,
+   "name": "'inflammation' vs 'normal tissue adjacent to inflammation' in 'none; inflammatory bowel disease; sigmoid colon' at '0 week'",
+   "platform": "A-GEOD-13158",
+   "test_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_disease_ids": [
+    "EFO_0003767"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0003767"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-101794",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "A1a Paris classification; non inflammatory bowel disease control",
+   "test_label": "A1a Paris classification; Crohn's disease",
+   "n_ref": 13,
+   "n_test": 61,
+   "name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-101794",
+   "contrast_id": "g4_g3",
+   "ref_group": "g4",
+   "test_group": "g3",
+   "ref_label": "A1b Paris classification; non inflammatory bowel disease control",
+   "test_label": "A1b Paris classification; Crohn's disease",
+   "n_ref": 37,
+   "n_test": 193,
+   "name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1b Paris classification'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-102133",
+   "contrast_id": "g6_g1",
+   "ref_group": "g6",
+   "test_group": "g1",
+   "ref_label": "normal; not applicable",
+   "test_label": "Crohn's disease; late stage",
+   "n_ref": 12,
+   "n_test": 13,
+   "name": "'Crohn's disease; late stage' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-102133",
+   "contrast_id": "g6_g2",
+   "ref_group": "g6",
+   "test_group": "g2",
+   "ref_label": "normal; not applicable",
+   "test_label": "Crohn's disease; newly diagnosed",
+   "n_ref": 12,
+   "n_test": 18,
+   "name": "'Crohn's disease; newly diagnosed' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-102133",
+   "contrast_id": "g6_g3",
+   "ref_group": "g6",
+   "test_group": "g3",
+   "ref_label": "normal; not applicable",
+   "test_label": "Crohn's disease; post-operative (Rutgeert score i0)",
+   "n_ref": 12,
+   "n_test": 3,
+   "name": "'Crohn's disease; post-operative (Rutgeert score i0)' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-102133",
+   "contrast_id": "g6_g4",
+   "ref_group": "g6",
+   "test_group": "g4",
+   "ref_label": "normal; not applicable",
+   "test_label": "Crohn's disease; post-operative recurrent (Rutgeerts score i1)",
+   "n_ref": 12,
+   "n_test": 5,
+   "name": "'Crohn's disease; post-operative recurrent (Rutgeerts score i1)' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-102133",
+   "contrast_id": "g6_g5",
+   "ref_group": "g6",
+   "test_group": "g5",
+   "ref_label": "normal; not applicable",
+   "test_label": "Crohn's disease; post-operative recurrent (Rutgeerts score \u2265i2b)",
+   "n_ref": 12,
+   "n_test": 22,
+   "name": "'Crohn's disease; post-operative recurrent (Rutgeerts score \u2265i2b)' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-112057",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "normal",
+   "test_label": "Crohn disease",
+   "n_ref": 12,
+   "n_test": 60,
+   "name": "'Crohn disease' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-112057",
+   "contrast_id": "g2_g3",
+   "ref_group": "g2",
+   "test_group": "g3",
+   "ref_label": "normal",
+   "test_label": "oligoarticular juvenile idiopathic arthritis",
+   "n_ref": 12,
+   "n_test": 43,
+   "name": "'oligoarticular juvenile idiopathic arthritis' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_1002019"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_1002019"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-112057",
+   "contrast_id": "g2_g4",
+   "ref_group": "g2",
+   "test_group": "g4",
+   "ref_label": "normal",
+   "test_label": "polyarticular juvenile idiopathic arthritis",
+   "n_ref": 12,
+   "n_test": 46,
+   "name": "'polyarticular juvenile idiopathic arthritis' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0002609"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0002609"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-112057",
+   "contrast_id": "g2_g5",
+   "ref_group": "g2",
+   "test_group": "g5",
+   "ref_label": "normal",
+   "test_label": "systemic-onset juvenile idiopathic arthritis",
+   "n_ref": 12,
+   "n_test": 26,
+   "name": "'systemic-onset juvenile idiopathic arthritis' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_1001999"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_1001999"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-112057",
+   "contrast_id": "g2_g6",
+   "ref_group": "g2",
+   "test_group": "g6",
+   "ref_label": "normal",
+   "test_label": "ulcerative colitis (disease)",
+   "n_ref": 12,
+   "n_test": 15,
+   "name": "'ulcerative colitis (disease)' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g1",
+   "ref_group": "g13",
+   "test_group": "g1",
+   "ref_label": "control; colon",
+   "test_label": "after first infliximab treatment; no response to infliximab treatment; Crohn's disease; colon",
+   "n_ref": 6,
+   "n_test": 7,
+   "name": "'after first infliximab treatment; no response to infliximab treatment; Crohn's disease' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g10",
+   "ref_group": "g13",
+   "test_group": "g10",
+   "ref_label": "control; colon",
+   "test_label": "before first infliximab treatment; response to infliximab treatment; Crohn's disease; colon",
+   "n_ref": 6,
+   "n_test": 12,
+   "name": "'before first infliximab treatment; response to infliximab treatment; Crohn's disease' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g12",
+   "ref_group": "g13",
+   "test_group": "g12",
+   "ref_label": "control; colon",
+   "test_label": "before first infliximab treatment; response to infliximab treatment; ulcerative colitis; colon",
+   "n_ref": 6,
+   "n_test": 8,
+   "name": "'before first infliximab treatment; response to infliximab treatment; ulcerative colitis' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g3",
+   "ref_group": "g13",
+   "test_group": "g3",
+   "ref_label": "control; colon",
+   "test_label": "after first infliximab treatment; no response to infliximab treatment; ulcerative colitis; colon",
+   "n_ref": 6,
+   "n_test": 16,
+   "name": "'after first infliximab treatment; no response to infliximab treatment; ulcerative colitis' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g4",
+   "ref_group": "g13",
+   "test_group": "g4",
+   "ref_label": "control; colon",
+   "test_label": "after first infliximab treatment; response to infliximab treatment; Crohn's disease; colon",
+   "n_ref": 6,
+   "n_test": 11,
+   "name": "'after first infliximab treatment; response to infliximab treatment; Crohn's disease' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g6",
+   "ref_group": "g13",
+   "test_group": "g6",
+   "ref_label": "control; colon",
+   "test_label": "after first infliximab treatment; response to infliximab treatment; ulcerative colitis; colon",
+   "n_ref": 6,
+   "n_test": 8,
+   "name": "'after first infliximab treatment; response to infliximab treatment; ulcerative colitis' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g7",
+   "ref_group": "g13",
+   "test_group": "g7",
+   "ref_label": "control; colon",
+   "test_label": "before first infliximab treatment; no response to infliximab treatment; Crohn's disease; colon",
+   "n_ref": 6,
+   "n_test": 7,
+   "name": "'before first infliximab treatment; no response to infliximab treatment; Crohn's disease' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g13_g9",
+   "ref_group": "g13",
+   "test_group": "g9",
+   "ref_label": "control; colon",
+   "test_label": "before first infliximab treatment; no response to infliximab treatment; ulcerative colitis; colon",
+   "n_ref": 6,
+   "n_test": 16,
+   "name": "'before first infliximab treatment; no response to infliximab treatment; ulcerative colitis' vs 'control' in 'colon'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g14_g11",
+   "ref_group": "g14",
+   "test_group": "g11",
+   "ref_label": "control; ileum",
+   "test_label": "before first infliximab treatment; response to infliximab treatment; Crohn's disease; ileum",
+   "n_ref": 6,
+   "n_test": 7,
+   "name": "'before first infliximab treatment; response to infliximab treatment; Crohn's disease' vs 'control' in 'ileum'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g14_g2",
+   "ref_group": "g14",
+   "test_group": "g2",
+   "ref_label": "control; ileum",
+   "test_label": "after first infliximab treatment; no response to infliximab treatment; Crohn's disease; ileum",
+   "n_ref": 6,
+   "n_test": 10,
+   "name": "'after first infliximab treatment; no response to infliximab treatment; Crohn's disease' vs 'control' in 'ileum'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g14_g5",
+   "ref_group": "g14",
+   "test_group": "g5",
+   "ref_label": "control; ileum",
+   "test_label": "after first infliximab treatment; response to infliximab treatment; Crohn's disease; ileum",
+   "n_ref": 6,
+   "n_test": 8,
+   "name": "'after first infliximab treatment; response to infliximab treatment; Crohn's disease' vs 'control' in 'ileum'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-16879",
+   "contrast_id": "g14_g8",
+   "ref_group": "g14",
+   "test_group": "g8",
+   "ref_label": "control; ileum",
+   "test_label": "before first infliximab treatment; no response to infliximab treatment; Crohn's disease; ileum",
+   "n_ref": 6,
+   "n_test": 10,
+   "name": "'before first infliximab treatment; no response to infliximab treatment; Crohn's disease' vs 'control' in 'ileum'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0001461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0001461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-57945",
+   "contrast_id": "g6_g1",
+   "ref_group": "g6",
+   "test_group": "g1",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; macroscopic ileal inflammation with deep ulcer",
+   "n_ref": 42,
+   "n_test": 75,
+   "name": "'Crohn's disease, macroscopic ileal inflammation with deep ulcer' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-57945",
+   "contrast_id": "g6_g2",
+   "ref_group": "g6",
+   "test_group": "g2",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; macroscopic ileal inflammation without deep ulcer",
+   "n_ref": 42,
+   "n_test": 86,
+   "name": "'Crohn's disease, macroscopic ileal inflammation without deep ulcer' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-57945",
+   "contrast_id": "g6_g3",
+   "ref_group": "g6",
+   "test_group": "g3",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; microscopic ileal inflammation without deep ulcer",
+   "n_ref": 42,
+   "n_test": 29,
+   "name": "'Crohn's disease, microscopic ileal inflammation without deep ulcer' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-57945",
+   "contrast_id": "g6_g4",
+   "ref_group": "g6",
+   "test_group": "g4",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; normal",
+   "n_ref": 42,
+   "n_test": 24,
+   "name": "'Crohn's disease, normal' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-57945",
+   "contrast_id": "g6_g5",
+   "ref_group": "g6",
+   "test_group": "g5",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; undetermined",
+   "n_ref": 42,
+   "n_test": 3,
+   "name": "'Crohn's disease, undetermined' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-57945",
+   "contrast_id": "g6_g7",
+   "ref_group": "g6",
+   "test_group": "g7",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "ulcerative colitis; not applicable",
+   "n_ref": 42,
+   "n_test": 62,
+   "name": "'ulcerative colitis' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-59071",
+   "contrast_id": "g4_g1",
+   "ref_group": "g4",
+   "test_group": "g1",
+   "ref_label": "normal; normal",
+   "test_label": "active; Crohn's disease",
+   "n_ref": 11,
+   "n_test": 8,
+   "name": "'active Crohn's disease' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-59071",
+   "contrast_id": "g4_g2",
+   "ref_group": "g4",
+   "test_group": "g2",
+   "ref_label": "normal; normal",
+   "test_label": "active; ulcerative colitis",
+   "n_ref": 11,
+   "n_test": 74,
+   "name": "'active ulcerative colitis' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-59071",
+   "contrast_id": "g4_g3",
+   "ref_group": "g4",
+   "test_group": "g3",
+   "ref_label": "normal; normal",
+   "test_label": "inactive; ulcerative colitis",
+   "n_ref": 11,
+   "n_test": 22,
+   "name": "'inactive ulcerative colitis' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-66207",
+   "contrast_id": "g4_g1",
+   "ref_group": "g4",
+   "test_group": "g1",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; B1, non-strictuing, non-penetrating",
+   "n_ref": 13,
+   "n_test": 6,
+   "name": "'Crohn's disease; B1, non-strictuing, non-penetrating' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-66207",
+   "contrast_id": "g4_g2",
+   "ref_group": "g4",
+   "test_group": "g2",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; B2, stricturing",
+   "n_ref": 13,
+   "n_test": 6,
+   "name": "'Crohn's disease; B2, stricturing' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-66207",
+   "contrast_id": "g4_g3",
+   "ref_group": "g4",
+   "test_group": "g3",
+   "ref_label": "non inflammatory bowel disease control; not applicable",
+   "test_label": "Crohn's disease; B3, penetrating",
+   "n_ref": 13,
+   "n_test": 8,
+   "name": "'Crohn's disease; B3, penetrating' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-6731",
+   "contrast_id": "g1_g2",
+   "ref_group": "g1",
+   "test_group": "g2",
+   "ref_label": "g1",
+   "test_label": "g2",
+   "n_ref": 4,
+   "n_test": 19,
+   "name": "'Crohn's disease' vs 'normal'",
+   "platform": "A-AFFY-1",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-6731",
+   "contrast_id": "g1_g3",
+   "ref_group": "g1",
+   "test_group": "g3",
+   "ref_label": "g1",
+   "test_label": "g3",
+   "n_ref": 4,
+   "n_test": 9,
+   "name": "'ulcerative colitis' vs 'normal'",
+   "platform": "A-AFFY-1",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-69762",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "normal",
+   "test_label": "Crohn's disease",
+   "n_ref": 14,
+   "n_test": 16,
+   "name": "'Crohn's disease' vs 'normal'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-83687",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "normal",
+   "test_label": "Crohn's disease",
+   "n_ref": 61,
+   "n_test": 43,
+   "name": "'Crohn's disease' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-83687",
+   "contrast_id": "g2_g3",
+   "ref_group": "g2",
+   "test_group": "g3",
+   "ref_label": "normal",
+   "test_label": "ulcerative colitis",
+   "n_ref": 61,
+   "n_test": 34,
+   "name": "'ulcerative colitis' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-GEOD-93624",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "non inflammatory bowel disease control",
+   "test_label": "Crohn's disease",
+   "n_ref": 35,
+   "n_test": 209,
+   "name": "'Crohn's disease' vs 'non inflammatory bowel disease control'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MEXP-2083",
+   "contrast_id": "g3_g1",
+   "ref_group": "g3",
+   "test_group": "g1",
+   "ref_label": "g3",
+   "test_label": "g1",
+   "n_ref": 3,
+   "n_test": 3,
+   "name": "'active Crohn's disease' vs 'normal'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MEXP-2083",
+   "contrast_id": "g3_g2",
+   "ref_group": "g3",
+   "test_group": "g2",
+   "ref_label": "g3",
+   "test_label": "g2",
+   "n_ref": 3,
+   "n_test": 3,
+   "name": "'active ulcerative colitis' vs 'normal'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MEXP-2083",
+   "contrast_id": "g3_g4",
+   "ref_group": "g3",
+   "test_group": "g4",
+   "ref_label": "g3",
+   "test_label": "g4",
+   "n_ref": 3,
+   "n_test": 3,
+   "name": "'non-active ulcerative colitis' vs 'normal'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-2967",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "Crohn's disease; non-inflamed colonic mucosa",
+   "test_label": "Crohn's disease; inflamed colonic mucosa",
+   "n_ref": 15,
+   "n_test": 15,
+   "name": "'Crohn's disease; inflamed colonic mucosa' vs 'Crohn's disease; non-inflamed colonic mucosa'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000384"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-2967",
+   "contrast_id": "g4_g3",
+   "ref_group": "g4",
+   "test_group": "g3",
+   "ref_label": "ulcerative colitis; non-inflamed colonic mucosa",
+   "test_label": "ulcerative colitis; inflamed colonic mucosa",
+   "n_ref": 14,
+   "n_test": 14,
+   "name": "'ulcerative colitis; inflamed colonic mucosa' vs 'ulcerative colitis; non-inflamed colonic mucosa'",
+   "platform": "A-AFFY-141",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "EFO_0000729"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-5464",
+   "contrast_id": "g4_g1",
+   "ref_group": "g4",
+   "test_group": "g1",
+   "ref_label": "normal; ascending colon",
+   "test_label": "Crohn's disease; ascending colon",
+   "n_ref": 5,
+   "n_test": 4,
+   "name": "'Crohn's disease' vs 'normal' in 'ascending colon'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-5464",
+   "contrast_id": "g4_g7",
+   "ref_group": "g4",
+   "test_group": "g7",
+   "ref_label": "normal; ascending colon",
+   "test_label": "ulcerative colitis; ascending colon",
+   "n_ref": 5,
+   "n_test": 5,
+   "name": "'ulcerative colitis' vs 'normal' in 'ascending colon'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-5464",
+   "contrast_id": "g5_g2",
+   "ref_group": "g5",
+   "test_group": "g2",
+   "ref_label": "normal; sigmoid colon",
+   "test_label": "Crohn's disease; sigmoid colon",
+   "n_ref": 11,
+   "n_test": 10,
+   "name": "'Crohn's disease' vs 'normal' in 'sigmoid colon'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-5464",
+   "contrast_id": "g5_g8",
+   "ref_group": "g5",
+   "test_group": "g8",
+   "ref_label": "normal; sigmoid colon",
+   "test_label": "ulcerative colitis; sigmoid colon",
+   "n_ref": 11,
+   "n_test": 11,
+   "name": "'ulcerative colitis' vs 'normal' in 'sigmoid colon'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-5464",
+   "contrast_id": "g6_g3",
+   "ref_group": "g6",
+   "test_group": "g3",
+   "ref_label": "normal; terminal ileum",
+   "test_label": "Crohn's disease; terminal ileum",
+   "n_ref": 11,
+   "n_test": 10,
+   "name": "'Crohn's disease' vs 'normal' in 'terminal ileum'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-5464",
+   "contrast_id": "g6_g9",
+   "ref_group": "g6",
+   "test_group": "g9",
+   "ref_label": "normal; terminal ileum",
+   "test_label": "ulcerative colitis; terminal ileum",
+   "n_ref": 11,
+   "n_test": 11,
+   "name": "'ulcerative colitis' vs 'normal' in 'terminal ileum'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000729"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-MTAB-5783",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "normal",
+   "test_label": "Crohn's disease",
+   "n_ref": 32,
+   "n_test": 36,
+   "name": "'Crohn's disease' vs 'normal'",
+   "platform": "rnaseq",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-TABM-733",
+   "contrast_id": "g2_g1",
+   "ref_group": "g2",
+   "test_group": "g1",
+   "ref_label": "heat-killed Escherichia coli; normal",
+   "test_label": "heat-killed Escherichia coli; ileal Crohn's disease",
+   "n_ref": 12,
+   "n_test": 6,
+   "name": "'ileal Crohn's disease' vs 'normal' in 'heat-killed Escherichia coli'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0005624"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0005624"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-TABM-733",
+   "contrast_id": "g2_g5",
+   "ref_group": "g2",
+   "test_group": "g5",
+   "ref_label": "heat-killed Escherichia coli; normal",
+   "test_label": "heat-killed Escherichia coli; colonic Crohn's disease",
+   "n_ref": 12,
+   "n_test": 10,
+   "name": "'colonic Crohn's disease' vs 'normal' in 'heat-killed Escherichia coli'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-TABM-733",
+   "contrast_id": "g4_g3",
+   "ref_group": "g4",
+   "test_group": "g3",
+   "ref_label": "none; normal",
+   "test_label": "none; ileal Crohn's disease",
+   "n_ref": 16,
+   "n_test": 9,
+   "name": "'ileal Crohn's disease' vs 'normal' in 'none'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0005624"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0005624"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  },
+  {
+   "accession": "E-TABM-733",
+   "contrast_id": "g4_g6",
+   "ref_group": "g4",
+   "test_group": "g6",
+   "ref_label": "none; normal",
+   "test_label": "none; colonic Crohn's disease",
+   "n_ref": 16,
+   "n_test": 13,
+   "name": "'colonic Crohn's disease' vs 'normal' in 'none'",
+   "platform": "A-AFFY-44",
+   "test_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_disease_ids": [
+    "PATO_0000461"
+   ],
+   "test_characteristic_disease_ids": [
+    "EFO_0000384"
+   ],
+   "ref_characteristic_disease_ids": [
+    "PATO_0000461"
+   ],
+   "unannotated_assays": 0,
+   "invalid_reason": ""
+  }
+ ]
+}

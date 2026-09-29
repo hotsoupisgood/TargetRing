@@ -16,10 +16,13 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from .adapters.chembl import ChEMBLAdapter, mechanism_summary
 from .adapters.literature import EuropePMCAdapter
+from .adapters.ols import OLSAdapter
+from . import atlas_index
 from .cache import Cache
 from . import dim as dim_mod
 from .config import RUNS_DIR
 from .de_input import InputRejected
+from . import sources as sources_mod
 from .filters import FilterRejected
 from .figure import (COMPARABILITY_CLAIM, STATE_STYLE, WEB_REFERENCE_PANEL_PX,
                      WEB_REFERENCE_VIEWPORT_PX, scale_rows, web_circle_px,
@@ -34,6 +37,9 @@ app = FastAPI(title="targetring", docs_url="/api/docs")
 
 _runs: dict[str, Any] = {}
 _regions_cache: list[str] = []
+# `(index file mtime_ns, index)`. Keyed on the mtime so a rebuild while the
+# server is up is picked up rather than served stale under a fresh build date.
+_index_cache: tuple[int | None, "atlas_index.AtlasIndex"] | None = None
 
 STATIC = Path(__file__).parent / "static"
 
@@ -77,6 +83,72 @@ async def regions() -> dict[str, Any]:
             return {"regions": [DEFAULT_REGION], "error": str(e),
                     "note": "GTEx tissue list unavailable; falling back to the default region"}
     return {"regions": _regions_cache, "default": DEFAULT_REGION}
+
+
+def _atlas_index() -> atlas_index.AtlasIndex:
+    """The contrast index, loaded once per process and reloaded when it changes.
+
+    Mtime, not a flag: `scripts/build_atlas_index.py` rewrites the file while the
+    server is running, and a cached index would keep serving yesterday's counts
+    under today's build date after a rebuild -- a stale number wearing a fresh
+    label, which is this repo's one rule in a cache.
+    """
+    global _index_cache
+    p = atlas_index.index_path()
+    stamp = p.stat().st_mtime_ns if p.exists() else None
+    if _index_cache is None or _index_cache[0] != stamp:
+        _index_cache = (stamp, atlas_index.AtlasIndex.load(p))
+    return _index_cache[1]
+
+
+@app.get("/api/diseases")
+async def diseases(q: str = "", limit: int = 8) -> JSONResponse:
+    """Disease autocomplete: OLS4 hits, each with its Atlas contrast count.
+
+    Two things this route refuses to do, and both are `AGENTS.md:17` in a
+    dropdown:
+
+    * **It never serves a count from a missing index.** "0 contrasts" because
+      nothing was ever crawled and "0 contrasts" because Atlas has never studied
+      this disease are the same string and completely different facts, so a
+      missing index is a 503 naming the script to run, not a list of zeros.
+    * **It never sends one id space to the other's source.** Each hit carries
+      `current_id` (Open Targets' id) and `atlas_ids` (the ids Atlas samples are
+      tagged with, the obsolete ones included), and the count is looked up with
+      the second. `EFO_0000384` is obsolete and Open Targets returns null for it;
+      `MONDO_0005011` is current and Atlas has never heard of it for these
+      experiments. A single-id record would read one of those nulls as absence.
+
+    The order is OLS4's own relevance order, untouched. No re-ranking and no
+    "recommended" hit -- rule 7 is about a list of anything.
+    """
+    query = q.strip()
+    if not query:
+        return JSONResponse({"query": "", "diseases": [], "note": "type a disease name"})
+    try:
+        index = _atlas_index()
+    except atlas_index.IndexMissing as e:
+        return JSONResponse(
+            {"error": "index_missing", "message": str(e),
+             "note": "no contrast counts are shown rather than zeros, which would "
+                     "be indistinguishable from a disease Atlas has not studied"},
+            status_code=503)
+    cache = Cache()
+    try:
+        async with Http() as http:
+            refs = await OLSAdapter(http, cache).resolve(
+                query, limit=max(1, min(int(limit), 20)))
+    except HardFailure as e:
+        return JSONResponse(
+            {"error": "source_failure", "message": str(e),
+             "note": "OLS4 failed hard. No disease list is produced rather than a "
+                     "partial one."}, status_code=502)
+    return JSONResponse({
+        "query": query,
+        "diseases": [index.autocomplete_entry(r) for r in refs],
+        "index": index.provenance(),
+        "sources": sources_mod.data_source_rows(["ols.disease", "atlas.contrast"]),
+    })
 
 
 @app.get("/api/orderings")

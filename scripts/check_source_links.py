@@ -107,11 +107,16 @@ def main() -> int:
 
     sources.assert_registry_is_coherent()
     rows = []
-    for key, doc in sources.RING_SOURCE_DOCS.items():
-        row = {"ring": key, "name": doc.name, "domain_shown": doc.domain,
-               **check(doc.url)}
-        rows.append(row)
-        print(f"{row['verdict']:<16} {row['status']:>4}  {key:<22} {doc.url}")
+    # Stage 1: the non-ring sources (Expression Atlas, OLS4) are checked here
+    # too. A dead link on the contrast picker is a dead link, and the reason they
+    # live in a second registry has nothing to do with whether their URLs resolve.
+    for kind, registry in (("ring", sources.RING_SOURCE_DOCS),
+                           ("source", sources.DATA_SOURCE_DOCS)):
+        for key, doc in registry.items():
+            row = {"kind": kind, "ring": key, "name": doc.name,
+                   "domain_shown": doc.domain, **check(doc.url)}
+            rows.append(row)
+            print(f"{row['verdict']:<16} {row['status']:>4}  {key:<22} {doc.url}")
 
     bad = [r for r in rows if r["verdict"] != "OK"]
     out = {"user_agent": config.USER_AGENT, "checked": len(rows),

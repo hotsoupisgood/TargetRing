@@ -65,6 +65,7 @@ async function init() {
   $("#load-broken").onclick = async () => {
     $("#table").value = (await fetch("/api/example").then((x) => x.json())).broken;
   };
+  wireDiseaseSearch();
   $("#go").onclick = analyse;
   $("#drawer-close").onclick = closeDrawer;
   $("#scrim").onclick = closeDrawer;
@@ -119,6 +120,138 @@ async function init() {
     RESIZE_TIMER = setTimeout(redrawForThisWindow, RESIZE_SETTLE_MS);
   });
 }
+
+// ---------- stage 1: disease search ----------
+//
+// Debounced typing, one request per settled query, and the dropdown is a list of
+// buttons rather than a `<datalist>`: a datalist can only carry a string, and
+// every hit here has to carry two ids, a count, a build date and a mapping note.
+// A hit whose count is zero stays clickable — "Atlas has never studied this" is a
+// real answer and the picker page is where it gets said.
+
+const DISEASE_SETTLE_MS = 300;
+let DISEASE_TIMER = null;
+// The last query whose response was rendered, so an out-of-order reply from a
+// slower earlier request cannot overwrite a newer one's hits.
+let DISEASE_QUERY = "";
+let CHOSEN_DISEASE = null;
+
+function wireDiseaseSearch() {
+  const box = $("#disease");
+  if (!box) return;
+  box.addEventListener("input", () => {
+    clearTimeout(DISEASE_TIMER);
+    DISEASE_TIMER = setTimeout(() => searchDiseases(box.value), DISEASE_SETTLE_MS);
+  });
+}
+
+async function searchDiseases(q) {
+  const query = (q || "").trim();
+  DISEASE_QUERY = query;
+  if (!query) {
+    $("#disease-hits").innerHTML = "";
+    $("#disease-status").textContent = "";
+    return;
+  }
+  $("#disease-status").textContent = "searching OLS4…";
+  let r;
+  try {
+    r = await fetch("/api/diseases?q=" + encodeURIComponent(query));
+  } catch (e) {
+    $("#disease-status").textContent = "disease search failed: " + e;
+    return;
+  }
+  const b = await r.json();
+  if (DISEASE_QUERY !== query) return;   // a newer query is already in flight
+  if (!r.ok) {
+    // A 503 here means there is no contrast index. The counts are NOT shown as
+    // zeros in that case, because "0 contrasts" from a missing index and "0
+    // contrasts" from a disease Atlas has not studied are the same string and
+    // completely different facts.
+    $("#disease-status").textContent = "";
+    $("#disease-hits").innerHTML =
+      `<div class="note bad"><b>${esc(b.error || "failed")}</b><br>
+       ${esc(b.message || "")}<br><span class="hint">${esc(b.note || "")}</span></div>`;
+    return;
+  }
+  $("#disease-status").textContent = `${b.diseases.length} hit(s), in OLS4's own order`;
+  $("#disease-hits").innerHTML = b.diseases.length
+    ? `<ul class="hits">${b.diseases.map((d, i) => diseaseHitHtml(d, i)).join("")}</ul>`
+    : `<p class="hint">OLS4 has no EFO or MONDO term matching that.</p>`;
+  b.diseases.forEach((d, i) => {
+    const el = $(`#hit-${i}`);
+    if (el) el.onclick = () => chooseDisease(d, b.index);
+  });
+  $("#index-note").innerHTML = indexNoteHtml(b.index);
+  $("#find-sources").innerHTML = sourcesHtml(b.sources);
+}
+
+function diseaseHitHtml(d, i) {
+  const c = d.counts;
+  const obsolete = (d.obsolete_atlas_ids || []).length
+    ? `<span class="hint">Atlas-side id${d.obsolete_atlas_ids.length > 1 ? "s" : ""}:
+       <code>${d.obsolete_atlas_ids.map(esc).join("</code> <code>")}</code>
+       (obsolete; never sent to Open Targets)</span>` : "";
+  return `<li><button class="hit" id="hit-${i}">
+      <b>${esc(d.label)}</b> <code>${esc(d.current_id)}</code>
+      <span class="hit-count${c.n_contrasts ? "" : " zero"}">${esc(c.count_text)}</span>
+      <span class="hint">${esc(c.built_text)}</span><br>${obsolete}
+    </button></li>`;
+}
+
+// The index's own provenance, under the hits rather than behind a click. Three of
+// these four numbers are things a count alone hides: how many experiments failed
+// to parse, how many contrasts carry no disease id at all (so appear under no
+// disease), and how many have an id that is not `{ref}_{test}`.
+function indexNoteHtml(ix) {
+  if (!ix) return "";
+  return `Local Atlas contrast index: <b>${ix.n_contrasts}</b> contrasts from
+    <b>${ix.n_experiments}</b> of ${ix.n_experiments_in_population} human
+    differential experiments carrying a <code>disease</code> factor, built
+    <b>${esc((ix.built_utc || "").slice(0, 10))}</b>${
+      ix.stale ? ` — <b class="bad-text">STALE</b> (older than ${
+        ix.stale_after_days} days; rebuild with
+        <code>scripts/build_atlas_index.py</code>)` : ""}.
+    ${ix.n_failed_experiments} experiment(s) failed to parse.
+    ${ix.n_contrasts_without_disease_id} contrast(s) carry no
+    <code>disease</code> factor id on the test group, so they appear under no
+    disease at all. ${ix.n_contrasts_invalid_id} contrast(s) have an id that is
+    not <code>{reference}_{test}</code> and are shown as sign-unsafe rather than
+    drawn.`;
+}
+
+function sourcesHtml(rows) {
+  if (!rows || !rows.length) return "";
+  return `<details class="src"><summary><span class="chev" aria-hidden="true">▾</span>
+      Where these come from — ${rows.length} source(s)</summary>
+    <div class="reveal"><table><tbody>${rows.map((s) => `<tr>
+      <td><a href="${esc(s.doc_url)}" target="_blank" rel="noopener">${
+        esc(s.legend_text)}</a></td>
+      <td class="reason">reads ${esc(s.reads)}</td>
+      <td class="reason">${esc(s.version)}</td></tr>`).join("")}
+    </tbody></table></div></details>`;
+}
+
+function chooseDisease(d, ix) {
+  CHOSEN_DISEASE = d;
+  const notes = (d.mapping_notes || []).map((n) => `<li>${esc(n)}</li>`).join("");
+  const rejected = (d.rejected_ids || []).map((n) => `<li>${esc(n)}</li>`).join("");
+  $("#disease-chosen").hidden = false;
+  $("#disease-chosen").innerHTML =
+    `<div class="note"><b>${esc(d.label)}</b>
+      — <code>${esc(d.current_id)}</code> for Open Targets,
+      <code>${d.atlas_ids.map(esc).join("</code> <code>")}</code> for Expression
+      Atlas. ${esc(d.counts.count_text)}, ${esc(d.counts.built_text)}.
+      ${notes ? `<ul class="tight">${notes}</ul>` : ""}
+      ${rejected ? `<p class="hint">Cross-references that did not verify and were
+        NOT used: <ul class="tight">${rejected}</ul></p>` : ""}
+    </div>`;
+  loadContrasts(d, ix);
+}
+
+// Stage 2 fills this in. Declared here so stage 1's chooser has something to
+// call, and so the two halves of the panel land in one place.
+function loadContrasts(_d, _ix) {}
 
 function showTab(name) {
   document.querySelectorAll(".tab").forEach((x) =>
