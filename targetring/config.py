@@ -28,6 +28,39 @@ CHEMBL_BASE = "https://www.ebi.ac.uk/chembl/api/data"
 # clinicaltrials.gov/study/<id> in the drawer as links, which costs no request.
 PHAROS_GRAPHQL = "https://pharos-api.ncats.io/graphql"
 
+# --- Expression Atlas and OLS4, verified live 2026-09-29 --------------------
+# The experiments catalogue. 4,562 rows and NO ontology ids anywhere in it: the
+# EFO ids live per-assay in `{ACC}.condensed-sdrf.tsv` and the contrast prose
+# names in `{ACC}-configuration.xml`, which is why the contrast counts need a
+# local index and cannot be served from here (plan V4).
+ATLAS_CATALOGUE_URL = "https://www.ebi.ac.uk/gxa/json/experiments"
+# Per-experiment files. The brace is filled with an accession.
+ATLAS_EXPERIMENT_BASE = (
+    "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/{acc}/")
+# `{ACC}.condensed-sdrf.tsv` uses a DOT before `condensed`, unlike every other
+# file in the directory, which uses a dash. The `-condensed-sdrf.tsv` form
+# answers HTTP 404 with an Apache HTML body (verified 2026-09-29), so a
+# dash-built URL fails the content-type check rather than returning nothing --
+# which is the good outcome, and is still one character from a wasted run.
+ATLAS_CONDENSED_SDRF_SUFFIX = ".condensed-sdrf.tsv"
+
+# OLS4. `/api/select` is used and `/api/search` is NOT, for one reason:
+# `select` returns `responseHeader.params.q` and `search` returns a
+# `responseHeader` with only `QTime` and `status` in it (both verified live
+# 2026-09-29, with and without `echoParams=all`). AGENTS.md rule 4 wants the
+# query echoed back and asserted, and only one of the two endpoints offers that.
+OLS4_SELECT = "https://www.ebi.ac.uk/ols4/api/select"
+OLS4_ONTOLOGIES = "https://www.ebi.ac.uk/ols4/api/ontologies"
+# EFO carries the Atlas-era ids (including the obsolete ones) and MONDO carries
+# the current disease terms Open Targets uses. Both are searched; which id goes
+# to which source is `adapters/ols.DiseaseRef`'s whole job.
+OLS4_ONTOLOGY_LIST = "efo,mondo"
+
+# An index older than this is served with a stale flag the UI prints. It is not
+# refused: a month-old contrast count is still the count that was measured, and
+# refusing would leave the picker with no numbers at all.
+ATLAS_INDEX_STALE_DAYS = 30
+
 # GTEx dataset is pinned: gtex_v10 returns 0 rows for the v26 gencode ids that
 # /reference/gene serves (probed 2026-09-24), so v8 is the only coherent pair.
 GTEX_DATASET = "gtex_v8"
@@ -54,6 +87,19 @@ SCHEMA_VERSIONS = {
     "chembl.mechanism": "1",
     "europepmc.search": "1",
     "pharos.target": "1",
+    # --- stage 1. OLS4 and Expression Atlas -------------------------------
+    # `ols.select` is the autocomplete query; `ols.term` is one term's full
+    # record, which is where `is_obsolete` and `term_replaced_by` live (the
+    # select payload carries neither, checked live 2026-09-29).
+    "ols.select": "1",
+    "ols.term": "1",
+    "atlas.catalogue": "1",
+    "atlas.configuration": "1",
+    "atlas.condensed_sdrf": "1",
+    # The contrast index built from the two above. Its schema version is also in
+    # the on-disk index's own `schema_version` field, so an index written by an
+    # older parse is refused rather than read with today's field names.
+    "atlas.index": "1",
 }
 
 # v2.4: `CTGOV_MAX_DRUG_HOPS` and `CTGOV_ROWS_PER_BUCKET` are gone with the hop.
@@ -80,3 +126,36 @@ CIRCOS_MAX_SECTORS = 180
 # AGENTS.md rule 8.
 LLM_SPEND_CAP_USD = 5.00
 TRIAGE_TOP_N = 10
+
+# AGENTS.md rule 8 as amended 2026-09-29: two paid calls, two caps, two
+# counters, neither borrowing from the other. `LLM_SPEND_CAP_USD` above is the
+# triage account's and is deliberately UNCHANGED -- a second feature must not be
+# able to move the first feature's ceiling.
+PHENOTYPE_LLM_SPEND_CAP_USD = 5.00
+
+# The append-only spend ledger lives under `runs/`, not under `cache/`, and that
+# is the whole point: `cache/` is deleted routinely (there are five
+# `cache.v2*-pre` copies in this repo already) and a spend counter that a cache
+# reset zeroes is not a spend counter. One line per call, appended, never
+# rewritten.
+SPEND_LEDGER_PATH = Path(os.environ.get(
+    "TARGETRING_SPEND_LEDGER", RUNS_DIR / "spend-ledger.jsonl"))
+
+# Anthropic first-party price table, USD per million tokens, cached 2026-06-24.
+# A pinned constant and therefore in every manifest: if the published prices
+# move, the ledger under-counts silently, and the only defence is that a reader
+# can see which table this run priced itself against.
+#
+# A model that is NOT in here cannot be called. `spend.price_usd` raises rather
+# than guessing a price, because a guessed price is a spend figure that looks
+# real and is not -- `AGENTS.md:17` in the accounting.
+# `cache_read` is present only for the model whose cache-read price this table
+# actually records. `claude-fable-5-1`'s input and output prices are the ones
+# stated in the plan's cost section; its cache-read price was not, so it is
+# absent rather than assumed to be a tenth of input, and a fable call that
+# reports cache-read tokens is refused for want of a price. An absent price is
+# not a price of zero.
+LLM_PRICE_USD_PER_MTOK: dict[str, dict[str, float]] = {
+    "claude-opus-5": {"input": 5.00, "output": 25.00, "cache_read": 0.50},
+    "claude-fable-5-1": {"input": 10.00, "output": 50.00},
+}

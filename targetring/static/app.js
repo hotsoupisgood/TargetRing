@@ -576,7 +576,37 @@ function renderCaveats(b) {
      <p>${esc(b.ordering_note || "")}</p>
      <p class="hint">The order carries meaning, so it is printed on the figure too.
      The default is your own table's order — it is your measurement, not a composite
-     this app invented.</p>`;
+     this app invented.</p>
+     ${llmAccountsHtml(b.llm)}`;
+}
+
+// Stage 0. Two paid features, two caps, two counters, and BOTH lines every time.
+//
+// This block used to be nothing at all, because `manifest.llm` was a hard-coded
+// `{"attempted": false, "spend_usd": 0.0}` — a zero that read like a measurement.
+// It is folded out of the append-only ledger now, and the reason both accounts
+// are printed even when a run touched neither is that rule 8's promise is about
+// the pair: "neither borrows from the other" is unverifiable from one number.
+function llmAccountsHtml(llm) {
+  if (!llm || !llm.accounts) return "";
+  const rows = Object.entries(llm.accounts).map(([name, a]) =>
+    `<tr><td><code>${esc(name)}</code></td>
+      <td>$${Number(a.spent).toFixed(2)} of $${Number(a.cap).toFixed(2)}</td>
+      <td>${a.calls} call${a.calls === 1 ? "" : "s"}</td>
+      <td class="reason">${esc(a.purpose)}</td></tr>`).join("");
+  const prices = Object.entries(llm.price_table || {}).map(([m, p]) =>
+    `<code>${esc(m)}</code> $${p.input}/$${p.output} per MTok in/out`).join("; ");
+  return `<h4>Paid calls — two caps, two counters</h4>
+    <table><thead><tr><th>account</th><th>spent</th><th>calls</th>
+      <th>what it pays for</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="hint">Neither account borrows from the other and both are separate
+    from any other budget on this machine. Spend is folded from
+    <code>${esc(llm.ledger_path || "runs/spend-ledger.jsonl")}</code>, which is
+    append-only and lives outside <code>cache/</code> so a cache reset cannot zero
+    it. A refused call is recorded too, at $0.00, so "why is there no summary" is
+    answerable from the file. Prices are a pinned constant (cached
+    ${esc(llm.price_table_cached_utc || "")}): ${prices}. A model with no pinned
+    price cannot be called — the ledger refuses rather than guessing.</p>`;
 }
 
 // ---------- drawer ----------

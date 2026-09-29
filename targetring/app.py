@@ -233,6 +233,11 @@ def _summarise(r) -> dict[str, Any]:
             "dropped": m.ledger_count,
         },
         "invariants": m.invariants,
+        # Stage 0. Both LLM accounts, every run, whether or not either was
+        # touched. The page prints the two lines in the caveats tab: a screen that
+        # showed one balance would leave a reader unable to check the one thing
+        # rule 8 promises, which is that the two budgets are separate.
+        "llm": m.llm,
         "all_invariants_pass": m.all_invariants_pass,
         # UX A1: distinct from all_invariants_pass. A NOT_EVALUATED run is not
         # a pass, but it is not a failure either, and the UI must not conflate

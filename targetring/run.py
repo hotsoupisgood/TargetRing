@@ -72,6 +72,7 @@ from .order import (
 )
 from .regression import five_id_regression
 from .resolve import Resolver, ledger_reason
+from . import spend
 from .states import Cell, no_data, value
 
 DEFAULT_REGION = "Lung"
@@ -738,17 +739,27 @@ async def run_analysis(
             "triage": None,
         }
 
-    llm_info: dict[str, Any] = {
-        "attempted": with_triage,
-        "spend_usd": 0.0,
-        "note": "not run",
-    }
+    # Stage 0. This block used to be the literal `{"attempted": False,
+    # "spend_usd": 0.0}` -- a zero that read like a measurement and was not one,
+    # sitting under a $5 cap with no counter behind it. It is folded out of the
+    # append-only `runs/spend-ledger.jsonl` now, and it names BOTH accounts
+    # whether or not this run touched either: rule 8's promise is that the two do
+    # not borrow from each other, and that is a claim about two numbers.
+    #
+    # Nothing on the render path makes a paid call, so `spent` here is a reading
+    # rather than a result of this run.
+    llm_info: dict[str, Any] = spend.default_ledger().manifest_block(
+        attempted=with_triage,
+        note=("no paid call is on the render path; both accounts are folded from "
+              "the append-only spend ledger, not assumed to be zero"),
+    )
     if with_triage:
         # LLM triage is not built in v1. Fail loudly rather than ImportError --
         # a caller asking for triage must not get a figure that silently has none.
         raise NotImplementedError(
             "LLM triage is not implemented in v1. AGENTS.md rule 8 caps it at $5 and "
-            f"limits it to the top 10 genes; ${LLM_SPEND_CAP_USD:.2f} is unspent. "
+            f"limits it to the top 10 genes; ${LLM_SPEND_CAP_USD:.2f} is the cap and "
+            f"{llm_info['accounts']['triage']['spent']:.2f} has been spent. "
             "Nothing on the current figure depends on it."
         )
 
