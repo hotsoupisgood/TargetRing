@@ -759,6 +759,10 @@ async def run_analysis(
         input_row_count=parsed.input_row_count,
         rendered_count=rendered_count, ledger_count=len(dropped_entries(ledger)),
         gene_order=gene_order, invariants=invariants, contracts=contracts,
+        # v3.6. The same list invariant 7 re-derives the spoke order from, now
+        # written beside the figure so the table view can honour the documented
+        # tie-break on a run that was not drawn in submitted order.
+        submitted_order=genes,
         ledger=[{
             "input": e.input_symbol, "status": e.status, "reason": e.reason,
             "resolved_symbol": e.resolved_symbol, "ensembl_id": e.ensembl_id,

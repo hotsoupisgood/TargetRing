@@ -74,6 +74,43 @@ async function init() {
     t.onclick = () => showTab(t.dataset.tab);
   });
 
+  // v3.6. The table reads artefacts, so it can open any run on disk — which is
+  // the first time this app has had a way back to a run you already made.
+  const picker = $("#table-run");
+  fetch("/api/runs").then((x) => x.json()).then((r) => {
+    $("#table-runs").innerHTML = (r.runs || []).map((x) =>
+      `<option value="${esc(x.run_id)}">${esc(x.region || "")} · ${
+        esc(x.n_genes ?? "")} genes · ${esc(x.timestamp_utc || x.note || "")}</option>`
+    ).join("");
+    $("#table-run-note").textContent =
+      `${(r.runs || []).length} recent run(s) on this machine.`;
+  });
+  $("#table-load").onclick = () => { TABLE.sort = []; TABLE.dim = []; TABLE.dimDraft = null;
+    loadTable(picker.value); };
+  picker.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { TABLE.sort = []; TABLE.dim = []; TABLE.dimDraft = null;
+      loadTable(picker.value); }
+  });
+
+  // `?run=<id>` opens that run's table directly. There is no figure in memory
+  // for it, so the figure pane says so and points at the run's own artefacts
+  // rather than showing the previous run's circle (UX A2's finding).
+  const wanted = new URLSearchParams(location.search).get("run");
+  if (wanted) {
+    $("#result").hidden = false;
+    $("#banner").hidden = true;
+    $("#counts").innerHTML = "";
+    $("#figure").innerHTML =
+      `<p class="hint">No figure is drawn in this session. You are looking at run
+       <code>${esc(wanted)}</code> as a table, read from its artefacts on disk.
+       Its rendered figure is
+       <a href="/api/run/${esc(wanted)}/figure.svg" target="_blank" rel="noopener">
+       figure.svg</a>.</p>`;
+    showTab("table");
+    picker.value = wanted;
+    loadTable(wanted);
+  }
+
   // v3.5. The figure is sized for the window it is read in, so the window
   // changing size is an input. Debounced, and a no-op when the change is smaller
   // than the canvas quantum or when there is no run in memory to redraw.
@@ -88,6 +125,14 @@ function showTab(name) {
     x.classList.toggle("active", x.dataset.tab === name));
   document.querySelectorAll(".tabpane").forEach((p) => { p.hidden = true; });
   $("#pane-" + name).hidden = false;
+  // Fetched on first view rather than on every render: the grid is the same run
+  // the figure is, and a reader who never opens the tab should not pay for it.
+  // With no run either way the pane says what to do — an empty grid and no
+  // sentence reads as a broken tab.
+  if (name === "table") {
+    if (RUN && TABLE.run_id !== RUN.run_id) loadTable(RUN.run_id);
+    else if (!TABLE.run_id) loadTable("");
+  }
 }
 
 // ---------- run ----------
@@ -246,6 +291,18 @@ function render(b) {
   renderInvariants(b);
   renderCaveats(b);
 
+  // v3.6. A new run invalidates the grid and the sort keys with it — a key is
+  // named against a run's own rings, and carrying it across would sort the new
+  // table by a column chosen for the old one. Redrawn now only if the reader is
+  // already looking at it; otherwise `showTab` fetches it on first view.
+  // v3.8: the dim filters go with them, for a sharper reason. A dim filter is a
+  // bound on one run's raw values; carried onto another run it would fade rows
+  // against a threshold nobody set for them, and the count line would state it as
+  // if somebody had.
+  TABLE = { run_id: null, sort: [], dim: [], data: null };
+  $("#table-run").value = b.run_id;
+  if (!$("#pane-table").hidden) loadTable(b.run_id);
+
   // UX B3: "N not shown" looked like a link and did nothing. It is the one
   // place the user asks "why?".
   const sl = $("#show-ledger");
@@ -371,7 +428,10 @@ function renderDecode(s) {
     // with the wrong state; the tick labels this used to read are the ring's
     // numeric positions and printing them said "-1 / 0 / 1" beside three
     // colours that are not on a ramp at all.
-    (act ? `<div class="grp"><h5>ring ${act.n} · ${esc(act.short_label)}</h5>` +
+    // v3.7 item 4: `column_label`, not `short_label`. This heading names a ring
+    // on the same surface as the scale rows below it and the grid in the next
+    // tab; the wedge's name for it ("Trial activity now") is a third one.
+    (act ? `<div class="grp"><h5>ring ${act.n} · ${esc(act.column_label)}</h5>` +
       act.colours.map((c, i) => `<div class="state">
         <span class="sw" style="background:${esc(c)}"></span>
         <span>${esc(act.categories[i] || "")}</span></div>`).join("") +
@@ -804,6 +864,548 @@ function drawerHtml(d) {
   return h;
 }
 
+// ---------- table view (v3.6) ----------
+//
+// The same run the circle was drawn from, as a grid. Three rules shape every
+// line below and none of them is presentational:
+//
+//   1. It is a SECOND RENDERING, not a second computation. Every state, number,
+//      colour and detail string arrives from `/api/run/<id>/values`, which
+//      pivots `values.csv` -- the artefact invariant 1 asserts is cell-for-cell
+//      what was drawn. Nothing here derives a cell.
+//   2. SORTING IS THE SERVER'S. `order.order_by_keys` decides the row order, and
+//      its single-key case is asserted equal to `order_for_figure`, the function
+//      that places the spokes. Sorting the rows in JS would be a second
+//      definition of "sorted by logFC" and the two would eventually disagree.
+//   3. MISSING IS NOT LOW. A gene with no value on the sort key is drawn in a
+//      named block below a divider, in both directions, and its cell is hatched
+//      and labelled -- never blank, never 0, never sorted as the smallest.
+
+let TABLE = { run_id: null, sort: [], dim: [], data: null };
+
+// `#e8e8e8` and `#385b5c` both come back as cell fills, so the label on top of a
+// swatch has to pick its own side. Rec. 601 luma, the usual mid-point.
+function inkOn(hex) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(hex || ""));
+  if (!m) return "var(--ink)";
+  const n = parseInt(m[1], 16);
+  const l = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return l > 0.6 ? "#16181d" : "#ffffff";
+}
+
+// Four significant figures, trailing zeros dropped: `2.81`, `5`, `0.02312`. The
+// drawer prints `toPrecision(4)` and this is the same number without the `5.000`.
+const num = (v) => String(Number((+v).toPrecision(4)));
+
+// Never blank, never zero (AGENTS.md rule 1). Every non-value state gets a word.
+const STATE_WORD = { no_data: "no data", not_applicable: "n/a", failed: "FAILED" };
+
+function tableSortSpec() {
+  return TABLE.sort.map((k) => k.ordering + (k.reverse ? ":asc" : ":desc")).join(",");
+}
+
+// v3.8. The dim filters, as the server's own `ring >= n` lines. The COMPARISON is
+// not done here for the same reason the sort is not: a threshold evaluated in the
+// browser would be a second definition of `regional_specificity >= 5`, and it
+// would drift from the one PLAN §3.2 uses. The page collects the bound and draws
+// the verdict; `dim.classify` decides it.
+function tableDimSpec() {
+  return TABLE.dim.map((f) => `${f.ring} ${f.op === "le" ? "<=" : ">="} ${f.threshold}`)
+    .join("\n");
+}
+
+async function loadTable(runId) {
+  const id = (runId || "").trim();
+  if (!id) {
+    $("#table-status").textContent =
+      "No run loaded. Draw a figure, or type a run id above — every run under " +
+      "runs/ can be opened by id.";
+    return;
+  }
+  $("#table-status").textContent = `loading ${id}…`;
+  let res, d;
+  try {
+    res = await fetch(`/api/run/${encodeURIComponent(id)}/values`
+      + `?sort=${encodeURIComponent(tableSortSpec())}`
+      + `&dim=${encodeURIComponent(tableDimSpec())}`);
+    d = await res.json();
+  } catch (e) {
+    $("#table-status").className = "err";
+    $("#table-status").textContent = "Request failed: " + e;
+    return;
+  }
+  if (!res.ok) {
+    // A sort this run cannot honour is refused, not swapped: the previous table
+    // stays on screen rather than being redrawn in an order the strip does not
+    // name. Same rule as `normalise_ordering` on the figure.
+    $("#table-status").className = "err";
+    $("#table-status").textContent = d.message || "the table could not be loaded";
+    if (d.error === "sort_rejected") TABLE.sort = [];
+    // Same rule for a dim filter this run cannot evaluate: dropped rather than
+    // approximated, so the count line can never name a bound the grid did not use.
+    if (d.error === "dim_rejected") TABLE.dim = [];
+    return;
+  }
+  $("#table-status").className = "";
+  $("#table-status").textContent = "";
+  TABLE.run_id = d.run_id;
+  TABLE.data = d;
+  $("#table-run").value = d.run_id;
+  renderTable(d);
+  // A run opened from disk still gets its ledger and its invariants, from its
+  // own manifest — otherwise those two tabs would describe a different run than
+  // the grid on screen, which is worse than showing nothing.
+  if (!RUN) {
+    renderLedger(d);
+    renderInvariants(d);
+  }
+}
+
+function renderTable(d) {
+  const ring = (k) => d.rings.find((r) => r.key === k);
+  // v3.7 item 4. `column_label`, so a sort chip names the column the way the
+  // column head does and the way the scale column names the same ring.
+  const ringLabel = (o) => o === "alphabetical" ? "gene symbol"
+    : o === "submitted" ? "your submitted order"
+    : ((ring(o.slice(5)) || {}).column_label || o.slice(5));
+
+  // --- what this table is, before any of it ---
+  const bad = d.any_invariant_failed;
+  const cnt = d.counts;
+  $("#table-meta").innerHTML =
+    (bad ? `<div id="table-banner" class="banner-bad">DO NOT TRUST THIS TABLE —
+       an invariant failed on run ${esc(d.run_id)}. See the Invariants tab.</div>` : "") +
+    `<div class="counts">
+       <b>${esc(cnt.input)}</b> genes in · <b>${esc(cnt.rendered)}</b> in this table ·
+       <button class="drop linkish" id="table-show-ledger"><b>${esc(cnt.dropped)}</b>
+         not shown — why?</button> ·
+       region <b>${esc(d.region)}</b> ·
+       <span class="pill ok">input = rendered + ledgered</span>
+       <span class="hint">${esc(cnt.input)} = ${esc(cnt.rendered)} + ${esc(cnt.dropped)},
+         checked against this run's own artefacts before the table was built</span>
+     </div>` +
+    ((d.filters || []).length
+      ? `<div class="note warn"><b>Filtered — this is not the whole submitted set.</b>
+         ${d.filters.map((f) => `<code>${esc(f.expression)}</code>`).join(" · ")}</div>`
+      : "") +
+    `<p class="hint">The circle for this run was drawn with —
+       <b>${esc(d.ordering_note || d.ordering)}</b>. Columns are the rings in the
+       figure's own radial order: <b>column 1 is the outermost band</b>.
+       ${d.submitted_order_source === "drawn"
+        ? `This run predates <code>submitted_order</code> in the manifest, so the
+           tie-break and the no-value block use the order it was drawn in.` : ""}
+       ${/* v4.0. The sentence and the links are the payload's, not this file's.
+             They used to be three hardcoded `/api/…` hrefs, which are correct in
+             the app and dead in the offline export -- a file opened from `file://`
+             has nothing serving them, and a dead link is the thing the citation
+             strip refuses one block further down. `view.table_payload` authors
+             what this surface can and cannot do; `export.py` authors the other
+             answer. See `view.DRAWER_ON_DISK_NOTE`. */
+         esc(d.drawer_note || "")}
+       ${(d.artefact_links || []).map((a) =>
+         `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.label)}</a>`)
+         .join(" · ")}
+     </p>`;
+
+  const sl = $("#table-show-ledger");
+  if (sl) sl.onclick = () => {
+    const led = $("#table-ledger-details");
+    if (led) { led.open = true; led.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  };
+
+  // --- the sort keys, each one visible and individually reversible ---
+  // PLAN §3 deleted ranking. This is lexicographic and nothing else: the keys
+  // are applied in turn, they are never combined into a number, and there is no
+  // column here that means "how good is this gene".
+  $("#table-sort").innerHTML =
+    `<div class="sortbar">
+       <span class="lbl">Sort</span>` +
+    (d.sort.length
+      ? d.sort.map((k, i) => `<span class="key">
+          <b>${i + 1}.</b> ${esc(ringLabel(k.ordering))}
+          <button class="dir" data-i="${i}" title="reverse this key">${
+            k.reverse ? "worst first ↑" : "best first ↓"}</button>
+          <button class="rm" data-i="${i}" title="remove this key">✕</button>
+        </span>`).join("")
+      : `<span class="hint">unsorted — the order this run drew the spokes in</span>`) +
+      `<button id="table-clear" class="ghost">reset to the circle's order</button>
+     </div>
+     <p class="hint">${esc(d.sort_note)}
+       Click a column to sort by it; <b>shift-click</b> to add it as a further key.</p>`;
+
+  $("#table-sort").querySelectorAll("button.dir").forEach((b) => {
+    b.onclick = () => {
+      // Reversing flips the values only. The no-value block stays last — a gene
+      // nobody measured is not the best one either.
+      const i = +b.dataset.i;
+      TABLE.sort[i] = { ...TABLE.sort[i], reverse: !TABLE.sort[i].reverse };
+      loadTable(TABLE.run_id);
+    };
+  });
+  $("#table-sort").querySelectorAll("button.rm").forEach((b) => {
+    b.onclick = () => { TABLE.sort.splice(+b.dataset.i, 1); loadTable(TABLE.run_id); };
+  });
+  $("#table-clear").onclick = () => { TABLE.sort = []; loadTable(TABLE.run_id); };
+
+  // --- the dim filter, and what it did ---
+  renderDimBar(d);
+  renderDimCounts(d);
+
+  // --- the grid ---
+  const primary = d.sort.length ? d.sort[0].ordering : "";
+  const dirOf = (o) => {
+    const k = d.sort.find((x) => x.ordering === o);
+    return !k ? "" : k.reverse ? " ↑" : " ↓";
+  };
+  const rank = (o) => {
+    const i = d.sort.findIndex((x) => x.ordering === o);
+    return i < 0 ? "" : `<span class="krank">${i + 1}</span>`;
+  };
+
+  let head = `<tr>
+    <th class="sortable gene-col" data-ordering="alphabetical">Gene${
+      esc(dirOf("alphabetical"))}${rank("alphabetical")}</th>
+    <th title="k — how many of the ${d.k_max} external rings have a real measurement.
+      A completeness gauge: it orders nothing and selects nothing (PLAN §2).">k</th>`
+    // v3.7 items 2 and 4. Three lines per head and only one of them is new
+    // pixels: the ring number and `column_label` (the scale column's own name for
+    // this ring, not the wedge's — item 4), then the source as a LABEL at 9 px.
+    //
+    // The source name is deliberately NOT a link. Two reasons, both measured in
+    // the usability review: it would put a click target inside a click-to-sort
+    // target, and `platform-docs.opentargets.org` renders 261 px at 12 px inside
+    // columns that are 86-110 px wide. The name is a label; the link is in
+    // `#table-sources` under the grid, once per column, where the row number is
+    // the join. It costs ~16 px of header height and 0 px per row, and it is
+    // appended to the `title` as well, which costs nothing at all.
+    //
+    // It is drawn at 12 px, not the 9 px item 2 asked for: `UX-v3-rounds.md` B12
+    // is a floor over the whole stylesheet and letting this line under it would
+    // have meant editing B12's assertion. See `.grid thead th .src` in app.css.
+    // v3.8. `dim-key` underscores the column a dim filter is set on, so a
+    // screenshot shows the filter's target and not only its effect on the rows.
+    + d.rings.map((r) => `<th class="${r.sortable ? "sortable" : "unsortable"}${
+        (d.dim || []).some((f) => f.ring === r.key) ? " dim-key" : ""}"
+        data-ordering="${r.sortable ? "ring:" + esc(r.key) : ""}"
+        title="${esc(r.n + ". " + r.label + (r.units ? " — " + r.units : "")
+          + (r.source_name ? " — source: " + r.source_name : "")
+          + (r.sortable ? "" : " — not sortable: ordering by k would order by how much "
+            + "anybody has studied a gene (PLAN §2)"))}">
+        <span class="rn">${r.n}</span> ${esc(r.column_label)}${
+          esc(dirOf("ring:" + r.key))}${rank("ring:" + r.key)}${r.source_name
+          ? `<span class="src">${esc(r.source_name)}</span>` : ""}</th>`).join("")
+    + `</tr>`;
+
+  const blockStart = d.genes.findIndex((g) => g.no_value_on_sort_key);
+  const body = d.genes.map((g, i) => {
+    const divider = (primary && i === blockStart && blockStart >= 0)
+      ? `<tr class="missing-divider"><td colspan="${d.rings.length + 2}">
+           ${d.missing_block.length} gene(s) have <b>no value</b> on
+           ${esc(ringLabel(primary))}. They are <b>last, not lowest</b> — this key
+           cannot place them, so it does not pretend to.</td></tr>`
+      : "";
+    // v3.8. A dim filter is view state, so it adds a CLASS and a WORD to a row
+    // that is otherwise exactly the row it was — no reorder, no removal, no
+    // recomputed cell. `match` adds nothing at all, which is what makes clearing
+    // the filter restore the grid rather than rebuild it.
+    const dimCls = g.dim_state === "dimmed" ? " dim-out"
+      : g.dim_state === "unevaluable" ? " dim-unevaluable" : "";
+    // The word, because opacity and a rail are two channels and a word is the one
+    // that survives a greyscale print and a phone screenshot. `cannot be
+    // evaluated` is spelled out: it is the state a reader is most likely to
+    // misread as "excluded", and they are different facts about the gene.
+    const dimTag = !dimCls ? "" : `<span class="dimtag" title="${esc(g.dim_reason)}">${
+      g.dim_state === "dimmed" ? "dimmed" : "cannot be evaluated"}</span>`;
+    return divider + `<tr class="${g.no_value_on_sort_key ? "unplaced" : ""}${dimCls}"${
+      g.dim_reason ? ` title="${esc(g.dim_reason)}"` : ""}>
+      <th scope="row" class="gene-col">
+        ${d.in_memory
+          ? `<button class="gene linkish" data-gene="${esc(g.gene)}">${esc(g.gene)}</button>`
+          // Not a disabled button: a control that looks like a control and does
+          // nothing is worse than plain text. A run read off disk has no
+          // adapters behind it and the note above the grid says so.
+          : `<span class="gene">${esc(g.gene)}</span>`}
+        <div class="ens">${esc(g.ensembl_id)}</div>${dimTag}</th>
+      <td class="kcell">${esc(g.k)}<span class="of">/${esc(d.k_max)}</span></td>`
+      + d.rings.map((r) => cellHtml(g.cells[r.key])).join("")
+      + `</tr>`;
+  }).join("");
+
+  $("#table-grid").innerHTML = `<table class="grid">
+    <thead>${head}</thead><tbody>${body}</tbody></table>`;
+
+  $("#table-grid").querySelectorAll("th.sortable").forEach((th) => {
+    th.onclick = (ev) => {
+      const o = th.dataset.ordering;
+      if (!o) return;
+      const at = TABLE.sort.findIndex((k) => k.ordering === o);
+      if (ev.shiftKey) {
+        // A further key, appended. Lexicographic: it only ever breaks ties the
+        // keys above it left.
+        if (at < 0) TABLE.sort.push({ ordering: o, reverse: false });
+        else TABLE.sort[at] = { ...TABLE.sort[at], reverse: !TABLE.sort[at].reverse };
+      } else if (at === 0) {
+        TABLE.sort = [{ ordering: o, reverse: !TABLE.sort[0].reverse }];
+      } else {
+        TABLE.sort = [{ ordering: o, reverse: false }];
+      }
+      loadTable(TABLE.run_id);
+    };
+  });
+  $("#table-grid").querySelectorAll("button.gene").forEach((b) => {
+    if (!b.disabled) b.onclick = () => openDrawer(b.dataset.gene);
+  });
+
+  renderTableSources(d);
+
+  // --- the ledger, reachable from the table itself ---
+  // `input == rendered + ledgered` is printed above; this is the other half of
+  // it. A grid of 14 genes with no way to see the 15th is a plausible wrong
+  // answer to "what did I submit?".
+  const led = d.ledger || [];
+  $("#table-ledger").innerHTML =
+    `<details id="table-ledger-details">
+       <summary><span class="chev" aria-hidden="true">▾</span>
+         <b>Drop ledger</b> — ${led.length} row(s): every input gene that is not in
+         this grid, and why</summary>
+       <div class="reveal" id="table-ledger-body"></div>
+     </details>`;
+  const body2 = $("#table-ledger-body");
+  if (!led.length) {
+    body2.innerHTML = "<p class='hint'>No gene was dropped, renamed or flagged.</p>";
+  } else {
+    body2.innerHTML =
+      `<table><thead><tr><th>Input</th><th>Status</th><th>Resolved</th>
+       <th>Row</th><th>Reason</th></tr></thead><tbody>` +
+      led.map((e) => `<tr>
+        <td><code>${esc(e.input)}</code></td>
+        <td><span class="pill bad">${esc(e.status)}</span></td>
+        <td>${esc(e.resolved_symbol || "")}${e.ensembl_id
+          ? ` <code>${esc(e.ensembl_id)}</code>` : ""}</td>
+        <td>${esc(e.row ?? "")}</td>
+        <td class="reason">${esc(e.reason)}</td></tr>`).join("") +
+      `</tbody></table>`;
+  }
+}
+
+// v3.8 — the per-column dim filter's control.
+//
+// Puck asked for "a filter, per column, that greys out genes that don't match
+// instead of removing them". Three things about this control are decisions rather
+// than styling, and all three are about not being mistaken for something else:
+//
+//   1. IT IS NOT §3.2's CONTROL. PLAN §3.2's threshold filters live on the
+//      analyse form, run before the figure, REMOVE genes from the plot and name
+//      every one of them in the drop ledger. This runs after the fact over a grid
+//      already on screen and removes nothing. Two mechanisms that look alike and
+//      do different things is its own hazard, so this one is in a different place,
+//      is dropdowns rather than a `ring >= n` textarea, says "is at least" rather
+//      than ">=", and states what it does not do. §3.2 is not rerouted through it.
+//   2. IT IS NOT A SCORE. There is no ranking in this project (PLAN §3). The one
+//      way a filter smuggles one back in is a "matches N of M filters" column, so
+//      there is no such number here, nothing to sort it by, and the server does
+//      not compute it either.
+//   3. THE COLUMN LIST IS THE SERVER'S. `dimmable` excludes `completeness`:
+//      dimming by k would de-emphasise by how much anybody has studied a gene
+//      (PLAN §2, COUNCIL M3), and doing it with opacity rather than with removal
+//      does not make it a different act.
+function renderDimBar(d) {
+  const dimmable = d.rings.filter((r) => r.dimmable);
+  const active = d.dim || [];
+  // The control keeps the column, comparison and number it was last used with:
+  // the grid reloads on every change, and a select that snapped back to column 1
+  // each time would make setting a second bound on the same column a hunt.
+  const draft = TABLE.dimDraft || { ring: "", op: "ge", threshold: "" };
+  if (!dimmable.length) {
+    $("#table-dim").innerHTML =
+      `<p class="hint">No column in this run can carry a dim filter.</p>`;
+    return;
+  }
+  $("#table-dim").innerHTML =
+    `<div class="dimbar">
+       <span class="lbl">Dim rows where</span>
+       <select id="dim-col">${dimmable.map((r) =>
+        `<option value="${esc(r.key)}"${r.key === draft.ring ? " selected" : ""}>${
+          esc(r.n)}. ${esc(r.column_label)}${
+          r.units ? " (" + esc(r.units) + ")" : ""}</option>`).join("")}</select>
+       <select id="dim-op">
+         <option value="ge"${draft.op === "ge" ? " selected" : ""}>is at least</option>
+         <option value="le"${draft.op === "le" ? " selected" : ""}>is at most</option>
+       </select>
+       <input id="dim-thr" class="thr" inputmode="decimal" placeholder="number"
+              value="${esc(draft.threshold)}">
+       <button id="dim-add" class="ghost">dim the rest</button>` +
+    active.map((f, i) => `<span class="chip">${esc(f.phrase)}
+         <button class="dimrm" data-i="${i}" title="remove this dim filter">✕</button>
+       </span>`).join("") +
+    (active.length
+      ? `<button id="dim-clear" class="ghost">show all rows at full strength</button>`
+      : "") +
+    `</div>
+     <p class="hint"><b>This dims; it does not filter.</b> Every gene stays on the
+       grid, in the same order, with the same cells — nothing is recomputed, no run,
+       figure, artefact, <code>values.csv</code> or manifest is touched, and
+       <b>nothing is added to the drop ledger</b>: the ledger is for genes that are
+       genuinely not on the figure. The bound is compared against the column's own
+       raw value in <code>values.csv</code>, in the units its label states, never a
+       rank or a colour position. A gene with <b>no value</b> on the column you dim
+       on is neither a match nor an exclusion and gets its own treatment — no value
+       is not a low value. To actually remove genes, use
+       <b>threshold filters</b> on the analyse form, which ledger what they drop.</p>`;
+
+  $("#dim-add").onclick = () => {
+    const thr = $("#dim-thr").value.trim();
+    if (thr === "") {
+      $("#table-status").className = "err";
+      $("#table-status").textContent =
+        "A dim filter needs a number to compare against.";
+      return;
+    }
+    const ring = $("#dim-col").value, op = $("#dim-op").value;
+    // One filter per column per comparison, the same rule §3.2 has, and for the
+    // same reason: two bounds on one column and the count line cannot say what it
+    // did. Re-adding a column replaces its bound rather than stacking one.
+    TABLE.dimDraft = { ring, op, threshold: thr };
+    const at = TABLE.dim.findIndex((f) => f.ring === ring && f.op === op);
+    if (at >= 0) TABLE.dim[at] = { ring, op, threshold: thr };
+    else TABLE.dim.push({ ring, op, threshold: thr });
+    loadTable(TABLE.run_id);
+  };
+  $("#table-dim").querySelectorAll("button.dimrm").forEach((b) => {
+    b.onclick = () => { TABLE.dim.splice(+b.dataset.i, 1); loadTable(TABLE.run_id); };
+  });
+  const clear = $("#dim-clear");
+  if (clear) clear.onclick = () => { TABLE.dim = []; loadTable(TABLE.run_id); };
+}
+
+// v3.8 item 4. The count line, directly above the grid.
+//
+// A filtered grid that does not say it is filtered is a misleading artefact — the
+// same principle as the manifest making a screenshot of the figure
+// self-describing. So a screenshot of this table states the three counts, names
+// the bound, and says that all of the genes are still on it.
+//
+// The sentence is `dim.count_line`'s, not this function's: the numbers and the
+// words that describe them come from the same place, so they cannot disagree. The
+// swatches beside it are built out of the same CSS the rows use.
+function renderDimCounts(d) {
+  const active = d.dim || [];
+  if (!active.length) {
+    // No filter, no line. A count line reading "14 shown · 0 dimmed" over an
+    // unfiltered grid would tell a reader it had been filtered.
+    $("#table-dim-counts").innerHTML = "";
+    return;
+  }
+  const c = d.dim_counts || {};
+  // The counts, then the server's sentence WITHOUT the counts in it. `title` is
+  // the whole thing as one string — the form somebody pastes under a screenshot.
+  $("#table-dim-counts").innerHTML =
+    `<div class="tally" title="${esc(d.dim_count_line)}">
+       <b>${esc(c.match ?? 0)}</b> shown ·
+       <b>${esc(c.dimmed ?? 0)}</b> dimmed ·
+       <b>${esc(c.unevaluable ?? 0)}</b> cannot be evaluated</div>
+     <p>${esc(d.dim_count_note)}</p>
+     <div class="three">
+       <span class="swat is-match"><i><em></em></i> matches the bound</span>
+       <span class="swat is-dimmed"><i><em></em></i> has a value and misses it —
+         faded, still here</span>
+       <span class="swat is-unevaluable"><i><em></em></i> no value on this column,
+         so the bound cannot be evaluated — full strength</span>
+     </div>
+     <p class="note">Dimming is a view state: the
+       <b>${esc((d.counts || {}).rendered)}</b> genes rendered and the
+       <b>${esc((d.counts || {}).dropped)}</b> in the drop ledger are the same
+       numbers as with no dim filter set. A dimmed gene is a rendered gene.</p>`;
+}
+
+// v3.7 item 1. "Where these N columns come from" — the citation strip under the
+// grid.
+//
+// One row per column, numbered to match the column numbers, each reading
+// `n. <full ring label> — <units> — <name · domain>` with `name · domain` as the
+// anchor text. Never a bare underline: `SourceDoc.domain` exists because an
+// underline dies in an exported PNG, and this strip is screenshotted.
+//
+// Everything drawn here is authored by `citations.py` and arrives on the
+// response. The page does not decide which URL a column gets, whether a column
+// has one, or what to say when it does not — a second opinion about provenance is
+// the thing this whole item exists to remove. In particular the FAILED rows point
+// at `failed_target`, which `citations.cell_provenance` returns for exactly that
+// state and which is deliberately not the source link (item 3).
+function renderTableSources(d) {
+  const rows = d.citations || [];
+  const withFailures = rows.filter((r) => r.failed_target);
+  // Open, not closed. The strip IS the fix for "all ~250 historical runs are
+  // viewable with no citation anywhere in the session", and a citation behind a
+  // triangle is most of that finding again. It is a `<details>` so a reader who
+  // has read it once can put it away, which is the other half of what was asked.
+  $("#table-sources").innerHTML =
+    `<details id="table-sources-details" class="sources" open>
+       <summary><span class="chev" aria-hidden="true">▾</span>
+         <b>Where these ${rows.length} columns come from</b> —
+         ${rows.filter((r) => r.linked).length} with a source link,
+         ${rows.filter((r) => !r.linked).length} without and why${withFailures.length
+           ? `, ${withFailures.length} with a FAILED cell` : ""}</summary>
+       <div class="reveal">
+         <p class="hint">${esc(d.citation_note || "")}</p>
+         <ol class="srclist">` +
+    // `n. <full ring label> — <units> — <name · domain>`, and nothing else on the
+    // line. A linked row's `reason` — why THAT page and not the source's
+    // homepage — rides on the anchor's title instead of under it: twelve extra
+    // sentences put the strip at 548 px against a 240 px budget, and the one
+    // reader who wants them is hovering the link anyway. An UNLINKED row keeps
+    // its reason on screen, because there nothing else says why the row is short.
+    rows.map((r) => `<li value="${r.n}">
+        <span class="lbl">${esc(r.label)}</span>
+        ${/* A retired ring has no units in this build, and the separator these
+              spans carry would print them as "— —". Omitted, not dashed. */
+          r.units ? `<span class="un">${esc(r.units)}</span>` : ""}
+        ${r.linked
+          ? `<a href="${esc(r.url)}" target="_blank" rel="noopener"
+               title="${esc(r.reason)}">${esc(r.anchor_text)}</a>`
+          : `<span class="nolink">no source link — ${esc(r.reason)}</span>`}
+        ${r.recorded_drift ? `<span class="why warnish">${esc(r.recorded_drift)}</span>` : ""}
+        ${r.failed_target
+          ? `<span class="failnote"><b>${r.failed_genes.length} FAILED cell(s)</b>
+              on this column — ${esc(r.failed_genes.join(", "))} —
+              <b>not answered by the link above.</b> ${esc(r.failed_target.why)}
+              <a href="${esc(r.failed_target.url)}" target="_blank" rel="noopener">${
+                esc(r.failed_target.text)}</a></span>`
+          : ""}
+      </li>`).join("") +
+        `</ol>
+       </div>
+     </details>`;
+}
+
+// One cell. The four states are four different things on screen and the three
+// that are not measurements carry a word as well as a pattern, so the table is
+// readable in greyscale, in a screenshot, and by a reader who cannot tell the
+// hatches apart. A `no_data` cell is never blank and never 0.
+function cellHtml(c) {
+  if (!c) {
+    // `table.load` refuses a non-rectangular pivot, so this is unreachable —
+    // and if it ever is reached it says so rather than drawing an empty box.
+    return `<td class="st-missing">NO CELL</td>`;
+  }
+  if (c.state === "value") {
+    return `<td class="st-value" style="background:${esc(c.fill)};color:${
+      inkOn(c.fill)}" title="${esc(c.detail)}">${esc(num(c.value))}</td>`;
+  }
+  // v3.7 item 3. A `failed` cell's hover says where to look, and where not to.
+  // The column's source link answers `no_data` — "is this gene really absent
+  // upstream?" is checked at the source — and must not be read as answering this:
+  // the call did not come back, so a working doc page would leave a reader
+  // concluding the gene has no value. The cell's own `detail` is the record, and
+  // the citation strip's FAILED row names the gene and links manifest.json.
+  const lead = c.state === "failed"
+    ? "call FAILED — not absence, and NOT answered by this column's source link. "
+      + "The record is this run's own: "
+    : "";
+  return `<td class="st-${esc(c.state)}" title="${esc(lead + c.detail)}">${
+    esc(STATE_WORD[c.state] || c.state)}</td>`;
+}
+
 function triageHtml(t) {
   if (t.error) return `<div class="note warn">Triage failed: ${esc(t.error)}</div>`;
   return `<div class="note warn">
@@ -817,4 +1419,14 @@ function triageHtml(t) {
       · quote verified in abstract: ${t.quote_verified ? "yes" : "NO — discarded"}</p>`;
 }
 
-init();
+// v4.0. The app boots itself; the offline export does not.
+//
+// `init()` fetches `/api/regions` and `/api/orderings` and wires the analyse form.
+// The export inlines THIS FILE VERBATIM so that its grid is drawn by the app's own
+// `renderTable` rather than by a copy of it -- that is the whole point of the
+// export being trustworthy -- and it must make zero network requests when Puck
+// opens it from `file://` on a machine with no server. So the one app-only
+// statement in this file is the one that is guarded, and the export sets the flag
+// before the script runs. Nothing else here has a top-level side effect;
+// `test_export.py::test_the_export_neutralises_only_the_bootstrap` holds that.
+if (!(typeof window !== "undefined" && window.TARGETRING_OFFLINE_EXPORT)) init();

@@ -22,7 +22,7 @@ them and neither was ever part of the ranking:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Sequence
+from typing import Any, Callable, Sequence
 
 from .states import Cell
 
@@ -152,6 +152,195 @@ def order_for_figure(
     return valued + missing
 
 
+# --------------------------------------------------------------------------
+# v3.6. Multi-key sort, for the table view.
+#
+# The table is a second rendering of a run the circle was already drawn from, so
+# "sorted by logFC" must mean exactly one thing. Everything below is built out of
+# `order_for_figure`'s own rule rather than beside it, and
+# `test_table.py::TestTheTableAndTheCircleCannotDisagree` holds the single-key
+# case to equality with it.
+#
+# Lexicographic and nothing more (PLAN §3): keys are applied in turn, each key is
+# one ring's own number, and no two keys are ever combined into a third number.
+# There is no ranking in this project and a multi-key sort must not become one by
+# accident -- see `RETIRED_CLAIM_WORDS` and COUNCIL V2/V10.
+
+
+@dataclass(frozen=True)
+class SortKey:
+    """One key of a lexicographic sort.
+
+    `ordering` is a value from `/api/orderings` -- `submitted`, `alphabetical` or
+    `ring:<key>` -- so a control can never offer the table a sort the figure
+    could not honour.
+
+    `reverse` flips the *values*. It deliberately does NOT move the missing
+    block: a gene with no value on this key is not the best one either, and
+    letting a reverse toggle float it to the top would be "missing is low"
+    arriving through the other door.
+    """
+
+    ordering: str
+    reverse: bool = False
+
+
+def sort_key_and_reverse(
+    spec: SortKey,
+    cells_by_ring: dict[str, dict[str, Cell]],
+    position: dict[str, int],
+) -> tuple[Callable[[str], Any], bool]:
+    """One key of the sort, as `(key function, reverse)` — `sorted`'s two arguments.
+
+    Split out of `_sorted_by_one` in v4.0 so that the **offline HTML export** can
+    ask this build what a gene's position on a key IS, rather than working it out
+    for itself. The export cannot call Python when Puck opens it from `file://`,
+    so its JavaScript has to do the final compare; what it must not do is decide
+    which way `tractable` runs, or that a `no_data` cell sorts last rather than
+    lowest. Those are decisions, they are made here, and the export carries the
+    numbers this function produced (`export.sort_grades`).
+
+    `_sorted_by_one` is now `sorted(genes, *this)`, so there is exactly one
+    definition of every key in the build and the export is grading against it.
+    """
+    if spec.ordering == SUBMITTED:
+        return (lambda g: position[g], spec.reverse)
+    if spec.ordering == ALPHABETICAL:
+        return (lambda g: g, spec.reverse)
+    ring = is_ring_ordering(spec.ordering)
+    cells = cells_by_ring.get(ring or "", {})
+    sign = RING_SIGN.get(ring or "", +1)
+    # Default is best first, which is descending on a ring whose sign is
+    # desirability; `reverse` asks for worst first.
+    direction = +1 if spec.reverse else -1
+
+    def key(g: str) -> tuple[int, float]:
+        c = cells.get(g)
+        if c is None or c.state != "value":
+            # 1 sorts after 0 whichever way the values are running, so the
+            # unmeasured genes are last in both directions. The second element
+            # is a constant: a missing cell contributes no position at all.
+            return (1, 0.0)
+        return (0, direction * sign * float(c.value))
+
+    # The direction is already inside the key, so this pass never reverses: a
+    # `reverse=True` here would also reverse the missing block to the top.
+    return (key, False)
+
+
+def _sorted_by_one(genes: list[str], cells_by_ring: dict[str, dict[str, Cell]],
+                   spec: SortKey, position: dict[str, int]) -> list[str]:
+    """One pass of the lexicographic sort. Stable, so ties keep the order they
+    arrived in -- which is what makes applying the keys right-to-left equal to
+    sorting on the tuple of them."""
+    key, reverse = sort_key_and_reverse(spec, cells_by_ring, position)
+    return sorted(genes, key=key, reverse=reverse)
+
+
+def order_by_keys(
+    submitted: Sequence[str],
+    cells_by_ring: dict[str, dict[str, Cell]],
+    keys: Sequence[SortKey],
+) -> list[str]:
+    """Lexicographic multi-key order. With one key this is `order_for_figure`.
+
+    Applied right-to-left over a stable sort, which is the same answer as
+    sorting on the tuple `(k1, k2, ...)` and keeps each key's own missing rule
+    intact at its own level. With no keys at all it is the order it was given.
+    """
+    genes = list(submitted)
+    position = {g: i for i, g in enumerate(genes)}
+    for spec in reversed(list(keys)):
+        genes = _sorted_by_one(genes, cells_by_ring, spec, position)
+    return genes
+
+
+def missing_on(genes: Sequence[str], cells_by_ring: dict[str, dict[str, Cell]],
+               ordering: str) -> list[str]:
+    """The genes that cannot be placed by this key, in the order given.
+
+    They are a block the table draws and names, not a tail a reader has to
+    notice. `submitted` and `alphabetical` can place every gene, so the block is
+    empty for both.
+    """
+    ring = is_ring_ordering(ordering)
+    if ring is None:
+        return []
+    cells = cells_by_ring.get(ring, {})
+    return [g for g in genes
+            if (c := cells.get(g)) is None or c.state != "value"]
+
+
+# The sentence above the table, in its four pieces. Constants rather than literals
+# inside `sort_label` because the **offline export** assembles the same sentence in
+# JavaScript from the same strings: its reader changes the sort with no server to
+# ask, and a table whose row order is stated in words the app does not use is two
+# claims about one order. The export carries these four and one `sort_phrase` per
+# key it offers; nothing about the wording is written twice.
+SORT_LABEL_UNSORTED = "row order: the order this run drew the spokes in"
+SORT_LABEL_PREFIX = "row order: "
+SORT_LABEL_JOIN = ", then "
+SORT_LABEL_TAIL = (
+    ". Lexicographic — the keys are applied in turn and never combined. "
+    "Genes with no value on a key are last on it, never lowest.")
+
+
+def sort_phrase(spec: SortKey, ring_labels: dict[str, str] | None = None) -> str:
+    """What ONE key of the sort is called, in the sentence above the table."""
+    labels = ring_labels or {}
+    if spec.ordering == SUBMITTED:
+        return "your submitted order" + (", reversed" if spec.reverse else "")
+    if spec.ordering == ALPHABETICAL:
+        return "gene symbol, Z–A" if spec.reverse else "gene symbol, A–Z"
+    ring = is_ring_ordering(spec.ordering) or "?"
+    return f"'{labels.get(ring, ring)}' {'worst' if spec.reverse else 'best'} first"
+
+
+def sort_label(keys: Sequence[SortKey], ring_labels: dict[str, str] | None = None) -> str:
+    """The sentence shown above the table. Same job as `ordering_label` on the
+    figure: an order that carries meaning and is not stated is an unlabelled
+    scale."""
+    if not keys:
+        return SORT_LABEL_UNSORTED
+    return (SORT_LABEL_PREFIX
+            + SORT_LABEL_JOIN.join(sort_phrase(s, ring_labels) for s in keys)
+            + SORT_LABEL_TAIL)
+
+
+def parse_sort_keys(spec: str | Sequence[str] | None,
+                    cells_by_ring: dict[str, dict[str, Cell]]) -> list[SortKey]:
+    """`ring:logfc:desc,tractable...` -> keys, validated against this run's rings.
+
+    Each token is `<ordering>` or `<ordering>:desc` / `:asc`, and the ordering is
+    put through `normalise_ordering` -- the same gate the figure uses -- so a key
+    this run cannot honour is rejected rather than quietly dropped.
+    """
+    if spec is None:
+        tokens: list[str] = []
+    elif isinstance(spec, str):
+        tokens = [t.strip() for t in spec.split(",") if t.strip()]
+    else:
+        tokens = [str(t).strip() for t in spec if str(t).strip()]
+
+    keys: list[SortKey] = []
+    seen: set[str] = set()
+    for tok in tokens:
+        reverse = False
+        if tok.endswith(":asc"):
+            tok, reverse = tok[:-4], True
+        elif tok.endswith(":desc"):
+            tok = tok[:-5]
+        ordering = normalise_ordering(tok, cells_by_ring)
+        if ordering in seen:
+            raise ValueError(
+                f"{ordering!r} is used twice as a sort key. A key that has already "
+                f"decided the order cannot decide it again."
+            )
+        seen.add(ordering)
+        keys.append(SortKey(ordering, reverse))
+    return keys
+
+
 def ordering_label(ordering: str, ring_label: str | None = None) -> str:
     """The sentence printed on the figure. A spoke order that carries meaning and
     is not stated is the same defect as an unlabelled colour scale."""
@@ -169,4 +358,7 @@ __all__ = [
     "GeneStats", "gene_stats", "order_for_figure", "ordering_label",
     "normalise_ordering", "is_ring_ordering", "EXTERNAL_RINGS", "EXTERNAL_RING_COUNT",
     "RING_SIGN", "SUBMITTED", "ALPHABETICAL", "RING_PREFIX",
+    "SortKey", "order_by_keys", "parse_sort_keys", "missing_on", "sort_label",
+    "sort_key_and_reverse", "sort_phrase", "SORT_LABEL_UNSORTED",
+    "SORT_LABEL_PREFIX", "SORT_LABEL_JOIN", "SORT_LABEL_TAIL",
 ]

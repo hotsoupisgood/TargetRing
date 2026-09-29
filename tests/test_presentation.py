@@ -819,12 +819,21 @@ class TestV28SourceLinksInTheLegend:
 
     def test_every_external_ring_has_a_citation_and_the_others_say_why(self) -> None:
         """Nine external rings, three of Puck's own or derived. "No link" is a
-        stated decision, not a gap a reader has to notice."""
+        stated decision, not a gap a reader has to notice.
+
+        This was an equality — `linked == set(RING_SOURCE_DOCS)` — and v3.9 makes
+        it a containment, deliberately. The registry now covers every ring key any
+        run **on disk** ever drew, not only the twelve this build draws, because a
+        reader who opens a four-day-old run is owed its provenance too. The
+        direction that matters here is that every ring this build draws resolves;
+        the other direction is asserted over `runs/` in `test_provenance.py`.
+        """
         from targetring.figure import RING_SPECS
         from targetring import sources
 
         linked = {s.key for s in RING_SPECS if s.source_doc}
-        assert linked == set(sources.RING_SOURCE_DOCS)
+        assert linked <= set(sources.RING_SOURCE_DOCS)
+        assert not sources.unresolved_rings(s.key for s in RING_SPECS)
         for spec in RING_SPECS:
             if spec.key in linked:
                 continue
@@ -1268,13 +1277,16 @@ class TestV30TheLegendAsItsOwnImage:
     def test_it_carries_the_caveats_and_the_source_links(self, tmp_path: Path) -> None:
         """Everything a reader needs to decode a cell, and nothing that needs
         the circle to make sense."""
-        from targetring import sources
+        from targetring.figure import RING_SPECS
         svg = self._legend(tmp_path)
         t, body = self._text(svg), svg.read_text()
         assert "Mouse-phenotype ring" in t, "the caveat block is not on the legend"
         assert "no data — never measured here" in t, "the cell states are not on it"
         hrefs = set(re.findall(r'<a xlink:href="([^"]+)"', body))
-        assert hrefs == {d.url for d in sources.RING_SOURCE_DOCS.values()}
+        # The rings THIS legend draws, which v3.9 makes a subset of the registry:
+        # the registry also covers rings only older runs on disk drew, and the
+        # legend must not link to a ring it has no scale for.
+        assert hrefs == {s.source_doc.url for s in RING_SPECS if s.source_doc}
 
     def test_the_cell_state_box_does_not_print_over_the_scales(
             self, tmp_path: Path) -> None:

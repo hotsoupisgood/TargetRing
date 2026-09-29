@@ -63,6 +63,14 @@ class Manifest:
     rendered_count: int
     ledger_count: int
     gene_order: list[str] = field(default_factory=list)
+    # v3.6. The order his table arrived in, which the figure has always used as
+    # the tie-break and as the order of the no-value block (PLAN §3.1) but never
+    # wrote down. `figure_claims["submitted_order"]` carried it to invariant 7
+    # and no further, so it did not survive the run: a `ring:` -ordered figure's
+    # artefacts recorded the order it was DRAWN in and nothing else, and the
+    # table view could not reproduce the documented tie-break from them. Runs
+    # made before this stay readable — `table.load` says which list it is using.
+    submitted_order: list[str] = field(default_factory=list)
     sources: dict[str, Any] = field(default_factory=dict)
     schema_versions: dict[str, str] = field(default_factory=dict)
     contracts: list[dict[str, Any]] = field(default_factory=list)
@@ -149,6 +157,7 @@ def build(
     ledger_count: int,
     gene_order: list[str],
     invariants: InvariantReport,
+    submitted_order: list[str] | None = None,
     contracts: list[dict[str, Any]],
     ledger: list[dict[str, Any]],
     llm: dict[str, Any],
@@ -171,6 +180,8 @@ def build(
         rendered_count=rendered_count,
         ledger_count=ledger_count,
         gene_order=gene_order,
+        submitted_order=list(submitted_order if submitted_order is not None
+                             else gene_order),
         sources={**SOURCE_URLS, **(sources or {})},
         schema_versions=dict(config.SCHEMA_VERSIONS),
         contracts=contracts,

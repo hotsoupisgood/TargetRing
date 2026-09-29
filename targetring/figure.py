@@ -204,6 +204,30 @@ class RingSpec:
       wedge_tooltip  whether that short label needs a hover title carrying the
                   ring's full name, units, domain and source.
 
+    v3.7 adds one more, for the table view's column head:
+
+      table_label  the name at the top of this ring's COLUMN. A third written
+                  name rather than a reuse of either of the other two, and the
+                  reason is what v3.7 was asked to fix: the table was headed
+                  with `short_label` and the scale column with `label`, so ten
+                  of twelve rings were called different things on two surfaces
+                  describing the same band -- "Region TPM ÷ median" in the grid
+                  against "Regional specificity" in the legend -- and the ring
+                  number was the only bridge between them.
+
+                  The wedge label cannot be that name: it is written to stand
+                  alone at ~44 px inside the 12 o'clock gap, which is a
+                  different budget and produced "TDL — knowledge" for a ring the
+                  legend calls "Target development level". So `table_label` is
+                  written against one rule instead, and the rule is asserted
+                  (`TestTheTableAndTheLegendAgreeOnEveryRingName`): it is the
+                  full `label`'s own words, in the full label's order, starting
+                  on the same word. Empty means "use the full label", which five
+                  of the twelve do. Nothing is truncated to arrive at it --
+                  QA-v2-retest §5 is the record of what truncating a ring label
+                  does -- and the full label is on the same surface, in the
+                  citation strip under the grid and in the column's `title`.
+
                   Puck's rule, the right way round: *"if you can get the point
                   across no tool tip."* The default is False and a True here is
                   an admission that the short label is incomplete. What a
@@ -229,12 +253,23 @@ class RingSpec:
     short_source: str = ""
     short_label: str = ""
     wedge_tooltip: bool = False
+    table_label: str = ""
 
     @property
     def wedge_label(self) -> str:
         """What the wedge draws. Falls back to the full label, and then the fit
         assertion is what refuses the render -- never a silent truncation."""
         return self.short_label or self.label
+
+    @property
+    def column_label(self) -> str:
+        """The name at the top of this ring's column in the table view.
+
+        Falls back to the full `label`, which is what the scale column prints, so
+        an unwritten `table_label` makes the two surfaces agree *exactly* rather
+        than making the column head a truncation of a name.
+        """
+        return self.table_label or self.label
 
     @property
     def source_doc(self):
@@ -405,7 +440,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(0.0, 1.0), transform="fixed 0–1, same colour in every run",
              short_source="Open Targets",
              short_label="Tractability (suggested)",
-             wedge_tooltip=True),
+             wedge_tooltip=True,
+             table_label="Tractability"),
     # Binary with absence: an explicit 0.0 is a measurement ("looked, no probe")
     # and a missing key is no_data. Two values and nothing between them, so two
     # swatches -- a 256-step ramp here would offer a reader positions that do
@@ -417,7 +453,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(0.0, 1.0), levels=2,
              transform="binary; absent key is hatched, never 0",
              short_source="Open Targets",
-             short_label="Chemical probe (yes/no)"),
+             short_label="Chemical probe (yes/no)",
+             table_label="Chemical probe available"),
     # Signed with a stated bad direction, which makes it diverging and NOT the
     # same kind of diverging as logFC: here one arm genuinely is the bad one, so
     # it gets the warm arm and says so. The caveat stays on the label because
@@ -428,7 +465,12 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(-1.0, 1.0), scale="diverging",
              transform="fixed −1…+1, diverging at 0; amber arm is the bad one",
              short_source="Open Targets",
-             short_label="Safety flags ≠ safe"),
+             short_label="Safety flags ≠ safe",
+             # The caveat travels into the column head rather than being dropped
+             # to shorten it. `SAFETY_RING_CAVEAT` is checked onto both renders
+             # for the same reason: "Safety flags & constraint" on its own reads
+             # as a safety score, which is the one thing this ring is not.
+             table_label="Safety flags — NOT evidence of safety"),
     # V6: a ratio over five orders of magnitude, so log10. Deliberately NOT a
     # fixed domain: the ratio is unbounded above (TTR reaches 5,204x in liver)
     # and a fixed domain would clip TTR, APOB and SERPINA1 to the same top
@@ -452,7 +494,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              transform="6 discrete stages, fixed; no value between two stages",
              short_source="Open Targets",
              short_label="Furthest trial phase",
-             wedge_tooltip=True),
+             wedge_tooltip=True,
+             table_label="Pipeline: furthest phase"),
     # Puck's hard condition from v2.2 item 2 stands: the ring must state which
     # source it counted, on the figure. v2.4 changes the answer -- the per-drug
     # ClinicalTrials.gov hop is retired and these rows come from Open Targets'
@@ -469,7 +512,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              transform="categorical — not a ramp, and not comparable to one",
              short_source="Open Targets",
              short_label="Trial activity now",
-             wedge_tooltip=True),
+             wedge_tooltip=True,
+             table_label="Pipeline: current activity"),
     # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred -- four
     # named levels, so four swatches.
     RingSpec("tdl", "Target development level (Pharos TDL — knowledge, not a pocket)",
@@ -479,7 +523,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              transform="4 discrete levels, fixed",
              short_source="Pharos",
              short_label="TDL — knowledge",
-             wedge_tooltip=True),
+             wedge_tooltip=True,
+             table_label="Target development level"),
     # V9: reduced to three states, so there is no count left to scale. Two of
     # the three are values (0 phenotyped-and-normal, 1 phenotyped-and-abnormal)
     # and the third is `no_data`, hatched -- so the ring draws two swatches.
@@ -495,7 +540,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              domain=(0.0, 1.0), levels=2,
              transform="binary; 'not phenotyped' is hatched, never 0",
              short_source="Open Targets",
-             short_label="Mouse phenotype"),
+             short_label="Mouse phenotype",
+             table_label="Mouse phenotype lead"),
     # The adapter already stores log10(1 + n), so the ring's *value* is the
     # transform (V6's own prescription, applied upstream in v1). The scale prints
     # the ticks as raw PubTator3 records, which is the number a reader has.
@@ -519,7 +565,8 @@ RING_SPECS: tuple[RingSpec, ...] = (
              transform="a completeness gauge: it orders nothing and selects "
                        "nothing, and is drawn muted to say so",
              short_source="derived",
-             short_label=f"k of {EXTERNAL_RING_COUNT} rings"),
+             short_label=f"k of {EXTERNAL_RING_COUNT} rings",
+             table_label="k — external rings"),
 )
 
 
@@ -1505,7 +1552,11 @@ def render(
     assert_greyscale_disjoint()
     assert_ramp_luminance_is_monotone()
     # v2.8. Before a link is drawn, not after a reader follows one.
-    SOURCES.assert_registry_is_coherent()
+    # v3.9: and with the keys of the rings being drawn, so a ring with neither a
+    # citation nor a stated reason stops the render instead of reaching the
+    # manifest as `"unstated"` — the default that kept `druggability` invisible
+    # across 991 cells and 69 runs.
+    SOURCES.assert_registry_is_coherent([s.key for s in RING_SPECS])
     lay = layout if isinstance(layout, Layout) else LAYOUTS[layout]
     filter_notes = list(filter_notes)
     genes = list(genes)
@@ -2255,6 +2306,11 @@ def scale_rows(cells_by_ring) -> list[dict]:
             "key": spec.key,
             "label": spec.label,
             "short_label": spec.wedge_label,
+            # v3.7. The name the table's column head uses, carried here so the
+            # one place in the decode panel that needs a ring's name short --
+            # ring 8's categorical group heading -- names it the way the grid
+            # does instead of the way the wedge does.
+            "column_label": spec.column_label,
             "units": spec.units,
             "transform": spec.transform or "",
             "stepped": stepped,

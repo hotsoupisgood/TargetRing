@@ -19,6 +19,12 @@ other way:
    `hasPocket` and `hasSmallMoleculeBinder` are defined and scored — the three
    keys the ring actually averages.
 
+   The corollary, and `druggability` is the case that forced it: where a ring
+   reads keys documented under *two* sections, the citation is the page that
+   carries both, not the anchor that carries most of them. An anchor covering
+   three of four keys is the plausible wrong citation this module exists to
+   refuse.
+
 2. **Where the ring's own field has no documentation page, the link says so by
    going to the page that names the upstream dataset** rather than to a
    plausible-looking neighbour. `rodent` reads OT `mousePhenotypes`; Open
@@ -32,8 +38,20 @@ other way:
 
 3. **A ring whose number is Puck's own, or derived here, has no entry.** `logfc`
    and `neg_log10_padj` come from the submitted table and `completeness` is
-   counted by this code. `UNLINKED_RINGS` records why, so "no link" is a stated
-   decision in the manifest rather than an omission a reader has to notice.
+   counted by this code. `UNLINKED_RINGS` records **where the number came from**
+   — not that there is nothing to link to. v3.9: those three entries used to read
+   as an absence ("there is nothing to link to"), which is the same fact told as
+   a gap; a reader is owed the provenance, and the provenance exists, it just is
+   not a URL. No URL is invented for any of them, because a fabricated citation
+   is the exact failure the rest of this module is built to prevent.
+
+4. **The registry covers every ring key any run on disk ever drew, not the rings
+   this build happens to draw.** `druggability` was retired in v2.3 and 69 runs
+   under `runs/` still draw it — 991 cells. It had no entry, so it resolved
+   through a `"unstated"` default nobody ever saw. That default is gone:
+   `assert_every_ring_resolves` makes an unaccounted ring a raised error at
+   render time, and `as_manifest_rows` raises rather than writing a manifest row
+   that says a number's provenance is unstated.
 
 What is deliberately NOT here: gene-specific deep links. Those belong in the
 click-drawer, per gene, and are already there (PubTator3 and Europe PMC queries
@@ -48,6 +66,7 @@ real agent would report a working link as dead.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 
 from . import config
@@ -76,6 +95,15 @@ class SourceDoc:
     version: str
     reads: str
     why: str
+    # v3.9. Two rings may honestly share a source name, a domain and even a page,
+    # and then `name · domain` is the same string for both — which is how a
+    # reader ends up unable to tell one ring's citation from another's. The
+    # qualifier is what goes between them when the source alone does not identify
+    # the measure: `druggability` and `tractable` are both Open Targets
+    # prioritisation keys on one docs page, and a reader must not read a
+    # `druggability` cell as a `tractable` cell. Empty for every ring whose
+    # source name already says which measure it is, which is eight of nine.
+    name_qualifier: str = ""
 
     @property
     def legend_text(self) -> str:
@@ -83,8 +111,12 @@ class SourceDoc:
 
         The source name first because it is the claim; the domain second
         because it is the only part that survives into a PNG as an instruction.
+        A `name_qualifier` sits between them, inside the claim, because it
+        narrows *what was measured* rather than where to type.
         """
-        return f"{self.name} · {self.domain}"
+        qualified = f"{self.name} ({self.name_qualifier})" if self.name_qualifier \
+            else self.name
+        return f"{qualified} · {self.domain}"
 
 
 OT_PRIORITISATION = "https://platform-docs.opentargets.org/web-interface/target-prioritisation"
@@ -103,6 +135,37 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
         version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
         reads="target.prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder",
         why="defines and scores the three keys this ring averages",
+    ),
+    # v3.9. The retired FOUR-key form of the ring above, and the reason it is a
+    # separate entry rather than an alias for it: 69 runs under `runs/` draw it
+    # (991 cells), it reads one key `tractable` does not, and pointing those cells
+    # at `tractable`'s anchor would tell a reader a four-key mean was a three-key
+    # mean. Confirmed against the cells themselves before it was written — every
+    # `druggability` row in `runs/20260924T061611Z-e8d4a4/values.csv` carries
+    # `source` = "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder,
+    # hasHighQualityChemicalProbes" and a `detail` reading "mean of n/4 keys".
+    #
+    # The URL is the prioritisation page WITHOUT an anchor, and that is the point:
+    # three of its keys are defined under `#tractability-section` and the fourth
+    # under `#chemical-probes`, so no anchor documents this ring. The page that
+    # carries both sections does. See rule 1's corollary in the module docstring.
+    "druggability": SourceDoc(
+        name="Open Targets",
+        name_qualifier="retired 4-key Druggability, not Tractability",
+        domain=OT_DOCS_DOMAIN,
+        url=OT_PRIORITISATION,
+        endpoint=config.OPENTARGETS_URL,
+        version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
+        reads=("target.prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, "
+               "hasHighQualityChemicalProbes — the mean of FOUR keys. The successor "
+               "ring `tractable` is the mean of the first THREE; this one is not it"),
+        why=("this ring averaged four prioritisation keys, and the fourth — "
+             "hasHighQualityChemicalProbes — is documented in this page's Chemical "
+             "probes section while the other three are in its Tractability section. "
+             "The page is cited rather than either anchor because either anchor "
+             "alone would document a different key count from the one this ring "
+             "drew. Read a cell here as a 4-key mean: it is NOT the 3-key "
+             "`tractable` ring, and its denominator is 4"),
     ),
     "chemical_probe": SourceDoc(
         name="Open Targets",
@@ -200,14 +263,63 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
     ),
 }
 
-# Stated, not omitted. A reader who sees links on nine rings and none on three
-# is entitled to know whether the other three were forgotten.
+# Stated, not omitted. A reader who sees links on ten rings and none on three is
+# entitled to know whether the other three were forgotten.
+#
+# v3.9: these say where the number CAME FROM, in the positive. They used to read
+# "there is nothing to link to", which answers a question about URLs and leaves
+# the reader's actual question — where did this number come from? — unanswered.
+# Every one of the three has a definite provenance; none of them has a URL, and
+# inventing one would be fabricating a citation.
 UNLINKED_RINGS: dict[str, str] = {
-    "logfc": "your own submitted DE table — there is nothing to link to",
-    "neg_log10_padj": "your own submitted DE table — there is nothing to link to",
-    "completeness": ("derived here by counting rings 3-11; it is a gauge over the "
-                     "other rings' sources, not a source"),
+    "logfc": ("the logFC column of the DE table you submitted — your own "
+              "measurement, read straight off your file and not transformed. The "
+              "run's manifest records which header it was read from "
+              "(`input.columns.logfc`) and `values.csv` carries the value per gene"),
+    "neg_log10_padj": ("the adjusted-p column of the DE table you submitted, drawn "
+                       "as −log10(padj) so that more significant is larger — your "
+                       "own measurement, with that one transform and nothing else. "
+                       "The run's manifest records which header it was read from "
+                       "(`input.columns.padj`) and the cell detail prints the "
+                       "original p back"),
+    "completeness": ("computed here, by counting rings 3-11: k is how many of the "
+                     "nine external rings have a real measurement for this gene. It "
+                     "is arithmetic over the other rings' cells, so its provenance "
+                     "is theirs — no source of its own is read for it"),
 }
+
+
+def unresolved_rings(ring_keys: Iterable[str]) -> list[str]:
+    """The ring keys that have neither a citation nor a stated reason.
+
+    One predicate, so the render-time assertion, the manifest writer and the test
+    that walks `runs/*/values.csv` all agree on what "accounted for" means.
+    """
+    return sorted({k for k in ring_keys
+                   if k not in RING_SOURCE_DOCS and k not in UNLINKED_RINGS})
+
+
+def assert_every_ring_resolves(ring_keys: Iterable[str]) -> None:
+    """v3.9 item 3. A ring nobody accounted for stops the render.
+
+    This is the check that was missing. `as_manifest_rows` used to fall through to
+    the literal string `"unstated"` for an unknown key, and because nothing read
+    that string, `druggability` sat in 991 manifest rows describing its own
+    provenance as unstated for four days without anybody noticing. A default that
+    produces a plausible-looking row for an unaccounted number is the same defect
+    as imputing a missing value: the artefact looks complete and is not.
+
+    Deliberately an exception and not a warning. The alternative is a figure whose
+    manifest cannot say where one of its rings came from, and `AGENTS.md`'s first
+    rule prices that above a crash.
+    """
+    missing = unresolved_rings(ring_keys)
+    if missing:
+        raise AssertionError(
+            f"ring(s) {missing} have neither an entry in RING_SOURCE_DOCS nor a "
+            f"stated reason in UNLINKED_RINGS. Every ring a run draws must resolve "
+            f"to a citation or to a reason there is none — add one, and do not "
+            f"borrow a neighbouring ring's URL to do it.")
 
 
 def as_manifest_rows(ring_keys: list[str]) -> list[dict[str, str]]:
@@ -216,13 +328,17 @@ def as_manifest_rows(ring_keys: list[str]) -> list[dict[str, str]]:
     Built from the same dict the figure draws from, which is the whole point:
     a figure and its manifest cannot disagree about where a number came from,
     because there is one registry and neither of them owns it.
+
+    Raises rather than defaulting. There is no row shape for "we do not know", so
+    there is no row: see `assert_every_ring_resolves`.
     """
+    assert_every_ring_resolves(ring_keys)
     rows = []
     for key in ring_keys:
         doc = RING_SOURCE_DOCS.get(key)
         if doc is None:
             rows.append({"ring": key, "linked": "no",
-                         "reason": UNLINKED_RINGS.get(key, "unstated"),
+                         "reason": UNLINKED_RINGS[key],
                          "legend_text": "", "doc_url": "", "endpoint": "",
                          "version": "", "reads": ""})
             continue
@@ -233,7 +349,7 @@ def as_manifest_rows(ring_keys: list[str]) -> list[dict[str, str]]:
     return rows
 
 
-def assert_registry_is_coherent() -> None:
+def assert_registry_is_coherent(ring_keys: Iterable[str] = ()) -> None:
     """Cheap structural checks, run at import of the figure module.
 
     None of these catch a *wrong* citation — only a checker hitting the network
@@ -241,7 +357,13 @@ def assert_registry_is_coherent() -> None:
     class of edit that silently turns a citation back into a homepage: an http
     URL, a domain printed on the figure that is not the domain the link goes to,
     or a bare origin with no path.
+
+    `ring_keys`, where given, are the rings about to be drawn: every one of them
+    must resolve (v3.9 item 3). Default-empty so a caller that only wants the
+    shape checks still gets them, and so the coverage question is asked by
+    whoever knows which rings are in play.
     """
+    assert_every_ring_resolves(ring_keys)
     for key, doc in RING_SOURCE_DOCS.items():
         if not doc.url.startswith("https://"):
             raise AssertionError(f"{key}: source doc URL is not https: {doc.url}")
@@ -265,7 +387,33 @@ def assert_registry_is_coherent() -> None:
     overlap = set(RING_SOURCE_DOCS) & set(UNLINKED_RINGS)
     if overlap:
         raise AssertionError(f"rings both linked and declared unlinked: {overlap}")
+    # v3.9. Two rings may legitimately share a source, a domain and a docs page —
+    # six of these entries are Open Targets prioritisation keys. What they may not
+    # share is the sentence that says which FIELD was read, because that sentence
+    # is the only thing telling a reader which measure a cell is. `druggability`
+    # and `tractable` are the pair this exists for: four keys and three, one page.
+    by_reads: dict[str, str] = {}
+    for key, doc in RING_SOURCE_DOCS.items():
+        clash = by_reads.setdefault(doc.reads, key)
+        if clash != key:
+            raise AssertionError(
+                f"{key} and {clash} both claim to read {doc.reads!r}. Two rings "
+                f"with one field description are two rings a reader cannot tell "
+                f"apart; if they really read the same field they are one ring.")
+    # And where the URL is identical, the printed claim must not be, or the strip
+    # shows one row twice over with two different numbers behind it.
+    by_url: dict[str, list[str]] = {}
+    for key, doc in RING_SOURCE_DOCS.items():
+        by_url.setdefault(doc.url, []).append(key)
+    for url, keys in by_url.items():
+        texts = {RING_SOURCE_DOCS[k].legend_text for k in keys}
+        if len(keys) > 1 and len(texts) != len(keys):
+            raise AssertionError(
+                f"rings {sorted(keys)} share {url} and print the same "
+                f"{texts!r}; set `name_qualifier` so a reader can tell which "
+                f"measure a cell is")
 
 
 __all__ = ["SourceDoc", "RING_SOURCE_DOCS", "UNLINKED_RINGS",
-           "as_manifest_rows", "assert_registry_is_coherent"]
+           "as_manifest_rows", "assert_registry_is_coherent",
+           "unresolved_rings", "assert_every_ring_resolves"]

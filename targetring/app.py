@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from .adapters.chembl import ChEMBLAdapter, mechanism_summary
 from .adapters.literature import EuropePMCAdapter
 from .cache import Cache
+from . import dim as dim_mod
 from .config import RUNS_DIR
 from .de_input import InputRejected
 from .filters import FilterRejected
@@ -26,6 +27,8 @@ from .figure import (COMPARABILITY_CLAIM, STATE_STYLE, WEB_REFERENCE_PANEL_PX,
 from .http import HardFailure, Http
 from .order import ALPHABETICAL, RING_PREFIX, SUBMITTED
 from .run import DEFAULT_REGION, FILTERABLE_RINGS, available_regions, run_analysis
+from . import table as table_mod
+from . import view as view_mod
 
 app = FastAPI(title="targetring", docs_url="/api/docs")
 
@@ -406,6 +409,71 @@ async def scales(run_id: str) -> JSONResponse:
     })
 
 
+@app.get("/api/runs")
+async def runs(limit: int = 40) -> dict[str, Any]:
+    """The runs on disk, newest first — the table view's way in.
+
+    v3.6. There has never been a deep link to a run: `RUN` is set in-page when an
+    analyse completes and is gone on reload, so the 250 runs already produced
+    were only reachable as files. The table reads from artefacts, so it does not
+    need the run in memory, and this is the list it offers.
+    """
+    return {"runs": table_mod.recent_runs(max(1, min(int(limit), 200)))}
+
+
+@app.get("/api/run/{run_id}/values")
+async def run_values(run_id: str, sort: str = "", dim: str = "") -> JSONResponse:
+    """v3.6. One run's cells as a wide grid — the table view's only data source.
+
+    Registered above `/{filename}` because that route is a catch-all; `values`
+    and `values.csv` are different path segments and both still work.
+
+    Two decisions are load-bearing and neither is a matter of taste:
+
+    * **It is a pivot, never a recomputation.** Every state, number, colour and
+      detail string comes off the row the renderer wrote into `values.csv`. A
+      table that recomputed its cells could disagree with the circle beside it,
+      and a wrong table is `AGENTS.md:17`'s wrong figure in another shape.
+    * **Sorting is `order.py`'s, not the page's.** The keys are put through the
+      same `normalise_ordering` gate the figure uses and ordered by
+      `order_by_keys`, whose single-key case is asserted equal to
+      `order_for_figure`. Sorting in the browser would be a second definition of
+      "sorted by logFC", and the two would eventually differ.
+
+    **v3.8: `dim`.** A per-column dim filter, and the same reasoning puts its
+    decision here rather than in the browser — a threshold evaluated in JS would
+    be a second definition of `regional_specificity >= 5` and it would drift from
+    §3.2's. It is pure view state: it does not touch `order`, `genes`, `cells`,
+    `counts` or `ledger`, so `?dim=` and no `dim` at all return the same bytes
+    and a dimmed gene is still a rendered gene.
+
+    **v4.0.** The payload itself is `view.table_payload`'s, and this route is the
+    HTTP shape around it: the offline export calls the same builder, so the grid in
+    a file Puck carries to another machine is not a second description of the run.
+    All this function still decides is which refusal gets which status code.
+    """
+    try:
+        body = view_mod.table_payload(run_id, sort, dim,
+                                      in_memory=run_id in _runs)
+    except table_mod.TableUnavailable as e:
+        return JSONResponse({"error": "table_unavailable", "message": str(e)},
+                            status_code=404)
+    except ValueError as e:
+        # Same rule as the figure's: an order this run cannot honour is refused,
+        # never quietly swapped for another while the screen names the first.
+        # `DimRejected` is a `ValueError` too, and is caught above this by being
+        # the narrower class.
+        if isinstance(e, dim_mod.DimRejected):
+            # Refused, not approximated. A dim filter the run cannot evaluate must
+            # not be printed as active over a grid it did not touch.
+            return JSONResponse({"error": "dim_rejected", "message": str(e)},
+                                status_code=422)
+        return JSONResponse({"error": "sort_rejected", "message": str(e)},
+                            status_code=422)
+    return JSONResponse(body)
+
+
+
 @app.get("/api/run/{run_id}/{filename}")
 async def artefact(run_id: str, filename: str) -> FileResponse:
     # v3.0 adds three: `figure-web.svg`, which the page inlines and nobody
@@ -420,6 +488,11 @@ async def artefact(run_id: str, filename: str) -> FileResponse:
     }
     if filename not in types:
         raise HTTPException(404, "unknown artefact")
+    # v3.6. `filename` has always been whitelisted; `run_id` was interpolated
+    # into a path unchecked. Local loopback only, so nobody has reached it — but
+    # it is one call and the table view adds two more routes that take a run id.
+    if not table_mod.valid_run_id(run_id):
+        raise HTTPException(404, "unknown run")
     path = RUNS_DIR / run_id / filename
     if not path.exists():
         raise HTTPException(404, f"{filename} not found for run {run_id}")

@@ -350,3 +350,293 @@ ul.tight li { margin: 2px 0; }
   .figure-row { flex-direction: column; }
   #decode { flex: 1 1 auto; width: 100%; }
 }
+
+/* ---------------------------------------------------------------------------
+   v3.6 — the table view.
+
+   A second rendering of a run the circle was already drawn from, so the rules it
+   is held to are the figure's rules, not a stylesheet's:
+
+   * The four cell states are four visibly different things, and the three that
+     are not measurements carry a WORD as well as a pattern. `no_data` is never
+     blank, never white, never 0 (AGENTS.md rule 1). The patterns are the
+     `figure.STATE_STYLE` hatches — `////`, `....`, `xxxx` — in CSS, so a cell
+     means the same thing on both renderings.
+   * A value cell is painted the colour `values.csv` recorded for it, which is
+     the colour the arc was painted. The table is not choosing a palette.
+   * Nothing here is below the 12 px floor UX v3 B12 established. The grid is
+     dense; it is not small.
+   * The grid is NOT capped at `--prose`: fourteen columns is not a paragraph.
+     The prose around it still is.
+--------------------------------------------------------------------------- */
+#table-meta, #table-sort, #table-ledger, .table-pick,
+.dimbar, #table-dim-counts { max-width: var(--prose); }
+
+.table-pick { align-items: center; gap: 8px; margin-bottom: 10px; }
+.table-pick label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+                    color: var(--muted); }
+.table-pick input { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+                    padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; }
+
+#table-status.err { color: var(--bad); font-weight: 600; font-size: 13px; }
+
+/* Same channel as `#banner`: a table that cannot be trusted must not be a
+   slightly different shade of a table that can. */
+.banner-bad {
+  background: var(--bad); color: #fff; padding: 12px 16px; border-radius: 6px;
+  margin: 12px 0; font-weight: 600;
+}
+
+.sortbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 2px; }
+.sortbar .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+                color: var(--muted); }
+/* Each key is on screen and reversible on its own — PLAN §3's lexicographic
+   sort, with nothing hidden behind a combined number. */
+.sortbar .key { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+                background: #eef3f7; border: 1px solid #c3d5e2; border-radius: 999px;
+                padding: 2px 4px 2px 10px; }
+.sortbar .key button { font-size: 12px; padding: 1px 8px; border-radius: 999px;
+                       border: none; background: #fff; color: var(--accent); }
+.sortbar .key button.rm { color: var(--bad); padding: 1px 7px; }
+
+.grid { font-size: 12.5px; }
+.grid th, .grid td { border: 1px solid var(--line); padding: 5px 8px; vertical-align: middle;
+                     white-space: nowrap; }
+.grid thead th { font-size: 12px; text-transform: none; letter-spacing: 0; vertical-align: bottom;
+                 max-width: 118px; white-space: normal; line-height: 1.25; }
+.grid th.sortable { cursor: pointer; }
+.grid th.sortable:hover { background: #e4e9ef; color: var(--ink); }
+.grid th.unsortable { color: #8a909b; }
+.grid .rn { display: inline-block; min-width: 15px; color: #8a909b; font-weight: 400; }
+/* Which key this column is, when there are several. */
+.grid .krank { display: inline-block; margin-left: 4px; background: var(--accent); color: #fff;
+               border-radius: 999px; padding: 0 6px; font-size: 12px; font-weight: 600; }
+
+/* Fourteen columns scroll sideways; the gene must not scroll away from its row. */
+.grid .gene-col { position: sticky; left: 0; background: #fff; z-index: 2; text-align: left;
+                  text-transform: none; letter-spacing: 0; color: var(--ink); }
+.grid thead .gene-col { z-index: 3; background: #f2f3f5; }
+/* A `<span>` when the run was read off disk and the drawer cannot open, a
+   `<button>` when it can — same size and weight either way, so the grid does
+   not reflow between the two. */
+.grid .gene-col .gene { font-size: 13px; font-weight: 600; padding: 0;
+                        display: inline-block; }
+.grid .gene-col button.gene { background: none; border: none; }
+.grid .ens { font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+
+/* k is drawn, and drawn plainly. It is a completeness gauge: it orders nothing
+   and selects nothing, so it gets no colour and no header of its own kind. */
+.grid .kcell { text-align: right; font-variant-numeric: tabular-nums; }
+.grid .kcell .of { color: var(--muted); }
+
+.grid td.st-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* The three non-measurements. Pattern AND word, so the distinction survives
+   greyscale, a screenshot and a reader who cannot separate the hatches. */
+.grid td.st-no_data, .grid td.st-not_applicable, .grid td.st-failed, .grid td.st-missing {
+  text-align: center; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+}
+.grid td.st-no_data {
+  color: #2b2b2b; outline: 1px solid #4d4d4d; outline-offset: -1px;
+  background: repeating-linear-gradient(45deg, #e8e8e8 0 4px, #cfcfcf 4px 8px);
+  text-shadow: 0 0 3px #e8e8e8, 0 0 3px #e8e8e8;
+}
+.grid td.st-not_applicable {
+  color: #5a5a5a; outline: 1px solid #808080; outline-offset: -1px;
+  background: radial-gradient(#b8b8b8 1.1px, #ffffff 1.2px) 0 0 / 6px 6px;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+}
+.grid td.st-failed, .grid td.st-missing {
+  color: #fff; outline: 2px solid #ff0000; outline-offset: -2px;
+  background: repeating-linear-gradient(45deg, #000 0 4px, #2a2a2a 4px 8px);
+}
+
+/* Missing is not low. The genes this key cannot place are below a divider that
+   says so, in both directions, rather than being a tail somebody has to notice. */
+.grid tr.missing-divider td {
+  background: #fdf1e0; color: var(--warn); font-size: 12.5px; white-space: normal;
+  border-top: 2px solid var(--warn); border-bottom: 2px solid var(--warn);
+}
+.grid tr.unplaced .gene-col { background: #fffaf2; }
+
+/* ---------------------------------------------------------------------------
+   v3.8 — the per-column DIM filter. The encoding is the whole difficulty.
+
+   Puck's words were "greys out genes that don't match". The intent is right and
+   the literal encoding cannot be used, because **grey is already taken**:
+   `st-no_data` above is hatched grey and `st-not_applicable` is dotted grey, both
+   mirroring `figure.STATE_STYLE`. If "excluded by your filter" also greyed, grey
+   would mean two incompatible things on one grid — *we have no value here* and
+   *we have a value and you excluded it* — and on a pasted screenshot nobody
+   could tell which. That is the plausible-wrong-output failure in a new place, so
+   the treatments are built out of three channels grey is not using:
+
+     * MATCHES — **no treatment at all.** No class, no rule, nothing. Clearing the
+       filter is removing a class name, which is why the grid comes back exactly.
+     * DIMMED (a real value on the filtered column, and it misses the bound) —
+       the row's DATA cells at 42% opacity, a slate rail on the gene column, and
+       the word `dimmed`. Row-level, not cell-level: every cell pattern underneath
+       is untouched, so a hatched cell in a dimmed row still reads as hatched.
+       The gene name itself stays at full strength — a reader must be able to read
+       which genes the filter excluded, that being the point of not removing them.
+     * CANNOT BE EVALUATED (no value on the filtered column, so the comparison
+       does not exist) — **full opacity**, because this row is unresolved rather
+       than de-emphasised, in the amber channel this grid already uses for
+       "missing is not low" (`missing-divider`, `tr.unplaced`), with an amber rail
+       and the words. Folding it in with the dimmed rows would make dimming
+       de-emphasis-by-missingness (PLAN §3.2 rule 1, COUNCIL M3).
+
+   Three separable channels — opacity, hue, and a word — so the distinction
+   survives greyscale (opacity and the amber tint separate in luminance) and an
+   exported PNG (the word survives everything). Measured rather than assumed:
+   `scripts/v38_dim_probe.py` reads the rendered PNG back, in colour and in
+   greyscale, and prints the luminances.
+
+   Nothing here is under the 12.0 px floor (`UX-v3-rounds.md` B12).
+--------------------------------------------------------------------------- */
+
+/* The rails are on the sticky gene column, so they do not scroll away from the
+   row they qualify — the same reason the gene column is sticky at all.
+
+   **The two rails are separated in LIGHTNESS, not only in hue**, and that is a
+   correction rather than a preference. The first pass used a slate `#4a5568`
+   against `--warn` `#8a4b00`: two obviously different colours whose Rec. 601
+   luminances are 84 and 85. `scripts/v38_dim_probe.py` measured them 5.5 units
+   apart in the greyscale PNG — indistinguishable, which is the encoding failing
+   the exact test it was designed for. The dark navy below is ~34 against the
+   amber's ~85, measured at 51 units apart. A hue pair that only a colour reader
+   can separate is not an encoding this grid is allowed to use.
+
+   An INSET SHADOW, not `border-left`. This table is `border-collapse: collapse`,
+   so a 5 px left border on the first cell of a row is drawn centred on the grid
+   line and half of it lands outside the table's box, where the scroll container
+   clips it: the probe measured the visible rail at about half its declared width
+   (a band that should have read one flat colour came back at sd 110, i.e. half
+   rail and half white cell). An inset shadow is painted inside the padding box and
+   collapsing cannot touch it. */
+.grid tr.dim-out .gene-col { box-shadow: inset 5px 0 0 #16233a; }
+/* Stronger than `missing-divider`'s `#fdf1e0`: that is a full-width band and this
+   is one narrow cell, so it needs more tint to read as the same amber channel. */
+.grid tr.dim-unevaluable .gene-col { box-shadow: inset 5px 0 0 var(--warn);
+                                     background: #fbe8c8; }
+
+/* Data cells only. `.gene-col` is excluded, and so is `.kcell`: k is how much
+   anybody has studied this gene and fading it would be fading the thing PLAN §2
+   refuses to filter on. */
+.grid tr.dim-out td:not(.kcell) { opacity: .42; }
+
+/* The word, in the gene cell under the symbol. A tag rather than a pill: the
+   pills on this page mean run-level statuses and this is a view state. */
+.grid .dimtag {
+  display: block; margin-top: 3px; font-size: 12px; font-weight: 600;
+  letter-spacing: .02em; text-transform: lowercase;
+}
+.grid tr.dim-out .dimtag { color: #16233a; }
+.grid tr.dim-unevaluable .dimtag { color: var(--warn); text-transform: none; }
+
+/* Which column did this. The header of every dimmed-on column is underscored in
+   the accent, so a screenshot shows the filter's target and not only its effect. */
+.grid thead th.dim-key { box-shadow: inset 0 -3px 0 var(--accent); }
+
+/* The control. Deliberately NOT §3.2's control: that one is a free-text
+   `ring >= n` textarea on the analyse form, it removes genes and it ledgers them.
+   This one lives over the grid, after the run, is three dropdowns and a number,
+   says "is at least" rather than ">=", and its own copy says it removes nothing.
+   Two mechanisms that look alike but do different things is its own hazard. */
+.dimbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+          margin: 12px 0 2px; padding: 8px 10px; border-radius: 6px;
+          background: #f7f4ef; border: 1px solid #e2dbd0; }
+.dimbar .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+               color: var(--warn); font-weight: 600; }
+.dimbar select, .dimbar input { font: 12.5px/1.4 inherit; padding: 4px 6px;
+                                border: 1px solid var(--line); border-radius: 5px;
+                                background: #fff; }
+.dimbar input.thr { width: 6.5em; font-family: ui-monospace, SFMono-Regular, Menlo,
+                    monospace; }
+.dimbar .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+                background: #fff; border: 1px solid #e2dbd0; border-radius: 999px;
+                padding: 2px 4px 2px 10px; }
+.dimbar .chip button { font-size: 12px; padding: 1px 7px; border-radius: 999px;
+                       border: none; background: #f7f4ef; color: var(--bad); }
+
+/* The count line. Item 4: a filtered grid that does not say it is filtered is a
+   misleading artefact, so this sits directly above the grid, at reading size, and
+   is never collapsed. The three swatches are the three treatments themselves, so
+   the legend is the encoding rather than a description of it. */
+#table-dim-counts { margin: 10px 0 4px; font-size: 13.5px; line-height: 1.5; }
+#table-dim-counts p { margin: 4px 0; }
+#table-dim-counts .tally b { font-size: 17px; }
+#table-dim-counts .three { display: flex; flex-wrap: wrap; gap: 14px; margin: 6px 0; }
+#table-dim-counts .swat { display: inline-flex; align-items: center; gap: 6px;
+                          font-size: 12.5px; }
+/* `<i>` is the gene column — the rail, at full strength, because the rail is not
+   what fades. `<em>` inside it is a data cell, and it carries the opacity. Built
+   the way the row is, so the legend cannot drift from the thing it labels. */
+#table-dim-counts .swat i { display: inline-flex; border: 1px solid var(--line);
+                            background: #fff; padding-left: 5px; }
+#table-dim-counts .swat em { display: inline-block; width: 26px; height: 16px;
+                             background: #cfe0ec; }
+/* The rail band is the same 5 px on all three, so the one with no rail reads as
+   "no treatment" rather than as a differently-shaped swatch. */
+#table-dim-counts .swat.is-dimmed i { box-shadow: inset 5px 0 0 #16233a; }
+#table-dim-counts .swat.is-dimmed em { opacity: .42; }
+#table-dim-counts .swat.is-unevaluable i { box-shadow: inset 5px 0 0 var(--warn);
+                                           background: #fbe8c8; }
+#table-dim-counts .note { margin-top: 6px; }
+
+/* v3.7 item 2. The source name as a third header line, in its own block so it
+   sits under the ring name rather than beside it. ~16 px of header height once,
+   0 px per row.
+
+   **12 px, not the 9 px item 2 specified.** `UX-v3-rounds.md` B12 set a 12.0 px
+   floor over this whole stylesheet and had its own reason for refusing an
+   exception: "the floor's own justification cites 11.5 px table headers as this
+   build's smallest existing thing… half a pixel is not a trade-off". 9 px is six
+   times that gap, and `test_no_stylesheet_rule_sets_type_under_the_floor` reads
+   every rule in this file. Taking the exception would have meant editing B12's
+   assertion to let this line through, which is reversing a settled decision to
+   suit a new line rather than arguing for it — so the line is at the floor and
+   "small and muted" is carried by weight and colour instead of by size: the ring
+   name above it is a bold `th`, this is normal-weight grey. Puck's call if he
+   wants the 9 px and the floor moved with it.
+
+   `cursor: inherit` and no colour of its own: it must not read as a link. It is
+   inside a click-to-sort `<th>`, and the review refused a hyperlink here for that
+   reason as much as for the 261 px `platform-docs.opentargets.org` needs at 12 px
+   in a 86-110 px column. The link is in `#table-sources`. */
+.grid thead th .src {
+  display: block; font-size: 12px; font-weight: 400; letter-spacing: .02em;
+  color: #6c7280; margin-top: 3px; cursor: inherit; text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* v3.7 item 1. The citation strip, outside `.scroll-x` so it does not scroll away
+   with column 12. Numbered with `<ol>` + `value="n"`, which is the browser's own
+   numbering rather than a second copy of the column numbers in the markup. */
+#table-sources { margin-top: 14px; max-width: var(--prose); }
+#table-sources summary { cursor: pointer; font-size: 13px; }
+#table-sources-details:not([open]) .chev { transform: rotate(-90deg); }
+#table-sources .reveal { padding-top: 8px; }
+.srclist { margin: 6px 0 0; padding-left: 2.1em; }
+.srclist li { margin-bottom: 9px; font-size: 12.5px; line-height: 1.45; }
+.srclist .lbl { font-weight: 600; }
+.srclist .lbl::after, .srclist .un::after { content: " — "; color: var(--muted);
+                                            font-weight: 400; }
+.srclist .un { color: var(--muted); }
+/* The anchor text is `name · domain`, never a bare underline: nothing in an
+   exported PNG is clickable and the domain is the only part a reader can type. */
+.srclist a { color: var(--accent); }
+.srclist .nolink { color: var(--muted); }
+.srclist .why { display: block; color: var(--muted); font-size: 12px; }
+.srclist .why.warnish { color: var(--warn); }
+/* A FAILED cell is not absence, so its row says the link above does not answer
+   it and points at the run's own record instead. Same red channel as the cell. */
+.srclist .failnote {
+  display: block; margin-top: 4px; padding: 5px 8px; font-size: 12px;
+  border-left: 3px solid var(--bad); background: #fdf0f0; color: #16181d;
+}
+
+#table-ledger { margin-top: 16px; }
+#table-ledger summary { cursor: pointer; font-size: 13px; }
+#table-ledger-details:not([open]) .chev { transform: rotate(-90deg); }
+#table-ledger .reveal { padding-top: 8px; }

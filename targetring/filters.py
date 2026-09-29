@@ -37,7 +37,11 @@ OPS: dict[str, tuple[str, Callable[[float, float], bool]]] = {
     "ge": (">=", operator.ge),
     "le": ("<=", operator.le),
 }
-_SYMBOL_TO_OP = {">=": "ge", "=>": "ge", ">": "ge", "<=": "le", "=<": "le", "<": "le"}
+# Public because `dim.py` reads the same table: the v3.8 dim filter is a separate
+# mechanism with a separate consequence, but if `>=` meant one thing there and
+# another here the app would hold two definitions of a threshold.
+SYMBOL_TO_OP = {">=": "ge", "=>": "ge", ">": "ge", "<=": "le", "=<": "le", "<": "le"}
+_SYMBOL_TO_OP = SYMBOL_TO_OP  # the name this module was written with
 
 # Statuses these filters add to the drop ledger. Deliberately two, not one: a
 # gene removed because its measurement missed a threshold and a gene removed
@@ -250,5 +254,5 @@ def as_dicts(filters: Sequence[Filter]) -> list[dict[str, Any]]:
 
 
 __all__ = ["Filter", "FilterOutcome", "FilterRejected", "Drop", "OPS",
-           "FILTERED", "FILTERED_NO_DATA", "FILTER_STATUSES",
+           "SYMBOL_TO_OP", "FILTERED", "FILTERED_NO_DATA", "FILTER_STATUSES",
            "parse_filters", "apply", "restrict", "filter_lines", "as_dicts"]

@@ -111,6 +111,10 @@
 
     <div class="tabs">
       <button class="tab active" data-tab="figure">Figure</button>
+      <!-- v3.6. The same run, as a grid. Not a second analysis and not a second
+           reading of the sources: it is a pivot of `values.csv`, the artefact
+           invariant 1 already asserts is cell-for-cell what was drawn. -->
+      <button class="tab" data-tab="table">Table</button>
       <button class="tab" data-tab="ledger">Drop ledger</button>
       <button class="tab" data-tab="invariants">Invariants</button>
       <button class="tab" data-tab="caveats">What this is not</button>
@@ -245,6 +249,63 @@
           </details>
         </aside>
       </div>
+    </div>
+
+    <!-- v3.6. Genes down, the rings across, in the figure's own radial order —
+         column 1 is the outermost band. On the circle that correspondence is
+         recoverable only by counting inward on an 11.2 px pitch
+         (`docs/reviews/PANEL-v0-instrument.md` P1/P2); here the column is
+         named, which is most of what P1 asked for, on this rendering.
+
+         The run is addressed by id rather than taken from `RUN`, so the 250
+         runs already under `runs/` are viewable and a reload does not lose the
+         one on screen. `?run=<id>` opens straight to it. -->
+    <div class="tabpane" id="pane-table" hidden>
+      <div class="row table-pick">
+        <label for="table-run">Run</label>
+        <input id="table-run" list="table-runs" spellcheck="false"
+               placeholder="20260928T044236Z-893dec" size="30">
+        <datalist id="table-runs"></datalist>
+        <button id="table-load" class="ghost">load</button>
+        <span id="table-run-note" class="hint"></span>
+      </div>
+      <div id="table-status" class="hint"></div>
+      <div id="table-meta"></div>
+      <div id="table-sort"></div>
+      <!-- v3.8. The per-column dim filter, and it is NOT §4 of the analyse form.
+           §4 is PLAN §3.2: a threshold there removes genes from the plot and names
+           each one in the drop ledger, it is set before the run, and it is part of
+           what the run was. This one dims rows in the view already on screen, after
+           the fact, and removes nothing — no run, no figure, no ledger row, no
+           artefact, no values.csv, no manifest. Two mechanisms that look alike but
+           do different things is its own hazard, so this one is somewhere else,
+           shaped differently (dropdowns, not a `ring >= n` textarea), worded
+           differently ("is at least", not ">="), and says what it does not do.
+
+           The count line goes directly above the grid: a filtered grid that does
+           not say it is filtered is a misleading artefact, and this is the same
+           principle as the manifest making a screenshot of the figure
+           self-describing. -->
+      <div id="table-dim"></div>
+      <div id="table-dim-counts"></div>
+      <div id="table-grid" class="scroll-x"></div>
+      <!-- v3.7 item 1. "Where these N columns come from" — one row per column,
+           numbered to match the column numbers, with the ring's source as a real
+           link.
+
+           OUTSIDE `.scroll-x` on purpose: the grid scrolls sideways at fourteen
+           columns and a citation strip that scrolled away with column 12 would be
+           a citation nobody found. It is a `<details>` because it is reference a
+           reader consults about a particular column, and its summary counts the
+           rows so the closed state is not a dead end — the same rule `#scales`
+           and the drop ledger follow.
+
+           This is also the only place in the app where a run READ OFF DISK has
+           its sources on screen. `#scales`, in `#pane-figure`, is populated from
+           `/api/run/{id}/scales`, which reads the in-process `_runs` dict and so
+           404s for all ~250 runs under `runs/`. -->
+      <div id="table-sources"></div>
+      <div id="table-ledger"></div>
     </div>
 
     <div class="tabpane" id="pane-ledger" hidden><div id="ledger"></div></div>

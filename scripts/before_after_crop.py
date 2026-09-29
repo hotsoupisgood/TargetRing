@@ -17,13 +17,14 @@ Run: PYTHONPATH=. .venv/bin/python scripts/before_after_crop.py \\
 """
 from __future__ import annotations
 
-import csv
 import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
+
+from targetring import table
 
 NS = "{http://www.w3.org/2000/svg}"
 RINGS = ("clinical_phase", "regional_specificity")
@@ -53,7 +54,14 @@ def _cell_boxes(svg: Path, gene: str, rings=RINGS) -> dict[str, tuple[float, ...
 
 
 def _fills(run: Path, gene: str) -> dict[str, str]:
-    return {r["ring"]: r["fill"] for r in csv.DictReader(open(run / "values.csv"))
+    """v3.9: through `table.read_cell_rows`, which stops at the appended sections.
+
+    This read to end of file. `values.csv` carries the drop ledger after the cells
+    in all 248 runs under `runs/`, so a ledger row whose `reason` happened to
+    mention a ring name could have contributed a `fill` to this dict -- a colour
+    in a before/after comparison that no cell was ever painted.
+    """
+    return {r["ring"]: r["fill"] for r in table.read_cell_rows(run / "values.csv")
             if r["gene"] == gene and r["ring"] in RINGS}
 
 

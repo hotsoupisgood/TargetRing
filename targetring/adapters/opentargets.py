@@ -647,9 +647,19 @@ def chemical_probe_cell(rec: OTRecord) -> Cell:
                if v == 0.0 else f"{key}={v:+.2f}")
     return value(
         v,
+        # v3.6. This read "…the tractability ring is the one that carries the
+        # Pareto axis (COUNCIL M7/V8)". There is no Pareto axis: v2.5 deleted
+        # the front, the score and the axes, and `RETIRED_CLAIM_WORDS` exists to
+        # stop exactly this sentence surviving the feature it described. It was
+        # missed because `assert_footer_is_true` reads the DRAWN text of the SVG,
+        # and a cell detail is not drawn — it reaches `values.csv` and the
+        # drawer, and now the table's cell tooltips, which is where it was found.
+        # The distinction the sentence is actually making is the one v2.3 item 1
+        # made, and it stands on its own.
         f"{key} = {meaning}. Chemical-probe stock is prior tool-compound effort, NOT "
-        f"tractability — the tractability ring is the one that carries the Pareto axis "
-        f"(COUNCIL M7/V8).",
+        f"tractability — they are two rings for that reason, and this one is allowed "
+        f"to be hatched without taking the three dense keys down with it "
+        f"(v2.3 item 1, COUNCIL M7/V8).",
         raw={"keys": {key: v}, "inferred_from_absence": []},
     )
 
