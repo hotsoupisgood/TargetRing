@@ -1,0 +1,185 @@
+{
+  "port": 8811,
+  "druggability_run": "20260924T061611Z-e8d4a4",
+  "tractable_run": "V31-de_realistic-Lung",
+  "druggability_rows": [
+    {
+      "n": 1,
+      "label": "logFC (yours)",
+      "link_text": null,
+      "href": null,
+      "nolink": true,
+      "text": "logFC (yours) log2 fold change no source link \u2014 the logFC column of the DE table you submitted \u2014 your own measurement, read straight off your file and not transformed. The run's manifest records which header it was read from (`input.columns.logfc`) and `values.csv` carries the value per gene"
+    },
+    {
+      "n": 2,
+      "label": "-log10 padj (yours)",
+      "link_text": null,
+      "href": null,
+      "nolink": true,
+      "text": "-log10 padj (yours) -log10 adjusted p no source link \u2014 the adjusted-p column of the DE table you submitted, drawn as \u2212log10(padj) so that more significant is larger \u2014 your own measurement, with that one transform and nothing else. The run's manifest records which header it was read from (`input.columns.padj`) and the cell detail prints the original p back"
+    },
+    {
+      "n": 3,
+      "label": "Druggability",
+      "link_text": "Open Targets (retired 4-key Druggability, not Tractability) \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation",
+      "nolink": false,
+      "text": "Druggability Open Targets (retired 4-key Druggability, not Tractability) \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 4,
+      "label": "Safety / tolerability",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+      "nolink": false,
+      "text": "Safety / tolerability mean of 4 keys, each in [-1, 1] Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 5,
+      "label": "Regional specificity",
+      "link_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+      "href": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+      "nolink": false,
+      "text": "Regional specificity \u00d7 median across the GTEx panel GTEx v8 \u00b7 gtexportal.org/api/v2/redoc"
+    },
+    {
+      "n": 6,
+      "label": "Pipeline: furthest phase",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/target/drugs",
+      "nolink": false,
+      "text": "Pipeline: furthest phase 0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 7,
+      "label": "Pipeline: current activity",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/drug/clinical-report",
+      "nolink": false,
+      "text": "Pipeline: current activity three named states, no order implied by colour Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 8,
+      "label": "Rodent phenotype lead",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+      "nolink": false,
+      "text": "Rodent phenotype lead 0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 9,
+      "label": "Literature volume",
+      "link_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+      "href": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+      "nolink": false,
+      "text": "Literature volume PubTator3 records PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3"
+    },
+    {
+      "n": 10,
+      "label": "k \u2014 rings available",
+      "link_text": null,
+      "href": null,
+      "nolink": true,
+      "text": "k \u2014 rings available rings with a real value, of 9 no source link \u2014 computed here, by counting rings 3-11: k is how many of the nine external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs \u2014 no source of its own is read for it"
+    }
+  ],
+  "tractable_rows": [
+    {
+      "n": 1,
+      "label": "logFC (yours)",
+      "link_text": null,
+      "href": null,
+      "nolink": true,
+      "text": "logFC (yours) log2 fold change no source link \u2014 the logFC column of the DE table you submitted \u2014 your own measurement, read straight off your file and not transformed. The run's manifest records which header it was read from (`input.columns.logfc`) and `values.csv` carries the value per gene"
+    },
+    {
+      "n": 2,
+      "label": "-log10 padj (yours)",
+      "link_text": null,
+      "href": null,
+      "nolink": true,
+      "text": "-log10 padj (yours) -log10 adjusted p no source link \u2014 the adjusted-p column of the DE table you submitted, drawn as \u2212log10(padj) so that more significant is larger \u2014 your own measurement, with that one transform and nothing else. The run's manifest records which header it was read from (`input.columns.padj`) and the cell detail prints the original p back"
+    },
+    {
+      "n": 3,
+      "label": "Tractability (family suggests druggable)",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section",
+      "nolink": false,
+      "text": "Tractability (family suggests druggable) mean of 3 keys, each 0 or 1 Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 4,
+      "label": "Chemical probe available (prior tool-compound effort)",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#chemical-probes",
+      "nolink": false,
+      "text": "Chemical probe available (prior tool-compound effort) probe: no / yes Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 5,
+      "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+      "nolink": false,
+      "text": "Safety flags & constraint \u2014 NOT evidence of safety mean of 4 keys, each in [-1, 1] Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 6,
+      "label": "Regional specificity",
+      "link_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+      "href": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+      "nolink": false,
+      "text": "Regional specificity \u00d7 median across the GTEx panel GTEx v8 \u00b7 gtexportal.org/api/v2/redoc"
+    },
+    {
+      "n": 7,
+      "label": "Pipeline: furthest phase (attributable indications only)",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/target/drugs",
+      "nolink": false,
+      "text": "Pipeline: furthest phase (attributable indications only) 0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 8,
+      "label": "Pipeline: current activity (Open Targets clinicalReports)",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/drug/clinical-report",
+      "nolink": false,
+      "text": "Pipeline: current activity (Open Targets clinicalReports) three named states, no order implied by colour Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 9,
+      "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)",
+      "link_text": "Pharos \u00b7 druggablegenome.net",
+      "href": "https://druggablegenome.net/IDGProteinFamilies",
+      "nolink": false,
+      "text": "Target development level (Pharos TDL \u2014 knowledge, not a pocket) Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin Pharos \u00b7 druggablegenome.net"
+    },
+    {
+      "n": 10,
+      "label": "Mouse phenotype lead (3 states)",
+      "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+      "href": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+      "nolink": false,
+      "text": "Mouse phenotype lead (3 states) 0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped Open Targets \u00b7 platform-docs.opentargets.org"
+    },
+    {
+      "n": 11,
+      "label": "Literature volume",
+      "link_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+      "href": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+      "nolink": false,
+      "text": "Literature volume PubTator3 records PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3"
+    },
+    {
+      "n": 12,
+      "label": "k \u2014 external rings with a measurement",
+      "link_text": null,
+      "href": null,
+      "nolink": true,
+      "text": "k \u2014 external rings with a measurement rings with a real value, of 9 no source link \u2014 computed here, by counting rings 3-11: k is how many of the nine external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs \u2014 no source of its own is read for it"
+    }
+  ]
+}

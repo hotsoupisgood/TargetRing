@@ -1,0 +1,506 @@
+{
+  "laptop": {
+    "in_session_figure": false,
+    "run_in_url": "20260928T044236Z-893dec",
+    "table_tab_active": true,
+    "n_columns": 14,
+    "n_source_labels": 12,
+    "source_label_texts": [
+      "yours",
+      "yours",
+      "Open Targets",
+      "Open Targets",
+      "Open Targets",
+      "GTEx v8",
+      "Open Targets",
+      "Open Targets",
+      "Pharos",
+      "Open Targets",
+      "PubTator3",
+      "derived"
+    ],
+    "source_label_px": 12,
+    "source_label_is_an_anchor": false,
+    "source_label_colour": "rgb(108, 114, 128)",
+    "header_height_px": 89,
+    "source_line_cost_px": 18,
+    "column_widths_px": [
+      91,
+      92,
+      100,
+      108,
+      108,
+      101,
+      108,
+      108,
+      108,
+      108,
+      99,
+      95
+    ],
+    "head_names": [
+      "1 logFC (yours)",
+      "2 -log10 padj (yours)",
+      "3 Tractability",
+      "4 Chemical probe available",
+      "5 Safety flags \u2014 NOT evidence of safety",
+      "6 Regional specificity",
+      "7 Pipeline: furthest phase",
+      "8 Pipeline: current activity",
+      "9 Target development level",
+      "10 Mouse phenotype lead",
+      "11 Literature volume",
+      "12 k \u2014 external rings"
+    ],
+    "strip_summary": "\u25be Where these 12 columns come from \u2014 9 with a source link, 3 without and why",
+    "strip_open": true,
+    "strip_inside_the_scroller": false,
+    "strip_above_the_ledger": true,
+    "strip_height_px": 392,
+    "grid_height_px": 735,
+    "strip_rows": [
+      {
+        "n": 1,
+        "label": "logFC (yours)",
+        "units": "log2 fold change",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      },
+      {
+        "n": 2,
+        "label": "-log10 padj (yours)",
+        "units": "-log10 adjusted p",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      },
+      {
+        "n": 3,
+        "label": "Tractability (family suggests druggable)",
+        "units": "mean of 3 keys, each 0 or 1",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 4,
+        "label": "Chemical probe available (prior tool-compound effort)",
+        "units": "probe: no / yes",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#chemical-probes",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 5,
+        "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+        "units": "mean of 4 keys, each in [-1, 1]",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 6,
+        "label": "Regional specificity",
+        "units": "\u00d7 median across the GTEx panel",
+        "link_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+        "href": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 7,
+        "label": "Pipeline: furthest phase (attributable indications only)",
+        "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/target/drugs",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 8,
+        "label": "Pipeline: current activity (Open Targets clinicalReports)",
+        "units": "three named states, no order implied by colour",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/drug/clinical-report",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 9,
+        "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)",
+        "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+        "link_text": "Pharos \u00b7 druggablegenome.net",
+        "href": "https://druggablegenome.net/IDGProteinFamilies",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 10,
+        "label": "Mouse phenotype lead (3 states)",
+        "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 11,
+        "label": "Literature volume",
+        "units": "PubTator3 records",
+        "link_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+        "href": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 12,
+        "label": "k \u2014 external rings with a measurement",
+        "units": "rings with a real value, of 9",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      }
+    ],
+    "n_links_in_the_strip": 9,
+    "n_failed_cells": 0,
+    "n_no_data_cells": 13,
+    "failed_cell_title": null,
+    "no_data_cell_title": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+    "cells_that_are_links": 0
+  },
+  "phone_readable": {
+    "in_session_figure": false,
+    "run_in_url": "20260928T044236Z-893dec",
+    "table_tab_active": true,
+    "n_columns": 14,
+    "n_source_labels": 12,
+    "source_label_texts": [
+      "yours",
+      "yours",
+      "Open Targets",
+      "Open Targets",
+      "Open Targets",
+      "GTEx v8",
+      "Open Targets",
+      "Open Targets",
+      "Pharos",
+      "Open Targets",
+      "PubTator3",
+      "derived"
+    ],
+    "source_label_px": 12,
+    "source_label_is_an_anchor": false,
+    "source_label_colour": "rgb(108, 114, 128)",
+    "header_height_px": 89,
+    "source_line_cost_px": 18,
+    "column_widths_px": [
+      61,
+      61,
+      96,
+      96,
+      96,
+      80,
+      96,
+      96,
+      95,
+      96,
+      77,
+      66
+    ],
+    "head_names": [
+      "1 logFC (yours)",
+      "2 -log10 padj (yours)",
+      "3 Tractability",
+      "4 Chemical probe available",
+      "5 Safety flags \u2014 NOT evidence of safety",
+      "6 Regional specificity",
+      "7 Pipeline: furthest phase",
+      "8 Pipeline: current activity",
+      "9 Target development level",
+      "10 Mouse phenotype lead",
+      "11 Literature volume",
+      "12 k \u2014 external rings"
+    ],
+    "strip_summary": "\u25be Where these 12 columns come from \u2014 9 with a source link, 3 without and why",
+    "strip_open": true,
+    "strip_inside_the_scroller": false,
+    "strip_above_the_ledger": true,
+    "strip_height_px": 573,
+    "grid_height_px": 735,
+    "strip_rows": [
+      {
+        "n": 1,
+        "label": "logFC (yours)",
+        "units": "log2 fold change",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      },
+      {
+        "n": 2,
+        "label": "-log10 padj (yours)",
+        "units": "-log10 adjusted p",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      },
+      {
+        "n": 3,
+        "label": "Tractability (family suggests druggable)",
+        "units": "mean of 3 keys, each 0 or 1",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 4,
+        "label": "Chemical probe available (prior tool-compound effort)",
+        "units": "probe: no / yes",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#chemical-probes",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 5,
+        "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+        "units": "mean of 4 keys, each in [-1, 1]",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 6,
+        "label": "Regional specificity",
+        "units": "\u00d7 median across the GTEx panel",
+        "link_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+        "href": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 7,
+        "label": "Pipeline: furthest phase (attributable indications only)",
+        "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/target/drugs",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 8,
+        "label": "Pipeline: current activity (Open Targets clinicalReports)",
+        "units": "three named states, no order implied by colour",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/drug/clinical-report",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 9,
+        "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)",
+        "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+        "link_text": "Pharos \u00b7 druggablegenome.net",
+        "href": "https://druggablegenome.net/IDGProteinFamilies",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 10,
+        "label": "Mouse phenotype lead (3 states)",
+        "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 11,
+        "label": "Literature volume",
+        "units": "PubTator3 records",
+        "link_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+        "href": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 12,
+        "label": "k \u2014 external rings with a measurement",
+        "units": "rings with a real value, of 9",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      }
+    ],
+    "n_links_in_the_strip": 9,
+    "n_failed_cells": 0,
+    "n_no_data_cells": 13,
+    "failed_cell_title": null,
+    "no_data_cell_title": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+    "cells_that_are_links": 0
+  },
+  "failed_run": {
+    "in_session_figure": false,
+    "run_in_url": "QA-V2-V3-failA",
+    "table_tab_active": true,
+    "n_columns": 12,
+    "n_source_labels": 10,
+    "source_label_texts": [
+      "yours",
+      "yours",
+      "retired ring",
+      "Open Targets",
+      "GTEx v8",
+      "Open Targets",
+      "Open Targets",
+      "Open Targets",
+      "PubTator3",
+      "derived"
+    ],
+    "source_label_px": 12,
+    "source_label_is_an_anchor": false,
+    "source_label_colour": "rgb(108, 114, 128)",
+    "header_height_px": 104,
+    "source_line_cost_px": 18,
+    "column_widths_px": [
+      61,
+      61,
+      92,
+      96,
+      80,
+      96,
+      96,
+      96,
+      77,
+      66
+    ],
+    "head_names": [
+      "1 logFC (yours)",
+      "2 -log10 padj (yours)",
+      "3 Druggability (prior effort + tractability)",
+      "4 Safety flags \u2014 NOT evidence of safety",
+      "5 Regional specificity (log10 ratio)",
+      "6 Pipeline: furthest phase",
+      "7 Pipeline: current activity",
+      "8 Mouse phenotype lead",
+      "9 Literature volume",
+      "10 k \u2014 external rings"
+    ],
+    "strip_summary": "\u25be Where these 10 columns come from \u2014 6 with a source link, 4 without and why, 1 with a FAILED cell",
+    "strip_open": true,
+    "strip_inside_the_scroller": false,
+    "strip_above_the_ledger": true,
+    "strip_height_px": 638,
+    "grid_height_px": 532,
+    "strip_rows": [
+      {
+        "n": 1,
+        "label": "logFC (yours)",
+        "units": "log2 fold change",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      },
+      {
+        "n": 2,
+        "label": "-log10 padj (yours)",
+        "units": "-log10 adjusted p",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      },
+      {
+        "n": 3,
+        "label": "Druggability (prior effort + tractability)",
+        "units": null,
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      },
+      {
+        "n": 4,
+        "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+        "units": "mean of 4 keys, each in [-1, 1]",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+        "nolink": false,
+        "failed_href": "/api/run/QA-V2-V3-failA/manifest.json"
+      },
+      {
+        "n": 5,
+        "label": "Regional specificity (log10 ratio)",
+        "units": "\u00d7 median across the GTEx panel",
+        "link_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+        "href": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 6,
+        "label": "Pipeline: furthest phase (attributable indications only)",
+        "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/target/drugs",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 7,
+        "label": "Pipeline: current activity",
+        "units": "three named states, no order implied by colour",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/drug/clinical-report",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 8,
+        "label": "Mouse phenotype lead (3 states)",
+        "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+        "link_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+        "href": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 9,
+        "label": "Literature volume",
+        "units": "PubTator3 records",
+        "link_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+        "href": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+        "nolink": false,
+        "failed_href": null
+      },
+      {
+        "n": 10,
+        "label": "k \u2014 external rings with a measurement",
+        "units": "rings with a real value, of 9",
+        "link_text": null,
+        "href": null,
+        "nolink": true,
+        "failed_href": null
+      }
+    ],
+    "n_links_in_the_strip": 7,
+    "n_failed_cells": 1,
+    "n_no_data_cells": 4,
+    "failed_cell_title": "call FAILED \u2014 not absence, and NOT answered by this column's source link. The record is this run's own: HTTP 503 from Open Targets (QA probe: forced transient failure)",
+    "no_data_cell_title": "0.2156 TPM in Liver is below the 1 TPM floor for 'expressed at all', so the specificity ratio (0.27x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer.",
+    "cells_that_are_links": 0
+  }
+}

@@ -1,0 +1,396 @@
+{
+  "file": "targetring-20260928T044236Z-893dec-table.html",
+  "file_bytes": 473744,
+  "requests": [
+    {
+      "url": "file:///Users/abcdef/targetring/docs/exports/targetring-20260928T044236Z-893dec-table.html",
+      "resource": "document",
+      "method": "GET"
+    }
+  ],
+  "network_requests": [],
+  "console": [],
+  "opened": {
+    "heads": [
+      "Gene",
+      "k",
+      "1 logFC (yours)yours",
+      "2 -log10 padj (yours)yours",
+      "3 TractabilityOpen Targets",
+      "4 Chemical probe availableOpen Targets",
+      "5 Safety flags \u2014 NOT evidence of safetyOpen Targets",
+      "6 Regional specificityGTEx v8",
+      "7 Pipeline: furthest phaseOpen Targets",
+      "8 Pipeline: current activityOpen Targets",
+      "9 Target development levelPharos",
+      "10 Mouse phenotype leadOpen Targets",
+      "11 Literature volumePubTator3",
+      "12 k \u2014 external ringsderived"
+    ],
+    "genes": [
+      "PCSK9",
+      "TTR",
+      "ASGR1",
+      "SERPINA1",
+      "APOB",
+      "HMGCR",
+      "BRAF",
+      "EPHA2",
+      "DDR1",
+      "KCNH2",
+      "GFAP",
+      "ACTB",
+      "TMEM229B",
+      "EGFR"
+    ],
+    "blank_cells": 0,
+    "state_words": [
+      "kcell",
+      "st-no_data",
+      "st-not_applicable",
+      "st-value"
+    ],
+    "divider": null,
+    "sort_chips": [],
+    "sort_note": "unsorted \u2014 the order this run drew the spokes in",
+    "dim_tally": null,
+    "dim_note": null,
+    "dim_tags": [],
+    "selfcheck": "PASS This file reproduced all 189 answers this build computed for it before drawing the grid: 47 row orders with their stated sentences and no-value blocks, and 142 dim classifications with their per-gene reasons, counts and count lines. Th",
+    "selfcheck_failed": false,
+    "drawer_buttons": 0,
+    "citations": 12,
+    "ledger_rows": 1,
+    "invariants": 13
+  },
+  "one_key": {
+    "heads": [
+      "Gene",
+      "k",
+      "1 logFC (yours)yours",
+      "2 -log10 padj (yours)yours",
+      "3 Tractability \u21931Open Targets",
+      "4 Chemical probe availableOpen Targets",
+      "5 Safety flags \u2014 NOT evidence of safetyOpen Targets",
+      "6 Regional specificityGTEx v8",
+      "7 Pipeline: furthest phaseOpen Targets",
+      "8 Pipeline: current activityOpen Targets",
+      "9 Target development levelPharos",
+      "10 Mouse phenotype leadOpen Targets",
+      "11 Literature volumePubTator3",
+      "12 k \u2014 external ringsderived"
+    ],
+    "genes": [
+      "PCSK9",
+      "TTR",
+      "HMGCR",
+      "BRAF",
+      "EPHA2",
+      "EGFR",
+      "DDR1",
+      "KCNH2",
+      "SERPINA1",
+      "APOB",
+      "ASGR1",
+      "GFAP",
+      "ACTB",
+      "TMEM229B"
+    ],
+    "blank_cells": 0,
+    "state_words": [
+      "kcell",
+      "st-no_data",
+      "st-not_applicable",
+      "st-value"
+    ],
+    "divider": null,
+    "sort_chips": [
+      "1. Tractability best first \u2193 \u2715"
+    ],
+    "sort_note": "row order: 'Tractability (family suggests druggable)' best first. Lexicographic \u2014 the keys are applied in turn and never combined. Genes with no value on a key are last on it, never lowest. Click a column to sort by it; shift-click to add it as a further key.",
+    "dim_tally": null,
+    "dim_note": null,
+    "dim_tags": [],
+    "selfcheck": "PASS This file reproduced all 189 answers this build computed for it before drawing the grid: 47 row orders with their stated sentences and no-value blocks, and 142 dim classifications with their per-gene reasons, counts and count lines. Th",
+    "selfcheck_failed": false,
+    "drawer_buttons": 0,
+    "citations": 12,
+    "ledger_rows": 1,
+    "invariants": 13
+  },
+  "two_keys": {
+    "heads": [
+      "Gene",
+      "k",
+      "1 logFC (yours) \u21932yours",
+      "2 -log10 padj (yours)yours",
+      "3 Tractability \u21931Open Targets",
+      "4 Chemical probe availableOpen Targets",
+      "5 Safety flags \u2014 NOT evidence of safetyOpen Targets",
+      "6 Regional specificityGTEx v8",
+      "7 Pipeline: furthest phaseOpen Targets",
+      "8 Pipeline: current activityOpen Targets",
+      "9 Target development levelPharos",
+      "10 Mouse phenotype leadOpen Targets",
+      "11 Literature volumePubTator3",
+      "12 k \u2014 external ringsderived"
+    ],
+    "genes": [
+      "TTR",
+      "PCSK9",
+      "BRAF",
+      "EGFR",
+      "EPHA2",
+      "HMGCR",
+      "DDR1",
+      "KCNH2",
+      "SERPINA1",
+      "APOB",
+      "ASGR1",
+      "TMEM229B",
+      "ACTB",
+      "GFAP"
+    ],
+    "blank_cells": 0,
+    "state_words": [
+      "kcell",
+      "st-no_data",
+      "st-not_applicable",
+      "st-value"
+    ],
+    "divider": null,
+    "sort_chips": [
+      "1. Tractability best first \u2193 \u2715",
+      "2. logFC (yours) best first \u2193 \u2715"
+    ],
+    "sort_note": "row order: 'Tractability (family suggests druggable)' best first, then 'logFC (yours)' best first. Lexicographic \u2014 the keys are applied in turn and never combined. Genes with no value on a key are last on it, never lowest. Click a column to sort by it; shift-click to add it as a further key.",
+    "dim_tally": null,
+    "dim_note": null,
+    "dim_tags": [],
+    "selfcheck": "PASS This file reproduced all 189 answers this build computed for it before drawing the grid: 47 row orders with their stated sentences and no-value blocks, and 142 dim classifications with their per-gene reasons, counts and count lines. Th",
+    "selfcheck_failed": false,
+    "drawer_buttons": 0,
+    "citations": 12,
+    "ledger_rows": 1,
+    "invariants": 13
+  },
+  "dimmed": {
+    "heads": [
+      "Gene",
+      "k",
+      "1 logFC (yours) \u21932yours",
+      "2 -log10 padj (yours)yours",
+      "3 Tractability \u21931Open Targets",
+      "4 Chemical probe availableOpen Targets",
+      "5 Safety flags \u2014 NOT evidence of safetyOpen Targets",
+      "6 Regional specificityGTEx v8",
+      "7 Pipeline: furthest phaseOpen Targets",
+      "8 Pipeline: current activityOpen Targets",
+      "9 Target development levelPharos",
+      "10 Mouse phenotype leadOpen Targets",
+      "11 Literature volumePubTator3",
+      "12 k \u2014 external ringsderived"
+    ],
+    "genes": [
+      "TTR",
+      "PCSK9",
+      "BRAF",
+      "EGFR",
+      "EPHA2",
+      "HMGCR",
+      "DDR1",
+      "KCNH2",
+      "SERPINA1",
+      "APOB",
+      "ASGR1",
+      "TMEM229B",
+      "ACTB",
+      "GFAP"
+    ],
+    "blank_cells": 0,
+    "state_words": [
+      "kcell",
+      "st-no_data",
+      "st-not_applicable",
+      "st-value"
+    ],
+    "divider": null,
+    "sort_chips": [
+      "1. Tractability best first \u2193 \u2715",
+      "2. logFC (yours) best first \u2193 \u2715"
+    ],
+    "sort_note": "row order: 'Tractability (family suggests druggable)' best first, then 'logFC (yours)' best first. Lexicographic \u2014 the keys are applied in turn and never combined. Genes with no value on a key are last on it, never lowest. Click a column to sort by it; shift-click to add it as a further key.",
+    "dim_tally": "\n       5 shown \u00b7\n       6 dimmed \u00b7\n       3 cannot be evaluated",
+    "dim_note": "Dimming Regional specificity is at least 1.6. All 14 genes are still on the grid; nothing was removed and nothing was added to the drop ledger.",
+    "dim_tags": [
+      "cannot be evaluated",
+      "dimmed",
+      "dimmed",
+      "dimmed",
+      "dimmed",
+      "dimmed",
+      "cannot be evaluated",
+      "dimmed",
+      "cannot be evaluated"
+    ],
+    "selfcheck": "PASS This file reproduced all 189 answers this build computed for it before drawing the grid: 47 row orders with their stated sentences and no-value blocks, and 142 dim classifications with their per-gene reasons, counts and count lines. Th",
+    "selfcheck_failed": false,
+    "drawer_buttons": 0,
+    "citations": 12,
+    "ledger_rows": 1,
+    "invariants": 13
+  },
+  "dim_cleared": {
+    "heads": [
+      "Gene",
+      "k",
+      "1 logFC (yours) \u21932yours",
+      "2 -log10 padj (yours)yours",
+      "3 Tractability \u21931Open Targets",
+      "4 Chemical probe availableOpen Targets",
+      "5 Safety flags \u2014 NOT evidence of safetyOpen Targets",
+      "6 Regional specificityGTEx v8",
+      "7 Pipeline: furthest phaseOpen Targets",
+      "8 Pipeline: current activityOpen Targets",
+      "9 Target development levelPharos",
+      "10 Mouse phenotype leadOpen Targets",
+      "11 Literature volumePubTator3",
+      "12 k \u2014 external ringsderived"
+    ],
+    "genes": [
+      "TTR",
+      "PCSK9",
+      "BRAF",
+      "EGFR",
+      "EPHA2",
+      "HMGCR",
+      "DDR1",
+      "KCNH2",
+      "SERPINA1",
+      "APOB",
+      "ASGR1",
+      "TMEM229B",
+      "ACTB",
+      "GFAP"
+    ],
+    "blank_cells": 0,
+    "state_words": [
+      "kcell",
+      "st-no_data",
+      "st-not_applicable",
+      "st-value"
+    ],
+    "divider": null,
+    "sort_chips": [
+      "1. Tractability best first \u2193 \u2715",
+      "2. logFC (yours) best first \u2193 \u2715"
+    ],
+    "sort_note": "row order: 'Tractability (family suggests druggable)' best first, then 'logFC (yours)' best first. Lexicographic \u2014 the keys are applied in turn and never combined. Genes with no value on a key are last on it, never lowest. Click a column to sort by it; shift-click to add it as a further key.",
+    "dim_tally": null,
+    "dim_note": null,
+    "dim_tags": [],
+    "selfcheck": "PASS This file reproduced all 189 answers this build computed for it before drawing the grid: 47 row orders with their stated sentences and no-value blocks, and 142 dim classifications with their per-gene reasons, counts and count lines. Th",
+    "selfcheck_failed": false,
+    "drawer_buttons": 0,
+    "citations": 12,
+    "ledger_rows": 1,
+    "invariants": 13
+  },
+  "requests_after_interaction": [
+    {
+      "url": "file:///Users/abcdef/targetring/docs/exports/targetring-20260928T044236Z-893dec-table.html",
+      "resource": "document",
+      "method": "GET"
+    }
+  ],
+  "export_cells": [
+    "gene-col=TTR ENSG00000118271 | kcell=7/9 | st-value=3.1 | st-value=4.097 | st-value=1 | st-no_data=no data | st-value=-0.186 | st-no_data=no data | st-value=5 | st-value=1 | st-value=3 | st-value=1 | st-value=4.257 | st-value=7",
+    "gene-col=PCSK9 ENSG00000169174 | kcell=8/9 | st-value=2.81 | st-value=4.699 | st-value=1 | st-no_data=no data | st-value=0.1061 | st-value=51.71 | st-value=5 | st-value=1 | st-value=3 | st-value=1 | st-value=4.192 | st-value=8",
+    "gene-col=BRAF ENSG00000157764 | kcell=9/9 | st-value=2.41 | st-value=3.523 | st-value=1 | st-value=1 | st-value=-0.7313 | st-value=1.399 | st-value=5 | st-value=1 | st-value=3 | st-value=1 | st-value=4.854 | st-value=9",
+    "gene-col=EGFR ENSG00000146648 | kcell=9/9 | st-value=1.95 | st-value=3.155 | st-value=1 | st-value=1 | st-value=-0.6568 | st-value=1.49 | st-value=5 | st-value=1 | st-value=3 | st-value=1 | st-value=5.319 | st-value=9",
+    "gene-col=EPHA2 ENSG00000142627 | kcell=7/9 | st-value=1.77 | st-value=2.959 | st-value=1 | st-no_data=no data | st-value=-0.3575 | st-value=2.678 | st-not_applicable=n/a | st-value=1 | st-value=3 | st-value=1 | st-value=3.792 | st-value=7",
+    "gene-col=HMGCR ENSG00000113161 | kcell=9/9 | st-value=1.41 | st-value=2.699 | st-value=1 | st-value=1 | st-value=-0.679 | st-value=1.583 | st-value=5 | st-value=1 | st-value=3 | st-value=1 | st-value=4.408 | st-value=9",
+    "gene-col=DDR1 ENSG00000204580 | kcell=8/9 | st-value=1.12 | st-value=2.398 | st-value=0.6667 | st-value=1 | st-value=-0.04592 | st-value=0.9721 | st-value=0 | st-not_applicable=n/a | st-value=2 | st-value=1 | st-value=3.44 | st-value=8",
+    "gene-col=KCNH2 ENSG00000055118 | kcell=9/9 | st-value=-1.83 | st-value=2.678 | st-value=0.6667 | st-value=0 | st-value=-0.413 | st-value=0.6643 | st-value=5 | st-value=1 | st-value=3 | st-value=1 | st-value=4.056 | st-value=9",
+    "gene-col=SERPINA1 ENSG00000197249 | kcell=7/9 | st-value=2.44 | st-value=4 | st-value=0.3333 | st-no_data=no data | st-value=0.1223 | st-value=59.9 | st-value=0 | st-not_applicable=n/a | st-value=1 | st-value=1 | st-value=4.373 | st-value=7",
+    "gene-col=APOB ENSG00000084674 | kcell=7/9 | st-value=2.05 | st-value=3.222 | st-value=0.3333 | st-no_data=no data | st-value=-0.3893 | st-no_data=no data | st-value=5 | st-value=0 | st-value=2 | st-value=1 | st-value=4.648 | st-value=7",
+    "gene-col=ASGR1 ENSG00000141505 | kcell=8/9 | st-value=1.92 | st-value=3.398 | st-value=0 | st-no_data=no data | st-value=0.1806 | st-value=3.194 | st-value=3 | st-value=0 | st-value=1 | st-value=1 | st-value=3.496 | st-value=8",
+    "gene-col=TMEM229B ENSG00000198133 | kcell=6/9 | st-value=0.88 | st-value=1.921 | st-value=0 | st-no_data=no data | st-value=-0.02124 | st-value=0.8262 | st-value=0 | st-not_applicable=n/a | st-value=0 | st-no_data=no data | st-value=1.813 | st-value=6",
+    "gene-col=ACTB ENSG00000075624 | kcell=7/9 | st-value=0.15 | st-value=1.398 | st-value=0 | st-no_data=no data | st-value=-0.4866 | st-value=2.174 | st-value=0 | st-not_applicable=n/a | st-value=1 | st-value=1 | st-value=5.179 | st-value=7",
+    "gene-col=GFAP ENSG00000131095 | kcell=6/9 | st-value=-3.31 | st-value=3.824 | st-value=0 | st-no_data=no data | st-value=0.04595 | st-no_data=no data | st-value=0 | st-not_applicable=n/a | st-value=1 | st-value=1 | st-value=4.909 | st-value=6"
+  ],
+  "vs_app": {
+    "base": "http://127.0.0.1:8811",
+    "run_id": "20260928T044236Z-893dec",
+    "sort": "ring:tractable,ring:logfc",
+    "identical": true,
+    "app_rows": 14,
+    "first_difference": ""
+  },
+  "retired": {
+    "file": "targetring-20260924T061611Z-e8d4a4-table.html",
+    "file_bytes": 375848,
+    "requests": [
+      {
+        "url": "file:///Users/abcdef/targetring/docs/exports/targetring-20260924T061611Z-e8d4a4-table.html",
+        "resource": "document",
+        "method": "GET"
+      }
+    ],
+    "network_requests": [],
+    "console": [],
+    "grid": {
+      "heads": [
+        "Gene",
+        "k",
+        "1 logFC (yours)yours",
+        "2 -log10 padj (yours)yours",
+        "3 Druggabilityretired ring",
+        "4 Safety / tolerabilityOpen Targets",
+        "5 Regional specificityGTEx v8",
+        "6 Pipeline: furthest phaseOpen Targets",
+        "7 Pipeline: current activityOpen Targets",
+        "8 Rodent phenotype leadOpen Targets",
+        "9 Literature volumePubTator3",
+        "10 k \u2014 rings availablederived"
+      ],
+      "genes": [
+        "EGFR",
+        "KCNQ1",
+        "MARCHF1",
+        "TP53",
+        "PTEN",
+        "BRAF",
+        "CDKN2A",
+        "INS",
+        "BRCA1",
+        "SEPTIN9",
+        "MIR29B2CHG",
+        "OR51E2",
+        "GAPDH",
+        "TMEM229B"
+      ],
+      "blank_cells": 0,
+      "state_words": [
+        "kcell",
+        "st-no_data",
+        "st-not_applicable",
+        "st-value"
+      ],
+      "divider": null,
+      "sort_chips": [],
+      "sort_note": "unsorted \u2014 the order this run drew the spokes in",
+      "dim_tally": null,
+      "dim_note": null,
+      "dim_tags": [],
+      "selfcheck": "PASS This file reproduced all 140 answers this build computed for it before drawing the grid: 37 row orders with their stated sentences and no-value blocks, and 103 dim classifications with their per-gene reasons, counts and count lines. Th",
+      "selfcheck_failed": false,
+      "drawer_buttons": 0,
+      "citations": 10,
+      "ledger_rows": 3,
+      "invariants": 12
+    },
+    "ring3": "3 Druggabilityretired ring",
+    "ring3_citation": "Druggability Open Targets (retired 4-key Druggability, not Tractability) \u00b7 platform-docs.opentargets.org"
+  }
+}

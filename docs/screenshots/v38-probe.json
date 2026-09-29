@@ -1,0 +1,257 @@
+{
+  "run": "20260928T044236Z-893dec",
+  "port": 8811,
+  "base": "http://127.0.0.1:8811",
+  "arrived_without_a_figure_in_session": true,
+  "dimmed_on": {
+    "key": "chemical_probe",
+    "label": "Chemical probe available",
+    "threshold": 1
+  },
+  "restore": {
+    "grid_html_identical": true,
+    "bytes_before": 45635,
+    "bytes_after": 45635,
+    "counts_line_identical": true,
+    "count_line_gone": true,
+    "no_dim_class_left": 0
+  },
+  "styles": {
+    "n_rows": 15,
+    "match": {
+      "gene": "HMGCR",
+      "classes": "",
+      "rail": "none",
+      "gene_bg": "rgb(255, 255, 255)",
+      "cell_opacity": "1",
+      "tag_text": null,
+      "tag_px": null,
+      "tag_colour": null,
+      "title": null
+    },
+    "dimmed": {
+      "gene": "KCNH2",
+      "classes": " dim-out",
+      "rail": "rgb(22, 35, 58) 5px 0px 0px 0px inset",
+      "gene_bg": "rgb(255, 255, 255)",
+      "cell_opacity": "0.42",
+      "tag_text": "dimmed",
+      "tag_px": 12,
+      "tag_colour": "rgb(22, 35, 58)",
+      "title": "chemical_probe = 0, which is not is at least 1"
+    },
+    "unevaluable": {
+      "gene": "PCSK9",
+      "classes": "unplaced dim-unevaluable",
+      "rail": "rgb(138, 75, 0) 5px 0px 0px 0px inset",
+      "gene_bg": "rgb(251, 232, 200)",
+      "cell_opacity": "1",
+      "tag_text": "cannot be evaluated",
+      "tag_px": 12,
+      "tag_colour": "rgb(138, 75, 0)",
+      "title": "chemical_probe is no_data for this gene, so 'chemical_probe is at least 1' cannot be evaluated. Kept at full strength: no value is not a low value, and this filter has nothing to say about it."
+    },
+    "no_data_cell": {
+      "text": "no data",
+      "background": "repeating-linear-gradient(45deg, rgb(232, 232, 232) 0px, rgb(232, 232, 232) 4px,",
+      "opacity": "1"
+    },
+    "dim_key_columns": [
+      "4 Chemical probe available \u21931Open Targets"
+    ],
+    "count_line": "\n       4 shown \u00b7\n       1 dimmed \u00b7\n       9 cannot be evaluated\n     Dimming Chemical probe available is at least 1. All 14 genes are still on the grid; nothing was removed and nothing was added to the drop ledger.\n     \n        matches the bound\n        has a value and misses it \u2014\n         faded, still here\n        no value on this column,\n         so the bound cannot be evaluated \u2014 full strength\n     \n     Dimming is a view state: the\n       14 genes rendered and the\n       1 in the drop ledger are the same\n       numbers as with no dim filter set. A dimmed gene is a rendered gene.",
+    "count_line_px": 13.5,
+    "table_counts": "\n       15 genes in \u00b7 14 in this table \u00b7\n       1\n         not shown \u2014 why? \u00b7\n       region Lung \u00b7\n       input = rendered + ledgered\n       15 = 14 + 1,\n         checked against this run's own artefacts before the table was built\n     ",
+    "count_line_above_grid": true,
+    "smallest_new_px": 12
+  },
+  "problems": [],
+  "geometry": {
+    "grid": {
+      "x": 26,
+      "y": 1653.25,
+      "w": 1388,
+      "h": 977.0625
+    },
+    "head": {
+      "x": 26.5,
+      "y": 1653.75,
+      "w": 140.921875,
+      "h": 89
+    },
+    "first": {
+      "x": 26.5,
+      "y": 1742.75,
+      "w": 1387,
+      "h": 46.09375
+    },
+    "last": {
+      "x": 26.5,
+      "y": 2093.0625,
+      "w": 1387,
+      "h": 67.09375
+    },
+    "key_right": 589.671875,
+    "scroll_width": 1388,
+    "scroll_left": 0,
+    "no_data": {
+      "x": 482.71875,
+      "y": 2025.46875,
+      "w": 106.953125,
+      "h": 67.59375
+    },
+    "named": {
+      "match": {
+        "row": {
+          "x": 26.5,
+          "y": 1742.75,
+          "w": 1387,
+          "h": 46.09375
+        },
+        "gene": {
+          "x": 26.5,
+          "y": 1742.75,
+          "w": 140.921875,
+          "h": 46.09375
+        },
+        "cell": {
+          "x": 203.875,
+          "y": 1742.75,
+          "w": 89.21875,
+          "h": 46.09375
+        }
+      },
+      "dim-out": {
+        "row": {
+          "x": 26.5,
+          "y": 1927.125,
+          "w": 1387,
+          "h": 67.59375
+        },
+        "gene": {
+          "x": 26.5,
+          "y": 1927.125,
+          "w": 140.921875,
+          "h": 67.59375
+        },
+        "cell": {
+          "x": 203.875,
+          "y": 1927.125,
+          "w": 89.21875,
+          "h": 67.59375
+        }
+      },
+      "dim-unevaluable": {
+        "row": {
+          "x": 26.5,
+          "y": 2025.46875,
+          "w": 1387,
+          "h": 67.59375
+        },
+        "gene": {
+          "x": 26.5,
+          "y": 2025.46875,
+          "w": 140.921875,
+          "h": 67.59375
+        },
+        "cell": {
+          "x": 203.875,
+          "y": 2025.46875,
+          "w": 89.21875,
+          "h": 67.59375
+        }
+      }
+    }
+  },
+  "clip": {
+    "x": 26,
+    "y": 1653.75,
+    "width": 565.671875,
+    "height": 508.40625
+  },
+  "luminance": {
+    "match": {
+      "rail": {
+        "mean": 252.43,
+        "sd": 9.27
+      },
+      "rail_grey": {
+        "mean": 252.43,
+        "sd": 9.27
+      },
+      "data_cell": {
+        "mean": 153.5,
+        "sd": 17.37
+      },
+      "data_cell_grey": {
+        "mean": 153.5,
+        "sd": 17.37
+      },
+      "gene_cell_grey": {
+        "mean": 237.03,
+        "sd": 53.41
+      }
+    },
+    "dim-out": {
+      "rail": {
+        "mean": 47.21,
+        "sd": 47.64
+      },
+      "rail_grey": {
+        "mean": 47.21,
+        "sd": 47.64
+      },
+      "data_cell": {
+        "mean": 205.01,
+        "sd": 6.68
+      },
+      "data_cell_grey": {
+        "mean": 205.01,
+        "sd": 6.68
+      },
+      "gene_cell_grey": {
+        "mean": 231.33,
+        "sd": 63.36
+      }
+    },
+    "dim-unevaluable": {
+      "rail": {
+        "mean": 94.57,
+        "sd": 34.51
+      },
+      "rail_grey": {
+        "mean": 94.57,
+        "sd": 34.51
+      },
+      "data_cell": {
+        "mean": 96.72,
+        "sd": 20.15
+      },
+      "data_cell_grey": {
+        "mean": 96.72,
+        "sd": 20.15
+      },
+      "gene_cell_grey": {
+        "mean": 212.05,
+        "sd": 52.86
+      }
+    },
+    "hatched_no_data_cell": {
+      "data_cell": {
+        "mean": 214.37,
+        "sd": 30.95
+      },
+      "data_cell_grey": {
+        "mean": 214.37,
+        "sd": 30.95
+      }
+    }
+  },
+  "separation_greyscale": {
+    "dimmed_vs_match_mean": 51.51,
+    "unevaluable_vs_dimmed_rail_mean": 47.36,
+    "unevaluable_vs_match_gene_cell_mean": -24.98,
+    "hatch_local_contrast_sd": 30.95,
+    "dimmed_cell_local_contrast_sd": 6.68
+  }
+}

@@ -7,3 +7,4 @@ __pycache__/
 logs/
 cache.v*-pre/
 cache.v*-warm/
+docs/exports/
