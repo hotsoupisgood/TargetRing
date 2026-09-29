@@ -57,9 +57,13 @@ produce a clean-looking chart.
    **decided, stated on the figure and checked in the artefact**, and the
    default is the order of the submitted table. Threshold filters may remove
    genes from the plot, and then the figure says so.
-8. **Money.** The LLM triage is the only paid call. Cap $5 for this project,
-   separate from ytpt's ledger. Triage the top 10 genes or on click, never a
-   whole 200-gene list.
+8. **Money.** Two paid calls, two separate $5 caps with their own counters:
+   LLM triage (`LLM_SPEND_CAP_USD`, top 10 genes or on click, never a whole
+   200-gene list) and the phenotype summary (`PHENOTYPE_LLM_SPEND_CAP_USD`,
+   one call per gene, summarises only the table it sits above). Neither
+   borrows from the other. Both separate from ytpt's ledger.
+   *Amended 2026-09-29, Puck on WhatsApp; previously "the LLM triage is the
+   only paid call".*
 9. **Rate limits are unmeasured.** Cap concurrency at 4 per host. Treat any 429
    as a hard run failure — never a retry loop.
 10. **Nothing public.** Local only. No deploys, no public URLs, no data pushed
