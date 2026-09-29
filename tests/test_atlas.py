@@ -704,6 +704,220 @@ class TestAutocompleteEntry:
 # the source registry
 # ===========================================================================
 
+# ===========================================================================
+# stage 2 — the contrast picker
+# ===========================================================================
+
+@pytest.fixture()
+def picker(crohns_index):
+    """The Crohn's picker, built offline from the sliced real index."""
+    ref = DiseaseRef(
+        label="Crohn disease", current_id="MONDO_0005011",
+        atlas_ids=("MONDO_0005011", "EFO_0000384"),
+        mapping_notes=("EFO_0000384 is obsolete in EFO 3.88.0 and names "
+                       "MONDO_0005011 as its replacement",))
+    return idx.picker_payload(crohns_index, ref)
+
+
+class TestThePickerFiltersContrastsNotExperiments:
+    def test_one_row_is_one_contrast(self, picker) -> None:
+        """101 rows from `E-GEOD-100833`, not one row for `E-GEOD-100833`. The sign,
+        the groups and the n per side differ per contrast."""
+        assert len(picker["rows"]) == 138
+        from collections import Counter
+        per = Counter(r["accession"] for r in picker["rows"])
+        assert per["E-GEOD-100833"] == 101
+        assert len(per) == 17
+        assert "CONTRAST, not one experiment" in picker["row_unit"]
+
+    def test_no_row_is_an_experiment(self, picker) -> None:
+        for r in picker["rows"]:
+            assert r["contrast_id"], r
+            assert r["contrast_id"] != r["accession"]
+
+    def test_every_row_shows_n_per_side(self, picker) -> None:
+        for r in picker["rows"]:
+            assert isinstance(r["n_test"], int) and r["n_test"] >= 1
+            assert isinstance(r["n_ref"], int) and r["n_ref"] >= 1
+            assert r["min_n"] == min(r["n_test"], r["n_ref"])
+
+    def test_the_default_order_is_accession_then_contrast_id(self, picker) -> None:
+        assert picker["order"] == ""
+        assert picker["order_text"] == "accession, then contrast id"
+        keys = [(r["accession"], r["contrast_id"]) for r in picker["rows"]]
+        assert keys == sorted(keys)
+
+
+class TestThePickerFlags:
+    def test_the_four_flag_counts(self, picker) -> None:
+        f = picker["flag_counts"]
+        assert f["microarray"] == 121
+        assert f["n_under_8_total"] == 75
+        assert f["n_lt_4"] == 18
+        assert f["invalid_id"] == 0
+
+    def test_only_seventeen_of_the_one_hundred_and_thirty_eight_are_drawable(
+            self, picker) -> None:
+        assert picker["n_drawable_now"] == 17
+        assert all(r["is_rnaseq"] for r in picker["rows"] if r["drawable"])
+
+    def test_microarray_rows_are_greyed_with_a_reason_and_still_counted(
+            self, picker) -> None:
+        """Hiding them would make this picker look like Atlas has 17 Crohn's
+        contrasts. 121 of 138 is the number the greying is protecting."""
+        micro = [r for r in picker["rows"] if not r["is_rnaseq"]]
+        assert len(micro) == 121
+        for r in micro[:5]:
+            assert r["drawable"] is False
+            assert "stage 6" in r["not_drawable_reason"]
+            flag = next(f for f in r["flags"] if f["key"] == "microarray")
+            assert r["platform"] in flag["label"]
+            assert "hiding it" in flag["reason"]
+        # ...and they are in `rows`, which is what "still counted" means.
+        assert len(picker["rows"]) == 138
+
+    def test_single_experiment_dominance_is_printed_once_at_the_top(self, picker) -> None:
+        d = picker["dominance"]
+        assert d["accession"] == "E-GEOD-100833"
+        assert (d["n"], d["of"]) == (101, 138)
+        assert d["text"] == ("101 of 138 contrasts here are from one experiment, "
+                            "E-GEOD-100833")
+
+    def test_the_loud_small_n_flag_replaces_the_quiet_one(self, picker) -> None:
+        """A row is flagged at one level, not both, and both totals are given so a
+        reader does not have to add them up and guess which is which."""
+        for r in picker["rows"]:
+            assert not {"n_lt_4", "n_lt_8"} <= set(r["flag_keys"])
+        f = picker["flag_counts"]
+        assert f["n_lt_8"] + f["n_lt_4"] == f["n_under_8_total"]
+
+    def test_the_smallest_side_in_the_whole_picker_is_three(self, picker) -> None:
+        assert min(r["min_n"] for r in picker["rows"]) == 3
+
+    def test_no_flag_removes_a_row(self, picker, crohns_index) -> None:
+        """The row count is the index's count for this disease, flags or no flags.
+        121 microarray rows and 18 tiny-n rows are all still here."""
+        assert len(picker["rows"]) == crohns_index.summary_for(
+            CROHNS_IDS).n_contrasts
+        flagged = [r for r in picker["rows"] if r["flags"]]
+        assert len(flagged) == 125, "121 microarray + 4 RNA-seq rows with a small n"
+        assert sum(1 for r in picker["rows"] if r["is_rnaseq"] and r["flags"]) == 4
+        assert all(f <= len(picker["rows"])
+                   for f in picker["flag_counts"].values())
+
+
+class TestThePickerNeverPicks:
+    def test_there_is_no_default_and_no_recommended_field(self, picker) -> None:
+        """The spike's verdict: no sensible default exists. A default in a payload
+        is a recommendation whatever the UI calls it."""
+        body = json.dumps(picker).lower()
+        for banned in ('"selected"', '"recommended"', '"default_contrast"',
+                       '"best"', '"suggested"', '"score"', '"rank"'):
+            assert banned not in body, banned
+        assert "No contrast is picked for you" in picker["no_default"]
+
+    def test_no_row_carries_a_marker(self, picker) -> None:
+        for r in picker["rows"]:
+            assert "selected" not in r and "recommended" not in r
+
+
+class TestThePickerSort:
+    def test_a_single_column_sort_keeps_the_default_as_the_tie_break(
+            self, crohns_index) -> None:
+        ref = DiseaseRef(label="x", current_id="MONDO_0005011",
+                         atlas_ids=("MONDO_0005011", "EFO_0000384"))
+        p = idx.picker_payload(crohns_index, ref, sort="n")
+        mins = [r["min_n"] for r in p["rows"]]
+        assert mins == sorted(mins)
+        assert p["order"] == "n"
+        assert p["order_text"].startswith("smallest side, ascending")
+        # and within one n, the default order
+        threes = [(r["accession"], r["contrast_id"])
+                  for r in p["rows"] if r["min_n"] == 3]
+        assert threes == sorted(threes)
+
+    def test_platform_sorts_by_platform_only(self, crohns_index) -> None:
+        ref = DiseaseRef(label="x", current_id="MONDO_0005011",
+                         atlas_ids=("MONDO_0005011", "EFO_0000384"))
+        p = idx.picker_payload(crohns_index, ref, sort="platform")
+        plats = [r["platform"] for r in p["rows"]]
+        assert plats == sorted(plats)
+
+    def test_an_order_this_picker_cannot_honour_is_refused(self) -> None:
+        with pytest.raises(ValueError) as e:
+            idx.sort_picker_rows([], "n desc, platform")
+        assert "composite order" in str(e.value)
+
+    def test_there_is_no_composite_sort_on_offer(self) -> None:
+        assert set(idx.PICKER_SORTS) == {"", "n", "platform"}
+
+
+class TestAnInvalidContrastIsShownNotDropped:
+    def test_the_row_says_invalid_and_carries_no_contrast_ref(self) -> None:
+        """A dropped row is a contrast a reader never learns about; a greyed one
+        with a reason is a fact. Eight real Atlas contrasts need this."""
+        bad = idx.IndexedContrast(
+            accession="E-MTAB-11354", contrast_id="g1_g2", ref_group="g2",
+            test_group="g1", ref_label="normal", test_label="disease",
+            n_ref=10, n_test=10, name="prose", platform=RNASEQ,
+            test_disease_ids=("EFO_0000384",),
+            invalid_reason="contrast id 'g1_g2' is not g2_g1; the sign of every "
+                           "log2FC is unestablished")
+        row = idx.picker_row(bad, "2026-09-29T00:00:00+00:00")
+        assert row["flags"][0]["label"] == "INVALID — sign unsafe"
+        assert row["drawable"] is False
+        assert "sign of this contrast is unestablished" in row["not_drawable_reason"]
+        assert "contrast_ref" not in row, (
+            "a payload no assertion has passed over must not carry the sign")
+        assert row["sign_sentence"] == ""
+
+    def test_a_valid_row_carries_the_full_ref_and_the_sign_sentence(self) -> None:
+        good = idx.IndexedContrast(
+            accession="E-GEOD-101794", contrast_id="g2_g1", ref_group="g2",
+            test_group="g1", ref_label="control", test_label="Crohn's disease",
+            n_ref=13, n_test=61, name="'Crohn's disease' vs 'control'",
+            platform=RNASEQ, test_disease_ids=("EFO_0000384",))
+        row = idx.picker_row(good, "2026-09-29T00:00:00+00:00")
+        assert row["drawable"] is True
+        assert row["sign_sentence"] == (
+            "positive log2FC = up in Crohn's disease (n=61) vs control (n=13)")
+        assert row["contrast_ref"]["index_built_utc"] == "2026-09-29T00:00:00+00:00"
+        assert row["contrast_ref"]["name"] == "'Crohn's disease' vs 'control'"
+
+    def test_the_fixture_index_carries_one_such_row_end_to_end(self, tmp_path) -> None:
+        """Built from `E-FAKE-1`, through `build_index`, to a picker row."""
+        import asyncio
+        http = TestIndexBuiltFromFixtures.FixtureHttp()
+        index = asyncio.run(idx.build_index(http, Cache(enabled=False),
+                                           accessions=["E-FAKE-1"]))
+        ref = DiseaseRef(label="x", current_id="MONDO_0005011",
+                         atlas_ids=("MONDO_0005011", "EFO_0000384"))
+        p = idx.picker_payload(index, ref)
+        assert [r["contrast_id"] for r in p["rows"]] == ["g1_g2", "g2_g1"]
+        assert p["flag_counts"]["invalid_id"] == 1
+        assert p["n_drawable_now"] == 1
+
+
+class TestThePickerShowsTheTissue:
+    def test_the_tissue_column_comes_from_the_organism_part_factor(self, picker) -> None:
+        blood = [r for r in picker["rows"] if r["tissue"] == ["blood"]]
+        assert blood, "E-GEOD-100833's blood contrasts"
+        ileum = [r for r in picker["rows"] if "ileum" in r["tissue"]]
+        assert ileum
+
+    def test_an_unannotated_tissue_is_an_empty_list_not_a_guess(self, picker) -> None:
+        """`E-TABM-733` has no `organism part` annotation at all. The picker shows
+        that as absent; it does not infer a tissue from the prose."""
+        bare = [r for r in picker["rows"] if r["accession"] == "E-TABM-733"]
+        assert bare and all(r["tissue"] == [] for r in bare)
+
+    def test_the_index_schema_was_bumped_for_it(self) -> None:
+        """A v1 row has no tissue, and an empty cell would read as "this contrast
+        has no tissue" rather than "this index did not record one"."""
+        assert idx.INDEX_SCHEMA_VERSION == "2"
+        assert "v2" in str(idx.index_path())
+
+
 @pytest.fixture()
 def client(monkeypatch):
     """`TestClient` with the route's two collaborators pointed offline.
@@ -788,6 +1002,74 @@ class TestDiseasesRoute:
         assert r.status_code == 502
         assert r.json()["error"] == "source_failure"
         assert "partial" in r.json()["note"]
+
+
+class TestContrastsRoute:
+    def test_it_returns_the_crohns_picker(self, client) -> None:
+        r = client.get("/api/contrasts", params={"disease": "MONDO_0005011"})
+        assert r.status_code == 200
+        b = r.json()
+        assert len(b["rows"]) == 138
+        assert b["flag_counts"]["microarray"] == 121
+        assert b["n_drawable_now"] == 17
+        assert b["dominance"]["n"] == 101
+
+    def test_the_atlas_ids_are_re_derived_not_taken_from_the_query(self, client) -> None:
+        """One cached OLS4 round trip per request, so the id-space bridge is
+        asserted every time rather than once at autocomplete time."""
+        b = client.get("/api/contrasts",
+                       params={"disease": "MONDO_0005011"}).json()
+        assert b["disease"]["atlas_ids"] == ["MONDO_0005011", "EFO_0000384"]
+        assert b["disease"]["obsolete_atlas_ids"] == ["EFO_0000384"]
+        assert b["disease"]["mapping_notes"]
+
+    def test_the_obsolete_atlas_id_is_refused_as_a_disease_argument(self, client) -> None:
+        """`?disease=EFO_0000384` is the mistake the two-id record exists to stop:
+        that is the Atlas-side id and Open Targets returns null for it."""
+        r = client.get("/api/contrasts", params={"disease": "EFO_0000384"})
+        assert r.status_code == 422
+        assert r.json()["error"] == "disease_not_resolvable"
+        assert "obsolete" in r.json()["message"]
+
+    def test_a_disease_id_is_required(self, client) -> None:
+        assert client.get("/api/contrasts").status_code == 400
+
+    def test_a_rejected_sort_is_a_422_not_a_silent_swap(self, client) -> None:
+        r = client.get("/api/contrasts",
+                       params={"disease": "MONDO_0005011", "sort": "best"})
+        assert r.status_code == 422
+        assert r.json()["error"] == "sort_rejected"
+
+    def test_a_single_column_sort_is_honoured(self, client) -> None:
+        b = client.get("/api/contrasts",
+                       params={"disease": "MONDO_0005011", "sort": "n"}).json()
+        assert [r["min_n"] for r in b["rows"]] == sorted(
+            r["min_n"] for r in b["rows"])
+
+    def test_a_missing_index_is_a_503(self, client, monkeypatch, tmp_path) -> None:
+        from targetring import app as app_mod
+        monkeypatch.setattr(app_mod.atlas_index, "index_path",
+                            lambda *a, **k: tmp_path / "nope.json")
+        monkeypatch.setattr(app_mod, "_index_cache", None)
+        r = client.get("/api/contrasts", params={"disease": "MONDO_0005011"})
+        assert r.status_code == 503
+
+    def test_the_payload_states_that_nothing_is_picked(self, client) -> None:
+        b = client.get("/api/contrasts",
+                       params={"disease": "MONDO_0005011"}).json()
+        assert "No contrast is picked for you" in b["no_default"]
+        assert "CONTRAST, not one experiment" in b["row_unit"]
+
+    def test_the_index_build_date_travels_with_every_row(self, client) -> None:
+        b = client.get("/api/contrasts",
+                       params={"disease": "MONDO_0005011"}).json()
+        assert b["index"]["built_utc"].startswith("2026-")
+        # The date is in the payload as a printable sentence too, STALE marker
+        # included, so the page never composes that claim for itself.
+        assert b["counts"]["built_text"].startswith("index built 2026-")
+        drawable = [r for r in b["rows"] if r["drawable"]]
+        assert all(r["contrast_ref"]["index_built_utc"] == b["index"]["built_utc"]
+                   for r in drawable)
 
 
 class TestTheNewSourcesAreRegistered:

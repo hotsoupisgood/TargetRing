@@ -195,7 +195,7 @@ function diseaseHitHtml(d, i) {
   return `<li><button class="hit" id="hit-${i}">
       <b>${esc(d.label)}</b> <code>${esc(d.current_id)}</code>
       <span class="hit-count${c.n_contrasts ? "" : " zero"}">${esc(c.count_text)}</span>
-      <span class="hint">${esc(c.built_text)}</span><br>${obsolete}
+      <span class="hint">· ${esc(c.built_text)}</span><br>${obsolete}
     </button></li>`;
 }
 
@@ -249,9 +249,147 @@ function chooseDisease(d, ix) {
   loadContrasts(d, ix);
 }
 
-// Stage 2 fills this in. Declared here so stage 1's chooser has something to
-// call, and so the two halves of the panel land in one place.
-function loadContrasts(_d, _ix) {}
+// ---------- stage 2: the contrast picker ----------
+//
+// Three rules this table follows and one it refuses.
+//
+// * **A row is a contrast.** `E-GEOD-100833` appears 101 times, because the sign,
+//   the groups and the n per side differ per contrast. An experiment is never a
+//   row.
+// * **Every flag is visible and no flag removes a row.** 121 of the 138 Crohn's
+//   contrasts are microarray; they are greyed with the reason and still counted,
+//   because hiding them would make this panel look like Atlas has 17.
+// * **Single-column sort only**, and an order the server will not honour is
+//   reported rather than quietly swapped for another.
+//
+// And the refusal: **nothing is preselected.** 101 of the 138 come from one
+// ustekinumab trial, and the spike's verdict is that no sensible default exists.
+
+let PICKER = { disease: null, sort: "" };
+
+async function loadContrasts(d, _ix) {
+  PICKER.disease = d;
+  const panel = $("#contrast-panel");
+  panel.hidden = false;
+  panel.innerHTML = `<p class="hint">loading contrasts for ${esc(d.current_id)}…</p>`;
+  const r = await fetch("/api/contrasts?disease=" + encodeURIComponent(d.current_id) +
+                        (PICKER.sort ? "&sort=" + encodeURIComponent(PICKER.sort) : ""));
+  const b = await r.json();
+  if (!r.ok) {
+    panel.innerHTML = `<div class="note bad"><b>${esc(b.error || "failed")}</b><br>
+      ${esc(b.message || "")}<br><span class="hint">${esc(b.note || "")}</span></div>`;
+    return;
+  }
+  renderContrasts(b);
+}
+
+function renderContrasts(b) {
+  const f = b.flag_counts;
+  const c = b.counts;
+  $("#contrast-panel").innerHTML = `
+    <h2>Contrasts</h2>
+    <p class="picker-head"><b>${esc(c.count_text)}</b> · ${esc(c.built_text)} ·
+      <b>${b.n_drawable_now}</b> drawable now (RNA-seq).</p>
+    ${b.dominance ? `<div class="note warn"><b>${esc(b.dominance.text)}</b> —
+      these rows are not independent evidence.</div>` : ""}
+    <p class="hint">${esc(b.row_unit)}<br><b>${esc(b.no_default)}</b></p>
+    <div class="row">
+      <label for="picker-sort">Order</label>
+      <select id="picker-sort">${b.sorts.map((s) =>
+        `<option value="${esc(s.value)}" ${s.value === b.order ? "selected" : ""}>${
+          esc(s.label)}</option>`).join("")}</select>
+      <span class="hint">shown: ${esc(b.order_text)}. One column at a time — a
+        composite order over n and platform would be a ranking of contrasts.</span>
+    </div>
+    <p class="hint">Flagged: ${f.n_under_8_total} with a side under n=8
+      (${f.n_lt_4} of them under n=4), ${f.microarray} microarray,
+      ${f.invalid_id} with an id that is not <code>{reference}_{test}</code>,
+      ${f.unannotated} with assays missing from the condensed SDRF.
+      Every one of those rows is still in the table below.</p>
+    <div class="scroll-x"><table class="picker"><thead><tr>
+      <th>accession</th><th>contrast</th><th>test (n)</th><th>reference (n)</th>
+      <th>tissue</th><th>platform</th><th>drawable?</th><th>flags</th>
+    </tr></thead><tbody>${b.rows.map((r, i) => contrastRowHtml(r, i)).join("")}
+    </tbody></table></div>
+    <div id="contrast-detail"></div>`;
+  $("#picker-sort").onchange = (e) => {
+    PICKER.sort = e.target.value;
+    loadContrasts(PICKER.disease, b.index);
+  };
+  b.rows.forEach((r, i) => {
+    const el = $(`#crow-${i}`);
+    if (el) el.onclick = () => showContrast(r);
+  });
+}
+
+function contrastRowHtml(r, i) {
+  const cls = [r.drawable ? "" : "greyed",
+               r.flag_keys.includes("invalid_id") ? "invalid" : ""].join(" ");
+  const tissue = r.tissue.length ? esc(r.tissue.join(", "))
+    : `<span class="hint">not annotated</span>`;
+  const drawable = r.drawable
+    ? `<span class="pill ok">yes</span>`
+    : `<span class="pill ${r.flag_keys.includes("invalid_id") ? "bad" : "grey"}">no</span>`;
+  return `<tr id="crow-${i}" class="${cls}">
+    <td><code>${esc(r.accession)}</code></td>
+    <td><code>${esc(r.contrast_id)}</code></td>
+    <td>${esc(r.test_label || "—")} <b>(${r.n_test})</b></td>
+    <td>${esc(r.ref_label || "—")} <b>(${r.n_ref})</b></td>
+    <td>${tissue}</td>
+    <td>${r.is_rnaseq ? "RNA-seq" : `<code>${esc(r.platform)}</code>`}</td>
+    <td>${drawable}</td>
+    <td>${r.flags.map((x) =>
+      `<span class="flag ${esc(x.key)}">${esc(x.label)}</span>`).join(" ")}</td>
+  </tr>`;
+}
+
+// Clicking a row shows the whole `ContrastRef` and the sign sentence BEFORE any
+// statistic is fetched: the sign is the one thing about a contrast that is a
+// single token away from a plausible wrong figure, so it is read first.
+function showContrast(r) {
+  const ref = r.contrast_ref;
+  // `ensembl_release` and `pipeline` are empty on an index-built ref: the index
+  // is two GETs per experiment and `-analysis-methods.tsv` would be a third, for
+  // two strings that only matter once a contrast is drawn. An empty cell would
+  // read as "this contrast has no pipeline", so the reason is printed instead.
+  const NOT_YET = {
+    ensembl_release: "not fetched yet — stage 3 reads -analysis-methods.tsv",
+    pipeline: "not fetched yet — stage 3 reads -analysis-methods.tsv",
+  };
+  const rows = ref
+    ? Object.entries(ref).filter(([k]) => k !== "sign_sentence")
+        .map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td>${
+          (v === "" || v === null || v === undefined)
+            ? `<span class="hint">${esc(NOT_YET[k] || "not stated by this source")}</span>`
+            : esc(v)}</td></tr>`)
+        .join("")
+    : "";
+  // A `<p>`, not an `<h2>`: `h2` is uppercased by the stylesheet and `g2_g1`
+  // uppercased is `G2_G1`, which is not this contrast's id. An identifier printed
+  // in the wrong case is a small version of the thing this whole panel exists to
+  // prevent.
+  $("#contrast-detail").innerHTML = `
+    <p class="detail-head"><code>${esc(r.accession)}</code> ·
+      <code>${esc(r.contrast_id)}</code></p>
+    <p class="prose-name">${esc(r.name || "(this experiment states no prose name)")}</p>
+    ${r.sign_sentence
+      ? `<div class="note"><b>${esc(r.sign_sentence)}</b><br>
+         The contrast id is <code>{reference}_{test}</code>, so
+         <code>${esc(r.contrast_id)}</code> means reference
+         <code>${esc(ref.ref_group)}</code> and test
+         <code>${esc(ref.test_group)}</code>. Reading it left to right would invert
+         every log2 fold change.</div>`
+      : `<div class="note bad"><b>The sign of this contrast is unestablished.</b>
+         ${esc(r.flags.map((f) => f.reason).join(" "))} No figure is drawn from it.
+         </div>`}
+    ${r.drawable ? "" : `<p class="hint"><b>Not drawable:</b> ${
+      esc(r.not_drawable_reason)}</p>`}
+    ${rows ? `<table class="kvtable"><tbody>${rows}</tbody></table>` : ""}
+    <p class="hint">No statistic has been fetched for this contrast yet.
+      <a href="${esc(r.configuration_url)}" target="_blank" rel="noopener">its
+      <code>-configuration.xml</code></a> is where every string above comes from.</p>`;
+  $("#contrast-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
 
 function showTab(name) {
   document.querySelectorAll(".tab").forEach((x) =>

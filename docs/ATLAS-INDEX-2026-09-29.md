@@ -8,11 +8,11 @@ call. The build record is `logs/atlas-index-build.json`; the index itself is
 
 | | |
 |---|---|
-| built | `2026-09-29T22:15:59+00:00` |
+| built | `2026-09-29T22:15:59+00:00` (schema v1), rebuilt `22:37:58` at schema **v2** |
 | catalogue | 4,562 experiments (`Differential` 4,187, `Baseline` 375) |
 | population | **369** human `Differential` experiments carrying a `disease` factor |
 | requests | 738 (`-configuration.xml` + `.condensed-sdrf.tsv` per experiment) |
-| elapsed | 42.2 s |
+| elapsed | 42.2 s cold; 0.4 s warm (739 cache hits, 0 misses) for the v2 rebuild |
 | experiments indexed | 369 of 369, **0 failed to parse** |
 | contrasts | **1,126** — 272 RNA-seq, 854 microarray across 20 array designs |
 | distinct disease ids on a test group | 247 |
@@ -100,6 +100,19 @@ factor, not the disease. So it is a Crohn's contrast (n=24 vs 42) and the picker
 lists it. What makes it dangerous is what its heatmap looks like, which is stage
 4's problem; what the picker owes a reader is the label, the n per side and the
 flags.
+
+## Schema v2
+
+Stage 2 added the `organism part` values on both sides of every contrast — the
+picker's tissue column. A v1 row has no tissue in it, and an empty cell would
+read as "this contrast has no tissue" rather than "this index did not record
+one", so the schema version was bumped and the index rebuilt rather than the
+field being added silently. The rebuild came off the warm HTTP cache: 739 hits,
+0 misses, 0.4 s, no request to EBI, same 1,126 contrasts.
+
+Where an experiment annotates no `organism part` at all — `E-TABM-733`, for
+instance — the column is empty and says so. No tissue is inferred from the prose
+name.
 
 ## Rebuilding
 

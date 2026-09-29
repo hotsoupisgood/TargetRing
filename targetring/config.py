@@ -99,7 +99,12 @@ SCHEMA_VERSIONS = {
     # The contrast index built from the two above. Its schema version is also in
     # the on-disk index's own `schema_version` field, so an index written by an
     # older parse is refused rather than read with today's field names.
-    "atlas.index": "1",
+    #
+    # v2 (stage 2): each row gains the `organism part` values on both sides. The
+    # picker has a tissue column, and a v1 row has no tissue in it -- which would
+    # render as an empty cell and read as "this contrast has no tissue" rather
+    # than "this index did not record one".
+    "atlas.index": "2",
 }
 
 # v2.4: `CTGOV_MAX_DRUG_HOPS` and `CTGOV_ROWS_PER_BUCKET` are gone with the hop.

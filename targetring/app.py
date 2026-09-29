@@ -151,6 +151,57 @@ async def diseases(q: str = "", limit: int = 8) -> JSONResponse:
     })
 
 
+@app.get("/api/contrasts")
+async def contrasts(disease: str = "", sort: str = "") -> JSONResponse:
+    """Every Atlas contrast for one disease, with every reason to look twice.
+
+    `disease` is a **current** id (`MONDO_0005011`), and the Atlas-side ids are
+    re-derived from it here rather than being accepted from the query string. That
+    is one OLS4 round trip per request (cached), and it buys the thing this feature
+    is most likely to get wrong: the id-space bridge is asserted on every request
+    instead of once at autocomplete time, so no amount of editing a URL can get an
+    obsolete id sent to Open Targets or a current id used to look up an archive.
+
+    What this route deliberately does not have:
+
+    * **a default pick, or a recommended row.** The spike's verdict is that no
+      sensible default exists -- 101 of the 138 Crohn's contrasts come from one
+      ustekinumab trial. A default in a payload is a recommendation whatever the
+      UI calls it (rule 7).
+    * **a composite order.** One column at a time, or the default. A ranking of
+      contrasts is a ranking.
+    * **a filter that removes microarray.** 121 of the 138 are microarray; greying
+      them with a reason and a count is the difference between "not drawable yet"
+      and "Atlas has 17 Crohn's contrasts".
+    """
+    want = disease.strip()
+    if not want:
+        raise HTTPException(400, "Give a disease id, e.g. disease=MONDO_0005011")
+    try:
+        index = _atlas_index()
+    except atlas_index.IndexMissing as e:
+        return JSONResponse({"error": "index_missing", "message": str(e)},
+                            status_code=503)
+    cache = Cache()
+    try:
+        async with Http() as http:
+            ref = await OLSAdapter(http, cache).resolve_id(want)
+    except HardFailure as e:
+        # Includes the obsolete-id case: `disease=EFO_0000384` is refused, because
+        # that is the Atlas-side id and Open Targets returns null for it.
+        return JSONResponse(
+            {"error": "disease_not_resolvable", "message": str(e),
+             "note": "the disease id is not resolvable as a current term, so no "
+                     "contrast list is produced"}, status_code=422)
+    try:
+        return JSONResponse(atlas_index.picker_payload(index, ref, sort))
+    except ValueError as e:
+        # Same rule as the figure's order: an order this build cannot honour is
+        # refused, never quietly swapped for another while the panel names the first.
+        return JSONResponse({"error": "sort_rejected", "message": str(e)},
+                            status_code=422)
+
+
 @app.get("/api/orderings")
 async def orderings() -> dict[str, Any]:
     """The spoke orders this build offers, and the rings a filter can be set on.

@@ -1,0 +1,30 @@
+{
+  "hits": [
+    "Crohn disease MONDO_0005011 138 contrasts (17 RNA-seq, 121 microarray) in 17 experiments \u00b7 index built 2026-09-29Atlas-side id: EFO_0000384 (obsolete; never sent to Open Targets)",
+    "inflammatory bowel disease 1 MONDO_0009960 0 contrasts \u00b7 index built 2026-09-29",
+    "Crohn disease of the esophagus MONDO_0022901 0 contrasts \u00b7 index built 2026-09-29",
+    "oral Crohn disease MONDO_0005535 0 contrasts \u00b7 index built 2026-09-29",
+    "perianal Crohn disease MONDO_0005537 0 contrasts \u00b7 index built 2026-09-29Atlas-side id: EFO_0005627 (obsolete; never sent to Open Targets)",
+    "small bowel Crohn disease MONDO_0005539 0 contrasts \u00b7 index built 2026-09-29Atlas-side id: EFO_0005629 (obsolete; never sent to Open Targets)",
+    "gastroduodenal Crohn disease MONDO_0000710 0 contrasts \u00b7 index built 2026-09-29",
+    "Crohn disease, non-human animal MONDO_1013543 0 contrasts \u00b7 index built 2026-09-29"
+  ],
+  "index_note": "Local Atlas contrast index: 1126 contrasts from\n    369 of 369 human\n    differential experiments carrying a disease factor, built\n    2026-09-29.\n    0 experiment(s) failed to parse.\n    147 contrast(s) carry no\n    disease factor id on the test group, so they appear under no\n    disease at all. 8 contrast(s) have an id that is\n    not {reference}_{test} and are shown as sign-unsafe rather than\n    drawn.",
+  "picker_head": "138 contrasts (17 RNA-seq, 121 microarray) in 17 experiments \u00b7 index built 2026-09-29 \u00b7\n      17 drawable now (RNA-seq).",
+  "dominance": "101 of 138 contrasts here are from one experiment, E-GEOD-100833 \u2014\n      these rows are not independent evidence.",
+  "n_rows": 138,
+  "n_greyed": 121,
+  "first_row": "E-GEOD-100833 g15_g18 placebo_placebo; Crohn's disease; blood; normal tissue; 4 week (20) placebo_none; Crohn's disease; blood; normal tissue; 4 week (3) blood A-GEOD-13158 no microarray (A-GEOD-13158) \u2014 not drawable until stage 6 n<4 on a side (n=3)",
+  "flags": [
+    "microarray (A-GEOD-13158) \u2014 not drawable until stage 6",
+    "n<4 on a side (n=3)",
+    "n<8 on a side (n=4)",
+    "n<8 on a side (n=5)",
+    "n<8 on a side (n=6)",
+    "n<8 on a side (n=7)",
+    "microarray (A-AFFY-141) \u2014 not drawable until stage 6",
+    "microarray (A-AFFY-44) \u2014 not drawable until stage 6"
+  ],
+  "order_text": "shown: accession, then contrast id. One column at a time \u2014 a composite order over n and platform would be a ranking of contrasts.",
+  "no_default": "No contrast is picked for you. 101 of the 138 Crohn's contrasts come from one trial, and the spike's verdict is that no sensible default exists."
+}

@@ -63,6 +63,9 @@ INDEX_SCHEMA_VERSION = config.SCHEMA_VERSIONS["atlas.index"]
 #: The factor whose ontology ids file a contrast under a disease.
 DISEASE_FACTOR = "disease"
 
+#: The annotation the picker's tissue column shows.
+ORGANISM_PART_FACTOR = "organism part"
+
 
 def index_path(root: Path | None = None) -> Path:
     return (Path(root or config.CACHE_DIR) / "atlas.index"
@@ -98,6 +101,10 @@ class IndexedContrast:
     #: fact, and never used to file a contrast under a disease.
     test_characteristic_disease_ids: tuple[str, ...] = ()
     ref_characteristic_disease_ids: tuple[str, ...] = ()
+    #: The `organism part` values on each side — the picker's tissue column.
+    #: Distinct values, factors preferred, characteristics as the fallback.
+    test_organism_parts: tuple[str, ...] = ()
+    ref_organism_parts: tuple[str, ...] = ()
     #: Assays the condensed SDRF does not annotate at all. Reported on the row.
     unannotated_assays: int = 0
     #: Empty when the contrast is safe to draw; a sentence when it is not.
@@ -119,7 +126,8 @@ class IndexedContrast:
     def from_dict(cls, d: dict[str, Any]) -> "IndexedContrast":
         tuples = {"test_disease_ids", "ref_disease_ids",
                   "test_characteristic_disease_ids",
-                  "ref_characteristic_disease_ids"}
+                  "ref_characteristic_disease_ids",
+                  "test_organism_parts", "ref_organism_parts"}
         return cls(**{k: (tuple(v) if k in tuples else v) for k, v in d.items()})
 
     def as_ref(self, index_built_utc: str = "") -> ContrastRef:
@@ -149,9 +157,14 @@ class DiseaseContrastSummary:
     n_failed_experiments: int
 
     def as_dict(self) -> dict[str, Any]:
+        # Both derived strings, because both are printed and neither is the
+        # browser's to compose: `built_text` carries the STALE marker, and a page
+        # that built its own version of that sentence could disagree with the
+        # index about whether the count it is showing is current.
         return {**{k: (list(v) if isinstance(v, tuple) else v)
                    for k, v in self.__dict__.items()},
-                "count_text": self.count_text}
+                "count_text": self.count_text,
+                "built_text": self.built_text}
 
     @property
     def count_text(self) -> str:
@@ -345,6 +358,190 @@ class AtlasIndex:
         }
 
 
+# ---------------------------------------------------------------------------
+# the picker
+# ---------------------------------------------------------------------------
+
+#: Below this on either side, the picker flags the contrast. 75 of the 138
+#: Crohn's contrasts. Not a threshold that removes anything -- a label.
+SMALL_N = 8
+#: And below this, a second, louder flag. 18 of 138, minimum n = 3.
+VERY_SMALL_N = 4
+
+
+def _flags(c: IndexedContrast) -> list[dict[str, str]]:
+    """Every reason a reader should look twice at this row, all of them visible.
+
+    None of these removes a row. The picker's whole job is to make a bad contrast
+    *legible*, and a filter that quietly dropped the 121 microarray rows would
+    leave a reader believing Atlas has 17 Crohn's contrasts.
+    """
+    out: list[dict[str, str]] = []
+    if c.invalid_reason:
+        out.append({"key": "invalid_id", "label": "INVALID — sign unsafe",
+                    "reason": c.invalid_reason})
+    if not c.is_rnaseq:
+        out.append({
+            "key": "microarray",
+            "label": f"microarray ({c.platform}) — not drawable until stage 6",
+            "reason": ("microarray uses a second file layout "
+                       "({ACC}_{PLATFORM}-analytics.tsv and "
+                       "-normalized-expressions.tsv) and a different heatmap "
+                       "recipe. The row is greyed and still counted: hiding it "
+                       "would make this picker look like Atlas has only the "
+                       "RNA-seq contrasts.")})
+    if c.min_n < VERY_SMALL_N:
+        out.append({"key": "n_lt_4",
+                    "label": f"n<{VERY_SMALL_N} on a side (n={c.min_n})",
+                    "reason": ("a group this small supports no useful dispersion "
+                               "estimate; the statistic is Atlas's and is shown "
+                               "as it is, but it is one of a handful of samples")})
+    elif c.min_n < SMALL_N:
+        out.append({"key": "n_lt_8",
+                    "label": f"n<{SMALL_N} on a side (n={c.min_n})",
+                    "reason": "one side has fewer than eight assays"})
+    if c.unannotated_assays:
+        out.append({"key": "unannotated",
+                    "label": f"{c.unannotated_assays} assay(s) not in the SDRF",
+                    "reason": ("the condensed SDRF annotates fewer assays than "
+                               "the configuration names, so this contrast's "
+                               "disease ids are incomplete")})
+    return out
+
+
+def picker_row(c: IndexedContrast, built_utc: str) -> dict[str, Any]:
+    """One row of `/api/contrasts`, flags and all.
+
+    `contrast_ref` is present only when I8 holds. A row that cannot produce a
+    `ContrastRef` cannot produce a figure either, and carrying a half-built one to
+    the browser would put the sign of every log2FC in a payload that no assertion
+    has passed over.
+    """
+    flags = _flags(c)
+    keys = {f["key"] for f in flags}
+    row: dict[str, Any] = {
+        "accession": c.accession,
+        "contrast_id": c.contrast_id,
+        "name": c.name,
+        "test_label": c.test_label,
+        "ref_label": c.ref_label,
+        "n_test": c.n_test,
+        "n_ref": c.n_ref,
+        "min_n": c.min_n,
+        "platform": c.platform,
+        "is_rnaseq": c.is_rnaseq,
+        "tissue": list(c.test_organism_parts),
+        "ref_tissue": list(c.ref_organism_parts),
+        "test_disease_ids": list(c.test_disease_ids),
+        "flags": flags,
+        "flag_keys": sorted(keys),
+        # Drawable in stage 3 means: RNA-seq, and an id whose direction is
+        # established. Microarray waits for stage 6; an invalid id waits for
+        # nothing, because there is nothing to wait for.
+        "drawable": c.is_rnaseq and not c.invalid_reason,
+        "not_drawable_reason": ("the sign of this contrast is unestablished"
+                                if c.invalid_reason else
+                                "microarray is not drawable until stage 6"
+                                if not c.is_rnaseq else ""),
+        "configuration_url": atlas_mod.configuration_url(c.accession),
+    }
+    if not c.invalid_reason:
+        ref = c.as_ref(index_built_utc=built_utc)
+        row["contrast_ref"] = ref.as_dict()
+        row["sign_sentence"] = ref.sign_sentence
+    else:
+        # Stated, and stated as the reason there is no sentence rather than as a
+        # blank: "no sign sentence" and "the sign is unknown" are not the same.
+        row["sign_sentence"] = ""
+    return row
+
+
+#: The single-column sorts the picker offers. One column at a time, never a
+#: composite: a composite order over n and platform would be a ranking of
+#: contrasts, which is rule 7 in a table.
+PICKER_SORTS: dict[str, str] = {
+    "": "accession, then contrast id",
+    "n": "smallest side, ascending — then accession and contrast id",
+    "platform": "platform — then accession and contrast id",
+}
+
+
+def sort_picker_rows(rows: list[dict[str, Any]], sort: str) -> list[dict[str, Any]]:
+    """Sorted by ONE column, with the default order as the tie-break.
+
+    A sort this picker cannot honour is refused rather than silently swapped for
+    another while the panel names the first -- the same rule `order.py` holds for
+    the spokes.
+    """
+    if sort not in PICKER_SORTS:
+        raise ValueError(
+            f"{sort!r} is not a contrast sort. Offered: "
+            f"{[k or '(default)' for k in PICKER_SORTS]}. One column at a time; a "
+            f"composite order over n and platform would be a ranking of "
+            f"contrasts.")
+    tie = lambda r: (r["accession"], r["contrast_id"])  # noqa: E731
+    if sort == "n":
+        return sorted(rows, key=lambda r: (r["min_n"], *tie(r)))
+    if sort == "platform":
+        return sorted(rows, key=lambda r: (r["platform"], *tie(r)))
+    return sorted(rows, key=tie)
+
+
+def picker_payload(index: "AtlasIndex", ref: DiseaseRef, sort: str = "") -> dict[str, Any]:
+    """The whole picker: rows, flag counts, dominance, and no default pick.
+
+    **There is no `selected` or `recommended` field and there will not be one.**
+    The spike's verdict is that no sensible default exists — 101 of 138 Crohn's
+    contrasts come from one ustekinumab trial — and a default pick in a payload is
+    a recommendation whatever the UI calls it (rule 7, COUNCIL V10 by analogy).
+    """
+    rows = sort_picker_rows(
+        [picker_row(c, index.built_utc) for c in index.contrasts_for(ref.atlas_ids)],
+        sort)
+    by_acc: dict[str, int] = {}
+    for r in rows:
+        by_acc[r["accession"]] = by_acc.get(r["accession"], 0) + 1
+    dominant = max(by_acc.items(), key=lambda kv: (kv[1], kv[0])) if by_acc else None
+    flag_counts = {k: sum(1 for r in rows if k in r["flag_keys"])
+                   for k in ("microarray", "n_lt_8", "n_lt_4", "invalid_id",
+                             "unannotated")}
+    # `n<8` is the count of rows flagged AT that level, and `n_lt_4` rows are
+    # flagged more loudly instead -- so the number a reader wants for "a side
+    # under 8" is the sum. Both are given, and named, because a reader comparing
+    # to the plan's 75 must not have to add them up and guess.
+    flag_counts["n_under_8_total"] = flag_counts["n_lt_8"] + flag_counts["n_lt_4"]
+    summary = index.summary_for(ref.atlas_ids)
+    return {
+        "disease": {
+            "label": ref.label, "current_id": ref.current_id,
+            "atlas_ids": list(ref.atlas_ids),
+            "obsolete_atlas_ids": list(ref.obsolete_atlas_ids),
+            "mapping_notes": list(ref.mapping_notes),
+        },
+        "counts": summary.as_dict(),
+        "flag_counts": flag_counts,
+        "n_drawable_now": sum(1 for r in rows if r["drawable"]),
+        "dominance": ({"accession": dominant[0], "n": dominant[1],
+                       "of": len(rows),
+                       "text": (f"{dominant[1]} of {len(rows)} contrasts here are "
+                                f"from one experiment, {dominant[0]}")}
+                      if dominant else None),
+        "order": sort or "",
+        "order_text": PICKER_SORTS[sort or ""],
+        "sorts": [{"value": k, "label": v} for k, v in PICKER_SORTS.items()],
+        "index": index.provenance(),
+        "rows": rows,
+        # Said in the payload rather than only in the panel's HTML, so the
+        # statement travels with the data a test reads.
+        "no_default": ("No contrast is picked for you. 101 of the 138 Crohn's "
+                       "contrasts come from one trial, and the spike's verdict is "
+                       "that no sensible default exists."),
+        "row_unit": ("Each row is one CONTRAST, not one experiment: an experiment "
+                     "with 101 contrasts appears 101 times, because the sign, the "
+                     "groups and the n per side differ per contrast."),
+    }
+
+
 class IndexMissing(HardFailure):
     """No index on disk, or one written by a different schema.
 
@@ -374,6 +571,10 @@ def _index_one(acc: str, xml: str, sdrf: str) -> list[IndexedContrast]:
             ref_disease_ids=tuple(ref["factor_ids"]),
             test_characteristic_disease_ids=tuple(test["characteristic_ids"]),
             ref_characteristic_disease_ids=tuple(ref["characteristic_ids"]),
+            test_organism_parts=tuple(atlas_mod.group_values(
+                annotations, pc.test_assays, ORGANISM_PART_FACTOR)),
+            ref_organism_parts=tuple(atlas_mod.group_values(
+                annotations, pc.ref_assays, ORGANISM_PART_FACTOR)),
             unannotated_assays=(len(test["unannotated_assays"])
                                 + len(ref["unannotated_assays"])),
             invalid_reason=pc.invalid_reason))
@@ -438,4 +639,6 @@ async def build_index(http: Http, cache: Cache, *,
 
 __all__ = ["AtlasIndex", "DISEASE_FACTOR", "DiseaseContrastSummary",
            "INDEX_SCHEMA_VERSION", "IndexMissing", "IndexedContrast",
-           "build_index", "index_path"]
+           "ORGANISM_PART_FACTOR", "PICKER_SORTS", "SMALL_N", "VERY_SMALL_N",
+           "build_index", "index_path", "picker_payload", "picker_row",
+           "sort_picker_rows"]

@@ -387,6 +387,28 @@ def short_form(uri: str) -> str:
     return uri.rstrip("/").rpartition("/")[2]
 
 
+def group_values(annotations: dict[str, AssayAnnotation], assays: Iterable[str],
+                 name: str) -> list[str]:
+    """The distinct values of one annotation across a group's assays.
+
+    Factors first, characteristics as the fallback, and the two are not merged:
+    what an experiment *varied* is the factor, and a characteristic is used only
+    where there is no factor of that name at all. Used for the picker's tissue
+    column, where an empty cell would read as "this contrast has no tissue".
+    """
+    from_factors: set[str] = set()
+    from_characteristics: set[str] = set()
+    for a in assays:
+        ann = annotations.get(a)
+        if ann is None:
+            continue
+        if name in ann.factors:
+            from_factors.add(ann.factors[name][0])
+        elif name in ann.characteristics:
+            from_characteristics.add(ann.characteristics[name][0])
+    return sorted(from_factors or from_characteristics)
+
+
 def group_uris(annotations: dict[str, AssayAnnotation], assays: Iterable[str],
                factor: str = "disease") -> dict[str, Any]:
     """The disease ids on one assay group's assays, factors and characteristics
@@ -419,7 +441,7 @@ def group_uris(annotations: dict[str, AssayAnnotation], assays: Iterable[str],
 __all__ = [
     "ACCESSION_RE", "AssayAnnotation", "AssayGroup", "AtlasAdapter",
     "ParsedContrast", "analytics_url", "condensed_sdrf_url", "configuration_url",
-    "experiment_base", "group_uris", "is_human_differential_disease",
+    "experiment_base", "group_uris", "group_values", "is_human_differential_disease",
     "parse_condensed_sdrf", "parse_configuration", "select_index_population",
     "short_form",
 ]

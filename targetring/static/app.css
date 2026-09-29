@@ -683,3 +683,40 @@ details.src > summary { list-style: none; cursor: pointer; color: var(--muted); 
 details.src > summary::-webkit-details-marker { display: none; }
 details.src:not([open]) .chev { transform: rotate(-90deg); }
 details.src .reveal { padding-top: 6px; }
+
+/* Stage 2: the contrast table. The one block inside `#find-panel` allowed to be
+   wider than the prose measure, and it scrolls sideways at eight columns rather
+   than pushing the help text out with it. */
+#contrast-panel { margin-top: 14px; }
+.picker-head { font-size: 13px; margin: 6px 0; }
+table.picker { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+table.picker th { text-align: left; font-weight: 600; color: var(--muted);
+                  border-bottom: 1px solid var(--line); padding: 5px 8px;
+                  white-space: nowrap; }
+table.picker td { border-bottom: 1px solid #eef0f2; padding: 5px 8px;
+                  vertical-align: top; }
+table.picker tbody tr { cursor: pointer; }
+table.picker tbody tr:hover { background: #f4f6f8; }
+/* Greyed, and still there. 121 of the 138 Crohn's contrasts are microarray; a
+   filter that removed them would make this table look like Atlas has 17. */
+table.picker tr.greyed td { color: var(--muted); background: #fafbfc; }
+table.picker tr.invalid td { background: #fdf4f4; }
+/* 12.0 px, not 11.5: `UX-v3-rounds.md` B12's floor is binding, and the flags
+   are the newest small type on this page rather than an exception to it. */
+.flag { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 3px;
+        background: #eceef1; color: var(--muted); white-space: nowrap; }
+.flag.microarray { background: #eceef1; }
+.flag.n_lt_8 { background: #fdf1e0; color: var(--warn); }
+.flag.n_lt_4 { background: #fbe6cc; color: var(--warn); font-weight: 600; }
+.flag.unannotated { background: #fdf1e0; color: var(--warn); }
+.flag.invalid_id { background: #fdE7ea; color: var(--bad); font-weight: 600; }
+/* The prose `<name>` from the XML, printed as the experiment wrote it. Never a
+   name built from the group tokens — that can be built the wrong way round. */
+.prose-name { font-size: 14px; margin: 4px 0 8px; }
+table.kvtable { border-collapse: collapse; font-size: 12.5px; margin: 8px 0; }
+table.kvtable td { border-bottom: 1px solid #eef0f2; padding: 3px 10px 3px 0;
+                   vertical-align: top; }
+table.kvtable td:first-child { white-space: nowrap; }
+/* The contrast heading is a paragraph, not an `h2`: `h2` is uppercased here and
+   `g2_g1` uppercased is `G2_G1`, which is not the id. */
+.detail-head { font-size: 15px; font-weight: 600; margin: 16px 0 2px; }
