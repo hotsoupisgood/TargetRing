@@ -34,6 +34,7 @@ from typing import Any, Protocol
 from pydantic import BaseModel
 
 from . import config
+from .http import describe as describe_error
 
 # --- the structured-output schema -------------------------------------------
 
@@ -156,6 +157,13 @@ class AnthropicPhenotypeClient:
             )
         except anthropic.APIError as e:
             return LLMOutcome(ok=False, model=self.model, error=str(e))
+        except Exception as e:  # noqa: BLE001 -- e.g. no credentials resolvable
+            # anthropic 1.9.0 raises a bare `TypeError` (not `APIError`) when no
+            # auth method can be resolved at all -- found live, 2026-09-30,
+            # running this stage's own verification with no key set. It must
+            # not crash the route: 7a's table is independent of 7b's call and
+            # has to render regardless of whether the LLM half can even start.
+            return LLMOutcome(ok=False, model=self.model, error=describe_error(e))
 
         usage = response.usage
         if response.stop_reason == "refusal":
