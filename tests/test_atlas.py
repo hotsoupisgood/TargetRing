@@ -310,6 +310,21 @@ class TestUrlsAndPopulation:
         assert atlas_mod.analytics_url("E-GEOD-6731", "A-AFFY-1").endswith(
             "E-GEOD-6731_A-AFFY-1-analytics.tsv")
 
+    def test_the_two_per_sample_layouts(self) -> None:
+        assert atlas_mod.raw_counts_url("E-GEOD-101794").endswith(
+            "E-GEOD-101794-raw-counts.tsv")
+        assert atlas_mod.normalized_expressions_url(
+            "E-GEOD-6731", "A-AFFY-1").endswith(
+            "E-GEOD-6731_A-AFFY-1-normalized-expressions.tsv")
+
+    def test_an_rnaseq_platform_has_no_normalized_expressions_file(self) -> None:
+        # Not a fallback case: RNA-seq's per-sample file is `-raw-counts.tsv`,
+        # and the two are on different scales (counts vs already-log
+        # intensities). A URL built here would 404, and a 404 read as "this
+        # experiment has no samples" is absence manufactured from a caller bug.
+        with pytest.raises(HardFailure):
+            atlas_mod.normalized_expressions_url("E-GEOD-101794", RNASEQ)
+
     def test_the_population_is_human_differential_with_a_disease_factor(self) -> None:
         # `experimentType` is exactly `Differential` or `Baseline` in the live
         # catalogue (4,187 and 375 of the 4,562 rows, 2026-09-29). The platform is

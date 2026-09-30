@@ -92,8 +92,33 @@ def analytics_url(acc: str, platform: str = RNASEQ) -> str:
 
 def raw_counts_url(acc: str) -> str:
     """RNA-seq only (stage 4). Microarray's per-sample file is
-    `-normalized-expressions.tsv`, already log-scale, and stage 6's problem."""
+    `-normalized-expressions.tsv` — see `normalized_expressions_url`."""
     return f"{experiment_base(acc)}{acc}-raw-counts.tsv"
+
+
+def normalized_expressions_url(acc: str, platform: str) -> str:
+    """Microarray's per-sample matrix (stage 6), the counterpart of RNA-seq's
+    `-raw-counts.tsv`.
+
+    **The two are not interchangeable and the difference is not cosmetic.**
+    Raw counts are integer library-dependent counts, so stage 4 normalises them
+    to CPM and takes `log2(x+1)`. Normalized expressions are *already* the
+    array's normalised, log-scale intensities (RMA/oligo, per
+    `-analysis-methods.tsv`), so applying the RNA-seq recipe would take a
+    library size over intensities that have none and a log of a log. The result
+    would still draw — a clean two-block z-scored figure, every cell plausible —
+    which is precisely why the recipe is chosen from the platform here and named
+    on the figure rather than defaulted to the one that came first.
+
+    There is no RNA-seq form of this name: passing `RNASEQ` is a caller bug, not
+    a case to fall back on.
+    """
+    if platform == RNASEQ:
+        raise HardFailure(
+            f"{acc} is RNA-seq; its per-sample file is {acc}-raw-counts.tsv, not "
+            f"a normalized-expressions file. Refusing to build a URL that would "
+            f"404 and be read as 'this experiment has no samples'.")
+    return f"{experiment_base(acc)}{acc}_{platform}-normalized-expressions.tsv"
 
 
 def analysis_methods_url(acc: str) -> str:
@@ -543,7 +568,8 @@ __all__ = [
     "ParsedContrast", "analysis_methods_url", "analytics_url",
     "condensed_sdrf_url", "configuration_url", "ensembl_release_from",
     "experiment_base", "group_uris", "group_values",
-    "is_human_differential_disease", "parse_analysis_methods",
+    "is_human_differential_disease", "normalized_expressions_url",
+    "parse_analysis_methods",
     "parse_condensed_sdrf", "parse_configuration", "pipeline_from",
     "raw_counts_url", "select_index_population", "short_form",
 ]
