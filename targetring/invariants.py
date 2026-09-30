@@ -27,6 +27,21 @@ _CELL_ID = re.compile(r"^cell\|(?P<ring>[^|]+)\|(?P<index>\d+)\|(?P<gene>.+)$")
 
 
 _URL_IN_TEXT = re.compile(r"https?://\S+")
+_WHITESPACE = re.compile(r"\s+")
+
+
+def _normalise_ws(s: str) -> str:
+    """Matplotlib's word-wrap splits one long sentence into several `<text>`
+    elements, one per visual line (verified empirically: no `<tspan>` is used).
+    Joining them with a space and collapsing whitespace reconstructs the
+    original sentence for a substring check regardless of where the wrap fell
+    -- the same problem I7 does not have only because its notes are short
+    enough to survive on one line."""
+    return _WHITESPACE.sub(" ", s).strip()
+
+
+def svg_text_normalised(svg_path: Path) -> str:
+    return _normalise_ws(" ".join(svg_text(svg_path)))
 
 
 def _summarise(detail: str, limit: int = 180) -> str:
@@ -589,6 +604,5 @@ def _i7_figure_states_what_it_did(
            f"the ledger and {n_marked} kept and marked for having no data on a filtered ring"
            if n_filters else "no threshold filter was active"))
 
-
 __all__ = ["check_all", "InvariantReport", "Result", "Outcome", "svg_text",
-           "headline_markers"]
+           "svg_text_normalised", "headline_markers"]

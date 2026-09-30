@@ -90,6 +90,16 @@ def analytics_url(acc: str, platform: str = RNASEQ) -> str:
     return f"{experiment_base(acc)}{stem}-analytics.tsv"
 
 
+def raw_counts_url(acc: str) -> str:
+    """RNA-seq only (stage 4). Microarray's per-sample file is
+    `-normalized-expressions.tsv`, already log-scale, and stage 6's problem."""
+    return f"{experiment_base(acc)}{acc}-raw-counts.tsv"
+
+
+def analysis_methods_url(acc: str) -> str:
+    return f"{experiment_base(acc)}{acc}-analysis-methods.tsv"
+
+
 # ---------------------------------------------------------------------------
 # fetching
 # ---------------------------------------------------------------------------
@@ -155,6 +165,44 @@ class AtlasAdapter:
                 r, ("tab-separated", "text/plain"),
                 f"{acc}{config.ATLAS_CONDENSED_SDRF_SUFFIX}")
             self.cache.put("atlas.condensed_sdrf", acc, cached)
+        return cached
+
+    async def analytics(self, acc: str, platform: str = RNASEQ) -> str:
+        """The differential statistics file. Stage 3, fetched only when a
+        contrast is actually drawn -- never by the index build (module
+        docstring)."""
+        key = f"{acc}|{platform}"
+        cached = self.cache.get("atlas.analytics", key)
+        if cached is None:
+            r = await self.http.get(analytics_url(acc, platform))
+            cached = _text_or_raise(r, ("tab-separated", "text/plain"),
+                                    f"{acc} analytics")
+            self.cache.put("atlas.analytics", key, cached)
+        return cached
+
+    async def raw_counts(self, acc: str) -> str:
+        """RNA-seq only (stage 4). 49.9 MB uncut for E-GEOD-101794 (spike
+        correction) -- always cached, never re-fetched for a second heatmap of
+        the same contrast."""
+        cached = self.cache.get("atlas.raw_counts", acc)
+        if cached is None:
+            r = await self.http.get(raw_counts_url(acc))
+            cached = _text_or_raise(r, ("tab-separated", "text/plain"),
+                                    f"{acc}-raw-counts.tsv")
+            self.cache.put("atlas.raw_counts", acc, cached)
+        return cached
+
+    async def analysis_methods(self, acc: str) -> str:
+        """Pipeline and Ensembl release. Deliberately not fetched by the index
+        build (`ContrastRef`'s docstring): a third file per experiment would be
+        a third of the index's ~740-GET budget again for two strings that only
+        matter once a contrast is actually drawn."""
+        cached = self.cache.get("atlas.analysis_methods", acc)
+        if cached is None:
+            r = await self.http.get(analysis_methods_url(acc))
+            cached = _text_or_raise(r, ("tab-separated", "text/plain"),
+                                    f"{acc}-analysis-methods.tsv")
+            self.cache.put("atlas.analysis_methods", acc, cached)
         return cached
 
 
@@ -438,10 +486,64 @@ def group_uris(annotations: dict[str, AssayAnnotation], assays: Iterable[str],
             "unannotated_assays": missing}
 
 
+# ---------------------------------------------------------------------------
+# -analysis-methods.tsv (stage 3)
+# ---------------------------------------------------------------------------
+
+_TAG_RE = re.compile(r"<[^>]+>")
+_ENSEMBL_RELEASE_RE = re.compile(r"Ensembl release:\s*(\d+)")
+
+
+def parse_analysis_methods(text: str, acc: str) -> dict[str, str]:
+    """Two tab-separated columns, no header: a method name and a free-text
+    value that may carry an HTML link. The tags are stripped -- they are not
+    part of the fact, only of how Atlas's own page renders it."""
+    out: dict[str, str] = {}
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        parts = line.split("\t", 1)
+        if len(parts) != 2:
+            raise HardFailure(
+                f"{acc}-analysis-methods.tsv:{lineno} has no key/value tab: "
+                f"{line[:120]!r}")
+        key, value = parts
+        out[key.strip()] = _TAG_RE.sub("", value).strip()
+    if not out:
+        raise HardFailure(f"{acc}-analysis-methods.tsv had no rows")
+    return out
+
+
+def ensembl_release_from(methods: dict[str, str], acc: str) -> str:
+    """AGENTS.md rule 5: read the release, never assume Ensembl 95 because the
+    spike happened to see it. A stale/wrong release looks like real absence
+    once genes are resolved against a current source."""
+    mapping = methods.get("Read Mapping", "")
+    m = _ENSEMBL_RELEASE_RE.search(mapping)
+    if not m:
+        raise HardFailure(
+            f"{acc}-analysis-methods.tsv 'Read Mapping' row does not state an "
+            f"Ensembl release ({mapping!r}); refusing to assume one.")
+    return m.group(1)
+
+
+def pipeline_from(methods: dict[str, str], acc: str) -> str:
+    """The 'Differential Expression' row verbatim (e.g. 'DESeq2 version: "
+    "1.10.1'). Stage 6's microarray contrasts carry limma here instead --
+    read every time, never assumed to be DESeq2 because RNA-seq usually is."""
+    de = methods.get("Differential Expression", "")
+    if not de:
+        raise HardFailure(
+            f"{acc}-analysis-methods.tsv has no 'Differential Expression' row")
+    return de
+
+
 __all__ = [
     "ACCESSION_RE", "AssayAnnotation", "AssayGroup", "AtlasAdapter",
-    "ParsedContrast", "analytics_url", "condensed_sdrf_url", "configuration_url",
-    "experiment_base", "group_uris", "group_values", "is_human_differential_disease",
-    "parse_condensed_sdrf", "parse_configuration", "select_index_population",
-    "short_form",
+    "ParsedContrast", "analysis_methods_url", "analytics_url",
+    "condensed_sdrf_url", "configuration_url", "ensembl_release_from",
+    "experiment_base", "group_uris", "group_values",
+    "is_human_differential_disease", "parse_analysis_methods",
+    "parse_condensed_sdrf", "parse_configuration", "pipeline_from",
+    "raw_counts_url", "select_index_population", "short_form",
 ]

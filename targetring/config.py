@@ -105,6 +105,11 @@ SCHEMA_VERSIONS = {
     # render as an empty cell and read as "this contrast has no tissue" rather
     # than "this index did not record one".
     "atlas.index": "2",
+    # Stage 3: fetched only once a contrast is actually drawn (contrast.py
+    # module docstring), never by the index build.
+    "atlas.analytics": "1",
+    "atlas.raw_counts": "1",
+    "atlas.analysis_methods": "1",
 }
 
 # v2.4: `CTGOV_MAX_DRUG_HOPS` and `CTGOV_ROWS_PER_BUCKET` are gone with the hop.

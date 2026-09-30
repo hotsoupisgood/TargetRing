@@ -320,6 +320,15 @@ class AtlasIndex:
         rows = [c for c in self.contrasts if want & set(c.test_disease_ids)]
         return sorted(rows, key=lambda c: (c.accession, c.contrast_id))
 
+    def find(self, accession: str, contrast_id: str) -> IndexedContrast | None:
+        """One contrast by its own two keys, for stage 3 onward: the picker has
+        already shown the row, and the gene table route is given exactly what
+        the picker gave the page rather than a disease id to re-search from."""
+        for c in self.contrasts:
+            if c.accession == accession and c.contrast_id == contrast_id:
+                return c
+        return None
+
     def summary_for(self, atlas_ids: Iterable[str]) -> DiseaseContrastSummary:
         ids = tuple(sorted({i for i in atlas_ids if i}))
         rows = self.contrasts_for(ids)

@@ -14,13 +14,15 @@ from typing import Any
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
+from .adapters.atlas import AtlasAdapter
 from .adapters.chembl import ChEMBLAdapter, mechanism_summary
 from .adapters.literature import EuropePMCAdapter
 from .adapters.ols import OLSAdapter
 from . import atlas_index
 from .cache import Cache
+from . import contrast as contrast_mod
 from . import dim as dim_mod
-from .config import RUNS_DIR
+from .config import MAX_GENES, RUNS_DIR
 from .de_input import InputRejected
 from . import sources as sources_mod
 from .filters import FilterRejected
@@ -29,6 +31,7 @@ from .figure import (COMPARABILITY_CLAIM, STATE_STYLE, WEB_REFERENCE_PANEL_PX,
                      web_css_scale)
 from .http import HardFailure, Http
 from .order import ALPHABETICAL, RING_PREFIX, SUBMITTED
+from .resolve import Resolver
 from .run import DEFAULT_REGION, FILTERABLE_RINGS, available_regions, run_analysis
 from . import table as table_mod
 from . import view as view_mod
@@ -200,6 +203,68 @@ async def contrasts(disease: str = "", sort: str = "") -> JSONResponse:
         # refused, never quietly swapped for another while the panel names the first.
         return JSONResponse({"error": "sort_rejected", "message": str(e)},
                             status_code=422)
+
+
+def _contrast_ref_or_error(accession: str, contrast_id: str) -> tuple[Any, JSONResponse | None]:
+    """Shared by the genes and heatmap routes: look the row up in the index,
+    refuse an `INVALID — sign unsafe` row and a microarray row the same way
+    both routes must, and hand back a hydrated-but-not-yet-fetched `ContrastRef`
+    otherwise. Never a default pick and never a guess at the platform."""
+    try:
+        index = _atlas_index()
+    except atlas_index.IndexMissing as e:
+        return None, JSONResponse({"error": "index_missing", "message": str(e)},
+                                  status_code=503)
+    row = index.find(accession, contrast_id)
+    if row is None:
+        return None, JSONResponse(
+            {"error": "contrast_not_found",
+             "message": f"{accession} {contrast_id} is not in the index"},
+            status_code=404)
+    if row.invalid_reason:
+        return None, JSONResponse(
+            {"error": "invalid_contrast", "message": row.invalid_reason},
+            status_code=422)
+    ref = row.as_ref(index_built_utc=index.built_utc)
+    if not ref.is_rnaseq:
+        return None, JSONResponse(
+            {"error": "microarray_not_drawable",
+             "message": str(contrast_mod.MicroarrayNotDrawable(ref))},
+            status_code=409)
+    return ref, None
+
+
+@app.get("/api/contrast/{accession}/{contrast_id}/genes")
+async def contrast_genes(accession: str, contrast_id: str, n: int = MAX_GENES,
+                         direction: str = "both") -> JSONResponse:
+    """Stage 3: the gene table for one contrast, no figure yet.
+
+    RNA-seq only (microarray is HTTP 409, stage 6's reason, never a partial
+    table). Selection is always over rows carrying both a p-value and a log2FC
+    -- rule 1 as a sort (PLAN §1 item 6) -- and every id then goes through the
+    same `Resolver` a pasted id would (rule 5), so `no_match`/`ambiguous` read
+    exactly as they do on the paste path.
+    """
+    ref, err = _contrast_ref_or_error(accession, contrast_id)
+    if err is not None:
+        return err
+    if direction not in ("both", "split"):
+        return JSONResponse(
+            {"error": "bad_direction", "message": "direction must be 'both' or 'split'"},
+            status_code=422)
+    cache = Cache()
+    try:
+        async with Http() as http:
+            table = await contrast_mod.build_gene_table(
+                AtlasAdapter(http, cache), Resolver(http, cache), ref,
+                n=max(1, min(int(n), MAX_GENES)), direction=direction)
+    except HardFailure as e:
+        return JSONResponse({"error": "source_failure", "message": str(e)},
+                            status_code=502)
+    return JSONResponse({
+        **table.as_dict(),
+        "sources": sources_mod.data_source_rows(["atlas.contrast"]),
+    })
 
 
 @app.get("/api/orderings")
