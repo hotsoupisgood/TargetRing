@@ -253,6 +253,14 @@ def check_all(
     literature_audit: dict[str, Any] | None = None,
     figure_claims: dict[str, Any] | None = None,
     conditions: Sequence[tuple[str, str]] = (),
+    # Stage 5: an Atlas-sourced run carries a `ContrastRef` and a
+    # `contrast.Accounting`; both are `None` on a pasted-table run. I8/I9 are
+    # appended ONLY when a contrast is present -- a pasted-table run does not
+    # gain two new NOT_EVALUATED rows for a feature it never touched, and the
+    # existing seven-invariant manifest shape for every paste-path run and test
+    # is unchanged.
+    contrast: Any = None,
+    selection_accounting: Any = None,
 ) -> InvariantReport:
     rep = InvariantReport(conditions=list(conditions))
     try:
@@ -273,6 +281,10 @@ def check_all(
     rep.results.append(_i6_regression(regression))
     rep.results.append(
         _i7_figure_states_what_it_did(figure_claims, svg_path, csv_rows))
+    if contrast is not None:
+        rep.results.append(_i8_contrast_identity(contrast, svg_path))
+        rep.results.append(
+            _i9_three_stage_accounting(selection_accounting, svg_path))
     return rep
 
 
@@ -604,5 +616,165 @@ def _i7_figure_states_what_it_did(
            f"the ledger and {n_marked} kept and marked for having no data on a filtered ring"
            if n_filters else "no threshold filter was active"))
 
+
+def _i8_contrast_identity(ref: Any, svg_path: Path | None) -> Result:
+    """Stage 3-5's I8 — contrast identity, read back from the rendered SVG.
+
+    `ContrastRef.__post_init__` already refuses to exist unless
+    `contrast_id == f'{ref}_{test}'` (PLAN §1 item 7), so this is not re-checking
+    the sign; it is checking that the figure a reader is holding actually names
+    the contrast it was drawn from -- the accession, the contrast id, the XML's
+    own prose name byte-for-byte, and the sign sentence naming the test label as
+    'up'. A figure that draws the right numbers under the wrong name is exactly
+    as wrong as one that draws the wrong numbers.
+    """
+    if ref is None:
+        return Result("I8", "contrast identity", "NOT_EVALUATED",
+                      "no contrast was used in this render")
+    if svg_path is None:
+        return Result("I8", "contrast identity", "NOT_EVALUATED",
+                      "no SVG to read the contrast claims back out of")
+    try:
+        body = svg_text_normalised(svg_path)
+    except Exception as e:  # noqa: BLE001
+        return Result("I8", "contrast identity", "NOT_EVALUATED",
+                      f"SVG unreadable: {e}")
+    missing = [
+        label for label, needle in (
+            ("accession", ref.accession),
+            ("contrast id", ref.contrast_id),
+            ("prose name", _normalise_ws(ref.name)),
+            ("sign sentence", _normalise_ws(ref.sign_sentence)),
+        )
+        if needle not in body
+    ]
+    if missing:
+        return Result(
+            "I8", "contrast identity", "FAIL",
+            f"the rendered figure does not print its {', '.join(missing)} "
+            f"anywhere in its own text; a reader cannot verify which contrast "
+            f"(or which direction) this figure came from")
+    return Result("I8", "contrast identity", "PASS",
+                  f"{ref.accession} {ref.contrast_id} — prose name and sign "
+                  f"sentence both printed on the figure and match the "
+                  f"`ContrastRef` this run used")
+
+
+def _i9_three_stage_accounting(accounting: Any, svg_path: Path | None) -> Result:
+    """Stage 3-5's I9 — three counts, each a subset of the one before it.
+
+    `contrast.Accounting.__post_init__` already asserts stages A-C
+    algebraically at construction (a broken accounting object cannot exist),
+    so what is left to check here is the same thing I1-I3 check for cell
+    counts: that the number the run computed is the number the artefact
+    actually prints, re-derived from the rendered SVG rather than trusted to
+    the object that built it.
+    """
+    if accounting is None:
+        return Result("I9", "three-stage accounting", "NOT_EVALUATED",
+                      "no selection accounting was produced for this render")
+    try:
+        if accounting.n_total != accounting.n_with_statistic + accounting.n_without_statistic:
+            return Result("I9", "three-stage accounting", "FAIL",
+                          f"stage A broken: {accounting.n_total} != "
+                          f"{accounting.n_with_statistic} + "
+                          f"{accounting.n_without_statistic}")
+        if accounting.n_top > accounting.n_with_statistic:
+            return Result("I9", "three-stage accounting", "FAIL",
+                          f"stage B broken: top {accounting.n_top} exceeds "
+                          f"{accounting.n_with_statistic} with a statistic")
+        if accounting.n_selected > accounting.n_top:
+            return Result("I9", "three-stage accounting", "FAIL",
+                          f"stage C broken: {accounting.n_selected} selected "
+                          f"exceeds the {accounting.n_top} shown")
+    except AttributeError as e:
+        return Result("I9", "three-stage accounting", "NOT_EVALUATED",
+                      f"accounting object missing a field: {e}")
+    if svg_path is not None:
+        try:
+            body = svg_text_normalised(svg_path)
+        except Exception as e:  # noqa: BLE001
+            return Result("I9", "three-stage accounting", "NOT_EVALUATED",
+                          f"SVG unreadable: {e}")
+        line = _normalise_ws(accounting.accounting_line())
+        if line not in body:
+            return Result(
+                "I9", "three-stage accounting", "FAIL",
+                f"the figure does not print its own accounting line "
+                f"({line!r}); a reader cannot see the three-stage count this "
+                f"run computed")
+    return Result("I9", "three-stage accounting", "PASS",
+                  f"{accounting.n_total} = {accounting.n_with_statistic} with "
+                  f"a statistic + {accounting.n_without_statistic} without; "
+                  f"top {accounting.n_top} <= with-statistic; "
+                  f"{accounting.n_selected} selected <= top")
+
+
+def _i10_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
+                                   accounting: Any, n_samples: int) -> Result:
+    """Stage 4's I10 — the seven mandatory strings, re-derived from the same
+    builder functions `heatmap.render()` draws from and checked against the
+    rendered SVG. An SVG missing any one of them fails here rather than being
+    trusted to have drawn what the code intended."""
+    from . import heatmap as heatmap_mod
+
+    if svg_path is None or ref is None or accounting is None:
+        return Result("I10", "heatmap states its recipe", "NOT_EVALUATED",
+                      "no heatmap was rendered for this run")
+    try:
+        body = svg_text_normalised(svg_path)
+    except Exception as e:  # noqa: BLE001
+        return Result("I10", "heatmap states its recipe", "NOT_EVALUATED",
+                      f"SVG unreadable: {e}")
+
+    expected = {
+        "1. title (prose name · accession · contrast id)":
+            heatmap_mod.title_line(ref),
+        "2. reference column-group label":
+            heatmap_mod.group_label(ref.ref_label, ref.n_ref),
+        "2. test column-group label":
+            heatmap_mod.group_label(ref.test_label, ref.n_test),
+        "3. z-score / block-structure sentence":
+            heatmap_mod.zscore_sentence(n_samples, accounting.n_top),
+        "4. raw-scale panel sentence":
+            heatmap_mod.raw_scale_sentence(),
+        "6. colour-direction sentence":
+            heatmap_mod.colour_direction_sentence(),
+        "7. three-stage accounting line":
+            accounting.accounting_line(),
+    }
+    missing = [label for label, s in expected.items()
+              if _normalise_ws(s) not in body]
+    if missing:
+        return Result(
+            "I10", "heatmap states its recipe", "FAIL",
+            f"{len(missing)} of the 7 mandatory string(s) are missing from the "
+            f"rendered heatmap: {missing}. Per AGENTS.md, a heatmap missing "
+            f"any of these is not shipped.")
+    return Result("I10", "heatmap states its recipe", "PASS",
+                  "all 7 mandatory strings (title, both column-group labels, "
+                  "the z-score/block-structure sentence, the raw-scale "
+                  "sentence, the colour-direction sentence, the three-stage "
+                  "accounting line) are printed on the rendered heatmap")
+
+
 __all__ = ["check_all", "InvariantReport", "Result", "Outcome", "svg_text",
-           "svg_text_normalised", "headline_markers"]
+           "svg_text_normalised", "headline_markers",
+           "check_contrast_identity", "check_three_stage_accounting",
+           "check_heatmap_states_its_recipe"]
+
+
+def check_contrast_identity(ref: Any, svg_path: Path | None) -> Result:
+    """Public entry point for I8, called from `run.py` (against the circos
+    SVG) and from `tests/test_heatmap.py` (against the heatmap SVG)."""
+    return _i8_contrast_identity(ref, svg_path)
+
+
+def check_three_stage_accounting(accounting: Any,
+                                 svg_path: Path | None = None) -> Result:
+    return _i9_three_stage_accounting(accounting, svg_path)
+
+
+def check_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
+                                    accounting: Any, n_samples: int) -> Result:
+    return _i10_heatmap_states_its_recipe(svg_path, ref, accounting, n_samples)

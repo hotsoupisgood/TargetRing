@@ -24,6 +24,8 @@ from . import contrast as contrast_mod
 from . import dim as dim_mod
 from .config import MAX_GENES, RUNS_DIR
 from .de_input import InputRejected
+from . import heatmap as heatmap_mod
+from . import invariants as invariants_mod
 from . import sources as sources_mod
 from .filters import FilterRejected
 from .figure import (COMPARABILITY_CLAIM, STATE_STYLE, WEB_REFERENCE_PANEL_PX,
@@ -265,6 +267,58 @@ async def contrast_genes(accession: str, contrast_id: str, n: int = MAX_GENES,
         **table.as_dict(),
         "sources": sources_mod.data_source_rows(["atlas.contrast"]),
     })
+
+
+@app.get("/api/contrast/{accession}/{contrast_id}/heatmap")
+async def contrast_heatmap(accession: str, contrast_id: str,
+                           n: int = MAX_GENES) -> Any:
+    """Stage 4: the heatmap. Plan §8's rule applies literally here — if I10
+    fails, this route refuses rather than serving a heatmap missing any of the
+    seven mandatory strings.
+    """
+    ref, err = _contrast_ref_or_error(accession, contrast_id)
+    if err is not None:
+        return err
+    n = max(1, min(int(n), MAX_GENES))
+    cache = Cache()
+    try:
+        async with Http() as http:
+            atlas = AtlasAdapter(http, cache)
+            resolver = Resolver(http, cache)
+            table = await contrast_mod.build_gene_table(atlas, resolver, ref, n=n)
+            # Reuse exactly the rows the gene table already selected and
+            # returned to the client — never a second selection pass that
+            # could drift from what step 3 showed (§9: a mismatch between a
+            # collapsed step and the figure it feeds is a bug).
+            top_rows = [contrast_mod.AnalyticsRow(r.ensembl_id, r.atlas_symbol,
+                                                  r.pvalue, r.log2fc)
+                       for r in table.rows]
+            wanted = {r.ensembl_id for r in top_rows}
+            raw = await heatmap_mod.load_raw_counts(atlas, table.ref, wanted)
+    except HardFailure as e:
+        return JSONResponse({"error": "source_failure", "message": str(e)},
+                            status_code=502)
+    except heatmap_mod.HeatmapRefused as e:
+        return JSONResponse({"error": "heatmap_refused", "message": str(e)},
+                            status_code=422)
+
+    data = heatmap_mod.compute(table.ref, top_rows, raw, table.accounting)
+    out_dir = RUNS_DIR / "heatmaps"
+    out_svg = out_dir / f"{accession}_{contrast_id}_{n}.svg"
+    out_png = out_dir / f"{accession}_{contrast_id}_{n}.png"
+    result = heatmap_mod.render(data, out_svg, out_png)
+
+    check = invariants_mod.check_heatmap_states_its_recipe(
+        out_svg, table.ref, table.accounting, result.n_samples)
+    if check.failed:
+        # AGENTS.md rule: a plausible wrong figure is worse than a crash.
+        # Never serve an SVG this build's own check says is missing a
+        # mandatory string.
+        return JSONResponse(
+            {"error": "invariant_i10_failed", "message": check.detail},
+            status_code=500)
+
+    return FileResponse(out_svg, media_type="image/svg+xml", headers=_NO_STORE)
 
 
 @app.get("/api/orderings")
