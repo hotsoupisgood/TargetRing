@@ -36,7 +36,10 @@ TARGET_QUERY = """query TargetRings($ids:[String!]!){
     safetyLiabilities{event datasource url}
     isEssential
     obsoleteSymbols{label}
-    mousePhenotypes{modelPhenotypeLabel modelPhenotypeId targetInModelMgiId}
+    mousePhenotypes{
+      modelPhenotypeLabel modelPhenotypeId targetInModelMgiId targetInModel
+      biologicalModels{id allelicComposition geneticBackground literature}
+    }
     drugAndClinicalCandidates{
       count
       rows{

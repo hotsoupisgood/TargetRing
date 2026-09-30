@@ -769,7 +769,7 @@ def _i10_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
 __all__ = ["check_all", "InvariantReport", "Result", "Outcome", "svg_text",
            "svg_text_normalised", "headline_markers",
            "check_contrast_identity", "check_three_stage_accounting",
-           "check_heatmap_states_its_recipe"]
+           "check_heatmap_states_its_recipe", "check_phenotype_claims_citable"]
 
 
 def check_contrast_identity(ref: Any, svg_path: Path | None) -> Result:
@@ -786,3 +786,76 @@ def check_three_stage_accounting(accounting: Any,
 def check_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
                                     accounting: Any, n_samples: int) -> Result:
     return _i10_heatmap_states_its_recipe(svg_path, ref, accounting, n_samples)
+
+
+def _i11_phenotype_claims_citable(claims: Sequence[dict[str, Any]],
+                                  rows: Sequence[dict[str, Any]]) -> Result:
+    """Stage 7's I11 — every claim in a phenotype-page LLM summary must cite
+    real rows and quote them verbatim, or the whole summary is refused.
+
+    PLAN §3 stage 7b, "mechanical, not a vibe check":
+      * zero claims -> refused (a summary that says nothing is not a summary);
+      * every `row_id` in every claim must exist among the rows actually sent
+        to the model;
+      * every `quote` must be a case-sensitive substring of the concatenated
+        `title + sentence + mp_label` of AT LEAST ONE row it cites — the
+        model is allowed to pick which cited row the quote came from, it is
+        not allowed to quote a sentence none of them contain;
+      * ANY single failing claim refuses the ENTIRE summary. A partially
+        validated paragraph is itself a plausible wrong figure — there is no
+        partial-credit rendering.
+
+    This does not read an SVG. The phenotype page is HTML in the drawer, not a
+    figure (plan §9), and `rows`/`claims` are the exact JSON the model was
+    given and returned — re-deriving anything from a rendered artefact here
+    would be checking a different object from the one that was actually
+    validated before the page was ever shown.
+    """
+    if not claims:
+        return Result("I11", "phenotype summary claims are citable", "FAIL",
+                      "the model returned zero claims; a summary with nothing "
+                      "in it is refused rather than rendered as empty")
+    by_id = {int(r["row_id"]): r for r in rows}
+    for i, claim in enumerate(claims):
+        row_ids = claim.get("row_ids") or []
+        if not row_ids:
+            return Result(
+                "I11", "phenotype summary claims are citable", "FAIL",
+                f"claim {i} ({claim.get('text', '')!r}) cites no rows at all")
+        missing = [rid for rid in row_ids if rid not in by_id]
+        if missing:
+            return Result(
+                "I11", "phenotype summary claims are citable", "FAIL",
+                f"claim {i} cites row_id(s) {missing} which do not exist among "
+                f"the {len(rows)} row(s) sent to the model; refusing the whole "
+                f"summary rather than rendering a partially-validated one")
+        quote = str(claim.get("quote") or "")
+        if not quote:
+            return Result(
+                "I11", "phenotype summary claims are citable", "FAIL",
+                f"claim {i} carries no quote to verify against its cited rows")
+        cited_text = [
+            f"{by_id[rid].get('title') or ''} {by_id[rid].get('sentence') or ''} "
+            f"{by_id[rid].get('mp_label') or ''}"
+            for rid in row_ids
+        ]
+        if not any(quote in text for text in cited_text):
+            return Result(
+                "I11", "phenotype summary claims are citable", "FAIL",
+                f"claim {i}'s quote {quote!r} is not a substring of the "
+                f"title/sentence/mp_label of any row it cites ({row_ids}); the "
+                f"model paraphrased instead of quoting verbatim, which this "
+                f"check cannot tell apart from a fabricated claim, so both are "
+                f"refused the same way")
+    return Result("I11", "phenotype summary claims are citable", "PASS",
+                  f"{len(claims)} claim(s), every row_id exists among the "
+                  f"{len(rows)} row(s) sent to the model, every quote is a "
+                  f"verbatim substring of a row it cites")
+
+
+def check_phenotype_claims_citable(claims: Sequence[dict[str, Any]],
+                                   rows: Sequence[dict[str, Any]]) -> Result:
+    """Public entry point for I11, called from `phenotype.py` on every
+    phenotype-page summary before it is ever shown, and from
+    `tests/test_phenotype.py` / `tests/test_llm.py` directly."""
+    return _i11_phenotype_claims_citable(claims, rows)

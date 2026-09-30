@@ -316,6 +316,42 @@ DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
              "asserted every run (I8): eight of the Atlas's 1,126 human "
              "differential contrasts fail that assertion, measured 2026-09-29"),
     ),
+    # Stage 7. `target.mousePhenotypes[].biologicalModels` is the same field
+    # `rodent` already cites for the ring (rule 2 applies here too: Open
+    # Targets publishes no page for it), but this is a DIFFERENT claim —
+    # `rodent` cites the three-state REDUCTION, this cites the raw per-model,
+    # per-paper table the phenotype page renders row for row. A shared URL
+    # with a distinct `reads`/`why` is fine (assert_registry_is_coherent
+    # checks for identical `reads` strings, not identical URLs), because a
+    # ring citation and a data-source citation answer different questions.
+    "opentargets.mouse_models": SourceDoc(
+        name="Open Targets",
+        name_qualifier="mousePhenotypes.biologicalModels, per-paper table",
+        domain=OT_DOCS_DOMAIN,
+        url="https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+        endpoint=config.OPENTARGETS_URL,
+        version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
+        reads=("target.mousePhenotypes[].biologicalModels{id "
+               "allelicComposition geneticBackground literature} (upstream: "
+               "MGI) — one row per (phenotype, model, PMID)"),
+        why=("as with `rodent`, Open Targets publishes no page for this "
+             "field; this table names its upstream dataset (MGI), which is "
+             "who curates the phenotype-to-model-to-paper links this page "
+             "renders verbatim"),
+    ),
+    "europepmc.article": SourceDoc(
+        name="Europe PMC",
+        name_qualifier="per-PMID article fetch for the phenotype table",
+        domain="europepmc.org",
+        url="https://europepmc.org/RestfulWebService",
+        endpoint=config.EUROPEPMC_SEARCH,
+        version=f"search api, resultType=core · schema v{config.SCHEMA_VERSIONS['europepmc.article']}",
+        reads="search?query=EXT_ID:<pmid> AND SRC:MED&resultType=core — title, pubYear, journalInfo, abstractText",
+        why=("the documented RESTful API this page calls once per distinct "
+             "PMID, capped and the cap stated on the page; a PMID this "
+             "returns nothing for stays in the table as 'abstract "
+             "unavailable' rather than being dropped"),
+    ),
     "ols.disease": SourceDoc(
         name="OLS4",
         name_qualifier="EFO and MONDO term lookup",

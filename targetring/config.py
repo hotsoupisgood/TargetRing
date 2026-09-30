@@ -79,7 +79,16 @@ SCHEMA_VERSIONS = {
     # ClinicalTrials.gov hop went and fetched separately. A v2 payload carries
     # none of the three, so the activity ring and the drawer's trial panel would
     # read as empty rather than as absent. Bumped so no v2 cache entry is reused.
-    "opentargets.target": "3",
+    #
+    # v4 (stage 7): `mousePhenotypes` gains `biologicalModels{id
+    # allelicComposition geneticBackground literature}` — the PMIDs behind each
+    # MGI-curated phenotype call. Re-verified live 2026-09-30 (plan's V1 was
+    # 2026-09-29): BRAF returns 77 mousePhenotypes rows, each with one or more
+    # biologicalModels, each carrying a `literature` list of PMID strings. A v3
+    # payload has no PMIDs under this key, and the phenotype page would read
+    # "no papers" for a gene that MGI has fully curated — the exact failure the
+    # v2/v3 bumps above exist to prevent, one field over.
+    "opentargets.target": "4",
     "gtex.gene": "1",
     "gtex.median_expression": "1",
     "pubtator.count": "1",
@@ -110,6 +119,17 @@ SCHEMA_VERSIONS = {
     "atlas.analytics": "1",
     "atlas.raw_counts": "1",
     "atlas.analysis_methods": "1",
+    # Stage 7. One article, fetched once per distinct PMID a gene's
+    # mousePhenotypes rows name, reusing EuropePMCAdapter's rule-4 echo
+    # assertion (`fetch_article`). Separate cache source from `europepmc.search`
+    # (the PubTator/ring-adjacent count query) — different query shape, same
+    # adapter.
+    "europepmc.article": "1",
+    # The LLM summary, keyed on sha256(rows_json + prompt_hash + model) by the
+    # caller (`phenotype.py`) — this schema version is part of that hash's
+    # input indirectly, via `prompt_hash`, so a prompt change does not need a
+    # bump here. Bumped only if the cached *shape* of a summary changes.
+    "llm.phenotype_summary": "1",
 }
 
 # v2.4: `CTGOV_MAX_DRUG_HOPS` and `CTGOV_ROWS_PER_BUCKET` are gone with the hop.
@@ -142,6 +162,41 @@ TRIAGE_TOP_N = 10
 # triage account's and is deliberately UNCHANGED -- a second feature must not be
 # able to move the first feature's ceiling.
 PHENOTYPE_LLM_SPEND_CAP_USD = 5.00
+
+# Stage 7. One call per gene, one distinct PMID at a time from Europe PMC.
+# Capped and the cap printed on the page (plan §3 stage 7a) -- a heavily
+# phenotyped gene can carry far more than 40 PMIDs across its mousePhenotypes
+# rows and this is the ceiling on how many of them get an abstract fetch.
+PHENOTYPE_MAX_ARTICLES = 40
+
+# Stage 7b. A second, distinct cap, found necessary while building this stage
+# and not in the original plan: PLAN.md §7's cost table assumes the LLM sees
+# "<=40 rows" of the phenotype table, on the (unstated) assumption that a
+# gene's phenotype rows deduplicate down to roughly one per PMID. Measured
+# live 2026-09-30 on BRAF, the plan's own fixture: 77 mousePhenotypes rows
+# produce 1,800 (phenotype, model, PMID) table rows, and even deduplicating to
+# (mp_label, pmid) pairs still leaves 958 -- most of BRAF's phenotypes cite
+# most of the same ~20 papers, because a pleiotropic knockout paper reports
+# many organ systems at once and MGI attaches its PMID to each one. Sending
+# 958 rows to the model would cost roughly $1.10 on the one live call this
+# stage is budgeted for, about 24x the plan's own estimate, on the first paid
+# call this repo has ever made.
+#
+# So the LLM input is capped at this many rows (reusing the number
+# PHENOTYPE_MAX_ARTICLES already uses, rather than inventing a second
+# magnitude), taken in table order. The cap is stated on the summary block
+# every time it bites, never silent -- the same discipline as every other cap
+# in this repo. The on-screen TABLE is never truncated by this; only what is
+# sent to the model is.
+PHENOTYPE_SUMMARY_MAX_ROWS = 40
+
+# Stage 7b. Plan §3: "Default model claude-opus-5 ... output_config.effort:
+# low ... max_tokens: 1200." Pinned here, not inline in llm.py, for the same
+# reason every other pinned constant in this file is a constant: one
+# definition, read by the caller and by the manifest.
+PHENOTYPE_LLM_MODEL = "claude-opus-5"
+PHENOTYPE_LLM_EFFORT = "low"
+PHENOTYPE_LLM_MAX_TOKENS = 1200
 
 # The append-only spend ledger lives under `runs/`, not under `cache/`, and that
 # is the whole point: `cache/` is deleted routinely (there are five

@@ -1,0 +1,5 @@
+# No requirements.txt existed in this repo before stage 7. `anthropic` is the
+# first pinned dependency added for a paid call — see AGENTS.md rule 8 and
+# targetring/llm.py. Every other package currently in .venv was installed by
+# hand; this file is not (yet) a full lock of the environment.
+anthropic==1.9.0

@@ -1089,7 +1089,12 @@ class TestContrastsRoute:
 
 class TestTheNewSourcesAreRegistered:
     def test_both_new_sources_have_an_entry(self) -> None:
-        assert set(sources.DATA_SOURCE_DOCS) == {"atlas.contrast", "ols.disease"}
+        # Stage 7 adds two more DATA_SOURCE_DOCS entries of its own
+        # (opentargets.mouse_models, europepmc.article) to the same shared
+        # registry, so this is a subset check rather than an exact set: this
+        # test's job is "stage 1's two sources are registered", not "nobody
+        # after stage 1 may register another one".
+        assert {"atlas.contrast", "ols.disease"} <= set(sources.DATA_SOURCE_DOCS)
 
     def test_an_unregistered_source_is_refused(self) -> None:
         with pytest.raises(AssertionError) as e:

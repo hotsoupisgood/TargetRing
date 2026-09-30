@@ -1186,6 +1186,7 @@ const DRAWER_OPEN = ["your measurement", "drug pipeline", "literature"];
 // once already (v2.4).
 const DRAWER_CAVEATS = [
   ["mouse phenotype lead", "a lead, not a verdict"],
+  ["mouse phenotype table", "per-paper raw evidence; the LLM summary paraphrases only these rows"],
   ["ChEMBL mechanisms", "untrusted — resolution unprobed"],
   ["safety liabilities", "absence is weak evidence of safety"],
 ];
@@ -1414,6 +1415,19 @@ function drawerHtml(d) {
   else h += `<div class="note">LLM triage of the rodent lead was not run for this gene
              — see the run manifest.</div>`;
 
+  // --- phenotype table (stage 7). Beside the rodent lead, not a new page or a
+  // step in the stepped flow (PLAN §9) — a second, lazy-loaded panel so a
+  // gene whose drawer is never opened for this never fetches anything, let
+  // alone spends anything. ---
+  h += `<h4>mouse phenotype table (MGI, via Open Targets × Europe PMC)</h4>
+    <div id="phenotype-panel" data-gene="${esc(d.gene)}">
+      <p class="hint">One row per (phenotype, model, paper) MGI curates for this gene —
+        the ring's raw evidence, not its reduction — plus an LLM paraphrase of exactly
+        those rows, with its own $5 cap, separate from triage's.</p>
+      <button type="button" class="btn" onclick="loadPhenotypes('${esc(d.gene)}')">Load
+        phenotype table &amp; summary</button>
+    </div>`;
+
   // --- safety ---
   const sl = d.safety_liabilities || [];
   h += `<h4>safety liabilities</h4>` + (sl.length
@@ -1453,6 +1467,104 @@ function drawerHtml(d) {
       <td class="reason">${esc(c.detail)}</td></tr>`).join("") +
     `</tbody></table>`;
   return h;
+}
+
+// ---------- phenotype page (stage 7) ----------
+//
+// Lazy-loaded from `/api/run/<id>/gene/<gene>/phenotypes`, separate from the
+// main drawer fetch, so a drawer that is opened but whose phenotype panel is
+// never clicked makes neither the Open Targets/Europe PMC calls nor — the
+// part that actually costs money — the LLM call. Two spend accounts exist
+// (rule 8) and this panel only ever shows the `phenotype` one; the `triage`
+// line lives in the "Paid calls" section above and this code never touches it.
+
+async function loadPhenotypes(gene) {
+  const panel = document.querySelector('#phenotype-panel[data-gene="' +
+    CSS.escape(gene) + '"]') || $("#phenotype-panel");
+  panel.innerHTML = `<p class="hint">Loading…</p>`;
+  let data;
+  try {
+    data = await fetch(`/api/run/${RUN.run_id}/gene/${encodeURIComponent(gene)}/phenotypes`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      });
+  } catch (e) {
+    panel.innerHTML = `<div class="note bad">Could not load the phenotype table: ${esc(String(e))}</div>`;
+    return;
+  }
+  panel.innerHTML = phenotypeSectionHtml(data);
+}
+
+function phenotypeSectionHtml(d) {
+  if (d.state === "none found") {
+    return `<p class="hint">No mouse phenotype records for this gene — not phenotyped,
+      which is not the same as "no phenotype". No LLM call was made
+      (PLAN §3 stage 7a: a gene with zero rows stops here).</p>`;
+  }
+
+  const rows = d.rows || [];
+  const counts = d.level_counts || {};
+  let h = `<p class="summary-line">${rows.length} row(s)
+      <span class="hint">(${Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(", ")})</span>
+      · ${d.n_distinct_pmids} distinct PMID(s), ${d.n_articles_fetched} of up to
+      ${d.max_articles_cap} fetched from Europe PMC.</p>`;
+
+  h += `<div class="scroll-x" style="max-height:340px;overflow-y:auto">
+      <table><thead><tr><th>MP term</th><th>level</th><th>model</th><th>PMID</th>
+      <th>title / year</th><th>sentence naming the gene</th></tr></thead><tbody>` +
+    rows.map((r) => `<tr>
+      <td>${esc(r.mp_label)}${r.mp_id ? ` <span class="hint">${esc(r.mp_id)}</span>` : ""}</td>
+      <td><span class="pill ${r.level === "asserted" ? "ok" : "grey"}">${esc(r.level)}</span>
+        <div class="hint">${esc(r.level_label)}</div></td>
+      <td>${esc(r.model_id || "no model on record")}</td>
+      <td>${r.pmid
+        ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(r.pmid)}/" target="_blank"
+             rel="noopener">${esc(r.pmid)}</a>`
+        : "no PMID on record"}</td>
+      <td>${esc(r.title || "—")}${r.year ? ` <span class="hint">(${esc(r.year)})</span>` : ""}
+        <div class="hint">${esc(r.abstract_status || "")}</div></td>
+      <td>${esc(r.sentence || "—")}</td>
+    </tr>`).join("") + `</tbody></table></div>`;
+
+  h += `<p class="hint">Source: ${(d.source || []).map((s) => esc(s.legend_text)).join(" · ")}</p>`;
+
+  h += phenotypeSummaryHtml(d.summary, d.summary_max_rows_cap, rows.length);
+  return h;
+}
+
+function phenotypeSummaryHtml(s, capRows, totalRows) {
+  if (!s || !s.attempted) {
+    return `<div class="note">${esc((s && s.reason) || "summary not attempted")}</div>`;
+  }
+  const acct = s.account || {};
+  const acctLine = acct.cap !== undefined
+    ? `<p class="hint">phenotype account: $${(+acct.spent).toFixed(2)} of
+        $${(+acct.cap).toFixed(2)} spent over ${acct.calls} call(s)
+        (${acct.remaining !== undefined ? "$" + (+acct.remaining).toFixed(2) + " remaining" : ""})</p>`
+    : "";
+
+  if (!s.ok) {
+    return `<div class="note bad"><b>summary refused:</b> ${esc(s.reason || "")}</div>${acctLine}`;
+  }
+
+  const rowCap = totalRows > capRows
+    ? `<p class="hint">summary computed over the first ${capRows} of ${totalRows} table rows
+        (<code>PHENOTYPE_SUMMARY_MAX_ROWS</code>) — the table above shows every row
+        regardless.</p>`
+    : "";
+
+  return `<h4 style="margin-top:.75em">summary</h4>
+    <p class="hint">model ${esc(s.model)} · prompt ${esc(s.prompt_hash)} ·
+      ${s.input_tokens} in / ${s.output_tokens} out
+      ${s.cached ? ` · <b>cached ${esc(s.cached_at)}</b> (no charge)`
+        : ` · $${(+s.cost_usd).toFixed(4)} this call`}
+      · ${esc(s.note)}</p>
+    <p class="hint">sends only: ${esc(s.sends_only)}</p>
+    ${rowCap}${acctLine}
+    <ul class="tight">${(s.claims || []).map((c) => `<li>${esc(c.text)}
+      <span class="hint">(rows ${c.row_ids.join(", ")} — “${esc(c.quote)}”)</span></li>`)
+      .join("")}</ul>`;
 }
 
 // ---------- table view (v3.6) ----------

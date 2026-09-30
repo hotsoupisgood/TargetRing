@@ -155,6 +155,31 @@ def _year_list_to_dict(node: Any) -> dict[str, int]:
 
 
 @dataclass
+class ArticleRecord:
+    """Stage 7. One Europe PMC article, by PMID, for the phenotype table.
+
+    `abstract_available` is the discriminator the phenotype page needs: a PMID
+    Europe PMC does not return (no record, or a record with no `abstractText`)
+    stays in the table as "abstract unavailable" rather than being dropped —
+    the row's MP/model/PMID provenance is still real even when the abstract is
+    not on hand.
+    """
+
+    pmid: str
+    query: str
+    title: str | None = None
+    year: str | None = None
+    journal: str | None = None
+    abstract_text: str | None = None
+    echo_ok: bool | None = None
+    error: str | None = None
+
+    @property
+    def abstract_available(self) -> bool:
+        return bool(self.abstract_text)
+
+
+@dataclass
 class EPMCResult:
     """COUNCIL V11: a replayed echo is not a checked echo.
 
@@ -214,6 +239,54 @@ class EuropePMCAdapter:
         # Replayed from disk. The echo held when it was stored; it was not
         # checked now, and I5 must not count it as if it had been.
         return EPMCResult(q, cached["count"], cached["echo_ok"], None, live=False)
+
+    async def fetch_article(self, pmid: str) -> ArticleRecord:
+        """Stage 7. One article by PMID: title, year, journal, abstract.
+
+        `EXT_ID:<pmid> AND SRC:MED` is Europe PMC's documented way to fetch one
+        MEDLINE record by its PubMed id. Same echo discipline as `fetch_one`
+        (rule 4): the response's `request.queryString` must equal what was
+        sent, or the record is not trusted to be the one asked for.
+
+        A PMID Europe PMC does not hold, or holds with no `abstractText`,
+        returns a record with `abstract_text=None` rather than raising —
+        PLAN §3 stage 7a: "a PMID Europe PMC doesn't return stays in the table
+        as 'abstract unavailable' — never dropped silently." A transport or
+        echo failure is different and does raise via `error`, uncached, same
+        as `fetch_one`.
+        """
+        pid = str(pmid).strip()
+        q = validate_query(f"EXT_ID:{pid} AND SRC:MED")
+        cached = self.cache.get("europepmc.article", q)
+        if cached is not None:
+            return ArticleRecord(pid, q, **cached)
+        try:
+            r = await self.http.get(
+                EUROPEPMC_SEARCH,
+                {"query": q, "format": "json", "resultType": "core", "pageSize": 1},
+            )
+            body = json_or_raise(r)
+        except Exception as e:  # noqa: BLE001
+            return ArticleRecord(pid, q, error=describe(e))
+        echo = (body.get("request") or {}).get("queryString")
+        if echo != q:
+            return ArticleRecord(pid, q, echo_ok=False, error=(
+                f"Europe PMC echoed {echo!r} for the query {q!r}; the term was "
+                f"silently reinterpreted, so this is not reliably the record "
+                f"for PMID {pid}."
+            ))
+        results = (body.get("resultList") or {}).get("result") or []
+        rec = results[0] if results else {}
+        journal = ((rec.get("journalInfo") or {}).get("journal") or {}).get("title")
+        fields = {
+            "title": rec.get("title"),
+            "year": rec.get("pubYear"),
+            "journal": journal,
+            "abstract_text": rec.get("abstractText"),
+            "echo_ok": True,
+        }
+        self.cache.put("europepmc.article", q, fields)
+        return ArticleRecord(pid, q, **fields)
 
     async def integrity_probe(self, symbol: str) -> EPMCResult:
         """One live echo assertion, for invariant I5, with the cache bypassed.

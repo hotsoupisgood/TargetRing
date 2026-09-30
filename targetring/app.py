@@ -18,15 +18,19 @@ from .adapters.atlas import AtlasAdapter
 from .adapters.chembl import ChEMBLAdapter, mechanism_summary
 from .adapters.literature import EuropePMCAdapter
 from .adapters.ols import OLSAdapter
+from .adapters.opentargets import OpenTargetsAdapter
 from . import atlas_index
 from .cache import Cache
 from . import contrast as contrast_mod
 from . import dim as dim_mod
-from .config import MAX_GENES, RUNS_DIR
+from .config import MAX_GENES, PHENOTYPE_SUMMARY_MAX_ROWS, RUNS_DIR
 from .de_input import InputRejected
 from . import heatmap as heatmap_mod
 from . import invariants as invariants_mod
+from . import llm as llm_mod
+from . import phenotype as phenotype_mod
 from . import sources as sources_mod
+from . import spend as spend_mod
 from .filters import FilterRejected
 from .figure import (COMPARABILITY_CLAIM, STATE_STYLE, WEB_REFERENCE_PANEL_PX,
                      WEB_REFERENCE_VIEWPORT_PX, scale_rows, web_circle_px,
@@ -656,6 +660,75 @@ async def gene_drawer(run_id: str, gene: str) -> JSONResponse:
         if not filled.pop("_retry_on_next_click", False):
             r.drawers[gene] = filled
     return JSONResponse(filled)
+
+
+@app.get("/api/run/{run_id}/gene/{gene}/phenotypes")
+async def gene_phenotypes(run_id: str, gene: str) -> JSONResponse:
+    """Stage 7. §9: per-gene, drawer-only, NOT a step in the stepped flow.
+
+    7a (the table) always runs if the gene resolved to an Ensembl id. 7b (the
+    LLM summary) runs only when the table has rows — a gene with zero
+    mousePhenotypes rows is `none found` and the page says so, no call made
+    (PLAN §3 stage 7a). Every other outcome — cap exhausted, provider refusal,
+    I11 refusing a fabricated or unquoted claim — renders the table with a
+    banner; the table itself never depends on the LLM call succeeding.
+    """
+    r = _runs.get(run_id)
+    if r is None:
+        raise HTTPException(404, f"run {run_id} is not in memory; re-submit the table")
+    d = r.drawers.get(gene)
+    if d is None:
+        raise HTTPException(404, f"{gene} is not in run {run_id}")
+    ensembl_id = d.get("ensembl_id")
+    if not ensembl_id:
+        raise HTTPException(
+            409, f"{gene} did not resolve to an Ensembl id in this run "
+                 f"(resolution_status={d.get('resolution_status')!r}); there is "
+                 f"no target to look up mouse phenotypes for")
+
+    cache = Cache()
+    try:
+        async with Http() as http:
+            records = await OpenTargetsAdapter(http, cache).fetch([ensembl_id])
+            rec = records[ensembl_id]
+            if not rec.found:
+                raise HTTPException(
+                    404, f"Open Targets has no target record for {ensembl_id} "
+                         f"({gene}) — cannot be distinguished from 'phenotyped, "
+                         f"no records', so no table is rendered")
+            table = await phenotype_mod.build_table(
+                rec, gene_symbol=d.get("input_symbol") or gene,
+                ensembl_id=ensembl_id, http=http, cache=cache)
+    except HardFailure as e:
+        raise HTTPException(502, f"phenotype table: {e}") from e
+
+    out: dict[str, Any] = {
+        "gene": gene, "ensembl_id": ensembl_id, "mouse_symbol": table.mouse_symbol,
+        "state": table.state, "rows": table.rows,
+        "n_distinct_pmids": table.n_distinct_pmids,
+        "n_articles_fetched": table.n_articles_fetched,
+        "max_articles_cap": table.max_articles_cap,
+        "summary_max_rows_cap": PHENOTYPE_SUMMARY_MAX_ROWS,
+        "level_counts": table.level_counts,
+        "rule6_asserted_label": phenotype_mod.RULE6_ASSERTED_LABEL,
+        "source": sources_mod.data_source_rows(
+            ["opentargets.mouse_models"] + (["europepmc.article"] if table.n_articles_fetched else [])),
+        "summary": None,
+    }
+    if table.state == phenotype_mod.LEVEL_NONE_FOUND:
+        return JSONResponse(out)
+
+    ledger = spend_mod.default_ledger()
+    try:
+        client = llm_mod.AnthropicPhenotypeClient()
+    except Exception as e:  # noqa: BLE001 -- e.g. no anthropic package, no API key
+        out["summary"] = {"attempted": False, "ok": False,
+                          "reason": f"phenotype LLM client unavailable: {e}"}
+        return JSONResponse(out)
+
+    outcome = phenotype_mod.summarize(table, client=client, ledger=ledger, cache=cache)
+    out["summary"] = outcome.as_dict()
+    return JSONResponse(out)
 
 
 @app.post("/api/run/{run_id}/web-figure")
