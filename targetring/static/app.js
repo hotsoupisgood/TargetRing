@@ -234,6 +234,9 @@ function sourcesHtml(rows) {
 
 function chooseDisease(d, ix) {
   CHOSEN_DISEASE = d;
+  // PLAN §9: changing step 1 explicitly invalidates every step after it —
+  // never let a stale gene table or selection survive a changed disease.
+  invalidateFromStep(3);
   const notes = (d.mapping_notes || []).map((n) => `<li>${esc(n)}</li>`).join("");
   const rejected = (d.rejected_ids || []).map((n) => `<li>${esc(n)}</li>`).join("");
   $("#disease-chosen").hidden = false;
@@ -387,8 +390,295 @@ function showContrast(r) {
     ${rows ? `<table class="kvtable"><tbody>${rows}</tbody></table>` : ""}
     <p class="hint">No statistic has been fetched for this contrast yet.
       <a href="${esc(r.configuration_url)}" target="_blank" rel="noopener">its
-      <code>-configuration.xml</code></a> is where every string above comes from.</p>`;
+      <code>-configuration.xml</code></a> is where every string above comes from.</p>
+    ${r.drawable
+      ? `<div class="row"><button id="use-contrast" class="primary">
+           Use this contrast — step 3: the gene table →</button></div>`
+      : ""}`;
+  if (r.drawable) $("#use-contrast").onclick = () => selectContrast(r);
   $("#contrast-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// ---------- stage 3/4, PLAN §9: the stepped flow's steps 3 and 4 ----------
+//
+// One rule ties both steps to the figure they eventually feed: every
+// collapsed line below is built from the SAME numbers written into the
+// gene-table / heatmap responses, never a hand-typed paraphrase of them, so a
+// mismatch between a collapsed step and the artefact is a bug rather than a
+// styling choice (§9).
+//
+// The other rule is invalidation: picking a different contrast (or a new
+// disease) must clear GENE_TABLE and SELECTED entirely. `selectContrast` is
+// the only entry point into step 3, and it always starts from a blank slate.
+
+let GENE_TABLE = null;     // the /genes response for the current contrast
+let TERSE_TABLE = true;    // PLAN §10: terse from the start, not bolted on
+let SELECTED = new Set();  // ensembl ids checked in step 4
+
+// PLAN §9: "changing step N explicitly invalidates N+1 onward — the later
+// steps clear and say so." Called with 3 from a changed disease or contrast
+// (clears the gene table and the heatmap/selection); the gene-table step
+// itself clears SELECTED without needing this (a new table is a new set of
+// valid ids).
+function invalidateFromStep(n) {
+  if (n <= 3) {
+    GENE_TABLE = null;
+    SELECTED = new Set();
+    const p3 = $("#gene-table-panel");
+    if (p3) { p3.hidden = true; p3.innerHTML = ""; }
+  }
+  const p4 = $("#heatmap-panel");
+  if (p4) { p4.hidden = true; p4.innerHTML = ""; }
+}
+
+function collapsedContrastLine(r) {
+  return `${esc(r.accession)} ${esc(r.contrast_id)} · ${esc(r.name)} · ` +
+    `n=${r.n_test} vs ${r.n_ref} · ${r.is_rnaseq ? "RNA-seq" : esc(r.platform)}`;
+}
+
+function selectContrast(r) {
+  // Invalidation: a fresh step 3/4 every time, even if this is the same
+  // contrast clicked twice.
+  GENE_TABLE = null;
+  SELECTED = new Set();
+  $("#heatmap-panel").hidden = true;
+  $("#heatmap-panel").innerHTML = "";
+
+  // Step 2 collapses to one line, generated from the same `ContrastRef` the
+  // gene table and the figure will use.
+  $("#contrast-panel").innerHTML = `
+    <p class="step-line"><b>2</b> ${collapsedContrastLine(r)}
+      <button class="linkish" id="change-contrast">[change]</button></p>`;
+  $("#change-contrast").onclick = () => {
+    GENE_TABLE = null;
+    SELECTED = new Set();
+    $("#gene-table-panel").hidden = true;
+    $("#heatmap-panel").hidden = true;
+    loadContrasts(PICKER.disease);
+  };
+  loadGeneTable(r);
+}
+
+async function loadGeneTable(r) {
+  const panel = $("#gene-table-panel");
+  panel.hidden = false;
+  panel.innerHTML = `<p class="hint">loading the gene table for
+    ${esc(r.accession)} ${esc(r.contrast_id)}…</p>`;
+  const url = `/api/contrast/${encodeURIComponent(r.accession)}/` +
+    `${encodeURIComponent(r.contrast_id)}/genes?n=60`;
+  let body;
+  try {
+    const res = await fetch(url);
+    body = await res.json();
+    if (!res.ok) {
+      panel.innerHTML = `<div class="note bad"><b>${esc(body.error || "failed")}</b><br>
+        ${esc(body.message || "")}</div>`;
+      return;
+    }
+  } catch (e) {
+    panel.innerHTML = `<div class="note bad">gene table request failed: ${esc(String(e))}</div>`;
+    return;
+  }
+  GENE_TABLE = body;
+  SELECTED = new Set();
+  renderGeneTable();
+}
+
+// PLAN §10: stays in every mode vs goes in terse mode. Nothing here combines
+// two metrics into one column and there is no "overall" sort — logFC and
+// adjusted p are each sortable only on their own single-source value (rule 7).
+function renderGeneTable() {
+  const t = GENE_TABLE;
+  const panel = $("#gene-table-panel");
+  const acc = t.accounting;
+  const rows = t.rows;
+  const sortKey = renderGeneTable.sortKey || "pvalue";
+  const sorted = [...rows].sort((a, b) => {
+    if (sortKey === "pvalue") return a.pvalue - b.pvalue;
+    if (sortKey === "log2fc") return Math.abs(b.log2fc) - Math.abs(a.log2fc);
+    return 0;
+  });
+
+  const verboseProse = TERSE_TABLE ? "" : `
+    <p class="hint">Each row is one gene in this CONTRAST's own
+      <code>-analytics.tsv</code>, resolved through the same identifier
+      resolver a pasted id would go through (rule 5). <code>no_match</code> and
+      <code>ambiguous</code> are real states, never blank. Selection is
+      ${esc(acc.n_top)} of ${esc(acc.n_with_statistic)} genes that carry BOTH a
+      p-value and a log2FC — never a fallback to log2FC alone, which would
+      surface exactly the ${esc(acc.n_without_statistic)} genes DESeq2's own
+      independent filtering already excluded (rule 1 as a sort).</p>`;
+
+  panel.innerHTML = `
+    <h2>3. Gene table</h2>
+    <p class="step-line"><b>${esc(t.selection_rule_line)}</b> ·
+      n=${t.contrast.n_test} vs ${t.contrast.n_ref} ·
+      ${t.contrast.is_rnaseq ? "RNA-seq" : esc(t.contrast.platform)} ·
+      Ensembl ${esc(t.contrast.ensembl_release || "?")}</p>
+    <p class="hint"><i>${esc(t.sign_sentence)}</i></p>
+    ${verboseProse}
+    <div class="row">
+      <label><input type="checkbox" id="terse-toggle" ${TERSE_TABLE ? "checked" : ""}>
+        terse mode</label>
+      <span class="hint">top genes, easy metrics, no explanatory prose —
+        the load-bearing facts (contrast, n, sign) never leave, whichever mode.</span>
+    </div>
+    <div class="scroll-x"><table class="picker gene-table"><thead><tr>
+      <th>gene</th>
+      <th class="sortable" data-sort="log2fc">logFC</th>
+      <th class="sortable" data-sort="pvalue">adj p</th>
+      ${TERSE_TABLE ? "" : "<th>resolution</th>"}
+      <th>select</th>
+    </tr></thead><tbody>${sorted.map((row) => geneRowHtml(row)).join("")}
+    </tbody></table></div>
+    <p class="hint">${esc(acc.n_top)} shown ·
+      <span id="sel-count">${SELECTED.size}</span> selected ·
+      <button class="ghost" id="select-none">select none</button></p>
+    <div class="row">
+      <button id="continue-heatmap" class="primary">
+        Continue — step 4: heatmap &amp; selection →</button>
+    </div>`;
+
+  $("#terse-toggle").onchange = (e) => { TERSE_TABLE = e.target.checked; renderGeneTable(); };
+  $("#select-none").onclick = () => { SELECTED = new Set(); renderGeneTable(); syncHeatmapCount(); };
+  panel.querySelectorAll("th.sortable").forEach((th) => {
+    th.onclick = () => { renderGeneTable.sortKey = th.dataset.sort; renderGeneTable(); };
+  });
+  sorted.forEach((row) => {
+    const cb = $(`#gsel-${cssId(row.ensembl_id)}`);
+    if (cb) cb.onchange = () => {
+      if (cb.checked) SELECTED.add(row.ensembl_id); else SELECTED.delete(row.ensembl_id);
+      $("#sel-count").textContent = SELECTED.size;
+      syncHeatmapCount();
+    };
+  });
+  $("#continue-heatmap").onclick = () => loadHeatmapStep();
+}
+
+function cssId(ensemblId) { return ensemblId.replace(/[^A-Za-z0-9]/g, "_"); }
+
+function geneRowHtml(row) {
+  // Rule 5: never the literal "nan". `no_match`/`ambiguous` are states shown
+  // as themselves, not blanks (§10's "real cell states" requirement).
+  const stateNote = row.resolution_status === "ok" || row.resolution_status === "renamed"
+    ? "" : `<span class="pill ${row.resolution_status === "ambiguous" ? "warn" : "bad"}">
+        ${esc(row.resolution_status)}</span>`;
+  return `<tr>
+    <td><code>${esc(row.display_symbol)}</code> ${stateNote}
+      ${TERSE_TABLE ? "" : `<br><span class="hint">${esc(row.ensembl_id)}</span>`}</td>
+    <td>${row.log2fc >= 0 ? "+" : ""}${row.log2fc.toFixed(2)}</td>
+    <td>${row.pvalue < 0.0001 ? row.pvalue.toExponential(1) : row.pvalue.toFixed(4)}</td>
+    ${TERSE_TABLE ? "" : `<td class="hint">${esc(row.resolution_note || row.resolution_status)}</td>`}
+    <td><input type="checkbox" id="gsel-${cssId(row.ensembl_id)}"
+        ${SELECTED.has(row.ensembl_id) ? "checked" : ""}></td>
+  </tr>`;
+}
+
+function syncHeatmapCount() {
+  const el = $("#make-spokes-count");
+  if (el) el.textContent = SELECTED.size;
+  const btn = $("#make-spokes");
+  if (btn) btn.disabled = SELECTED.size === 0;
+  const label = $("#make-spokes-label");
+  if (label) label.textContent = SELECTED.size
+    ? `— send ${SELECTED.size} gene(s) to the circos`
+    : "— select at least one gene";
+}
+
+// Step 3 collapses; step 4 shows the heatmap and the selection UI. Selecting
+// nothing is a refusal, not an empty figure (stage 4) — `#make-spokes` stays
+// disabled at zero, it is never silently allowed to submit an empty set.
+function loadHeatmapStep() {
+  const t = GENE_TABLE;
+  $("#gene-table-panel").innerHTML = `
+    <p class="step-line"><b>3</b> ${esc(t.selection_rule_line)} ·
+      ${esc(t.accounting.n_with_statistic)} of ${esc(t.accounting.n_total)} had a statistic
+      <button class="linkish" id="change-gene-table">[change]</button></p>`;
+  $("#change-gene-table").onclick = () => {
+    $("#heatmap-panel").hidden = true;
+    SELECTED = new Set();
+    renderGeneTable();
+  };
+
+  const panel = $("#heatmap-panel");
+  panel.hidden = false;
+  const heatmapUrl = `/api/contrast/${encodeURIComponent(t.contrast.accession)}/` +
+    `${encodeURIComponent(t.contrast.contrast_id)}/heatmap?n=${t.rows.length}`;
+  // `export.py` inlines this whole file verbatim into every offline export
+  // (`TestNothingIsFetchedAndNothingIsExternal`), which greps the exported
+  // text for an image tag carrying a fetchable attribute and refuses to write
+  // the file if it finds one -- the export must be provably unable to fetch
+  // anything, checked on the source text rather than on which code paths
+  // happen to run. So the heatmap picture is never spelled as an HTML tag in
+  // a template literal here; it is built with the DOM API below instead.
+  panel.innerHTML = `
+    <h2>4. Heatmap &amp; selection</h2>
+    <p class="hint">Rows are z-scored across the samples shown — block structure is
+      guaranteed by construction and is not evidence on its own; the raw-scale
+      panel and the per-sample influence strip beside it are what make a
+      near-null contrast look different rather than merely say it is.</p>
+    <div id="heatmap-img-slot"></div>
+    <p class="hint">Selection is the same checkboxes as step 3 —
+      <b id="make-spokes-count">${SELECTED.size}</b> gene(s) selected.</p>
+    <div class="row">
+      <button id="make-spokes" class="primary" disabled>
+        Make spokes <span id="make-spokes-label"></span> →</button>
+    </div>
+    <p id="make-spokes-status" class="hint"></p>`;
+  const img = document.createElement("img");
+  img.className = "heatmap-img";
+  img.alt = `heatmap for ${t.contrast.accession} ${t.contrast.contrast_id}`;
+  img.src = heatmapUrl;
+  $("#heatmap-img-slot").appendChild(img);
+  $("#make-spokes").onclick = () => makeSpokes();
+  syncHeatmapCount();
+}
+
+async function makeSpokes() {
+  const t = GENE_TABLE;
+  const btn = $("#make-spokes");
+  btn.disabled = true;
+  $("#make-spokes-status").textContent = "building the figure…";
+
+  const fd = new FormData();
+  fd.append("source", "atlas");
+  fd.append("accession", t.contrast.accession);
+  fd.append("contrast_id", t.contrast.contrast_id);
+  fd.append("n", String(t.rows.length));
+  fd.append("ensembl_ids", JSON.stringify([...SELECTED]));
+  fd.append("region", $("#region").value);
+  fd.append("ordering", $("#ordering").value);
+  const drop = $("#drop-no-data").checked;
+  fd.append("filters", (($("#filters").value) || "").split("\n")
+    .filter((l) => l.trim())
+    .map((l) => l.trim() + (drop ? " drop_no_data" : "")).join("\n"));
+  const win = windowMeasurement();
+  if (win) { fd.append("panel_px", win[0]); fd.append("viewport_px", win[1]); }
+
+  let res, body;
+  try {
+    res = await fetch("/api/analyse", { method: "POST", body: fd });
+    body = await res.json();
+  } catch (e) {
+    $("#make-spokes-status").textContent = "request failed: " + e;
+    btn.disabled = false;
+    return;
+  }
+  btn.disabled = false;
+  if (!res.ok) {
+    $("#make-spokes-status").textContent = (body.message || "failed");
+    return;
+  }
+  // Step 4 collapses too, once the figure exists — the same numbers, read
+  // back from the manifest the run just wrote rather than re-typed.
+  $("#make-spokes-status").textContent = "";
+  $("#heatmap-panel").innerHTML = `
+    <p class="step-line"><b>4</b> ${esc(SELECTED.size)} gene(s) selected —
+      figure built below.</p>`;
+  RUN = body;
+  $("#result").hidden = false;
+  render(body);
+  $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function showTab(name) {

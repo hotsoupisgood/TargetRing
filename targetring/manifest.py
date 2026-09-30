@@ -109,6 +109,13 @@ class Manifest:
     # is `timestamp_utc` above -- one clock per run, not a second one here that
     # could drift from it.
     ring_sources: list[dict[str, str]] = field(default_factory=list)
+    # Stage 5. `None` on a pasted-table run. `contrast` is `ContrastRef.as_dict()`
+    # verbatim -- the whole reference, not a reconstruction of it, so the
+    # manifest and the figure cannot come to describe two different contrasts.
+    # `selection_accounting` is I9's three-stage count, with `n_selected` now the
+    # real number of genes this run carried past the heatmap.
+    contrast: dict[str, Any] | None = None
+    selection_accounting: dict[str, Any] | None = None
 
     @property
     def all_invariants_pass(self) -> bool:
@@ -180,6 +187,8 @@ def build(
     filter_counts: dict[str, Any] | None = None,
     run_conditions: list[dict[str, str]] | None = None,
     ring_keys: list[str] | None = None,
+    contrast: dict[str, Any] | None = None,
+    selection_accounting: dict[str, Any] | None = None,
 ) -> Manifest:
     return Manifest(
         run_id=run_id,
@@ -212,6 +221,8 @@ def build(
         filter_counts=filter_counts or {},
         run_conditions=run_conditions or [],
         ring_sources=sources_mod.as_manifest_rows(list(ring_keys or [])),
+        contrast=contrast,
+        selection_accounting=selection_accounting,
     )
 
 

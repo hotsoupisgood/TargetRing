@@ -55,6 +55,15 @@ button, .btn {
 button.ghost, .btn.ghost { background: #fff; color: var(--accent); }
 button:disabled { opacity: .5; cursor: progress; }
 #go { margin-top: 12px; font-weight: 600; }
+button.primary { font-weight: 600; }
+
+/* Stage 3/4, PLAN §9: a finished step's one collapsed line. Same visual
+   weight as a table row, not a heading — it is a summary, not new content. */
+.step-line { font-size: 13px; margin: 6px 0; padding: 6px 10px; background: #f4f6f8;
+             border-radius: 6px; }
+table.gene-table th.sortable { cursor: pointer; }
+table.gene-table th.sortable:hover { color: var(--ink); }
+.heatmap-img { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; }
 
 /* v2.5 item 2. The drop-no-data opt-out sits under the filter box, unticked,
    and reads as the exception it is rather than as another routine control. */

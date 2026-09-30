@@ -34,6 +34,7 @@ from .figure import (COMPARABILITY_CLAIM, STATE_STYLE, WEB_REFERENCE_PANEL_PX,
 from .http import HardFailure, Http
 from .order import ALPHABETICAL, RING_PREFIX, SUBMITTED
 from .resolve import Resolver
+from . import run as run_mod
 from .run import DEFAULT_REGION, FILTERABLE_RINGS, available_regions, run_analysis
 from . import table as table_mod
 from . import view as view_mod
@@ -373,20 +374,97 @@ async def analyse(
     # nothing gets the canvas v3.4 drew.
     panel_px: float = Form(WEB_REFERENCE_PANEL_PX),
     viewport_px: float = Form(WEB_REFERENCE_VIEWPORT_PX),
+    # Stage 5. `source="atlas"` is the internal handoff from the heatmap's
+    # selection: `contrast_ref` is never trusted from the client beyond its two
+    # keys (accession, contrast_id) -- the `ContrastRef` itself is re-derived
+    # from the index and re-hydrated here, exactly as steps 3/4 did, so a
+    # tampered or stale client payload cannot change n_ref/n_test/the sign.
+    # `ensembl_ids` is a JSON array; every id must be one this run's own top-N
+    # actually showed, checked below rather than trusted.
+    source: str = Form("paste"),
+    accession: str = Form(""),
+    contrast_id: str = Form(""),
+    n: int = Form(MAX_GENES),
+    direction: str = Form("both"),
+    ensembl_ids: str = Form(""),
     file: UploadFile | None = None,
 ) -> JSONResponse:
-    raw: bytes | str
-    if file is not None and file.filename:
-        raw = await file.read()
-    elif table.strip():
-        raw = table
+    import json as json_mod
+
+    parsed_input = None
+    contrast_for_run = None
+    selection_accounting = None
+
+    if source == "atlas":
+        if not accession or not contrast_id:
+            raise HTTPException(400, "source=atlas requires accession and contrast_id")
+        try:
+            selected_ids = json_mod.loads(ensembl_ids) if ensembl_ids.strip() else []
+        except json_mod.JSONDecodeError:
+            return JSONResponse(
+                {"error": "bad_ensembl_ids", "message": "ensembl_ids must be a JSON array"},
+                status_code=422)
+        if not isinstance(selected_ids, list) or not selected_ids:
+            return JSONResponse(
+                {"error": "no_selection",
+                 "message": "Selecting nothing is a refusal, not an empty figure."},
+                status_code=422)
+
+        ref, err = _contrast_ref_or_error(accession, contrast_id)
+        if err is not None:
+            return err
+        cache = Cache()
+        try:
+            async with Http() as http:
+                atlas = AtlasAdapter(http, cache)
+                hydrated = await contrast_mod.hydrate(atlas, ref)
+                all_rows = await contrast_mod.load_analytics(atlas, hydrated)
+        except HardFailure as e:
+            return JSONResponse({"error": "source_failure", "message": str(e)},
+                                status_code=502)
+        top, accounting = contrast_mod.top_n_by_padj(
+            all_rows, max(1, min(int(n), MAX_GENES)), direction)
+
+        requested = set(selected_ids)
+        top_ids = {r.ensembl_id for r in top}
+        outside = requested - top_ids
+        if outside:
+            return JSONResponse(
+                {"error": "selection_outside_top_n",
+                 "message": f"{len(outside)} selected id(s) are not in the "
+                            f"shown top {accounting.n_top}: {sorted(outside)[:5]}"},
+                status_code=422)
+        # Order preserved from the top-N-by-p list (most significant first) --
+        # the same principled default the heatmap's own rows use, and not a
+        # ranking of the SELECTION (rule 7): it is one stated statistic's order,
+        # already disclosed as the selection rule itself.
+        selected_rows = [r for r in top if r.ensembl_id in requested]
+        selection_accounting = accounting.with_selection(len(selected_rows))
+        try:
+            parsed_input = run_mod.from_contrast(hydrated, selected_rows)
+        except ValueError as e:
+            return JSONResponse({"error": "no_selection", "message": str(e)},
+                                status_code=422)
+        contrast_for_run = hydrated
     else:
-        raise HTTPException(400, "Provide a DE table, pasted or uploaded.")
+        raw: bytes | str
+        if file is not None and file.filename:
+            raw = await file.read()
+        elif table.strip():
+            raw = table
+        else:
+            raise HTTPException(400, "Provide a DE table, pasted or uploaded.")
 
     try:
-        result = await run_analysis(table=raw, region=region,
-                                    ordering=ordering, filters=filters,
-                                    panel_px=panel_px, viewport_px=viewport_px)
+        if source == "atlas":
+            result = await run_analysis(
+                parsed_input=parsed_input, region=region, ordering=ordering,
+                filters=filters, panel_px=panel_px, viewport_px=viewport_px,
+                contrast=contrast_for_run, selection_accounting=selection_accounting)
+        else:
+            result = await run_analysis(table=raw, region=region,
+                                        ordering=ordering, filters=filters,
+                                        panel_px=panel_px, viewport_px=viewport_px)
     except FilterRejected as e:
         # The filter settings themselves are unusable — a ring that does not
         # exist, a threshold that is not a number. Nothing was fetched and
@@ -499,6 +577,9 @@ def _summarise(r) -> dict[str, Any]:
         "filters": m.filters,
         "filter_counts": m.filter_counts,
         "filterable_rings": list(FILTERABLE_RINGS),
+        # Stage 5. `None` on a paste-path run.
+        "contrast": m.contrast,
+        "selection_accounting": m.selection_accounting,
         "genes": {
             g: {
                 "k": d["k"], "k_max": d["k_max"],

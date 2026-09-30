@@ -1547,6 +1547,11 @@ def render(
     layout: "str | Layout" = "audit",
     gene_ids: dict[str, str] | None = None,
     invariant_summary: str = "",
+    # Stage 5. The contrast this run's genes came from, as whole sentences
+    # ready to draw -- built by the caller (`run.py`) from the `ContrastRef`,
+    # never reworded here, so the figure cannot say the sign a different way
+    # than the manifest does. Empty on a paste-path run: `()` draws nothing.
+    contrast_notes: Sequence[str] = (),
 ) -> FigureResult:
     assert_fills_disjoint()
     assert_greyscale_disjoint()
@@ -1758,6 +1763,12 @@ def render(
     wnote, clock = wedge_note(lay, len(genes), space), clock_phrase(lay)
     notes = _stamp_notes(ordering_note, filter_notes, region, cells_by_ring,
                          gene_flags, subtitle, wnote, clock)
+    # Stage 5: appended rather than folded into `_stamp_notes` itself, which
+    # `render_legend` also calls with no contrast in scope. Present on both the
+    # audit and the slide footer (plan: "slide footer"; audit gets it too
+    # because the two share this one list, which is a strictly more honest
+    # figure, not a different one).
+    notes = list(notes) + list(contrast_notes)
     # v3.0. The export gets MORE, not less, and this is the clearest instance:
     # "all seven invariants PASS" is the single fact that makes a downloaded PNG
     # auditable, and until now it was only in manifest.json and in a tab. The
@@ -1776,6 +1787,7 @@ def render(
                                  dropped_names, lay)
     centre_blocks += _draw_ordering_and_filters(ax, ordering_note, filter_notes,
                                                 stats, lay)
+    centre_blocks += _draw_contrast_note(ax, contrast_notes, lay)
     text_blocks = []
     # v3.1 / UX v3 A1: the stamps are drawn FIRST now, and the scale column's
     # bottom is then set above whatever they turned out to need. The footer is
@@ -2394,6 +2406,25 @@ def _draw_ordering_and_filters(ax, ordering_note: str, filter_notes: Sequence[st
                            size=6.5 * k, transform=ax.transAxes, color="#8a4b00",
                            weight="bold"))
     return out
+
+
+def _draw_contrast_note(ax, contrast_notes: Sequence[str], lay) -> list:
+    """Stage 5: which Atlas contrast this run's genes came from, in the hole
+    beside the counts -- so a screenshot of the circle alone still carries the
+    contrast's prose name and its sign sentence (I8). Empty and draws nothing
+    on a paste-path run, which is every run before stage 5 and every test that
+    does not pass `contrast_notes`.
+    """
+    import textwrap
+
+    if not contrast_notes:
+        return []
+    k = (lay.centre_scale if lay else 1.0)
+    lines: list[str] = []
+    for note in contrast_notes:
+        lines += textwrap.wrap(note, 34)
+    return [ax.text(0.5, 0.5, "\n".join(lines), ha="center", va="top",
+                    size=6.8 * k, transform=ax.transAxes, color="#1a1a5e")]
 
 
 def _draw_legend(fig, rings, norms, cmaps, lay, banner_width: float = 1.0) -> list:

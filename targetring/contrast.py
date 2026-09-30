@@ -343,6 +343,15 @@ class Accounting:
                 f"{self.n_with_statistic:,} with a statistic · "
                 f"top {self.n_top} shown · {self.n_selected} selected yet")
 
+    def selection_line(self) -> str:
+        """Stage 5's version of the same three-stage count (I9), once a
+        selection is final: 'selected', not 'selected yet' -- the circos this
+        line is printed on was only drawn because a selection was made, so the
+        heatmap's forward-looking wording would be a false claim here."""
+        return (f"{self.n_total:,} genes in contrast · "
+                f"{self.n_with_statistic:,} with a statistic · "
+                f"top {self.n_top} shown · {self.n_selected} selected")
+
     def selection_rule_line(self) -> str:
         """§10 terse mode: 'top N of D by adjusted p', denominator included."""
         return f"top {self.n_top} of {self.n_with_statistic:,} by adjusted p"

@@ -19,7 +19,7 @@ import csv
 import io
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -50,6 +50,7 @@ from .cache import Cache
 from .config import LLM_SPEND_CAP_USD, RUNS_DIR
 from .contract import check_contracts
 from .de_input import (
+    DERow,
     LedgerEntry,
     ParsedInput,
     assert_accounted,
@@ -101,6 +102,51 @@ FILTERABLE_RINGS = (
     "regional_specificity", "clinical_phase", "clinical_activity", "tdl",
     "rodent", "literature",
 )
+
+
+def _ledger_reason_for(res: Any, contrast: Any) -> str:
+    """AGENTS.md rule 5, Atlas's own version: an id Open Targets does not
+    return is Ensembl 95 not being in the current release, never "absence".
+    Plain `ledger_reason(res)` is generic (it also serves the paste path,
+    which has no Ensembl-95 fact to state); this adds the one sentence that is
+    only true when the id came from Atlas."""
+    base = ledger_reason(res)
+    if contrast is None or res.status not in ("no_match", "ambiguous"):
+        return base
+    return (f"{base} Ensembl release {contrast.ensembl_release or '95'} "
+           f"(Atlas) id not in the current Open Targets release — not in the "
+           f"current release, not evidence of absence.")
+
+
+def from_contrast(ref: Any, rows: Sequence[Any]) -> ParsedInput:
+    """Stage 5's internal handoff: a `ParsedInput` built server-side from
+    already-fetched Atlas analytics rows, never from a textarea (plan §1
+    item 12, "provenance evaporates at the paste boundary").
+
+    `rows` is the client's selection -- a subset of the top-N table stage 3/4
+    already showed -- each an `AnalyticsRow` (`ensembl_id`, `log2fc`,
+    `pvalue`). The symbol column carries the **Ensembl id**, not a resolved
+    symbol: `parse_de_table`'s own `ENSEMBL_RE` branch in `resolve.py`
+    recognises it and sends it through `Resolver.resolve_all` exactly as a
+    pasted Ensembl id would be, which is what makes this the same rule-5 path
+    rather than a second one. Column names are the two Atlas fields this
+    contrast's `-analytics.tsv` actually carries.
+
+    Selecting nothing is a refusal (stage 4), so an empty `rows` raises here
+    rather than reaching `run_analysis` and failing later with a vaguer error.
+    """
+    if not rows:
+        raise ValueError(
+            "no genes were selected for this contrast; selecting nothing is a "
+            "refusal, not an empty figure")
+    return ParsedInput(
+        rows=[DERow(i, r.ensembl_id, r.log2fc, r.pvalue)
+             for i, r in enumerate(rows, start=1)],
+        input_row_count=len(rows),
+        columns={"symbol": "Ensembl id (Atlas, Ensembl 95)",
+                "logfc": f"{ref.contrast_id}.log2foldchange",
+                "padj": f"{ref.contrast_id}.p-value"},
+    )
 
 
 @dataclass
@@ -159,7 +205,7 @@ class RunResult:
 
 async def run_analysis(
     *,
-    table: bytes | str,
+    table: bytes | str = b"",
     region: str = DEFAULT_REGION,
     run_id: str | None = None,
     cache: Cache | None = None,
@@ -174,6 +220,15 @@ async def run_analysis(
     # gets exactly the canvas v3.4 drew.
     panel_px: float = figure.WEB_REFERENCE_PANEL_PX,
     viewport_px: float = figure.WEB_REFERENCE_VIEWPORT_PX,
+    # Stage 5. When given, `table` is ignored entirely and this is used as the
+    # parsed input instead -- the Atlas-sourced entry point, built server-side
+    # by `from_contrast()`, never a textarea round trip. `contrast` and
+    # `selection_accounting` travel alongside it into the invariants (I8/I9)
+    # and the manifest; both are `None` on every paste-path run, which is what
+    # keeps that path's seven-invariant manifest shape unchanged.
+    parsed_input: ParsedInput | None = None,
+    contrast: Any = None,
+    selection_accounting: Any = None,
 ) -> RunResult:
     t0 = time.time()
     run_id = run_id or f"{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}-{uuid.uuid4().hex[:6]}"
@@ -182,7 +237,7 @@ async def run_analysis(
     timings: dict[str, float] = {}
     warnings: list[str] = []
 
-    parsed: ParsedInput = parse_de_table(table)
+    parsed: ParsedInput = parsed_input if parsed_input is not None else parse_de_table(table)
     # Before any network work: a filter naming a ring this build does not have is
     # a mistake the user can fix in a second, and finding out after a 27 s cold
     # run is not a kindness.
@@ -214,7 +269,7 @@ async def run_analysis(
                     row.symbol,
                     "excel_corrupt" if res.status == "excel_corrupt"
                     else "ambiguous" if res.status == "ambiguous" else "unresolved",
-                    ledger_reason(res), row_number=row.row_number,
+                    _ledger_reason_for(res, contrast), row_number=row.row_number,
                 ))
 
         kept, dup_drops = dedupe_on_resolved(
@@ -509,6 +564,21 @@ async def run_analysis(
     csv_path = runs_dir / "values.csv"
     t = time.time()
 
+    # Stage 5 / I8. Whole sentences, built once from the `ContrastRef` so the
+    # figure cannot reword the sign a different way than the manifest states
+    # it. Empty on a paste-path run -- `contrast is None` there.
+    contrast_notes: list[str] = []
+    if contrast is not None:
+        contrast_notes = [
+            f"{contrast.name} · {contrast.accession} · {contrast.contrast_id}",
+            contrast.sign_sentence,
+        ]
+        if selection_accounting is not None:
+            # I9: the same three-stage count the manifest carries, printed on
+            # the artefact itself so a screenshot answers "selected from how
+            # many" without the manifest open beside it.
+            contrast_notes.append(selection_accounting.selection_line())
+
     def do_render(failures: list[str], conds: list[str] = [],
                   layout: "str | figure.Layout" = "audit", svg: Path | None = None,
                   png: Path | None = None, write_png: bool = True,
@@ -547,6 +617,7 @@ async def run_analysis(
             # are. They are deliberately NOT on the rim -- see `_ID_NOTE`.
             gene_ids={g: by_gene[g][1].ensembl_id for g in gene_order},
             invariant_summary=invariant_summary,
+            contrast_notes=contrast_notes,
         )
 
     fig_result = do_render([])
@@ -573,6 +644,8 @@ async def run_analysis(
             "n_kept_unevaluated": len(outcome.kept_unevaluated),
         },
         conditions=conditions,
+        contrast=contrast,
+        selection_accounting=selection_accounting,
     )
 
     # UX A1 / COUNCIL V3 / V11: two channels, because a source being down and an
@@ -798,6 +871,9 @@ async def run_analysis(
         # reads in the same order as the legend column a reader is comparing it
         # against.
         ring_keys=[s.key for s in figure.RING_SPECS],
+        contrast=contrast.as_dict() if contrast is not None else None,
+        selection_accounting=(asdict(selection_accounting)
+                              if selection_accounting is not None else None),
     )
     manifest_path = man.write(runs_dir / "manifest.json")
 

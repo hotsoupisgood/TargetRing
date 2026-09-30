@@ -52,6 +52,16 @@
         <div id="disease-hits"></div>
         <div id="disease-chosen" hidden></div>
         <div id="contrast-panel" hidden></div>
+        <!-- Stage 3/4, PLAN §9: a stepped flow on THIS page, not a new page or
+             a tab. Steps 1-2 are the disease search and the contrast picker
+             above; step 3 is the gene table, step 4 the heatmap and
+             selection. Each finished step collapses to one line generated
+             from the same values that go on the figure and the manifest —
+             see `collapsedContrastLine()` / `collapsedGeneTableLine()` in
+             app.js, which are the ONLY place those strings are built, so the
+             strip and the figure cannot disagree. -->
+        <div id="gene-table-panel" hidden></div>
+        <div id="heatmap-panel" hidden></div>
         <p id="index-note" class="hint"></p>
         <div id="find-sources"></div>
       </div>

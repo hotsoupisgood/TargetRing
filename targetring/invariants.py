@@ -696,8 +696,16 @@ def _i9_three_stage_accounting(accounting: Any, svg_path: Path | None) -> Result
         except Exception as e:  # noqa: BLE001
             return Result("I9", "three-stage accounting", "NOT_EVALUATED",
                           f"SVG unreadable: {e}")
-        line = _normalise_ws(accounting.accounting_line())
-        if line not in body:
+        # Two legitimate phrasings, not one: the heatmap draws
+        # `accounting_line()` ("... selected yet") because nothing has been
+        # selected at render time, and the circos draws `selection_line()`
+        # ("... selected") because it exists only once something has been.
+        # Either one printed on the artefact is the three-stage count stated.
+        candidates = [accounting.accounting_line()]
+        if hasattr(accounting, "selection_line"):
+            candidates.append(accounting.selection_line())
+        line = _normalise_ws(candidates[0])
+        if not any(_normalise_ws(c) in body for c in candidates):
             return Result(
                 "I9", "three-stage accounting", "FAIL",
                 f"the figure does not print its own accounting line "
