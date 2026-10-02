@@ -29,6 +29,7 @@ Nothing here contacts a source or triggers an analysis (AGENTS.md rules 8 and 9)
 
 from __future__ import annotations
 
+import copy
 import json
 import re
 from pathlib import Path
@@ -60,6 +61,67 @@ def a_real_run() -> str:
         if (d / "values.csv").exists() and (d / "manifest.json").exists():
             return d.name
     pytest.skip("no run artefacts under runs/")
+
+
+def _runs_newest_first() -> list[str]:
+    return [d.name for d in sorted((p for p in RUNS.iterdir()
+                                    if p.name.startswith("20")), reverse=True)
+            if (d / "values.csv").exists() and (d / "manifest.json").exists()]
+
+
+def a_run_whose_sort_can_be_broken() -> tuple[str, str, str]:
+    """The newest run on which corrupting one grade actually reorders the table.
+
+    **Why this is not just `a_real_run()`.** Two tests in this file assert that a
+    deliberately broken grade is CAUGHT. On a one-gene run nothing can break: a
+    one-element list has one order, so the grades reproduce the sort no matter
+    what is written into them, `assert_grades_reproduce_the_sort` is right not to
+    raise, and the test fails. Three single-gene runs landed in `runs/` on
+    2026-09-30 and became "newest", which is exactly how that happened.
+
+    Rather than pinning a convenient run, this searches for a corruption that
+    provably changes the order and returns it — so the test cannot pass against a
+    run where the thing it claims to detect is undetectable. Returns
+    `(run_id, grade_id, gene)`; fails the test if no run on disk qualifies.
+    """
+    for rid in _runs_newest_first():
+        t = table_mod.load(rid)
+        if len(t.genes) < 2:
+            continue
+        g = export_mod.sort_grades(t)
+        for spec in export_mod.orderable_keys(t.rings):
+            gid = export_mod.grade_id(spec)
+            base = export_mod.order_from_grades(t.submitted_order, g, [spec])
+            for gene in t.submitted_order:
+                trial = copy.deepcopy(g)
+                trial.grades[gid] = dict(trial.grades[gid])
+                trial.grades[gid][gene] = -99
+                if export_mod.order_from_grades(
+                        t.submitted_order, trial, [spec]) != base:
+                    return rid, gid, gene
+    pytest.fail(
+        "no run under runs/ has a sort that a corrupted grade can change, so "
+        "the refusal below cannot be exercised. This is a FAILURE and not a "
+        "skip: the assertion would pass vacuously, and a refusal test that "
+        "passes because it stopped discriminating converts a known gap into an "
+        "invisible one.")
+
+
+def states_this_run_can_produce(t: table_mod.RunTable) -> set[str]:
+    """The dim treatments this run's own data is capable of showing.
+
+    `match` and `dimmed` need only a threshold with genes on both sides of it,
+    which `dim_probes` chooses per ring. `unevaluable` needs a gene with no value
+    on a dimmable ring — a run where every cell is a number cannot produce one,
+    and no amount of probing will invent it.
+
+    This is what makes "the probes exercise all three" checkable without either
+    weakening it or asserting something a run cannot satisfy.
+    """
+    cells = t.cells_by_ring()
+    has_gap = any(not cells[r].get(gene) or cells[r][gene].state != "value"
+                  for r in view_mod.dimmable_rings(t.rings) for gene in t.genes)
+    return {"match", "dimmed"} | ({"unevaluable"} if has_gap else set())
 
 
 @pytest.fixture(scope="module")
@@ -228,17 +290,48 @@ class TestTheFrozenSortIsTheBuildsSort:
         checked = export_mod.assert_grades_reproduce_the_sort(t, g)
         assert checked > 20, "the export is checking too few sort states to mean much"
 
-    def test_the_export_refuses_to_be_written_if_they_do_not(self, loaded) -> None:
+    def test_the_export_refuses_to_be_written_if_they_do_not(self) -> None:
         """The assertion is load-bearing, not decorative: break a grade and no
         file is produced. A table that sorts differently from the app is worse
-        than no table."""
-        g = export_mod.sort_grades(loaded)
-        key = next(k for k in g.grades if k.startswith("ring:"))
-        first = loaded.submitted_order[0]
-        g.grades[key] = dict(g.grades[key])
-        g.grades[key][first] = -99
+        than no table.
+
+        Takes its run from `a_run_whose_sort_can_be_broken` rather than from the
+        `loaded` fixture, which is whatever happens to be newest in `runs/`. This
+        test spent some time failing because that was a one-gene run, where no
+        corruption can change the order of a one-element list and the refusal
+        correctly never fired. The code was right and so was the test; the
+        fixture could not exercise either.
+        """
+        rid, gid, gene = a_run_whose_sort_can_be_broken()
+        t = table_mod.load(rid)
+        g = export_mod.sort_grades(t)
+        # Sanity: unbroken, it reproduces the sort and checks enough to mean
+        # something. Without this the raise below could be about anything.
+        assert export_mod.assert_grades_reproduce_the_sort(t, g) > 20
+        g.grades[gid] = dict(g.grades[gid])
+        g.grades[gid][gene] = -99
         with pytest.raises(AssertionError, match="do not reproduce"):
-            export_mod.assert_grades_reproduce_the_sort(loaded, g)
+            export_mod.assert_grades_reproduce_the_sort(t, g)
+
+    def test_build_html_refuses_too_and_writes_nothing(self) -> None:
+        """"No file is produced" is the actual claim, and it is about
+        `build_html`, not only about the assertion helper it calls."""
+        rid, gid, gene = a_run_whose_sort_can_be_broken()
+        real = export_mod.sort_grades
+
+        def broken(t: table_mod.RunTable):
+            g = real(t)
+            if t.run_id == rid:
+                g.grades[gid] = dict(g.grades[gid])
+                g.grades[gid][gene] = -99
+            return g
+
+        export_mod.sort_grades = broken
+        try:
+            with pytest.raises(AssertionError, match="do not reproduce"):
+                export_mod.build_html(rid)
+        finally:
+            export_mod.sort_grades = real
 
     def test_ties_survive_so_a_second_key_can_still_fire(self, loaded) -> None:
         """A permutation index would give every gene a distinct grade and key 2
@@ -325,11 +418,48 @@ class TestTheExportCarriesItsOwnProof:
             assert set(p) >= {"state", "reason", "counts", "count_line"}
             assert sum(p["counts"].values()) == len(p["state"])
 
-    def test_the_probes_exercise_all_three_treatments_somewhere(self, blob) -> None:
+    def test_the_probes_exercise_every_treatment_this_run_can_show(
+            self, loaded, blob) -> None:
+        """The probes must exercise every treatment the run's data can produce —
+        no fewer, and no claim to produce one it cannot.
+
+        This asserted a flat `== {match, dimmed, unevaluable}` and failed, because
+        the newest run in `runs/` is one gene with a value on every dimmable ring:
+        there is no missing cell for a probe to call `unevaluable`, so no probe
+        set over that run can contain one. The export was right, the requirement
+        was right, and the fixture could not satisfy it.
+
+        Relaxing it to `>=` or dropping `unevaluable` would have been the trap —
+        a self-check that stops checking. So the expectation is computed from the
+        run instead, and `test_some_run_on_disk_exercises_all_three` keeps the
+        original claim alive where it can actually be met.
+        """
         seen = {s for p in blob["probes"]["dim"] for s in p["state"].values()}
-        assert seen == {"match", "dimmed", "unevaluable"}, (
-            f"the export's self-check never exercises {
-                {'match', 'dimmed', 'unevaluable'} - seen}")
+        want = states_this_run_can_produce(loaded)
+        assert seen == want, (
+            f"run {loaded.run_id} can show {sorted(want)}; its probes show "
+            f"{sorted(seen)}. Missing: {sorted(want - seen)}. "
+            f"Unexpected: {sorted(seen - want)}.")
+
+    def test_some_run_on_disk_exercises_all_three(self) -> None:
+        """The original claim, kept: the export's browser-side dim comparison is
+        proven against all three treatments somewhere in `runs/`, not merely
+        against whichever two the newest run happens to contain.
+
+        Fails rather than skips if no run qualifies — that would mean the one
+        decision this export evaluates in the reader's browser has never been
+        checked in its `unevaluable` branch, which is a real gap and not a
+        reason to go quiet.
+        """
+        for rid in _runs_newest_first():
+            b = export_mod.export_blob(rid)
+            seen = {s for p in b["probes"]["dim"] for s in p["state"].values()}
+            if seen == {"match", "dimmed", "unevaluable"}:
+                return
+        pytest.fail(
+            "no run under runs/ exercises all three dim treatments, so the "
+            "export's self-check has never been held to its `unevaluable` "
+            "branch on real data.")
 
     def test_a_multi_filter_probe_exercises_the_precedence_rule(self, blob) -> None:
         """One filter cannot show that a missed bound beats an unevaluable one."""

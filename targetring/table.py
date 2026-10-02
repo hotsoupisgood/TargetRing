@@ -298,6 +298,77 @@ def _assert_accounted_from_manifest(m: dict[str, Any], run_id: str) -> None:
         )
 
 
+#: I1's `detail`, which is the only independent record of the ring count that
+#: runs written before `ring_sources` carry. Prose, so it is matched for the two
+#: integers and nothing else -- a refusal that depended on reading a sentence
+#: would be a worse problem than the one it closes.
+_I1_SHAPE = re.compile(r"^(\d+) cells? across (\d+) rings?\b")
+
+
+def _assert_ring_list_agrees(run_id: str, manifest: dict[str, Any],
+                             ring_keys: list[str], n_cells: int) -> None:
+    """The rings in `values.csv` are the rings the run says it drew.
+
+    **Why this is not redundant with the rectangularity check.** That check looks
+    for a gene with no cell on a ring it can see, and it can only see rings that
+    some surviving row names. A ring whose cells are all gone is not a hole in
+    anything -- it is simply absent, and the table renders an 11-ring figure of a
+    12-ring run with nothing on it saying so. For a one-gene run the two cases
+    coincide: every lost cell is a lost ring.
+
+    That is a plausible wrong figure built from malformed input, which
+    `AGENTS.md:17` ranks below a crash. So it is a refusal.
+
+    The cross-check needs a record of the rings that is NOT derived from
+    `values.csv`. Two exist, and which is available depends on when the run was
+    written (all 155 runs on disk carry one or the other):
+
+    * `ring_sources` -- the citation list, one entry per ring, by name. Checked
+      both ways: a ring in the file that the manifest never cited is as wrong as
+      a cited ring with no cells.
+    * for older runs, invariant **I1**'s `detail`, which states the cell and ring
+      counts the run asserted at write time. Counts only, no names.
+
+    A run carrying neither cannot be cross-checked, and says so rather than
+    being drawn on the assumption that it is fine -- the same stance
+    `ensembl_release_from` takes about a release the source never stated.
+    """
+    sources = manifest.get("ring_sources")
+    if sources is not None:
+        cited = [str(s.get("ring") or "") for s in sources if s.get("ring")]
+        drawn = set(ring_keys)
+        lost = [r for r in cited if r not in drawn]
+        uncited = [r for r in ring_keys if r not in set(cited)]
+        if lost or uncited:
+            raise TableUnavailable(
+                f"run {run_id}: values.csv and manifest.json disagree about which "
+                f"rings this run has. "
+                + (f"{len(lost)} ring(s) the manifest cites have no cell in the "
+                   f"CSV at all ({', '.join(lost[:6])}) — the figure would be "
+                   f"drawn without them and would look complete. " if lost else "")
+                + (f"{len(uncited)} ring(s) in the CSV are cited nowhere "
+                   f"({', '.join(uncited[:6])}). " if uncited else "")
+                + "The artefacts disagree; no table is drawn.")
+        return
+
+    i1 = next((x for x in (manifest.get("invariants") or [])
+               if x.get("id") == "I1"), None)
+    m = _I1_SHAPE.match(str((i1 or {}).get("detail") or ""))
+    if m is None:
+        raise TableUnavailable(
+            f"run {run_id}: the manifest records neither `ring_sources` nor a "
+            f"readable I1 cell count, so there is nothing to check values.csv's "
+            f"ring list against. A ring that lost all its cells would be "
+            f"invisible here and the figure would still draw, so it is refused "
+            f"rather than assumed intact.")
+    want_cells, want_rings = int(m.group(1)), int(m.group(2))
+    if (n_cells, len(ring_keys)) != (want_cells, want_rings):
+        raise TableUnavailable(
+            f"run {run_id}: values.csv has {n_cells} cell(s) across "
+            f"{len(ring_keys)} ring(s); the run's own I1 recorded {want_cells} "
+            f"across {want_rings}. The artefacts disagree; no table is drawn.")
+
+
 def load(run_id: str) -> RunTable:
     """Pivot one run's `values.csv` to wide, with its manifest beside it."""
     d = run_dir(run_id)
@@ -362,6 +433,16 @@ def load(run_id: str) -> RunTable:
             f"{'…' if len(holes) > 6 else ''}). Every gene must have a cell on every "
             f"ring, even if that cell is hatched."
         )
+
+    # ...and the hole check alone is not enough, because `rings` is built FROM
+    # `rows`: a ring can never be missing from the list the holes are looked for
+    # in. Lose every cell on one ring and there is no hole, just a narrower
+    # figure that looks complete. On a one-gene run that is ANY single lost cell.
+    # So the ring list is cross-checked against the run's other artefact, exactly
+    # as `gene_order` is immediately below -- the manifest was written by the
+    # same run and is not derived from values.csv, which is the whole point.
+    _assert_ring_list_agrees(run_id, manifest, [r["key"] for r in rings],
+                             n_cells=len(rows))
 
     drawn = list(manifest.get("gene_order") or [])
     if drawn and drawn != genes:

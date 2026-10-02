@@ -55,6 +55,34 @@ def a_real_run() -> str:
     pytest.skip("no run artefacts under runs/")
 
 
+def a_multi_gene_run(min_genes: int = 2) -> str:
+    """The newest run with enough spokes to tell two defects apart.
+
+    On a ONE-gene run, losing a cell and losing a whole ring are the same event:
+    the ring has no other gene to leave a hole in. Both are refused, but they are
+    refused by different checks with different messages, and a test that wants to
+    pin one of them specifically needs a run where they are distinguishable.
+
+    Same rule as `a_real_run` -- newest that qualifies, never a pinned id.
+    """
+    for d in sorted((p for p in RUNS.iterdir() if p.name.startswith("20")),
+                    reverse=True):
+        if not ((d / "values.csv").exists() and (d / "manifest.json").exists()):
+            continue
+        try:
+            man = json.loads((d / "manifest.json").read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if len(man.get("gene_order") or []) >= min_genes:
+            return d.name
+    pytest.fail(
+        f"no run under runs/ draws {min_genes}+ genes, so the rectangularity "
+        f"check cannot be exercised as written. This is a FAILURE and not a "
+        f"skip: the assertion below would pass vacuously on a one-gene run, and "
+        f"a refusal test that passes because it stopped discriminating is worse "
+        f"than one that fails.")
+
+
 @pytest.fixture(scope="module")
 def run_id() -> str:
     return a_real_run()
@@ -291,23 +319,110 @@ class TestThePivotPreservesEveryGene:
         with pytest.raises(table_mod.TableUnavailable, match="gene accounting is broken"):
             table_mod.load(d.name)
 
-    def test_a_hole_in_the_pivot_is_a_refusal_not_a_blank_cell(
-            self, tmp_path, run_id, monkeypatch) -> None:
-        """A blank cell is indistinguishable from "nothing to say", which is the
-        one rendering of `no_data` rule 1 forbids. So the table does not draw
-        one — it declines to draw at all."""
-        src = RUNS / run_id
+    @staticmethod
+    def _run_with_a_dropped_cell(src_id: str, tmp_path, monkeypatch) -> str:
+        """A copy of a real run with one cell row deleted and nothing else
+        touched — the manifest, the counts and the ledger still agree, which is
+        exactly how this would arrive."""
+        src = RUNS / src_id
         d = tmp_path / "20990101T000000Z-holed"
         d.mkdir()
         lines = (src / "values.csv").read_text().splitlines(keepends=True)
-        # Drop one cell row. Everything else — the manifest, the counts, the
-        # ledger — still agrees, which is exactly how this would arrive.
         del lines[2]
         (d / "values.csv").write_text("".join(lines))
         (d / "manifest.json").write_text((src / "manifest.json").read_text())
         monkeypatch.setattr(table_mod, "RUNS_DIR", tmp_path)
+        return d.name
+
+    def test_a_hole_in_the_pivot_is_a_refusal_not_a_blank_cell(
+            self, tmp_path, run_id, monkeypatch) -> None:
+        """A blank cell is indistinguishable from "nothing to say", which is the
+        one rendering of `no_data` rule 1 forbids. So the table does not draw
+        one — it declines to draw at all.
+
+        Which of the two refusals fires depends on the run: on a multi-gene run
+        the lost cell is a hole in a ring that other genes still populate; on a
+        one-gene run it takes the whole ring with it and there is no hole left to
+        find. Both are refusals of the same malformed file and this test asserts
+        the refusal, not the wording. The two messages are pinned individually by
+        the two tests below, each on a run that can actually produce it.
+        """
+        name = self._run_with_a_dropped_cell(run_id, tmp_path, monkeypatch)
+        with pytest.raises(table_mod.TableUnavailable,
+                           match="not rectangular|disagree about which rings"):
+            table_mod.load(name)
+
+    def test_on_a_multi_gene_run_the_hole_is_named_as_a_non_rectangular_pivot(
+            self, tmp_path, monkeypatch) -> None:
+        """The original wording, pinned on a run that can produce it.
+
+        `a_multi_gene_run` FAILS rather than skips if `runs/` has no such run:
+        this assertion is vacuous on one gene, and silently passing it there is
+        how a refusal test stops checking without anyone noticing.
+        """
+        name = self._run_with_a_dropped_cell(
+            a_multi_gene_run(), tmp_path, monkeypatch)
         with pytest.raises(table_mod.TableUnavailable, match="not rectangular"):
+            table_mod.load(name)
+
+    def test_a_ring_that_loses_every_cell_is_refused_though_it_leaves_no_hole(
+            self, tmp_path, run_id, monkeypatch) -> None:
+        """The gap the rectangularity check cannot see, on any run.
+
+        `rings` is built from the rows being validated, so a ring whose cells are
+        all gone is not a hole in anything — it is simply absent, and the figure
+        draws one ring short and looks complete. That is a plausible wrong figure
+        from malformed input, which `AGENTS.md:17` ranks below a crash, so it is
+        a refusal. It is caught by cross-checking the ring list against the
+        manifest, which the same run wrote and which is not derived from
+        values.csv.
+        """
+        src = RUNS / run_id
+        d = tmp_path / "20990101T000000Z-ringless"
+        d.mkdir()
+        rows = (src / "values.csv").read_text().splitlines(keepends=True)
+        header, body = rows[0], rows[1:]
+        doomed = body[1].split(",")[4]            # the second row's ring key
+        kept = [r for r in body if not r.startswith(f"cell|{doomed}|")]
+        assert len(kept) < len(body), "no row was actually dropped"
+        (d / "values.csv").write_text(header + "".join(kept))
+        (d / "manifest.json").write_text((src / "manifest.json").read_text())
+        monkeypatch.setattr(table_mod, "RUNS_DIR", tmp_path)
+        with pytest.raises(table_mod.TableUnavailable) as e:
             table_mod.load(d.name)
+        # Named, so the reader knows WHICH ring vanished rather than being told
+        # the file is bad.
+        assert doomed in str(e.value)
+
+    def test_a_run_that_cannot_be_cross_checked_is_refused_not_assumed_intact(
+            self, tmp_path, run_id, monkeypatch) -> None:
+        """A manifest with neither `ring_sources` nor a readable I1 leaves
+        nothing to check the ring list against. The table says so instead of
+        drawing on the assumption that it is fine — the same stance
+        `ensembl_release_from` takes about a release the source never stated."""
+        src = RUNS / run_id
+        d = tmp_path / "20990101T000000Z-uncheckable"
+        d.mkdir()
+        (d / "values.csv").write_text((src / "values.csv").read_text())
+        man = json.loads((src / "manifest.json").read_text())
+        man.pop("ring_sources", None)
+        man["invariants"] = [x for x in man.get("invariants", [])
+                             if x.get("id") != "I1"]
+        (d / "manifest.json").write_text(json.dumps(man))
+        monkeypatch.setattr(table_mod, "RUNS_DIR", tmp_path)
+        with pytest.raises(table_mod.TableUnavailable,
+                           match="nothing to check values.csv's ring list"):
+            table_mod.load(d.name)
+
+    def test_every_run_on_disk_still_passes_the_cross_check(self) -> None:
+        """The check is new and runs on every load, so it is held to the ~155
+        real runs rather than only to the broken fixtures above. A refusal that
+        also refuses good artefacts is not a safety feature."""
+        ids = [d.name for d in RUNS.iterdir() if d.name.startswith("20")
+               and (d / "values.csv").exists() and (d / "manifest.json").exists()]
+        assert len(ids) > 50, "runs/ is too thin for this to mean anything"
+        for rid in ids:
+            table_mod.load(rid)
 
     def test_the_four_states_survive_the_round_trip(self, loaded, client,
                                                     run_id) -> None:
