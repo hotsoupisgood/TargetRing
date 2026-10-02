@@ -4,6 +4,14 @@
 **Verdict:** **PROBE-LEVEL.** Stage 6 stopped before any of it was built.
 **Cost:** $0.00. Read-only GETs, four array designs, nothing written to `cache/`.
 
+> **Outcome, 2026-10-02: stage 6 is closed as "won't build" — RNA-seq only.**
+> Puck decided it on WhatsApp; the decision and its full basis are in
+> [`DECISION-RNASEQ-ONLY-2026-10-02.md`](DECISION-RNASEQ-ONLY-2026-10-02.md).
+> This document is evidence for that decision, not a pending work item. Nothing
+> below is retracted — "stage 6 must …" throughout now reads as *what building it
+> would have required*, and is kept in that form deliberately, because it is the
+> scope estimate any reopening would start from.
+
 Stage 6 of `/tmp/plan-search-phenotype.md` (§3 stage 6, and its own "unverified
 and must be probed first") is gated on this one question. The plan's instruction
 if the answer is probe-level is to stop and report, because a probe→gene collapse

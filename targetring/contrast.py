@@ -153,17 +153,29 @@ class ContrastRef:
 
 
 class MicroarrayNotDrawable(Exception):
-    """Stage 3 is RNA-seq only. 101 of 123 Crohn's contrasts are microarray
-    (spike §Awkward 4, two file layouts) and stage 6 is where the second layout
-    is handled. Never a partial table: refuse the whole request rather than
-    reading the wrong file and calling it empty."""
+    """**This app reads RNA-seq only. Microarray will not be built** — Puck,
+    2026-10-02, `docs/DECISION-RNASEQ-ONLY-2026-10-02.md`. A settled decision,
+    not a placeholder: this refusal is permanent and the message says so.
+
+    854 of 1,126 indexed contrasts (76%) are microarray, so this is the common
+    path, not the edge case. Never a partial table: refuse the whole request
+    rather than reading the wrong file and calling it empty.
+
+    The message distinguishes the two things a reader could otherwise confuse —
+    the contrast *exists in Atlas* and is *not read here*. "No data" and "we
+    chose not to read this format" are different facts, and only one of them is
+    about the data.
+    """
 
     def __init__(self, ref: "ContrastRef") -> None:
         self.ref = ref
         super().__init__(
-            f"{ref.accession} {ref.contrast_id} is microarray (platform "
-            f"{ref.platform!r}); the gene table and heatmap are RNA-seq only "
-            f"until stage 6 reads {ref.accession}_{ref.platform}-analytics.tsv.")
+            f"{ref.accession} {ref.contrast_id} exists in Expression Atlas but "
+            f"is microarray (platform {ref.platform!r}), and this app reads "
+            f"RNA-seq only — a settled decision, not a missing feature "
+            f"(docs/DECISION-RNASEQ-ONLY-2026-10-02.md). Its statistics are in "
+            f"{ref.accession}_{ref.platform}-analytics.tsv if you need them "
+            f"elsewhere; nothing here is drawn from them.")
 
 
 async def hydrate(atlas: "atlas_mod.AtlasAdapter", ref: ContrastRef) -> ContrastRef:
@@ -200,8 +212,9 @@ async def hydrate(atlas: "atlas_mod.AtlasAdapter", ref: ContrastRef) -> Contrast
 
 def padj_column_label(ref: ContrastRef) -> str:
     """What `-analysis-methods.tsv` says the p-value column is -- read, not
-    assumed. Nothing here hardcodes 'DESeq2': stage 6's microarray pipeline is
-    limma, read from the same row, and this label follows it."""
+    assumed. Nothing here hardcodes 'DESeq2': it follows whatever that row says.
+    (Array files do say limma, but under a differently-named row this never
+    reads — decision doc item 6. Moot while arrays are refused upstream.)"""
     pipeline = ref.pipeline or "pipeline not read"
     return f"adjusted p-value ({pipeline}, from -analysis-methods.tsv)"
 

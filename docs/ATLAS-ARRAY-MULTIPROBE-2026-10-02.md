@@ -5,6 +5,14 @@ run live today. **Cost:** $0.00, read-only GETs, nothing written to `cache/`.
 **Companion to** `ATLAS-ARRAY-PROBE-2026-09-30.md`, which established *that*
 the grain is the probe. This one measures *how much it matters*.
 
+> **Outcome, later the same day: stage 6 is closed as "won't build" — RNA-seq
+> only.** Puck decided it on WhatsApp after reading this probe; see
+> [`DECISION-RNASEQ-ONLY-2026-10-02.md`](DECISION-RNASEQ-ONLY-2026-10-02.md).
+> Note that this probe's finding argues the *other* way — the collapse rule it
+> was commissioned to price turned out to be nearly free — and the decision was
+> taken on the five other array-only behaviours it documents, not on this one.
+> "Stage 6 stays blocked", below, was true when written and is now superseded.
+
 **The number:** **683 of 854 array contrasts (80.0%)** sit on a design where
 multi-probe genes occur. **But the per-gene rate is at most 0.118% on any
 design, and the maximum is 3 probes.** Across all twenty representative files —

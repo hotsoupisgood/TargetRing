@@ -266,6 +266,16 @@ still worth saying: **nothing on this figure is a ranking, a score or a
 recommendation.** It is a gene set, in a stated order, with the evidence that
 exists for each gene drawn honestly beside it — including where none exists.
 
+**[added 2026-10-02, Puck on WhatsApp] Expression Atlas microarray — won't
+build, not "not yet".** Atlas contrasts are read for RNA-seq only. This costs
+**854 of 1,126 indexed contrasts (76%)** and leaves **88 of 246 diseases
+(35.8%)** served, 158 entirely unavailable — a real loss, taken on test-surface
+cost rather than on coverage. The array contrasts stay indexed, counted and
+visible in the picker, and the app says *which* of "Atlas has nothing" and "this
+app does not read this format" applies. Full reasoning and the measured numbers
+any reopening would start from:
+`docs/DECISION-RNASEQ-ONLY-2026-10-02.md`.
+
 ## 9. Licensing
 
 To be checked by a human before workplace use — flagged in the council review.

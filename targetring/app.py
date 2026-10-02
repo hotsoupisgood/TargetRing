@@ -181,8 +181,9 @@ async def contrasts(disease: str = "", sort: str = "") -> JSONResponse:
     * **a composite order.** One column at a time, or the default. A ranking of
       contrasts is a ranking.
     * **a filter that removes microarray.** 121 of the 138 are microarray; greying
-      them with a reason and a count is the difference between "not drawable yet"
-      and "Atlas has 17 Crohn's contrasts".
+      them with a reason and a count is the difference between "Atlas has these
+      and this app does not read them" and "Atlas has 17 Crohn's contrasts".
+      Those are different facts and the payload must not collapse them.
     """
     want = disease.strip()
     if not want:
@@ -246,8 +247,8 @@ async def contrast_genes(accession: str, contrast_id: str, n: int = MAX_GENES,
                          direction: str = "both") -> JSONResponse:
     """Stage 3: the gene table for one contrast, no figure yet.
 
-    RNA-seq only (microarray is HTTP 409, stage 6's reason, never a partial
-    table). Selection is always over rows carrying both a p-value and a log2FC
+    RNA-seq only (microarray is HTTP 409 with the settled-decision reason, never
+    a partial table). Selection is always over rows carrying both a p-value and a log2FC
     -- rule 1 as a sort (PLAN §1 item 6) -- and every id then goes through the
     same `Resolver` a pasted id would (rule 5), so `no_match`/`ambiguous` read
     exactly as they do on the paste path.

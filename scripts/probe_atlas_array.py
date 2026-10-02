@@ -1,14 +1,21 @@
 #!/usr/bin/env python
 """Live probe: is microarray `-analytics.tsv` gene-level ENSG, or probe-level?
 
-The one thing gating stage 6. RNA-seq's `{ACC}-analytics.tsv` carries
+**Outcome: probe-level, and on 2026-10-02 Puck closed microarray as "won't
+build" — this app reads RNA-seq only
+(`docs/DECISION-RNASEQ-ONLY-2026-10-02.md`).** This script is kept as the
+evidence for that decision and as the starting point if it is ever reopened; it
+is not a gate on pending work any more. It imports nothing from the app's
+request path and no test depends on it.
+
+What it was commissioned for. RNA-seq's `{ACC}-analytics.tsv` carries
 `Gene ID, Gene Name, {contrast}.p-value, {contrast}.log2foldchange` and is
 `ENSG`-shaped in 65,217/65,217 rows, one row per gene (spike §5). Nothing
 verified said the microarray layout `{ACC}_{PLATFORM}-analytics.tsv` does the
 same, and the two possibilities need different work:
 
-* **gene-level** — stage 6 is the second file layout plus a second heatmap
-  recipe, and nothing else changes.
+* **gene-level** — array support would have been the second file layout plus a
+  second heatmap recipe, and nothing else.
 * **probe-level** — a probe→gene collapse is needed, and *which probe wins for a
   gene* (max? mean? refuse ties?) is a study-design decision for Puck. Guessing
   it silently produces a figure where every number is right and the gene it is
@@ -63,7 +70,8 @@ a probe's job is to observe today's files, not to seed the app's cache with
 partial reads. Read-only GETs, zero spend.
 
 Exit codes: 0 gene-level on every design probed, 4 probe-level on any of them
-(stage 6 stops and reports), 2 rate-limited, 3 any other hard failure.
+(the observed answer; reported, not acted on), 2 rate-limited, 3 any other hard
+failure.
 """
 
 from __future__ import annotations
@@ -464,7 +472,9 @@ async def main() -> int:
         print("STOP. The row grain is the probe, not the gene. A probe→gene "
               "collapse (which probe wins for a gene: most significant? mean? "
               "refuse ties?) is a study-design decision for Puck, not an "
-              "improvisation — so stage 6 does not proceed on a guess.")
+              "improvisation. Decided 2026-10-02: not taken at all — this app "
+              "reads RNA-seq only. See "
+              "docs/DECISION-RNASEQ-ONLY-2026-10-02.md.")
     return 0 if all_gene_level else 4
 
 

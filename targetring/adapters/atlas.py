@@ -82,23 +82,27 @@ def analytics_url(acc: str, platform: str = RNASEQ) -> str:
     """The differential statistics file.
 
     Two layouts (spike §Awkward 4): RNA-seq is `{ACC}-analytics.tsv`, microarray
-    is `{ACC}_{PLATFORM}-analytics.tsv`. Stage 3 reads the first and stage 6 the
-    second; the URL is built here so a ref carries the right one from the start
-    rather than having it guessed at read time.
+    is `{ACC}_{PLATFORM}-analytics.tsv`. **This app reads only the first**
+    (`docs/DECISION-RNASEQ-ONLY-2026-10-02.md`); the array URL is still built
+    correctly because the picker cites it as the file it is declining to read,
+    and a citation to a URL that would 404 is worse than no citation.
     """
     stem = acc if platform == RNASEQ else f"{acc}_{platform}"
     return f"{experiment_base(acc)}{stem}-analytics.tsv"
 
 
 def raw_counts_url(acc: str) -> str:
-    """RNA-seq only (stage 4). Microarray's per-sample file is
+    """RNA-seq, which is all this app reads. Microarray's per-sample file is
     `-normalized-expressions.tsv` — see `normalized_expressions_url`."""
     return f"{experiment_base(acc)}{acc}-raw-counts.tsv"
 
 
 def normalized_expressions_url(acc: str, platform: str) -> str:
-    """Microarray's per-sample matrix (stage 6), the counterpart of RNA-seq's
-    `-raw-counts.tsv`.
+    """Microarray's per-sample matrix, the counterpart of RNA-seq's
+    `-raw-counts.tsv`. Unused by the app — arrays are refused
+    (`docs/DECISION-RNASEQ-ONLY-2026-10-02.md`) — and kept because
+    `scripts/probe_atlas_array.py` is the evidence for that decision and needs
+    it, and because the sizes below are a number any reopening starts from.
 
     **The two are not interchangeable and the difference is not cosmetic.**
     Raw counts are integer library-dependent counts, so stage 4 normalises them
@@ -554,8 +558,11 @@ def ensembl_release_from(methods: dict[str, str], acc: str) -> str:
 
 def pipeline_from(methods: dict[str, str], acc: str) -> str:
     """The 'Differential Expression' row verbatim (e.g. 'DESeq2 version: "
-    "1.10.1'). Stage 6's microarray contrasts carry limma here instead --
-    read every time, never assumed to be DESeq2 because RNA-seq usually is."""
+    "1.10.1') -- read every time, never assumed to be DESeq2 because RNA-seq
+    usually is. Array files name this row 'Differential expression statistics'
+    instead, in all 20 designs, so this would return '' for every one of them;
+    that is one of the six behaviours the RNA-seq-only decision avoids rather
+    than handles (decision doc item 6)."""
     de = methods.get("Differential Expression", "")
     if not de:
         raise HardFailure(
