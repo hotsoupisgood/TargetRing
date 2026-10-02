@@ -1,0 +1,40 @@
+{
+  "hits": [
+    {
+      "text": "atopic eczema MONDO_0004980 0 drawable of 14 contrasts in 4 experiments \u00b7 14 microarray \u2014 in Atlas, not read here (this app reads RNA-seq only) \u00b7 index built 2026-09-29Atlas-side id: EFO_0000274 (obsolete; never sent to Open Targets)",
+      "availability": "none_supported",
+      "count_text": "0 drawable of 14 contrasts in 4 experiments \u00b7 14 microarray \u2014 in Atlas, not read here (this app reads RNA-seq only)"
+    },
+    {
+      "text": "dermatitis, atopic, 2 MONDO_0011596 no contrasts in Expression Atlas \u00b7 index built 2026-09-29",
+      "availability": "none_in_atlas",
+      "count_text": "no contrasts in Expression Atlas"
+    },
+    {
+      "text": "13q12.3 microdeletion syndrome MONDO_0018474 no contrasts in Expression Atlas \u00b7 index built 2026-09-29",
+      "availability": "none_in_atlas",
+      "count_text": "no contrasts in Expression Atlas"
+    },
+    {
+      "text": "hyper-IgE recurrent infection syndrome 3, autosomal recessive MONDO_0032654 no contrasts in Expression Atlas \u00b7 index built 2026-09-29",
+      "availability": "none_in_atlas",
+      "count_text": "no contrasts in Expression Atlas"
+    },
+    {
+      "text": "atopic march EFO_0007755 no contrasts in Expression Atlas \u00b7 index built 2026-09-29",
+      "availability": "none_in_atlas",
+      "count_text": "no contrasts in Expression Atlas"
+    },
+    {
+      "text": "spongiotic dermatitis EFO_1000768 no contrasts in Expression Atlas \u00b7 index built 2026-09-29",
+      "availability": "none_in_atlas",
+      "count_text": "no contrasts in Expression Atlas"
+    }
+  ],
+  "n_rows": 14,
+  "n_greyed": 14,
+  "picker_head": "0 drawable of 14 contrasts in 4 experiments \u00b7 14 microarray \u2014 in Atlas, not read here (this app reads RNA-seq only) \u00b7 index built 2026-09-29",
+  "excludes": "What this app excludes: This app reads RNA-seq contrasts only. 14 of the 14 contrasts listed here are microarray: they are in Expression Atlas, they are listed and counted below, and this app does not read them. That is a decision taken on 2026-10-02 after measuring the platform, not a feature still coming \u2014 see docs/DECISION-RNASEQ-ONLY-2026-10-02.md.",
+  "first_flag": "microarray (A-AFFY-44) \u2014 in Atlas, not read here",
+  "not_drawable_reason": null
+}

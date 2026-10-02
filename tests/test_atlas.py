@@ -474,8 +474,19 @@ class TestTheRealCrohnsNumbers:
 
     def test_the_count_string_is_built_from_the_index(self, crohns_index) -> None:
         s = crohns_index.summary_for(CROHNS_IDS)
-        assert s.count_text == ("138 contrasts (17 RNA-seq, 121 microarray) in "
-                                "17 experiments")
+        assert s.count_text == (
+            "17 drawable of 138 contrasts in 17 experiments · "
+            "121 microarray — in Atlas, not read here "
+            "(this app reads RNA-seq only)")
+
+    def test_drawable_is_not_the_rnaseq_count(self, crohns_index) -> None:
+        """They coincide for Crohn's and must not be assumed to. An RNA-seq
+        contrast with an unsafe sign is refused too, for a different reason, so
+        it is counted separately rather than folded into the platform number."""
+        s = crohns_index.summary_for(CROHNS_IDS)
+        assert s.n_drawable + s.n_unsafe_sign == s.n_rnaseq
+        assert s.n_drawable + s.n_unsafe_sign + s.n_microarray == s.n_contrasts
+        assert (s.n_drawable, s.n_unsafe_sign) == (17, 0)
 
     def test_one_experiment_supplies_101_of_the_138(self, crohns_index) -> None:
         rows = crohns_index.contrasts_for(CROHNS_IDS)
@@ -546,7 +557,93 @@ class TestTheRealCrohnsNumbers:
             self, crohns_index) -> None:
         s = crohns_index.summary_for(["MONDO_9999999"])
         assert s.n_contrasts == 0
-        assert s.count_text == "0 contrasts"
+        assert s.count_text == "no contrasts in Expression Atlas"
+        assert s.availability == "none_in_atlas"
+
+
+# ===========================================================================
+# absent from Atlas vs absent from this app
+# ===========================================================================
+
+#: `inflammatory bowel disease` in the sliced real index: **7 contrasts, all
+#: microarray, 0 drawable.** Not a constructed fixture -- a real disease that a
+#: reader can really type, which is why it is the case these tests use.
+ARRAY_ONLY_ID = "EFO_0003767"
+
+
+class TestTheCountLineSeparatesAbsentFromUnsupported:
+    """The failure this exists to prevent, in one sentence: someone searches a
+    disease whose contrasts are all microarray, reads a bare zero, and concludes
+    *no data exists* when the truth is *we chose not to read this format*.
+
+    That is `AGENTS.md:17`'s plausible-wrong-output arriving through the search
+    box rather than through a ring, and it is worse there, because a figure at
+    least carries a banner — a count line that says "0" carries nothing.
+
+    854 of 1,126 indexed contrasts are microarray, so this is the common case.
+    """
+
+    def test_the_array_only_disease_says_the_data_exists(self, crohns_index) -> None:
+        s = crohns_index.summary_for([ARRAY_ONLY_ID])
+        assert (s.n_contrasts, s.n_drawable, s.n_microarray) == (7, 0, 7)
+        assert s.count_text == (
+            "0 drawable of 7 contrasts in 1 experiment · "
+            "7 microarray — in Atlas, not read here "
+            "(this app reads RNA-seq only)")
+
+    def test_the_two_zeroes_are_different_strings(self, crohns_index) -> None:
+        """The whole requirement, as one assertion. If these two ever collide,
+        the app is claiming Atlas is empty when it is not."""
+        unsupported = crohns_index.summary_for([ARRAY_ONLY_ID])
+        absent = crohns_index.summary_for(["MONDO_9999999"])
+        assert unsupported.n_drawable == absent.n_drawable == 0
+        assert unsupported.count_text != absent.count_text
+        assert unsupported.availability != absent.availability
+        # And neither is a bare number a reader has to interpret.
+        assert "Atlas" in unsupported.count_text and "Atlas" in absent.count_text
+
+    def test_the_unsupported_line_says_whose_choice_it_was(self, crohns_index) -> None:
+        """"not read here" and "this app reads RNA-seq only" put the decision on
+        this app. A reader must be able to tell that their disease is missing
+        from THIS APP and not from Atlas, without asking anyone."""
+        t = crohns_index.summary_for([ARRAY_ONLY_ID]).count_text
+        assert "not read here" in t
+        assert "this app reads RNA-seq only" in t
+        assert "in Atlas" in t
+
+    def test_the_absent_line_does_not_blame_the_app(self, crohns_index) -> None:
+        """The converse, and just as load-bearing: when Atlas really has nothing,
+        the line must not imply the app is withholding something."""
+        t = crohns_index.summary_for(["MONDO_9999999"]).count_text
+        assert t == "no contrasts in Expression Atlas"
+        assert "RNA-seq only" not in t and "not read here" not in t
+
+    def test_availability_is_a_word_not_a_number_the_browser_must_interpret(
+            self, crohns_index) -> None:
+        """The three states are styled differently in `app.css`, and the browser
+        branches on this word rather than on the count or on the prose — a page
+        that re-derived "is this a real zero?" from `n_contrasts` is how the two
+        zeroes end up looking the same again."""
+        assert crohns_index.summary_for(CROHNS_IDS).availability == "some"
+        assert crohns_index.summary_for([ARRAY_ONLY_ID]).availability \
+            == "none_supported"
+        assert crohns_index.summary_for(["MONDO_9999999"]).availability \
+            == "none_in_atlas"
+
+    def test_the_picker_for_an_array_only_disease_is_not_a_silent_empty_table(
+            self) -> None:
+        """Clicking through from that autocomplete line must not produce a table
+        of greyed rows with nothing above it saying why."""
+        ix = AtlasIndex.load(CROHNS_INDEX)
+        ref = DiseaseRef(label="inflammatory bowel disease",
+                         current_id=ARRAY_ONLY_ID, atlas_ids=(ARRAY_ONLY_ID,))
+        p = idx.picker_payload(ix, ref)
+        assert p["n_drawable_now"] == 0
+        # The rows are all there -- refusing to draw them is not hiding them.
+        assert len(p["rows"]) == 7
+        assert all(r["drawable"] is False for r in p["rows"])
+        assert "7 of the 7 contrasts listed here are microarray" in p["excludes"]
+        assert p["counts"]["availability"] == "none_supported"
 
 
 class TestIndexStaleness:
@@ -696,8 +793,9 @@ class TestAutocompleteEntry:
         ref = (await ols.resolve("Crohn's disease"))[0]
         e = crohns_index.autocomplete_entry(ref)
         assert e["text"] == (
-            "Crohn disease · MONDO_0005011 — 138 contrasts (17 RNA-seq, "
-            "121 microarray) in 17 experiments · index built 2026-09-29")
+            "Crohn disease · MONDO_0005011 — 17 drawable of 138 contrasts in "
+            "17 experiments · 121 microarray — in Atlas, not read here "
+            "(this app reads RNA-seq only) · index built 2026-09-29")
 
     async def test_it_carries_both_id_spaces_separately(self, ols, crohns_index) -> None:
         ref = (await ols.resolve("Crohn's disease"))[0]
@@ -706,12 +804,20 @@ class TestAutocompleteEntry:
         assert e["obsolete_atlas_ids"] == ["EFO_0000384"]
         assert set(e["atlas_ids"]) == {"MONDO_0005011", "EFO_0000384"}
 
-    async def test_zero_contrasts_is_shown_as_zero_and_stays_selectable(
+    async def test_zero_contrasts_names_atlas_as_the_thing_that_has_none(
             self, ols, crohns_index) -> None:
+        """And stays selectable. "Atlas has never studied this" is a real answer.
+
+        It must not be the string a disease gets when Atlas HAS studied it and
+        this app declines the platform — see
+        `TestTheCountLineSeparatesAbsentFromUnsupported`.
+        """
         ref = next(r for r in await ols.resolve("Crohn")
                    if r.current_id != "MONDO_0005011")
         e = crohns_index.autocomplete_entry(ref)
-        assert "0 contrasts" in e["text"]
+        assert "no contrasts in Expression Atlas" in e["text"]
+        assert e["counts"]["availability"] == "none_in_atlas"
+        assert e["counts"]["excluded_text"] == ""
         assert e["current_id"]
 
 
@@ -784,12 +890,41 @@ class TestThePickerFlags:
         assert len(micro) == 121
         for r in micro[:5]:
             assert r["drawable"] is False
-            assert "stage 6" in r["not_drawable_reason"]
+            why = r["not_drawable_reason"]
+            # Says WHERE the absence is, and that it is settled rather than
+            # pending. "until stage 6" used to be here and was a promise; it is
+            # now false, and a false promise is worse than a plain refusal.
+            assert "exists in Expression Atlas" in why
+            assert "RNA-seq only" in why
+            assert "stage 6" not in why
+            assert "not a missing feature" in why
             flag = next(f for f in r["flags"] if f["key"] == "microarray")
             assert r["platform"] in flag["label"]
+            assert "not read here" in flag["label"]
             assert "hiding it" in flag["reason"]
         # ...and they are in `rows`, which is what "still counted" means.
         assert len(picker["rows"]) == 138
+
+    def test_no_row_or_flag_still_promises_microarray_support_is_coming(
+            self, picker) -> None:
+        """The decision of 2026-10-02 is "won't build", not "not yet". Anything
+        in this payload that says otherwise is a lie to the reader, so the whole
+        payload is searched rather than the few fields that were edited."""
+        blob = json.dumps(picker)
+        for promise in ("stage 6", "not drawable yet", "until stage",
+                        "not yet supported", "coming soon"):
+            assert promise not in blob, promise
+
+    def test_the_picker_states_what_it_excludes_and_who_excluded_it(
+            self, picker) -> None:
+        """A greyed table with no statement above it is the silent-absence
+        failure one level up from a greyed row."""
+        ex = picker["excludes"]
+        assert "121 of the 138" in ex
+        assert "RNA-seq contrasts only" in ex
+        assert "in Expression Atlas" in ex
+        assert "not a feature still coming" in ex
+        assert "DECISION-RNASEQ-ONLY-2026-10-02" in ex
 
     def test_single_experiment_dominance_is_printed_once_at_the_top(self, picker) -> None:
         d = picker["dominance"]
@@ -965,8 +1100,9 @@ class TestDiseasesRoute:
         assert r.status_code == 200
         body = r.json()
         assert body["diseases"][0]["text"] == (
-            "Crohn disease · MONDO_0005011 — 138 contrasts (17 RNA-seq, "
-            "121 microarray) in 17 experiments · index built 2026-09-29")
+            "Crohn disease · MONDO_0005011 — 17 drawable of 138 contrasts in "
+            "17 experiments · 121 microarray — in Atlas, not read here "
+            "(this app reads RNA-seq only) · index built 2026-09-29")
 
     def test_it_carries_the_index_s_own_provenance(self, client) -> None:
         body = client.get("/api/diseases", params={"q": "Crohn"}).json()

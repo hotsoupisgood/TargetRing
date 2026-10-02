@@ -681,9 +681,22 @@ button.hit { display: block; width: 100%; text-align: left; background: #fff;
 button.hit:hover { background: #f4f6f8; }
 button.hit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .hit-count { color: var(--accent); font-weight: 600; margin-left: 6px; }
-/* Zero is a real answer and is printed as one, in the muted channel rather than
-   the red one: "Atlas has never studied this" is not an error. */
-.hit-count.zero { color: var(--muted); font-weight: 400; }
+/* Three states, three appearances, because they are three different answers and
+   the whole point of the line is that a reader can tell them apart at a glance.
+   The server decides which (`DiseaseContrastSummary.availability`); this only
+   colours it.
+
+   `some`            — the default above: drawable contrasts exist.
+   `none_in_atlas`   — nothing exists. A real answer, not an error, so the muted
+                       channel and not the red one.
+   `none_supported`  — contrasts EXIST and this app declines them (RNA-seq only,
+                       2026-10-02). Warn-coloured, not muted: this one is OUR
+                       doing, and styling it like `none_in_atlas` would hand the
+                       reader exactly the wrong conclusion -- "no data exists" --
+                       which is the silent absence this app is built to refuse.
+                       Not red either; nothing has gone wrong. */
+.hit-count.none_in_atlas { color: var(--muted); font-weight: 400; }
+.hit-count.none_supported { color: var(--warn); font-weight: 600; }
 .bad-text { color: var(--bad); }
 .note.bad { border-left-color: var(--bad); background: #fdf0f0; color: var(--ink); }
 
@@ -707,7 +720,9 @@ table.picker td { border-bottom: 1px solid #eef0f2; padding: 5px 8px;
 table.picker tbody tr { cursor: pointer; }
 table.picker tbody tr:hover { background: #f4f6f8; }
 /* Greyed, and still there. 121 of the 138 Crohn's contrasts are microarray; a
-   filter that removed them would make this table look like Atlas has 17. */
+   filter that removed them would make this table look like Atlas has 17. Greyed
+   means "this app will not draw it", never "Atlas has nothing" -- the row's
+   `not_drawable_reason` says which, and says it is settled rather than pending. */
 table.picker tr.greyed td { color: var(--muted); background: #fafbfc; }
 table.picker tr.invalid td { background: #fdf4f4; }
 /* 12.0 px, not 11.5: `UX-v3-rounds.md` B12's floor is binding, and the flags

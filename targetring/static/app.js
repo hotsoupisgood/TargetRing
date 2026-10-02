@@ -186,6 +186,13 @@ async function searchDiseases(q) {
   $("#find-sources").innerHTML = sourcesHtml(b.sources);
 }
 
+// `count_text` and the `availability` word both come from the server
+// (`DiseaseContrastSummary`). The styling branches on the word, never on the
+// prose, and the three states are styled DIFFERENTLY on purpose: a disease Atlas
+// has never studied and a disease whose contrasts are all microarray must not
+// look the same in this list, because they are not the same answer. The second
+// one is the app's own choice, and a reader deciding whether to go and look
+// elsewhere needs to know which it is.
 function diseaseHitHtml(d, i) {
   const c = d.counts;
   const obsolete = (d.obsolete_atlas_ids || []).length
@@ -194,7 +201,7 @@ function diseaseHitHtml(d, i) {
        (obsolete; never sent to Open Targets)</span>` : "";
   return `<li><button class="hit" id="hit-${i}">
       <b>${esc(d.label)}</b> <code>${esc(d.current_id)}</code>
-      <span class="hit-count${c.n_contrasts ? "" : " zero"}">${esc(c.count_text)}</span>
+      <span class="hit-count ${esc(c.availability)}">${esc(c.count_text)}</span>
       <span class="hint">· ${esc(c.built_text)}</span><br>${obsolete}
     </button></li>`;
 }
@@ -261,7 +268,10 @@ function chooseDisease(d, ix) {
 //   row.
 // * **Every flag is visible and no flag removes a row.** 121 of the 138 Crohn's
 //   contrasts are microarray; they are greyed with the reason and still counted,
-//   because hiding them would make this panel look like Atlas has 17.
+//   because hiding them would make this panel look like Atlas has 17. The reason
+//   names where the absence is: the data is in Atlas and this app declines to
+//   read it (RNA-seq only, 2026-10-02 — settled, not pending). A reader must be
+//   able to tell that from "Atlas has nothing" without asking anyone.
 // * **Single-column sort only**, and an order the server will not honour is
 //   reported rather than quietly swapped for another.
 //
@@ -291,8 +301,9 @@ function renderContrasts(b) {
   const c = b.counts;
   $("#contrast-panel").innerHTML = `
     <h2>Contrasts</h2>
-    <p class="picker-head"><b>${esc(c.count_text)}</b> · ${esc(c.built_text)} ·
-      <b>${b.n_drawable_now}</b> drawable now (RNA-seq).</p>
+    <p class="picker-head"><b>${esc(c.count_text)}</b> · ${esc(c.built_text)}</p>
+    <div class="note ${c.availability === "none_supported" ? "warn" : ""}"
+      ><b>What this app excludes:</b> ${esc(b.excludes)}</div>
     ${b.dominance ? `<div class="note warn"><b>${esc(b.dominance.text)}</b> —
       these rows are not independent evidence.</div>` : ""}
     <p class="hint">${esc(b.row_unit)}<br><b>${esc(b.no_default)}</b></p>

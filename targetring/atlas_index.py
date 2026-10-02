@@ -145,7 +145,21 @@ class IndexedContrast:
 
 @dataclass(frozen=True)
 class DiseaseContrastSummary:
-    """The numbers the autocomplete line is built from, with their build date."""
+    """The numbers the autocomplete line is built from, with their build date.
+
+    **The one distinction this class exists to keep.** A bare count cannot tell a
+    reader whether their disease is missing from *Atlas* or missing from *this
+    app*, and those are completely different facts — one is about the world, the
+    other is a choice made here (RNA-seq only, 2026-10-02,
+    `docs/DECISION-RNASEQ-ONLY-2026-10-02.md`). 854 of 1,126 indexed contrasts
+    are microarray, so "exists but not read here" is the *common* case, not a
+    corner of it: a disease with 14 array contrasts and no RNA-seq would, under a
+    count that only said "0 drawable", read as "nobody has studied this". That is
+    the silent-absence failure `AGENTS.md:17` is about, arriving through the
+    search box instead of through a ring.
+
+    So the counts carry both numbers and `count_text` always says which it is.
+    """
 
     disease_ids: tuple[str, ...]
     n_contrasts: int
@@ -155,32 +169,83 @@ class DiseaseContrastSummary:
     built_utc: str
     stale: bool
     n_failed_experiments: int
+    #: Contrasts this app will actually draw: RNA-seq AND a sign that is
+    #: established (I8). NOT the same as `n_rnaseq` -- an RNA-seq contrast whose
+    #: id is not `{ref}_{test}` is refused too, and for a different reason, so it
+    #: is counted separately rather than folded into the platform number.
+    n_drawable: int = 0
+    #: RNA-seq, but the id is not `{reference}_{test}` so the direction of every
+    #: log2FC is unknown. Named separately because "we don't read this format"
+    #: and "we cannot tell which way this points" are not the same refusal.
+    n_unsafe_sign: int = 0
 
     def as_dict(self) -> dict[str, Any]:
-        # Both derived strings, because both are printed and neither is the
-        # browser's to compose: `built_text` carries the STALE marker, and a page
-        # that built its own version of that sentence could disagree with the
-        # index about whether the count it is showing is current.
+        # The derived strings travel with the numbers, because all three are
+        # printed and none of them is the browser's to compose: `built_text`
+        # carries the STALE marker, `count_text` carries the
+        # exists-but-unsupported distinction, and a page that rebuilt either
+        # sentence itself could disagree with the index about what it is showing.
         return {**{k: (list(v) if isinstance(v, tuple) else v)
                    for k, v in self.__dict__.items()},
                 "count_text": self.count_text,
+                "excluded_text": self.excluded_text,
+                "availability": self.availability,
                 "built_text": self.built_text}
 
     @property
-    def count_text(self) -> str:
-        """`123 contrasts (22 RNA-seq, 101 microarray) in 9 experiments`.
+    def n_undrawable(self) -> int:
+        return self.n_contrasts - self.n_drawable
 
-        Zero is printed as "0 contrasts" and the entry stays selectable: a disease
-        OLS4 resolves and Atlas has never studied is a real answer, and the picker
-        page then says which of the two it is.
+    @property
+    def availability(self) -> str:
+        """Which of the three situations this is, as one word a caller can branch
+        on without parsing prose: `none_in_atlas`, `none_supported`, `some`."""
+        if not self.n_contrasts:
+            return "none_in_atlas"
+        return "none_supported" if not self.n_drawable else "some"
+
+    @property
+    def excluded_text(self) -> str:
+        """Every contrast that exists and will not be drawn, by reason.
+
+        Empty when nothing is excluded. Each reason is named: a single
+        "n not drawable" would put a format decision and an unreadable sign
+        behind the same number, and only one of those is ours to change.
+        """
+        parts: list[str] = []
+        if self.n_microarray:
+            parts.append(
+                f"{self.n_microarray} microarray — in Atlas, not read here "
+                f"(this app reads RNA-seq only)")
+        if self.n_unsafe_sign:
+            parts.append(
+                f"{self.n_unsafe_sign} with an unestablished sign — the contrast "
+                f"id is not {{reference}}_{{test}}, so which way the log2FC "
+                f"points is unknown")
+        return "; ".join(parts)
+
+    @property
+    def count_text(self) -> str:
+        """The autocomplete's and the picker's one line. Three shapes:
+
+        * `no contrasts in Expression Atlas` — nothing exists. Atlas has never
+          studied this disease, as far as this index can see.
+        * `0 drawable of 14 contrasts in 3 experiments · 14 microarray — in
+          Atlas, not read here (this app reads RNA-seq only)` — the data exists
+          and the app declines it. **This is the line that must never be
+          mistaken for the one above.**
+        * `17 drawable of 138 contrasts in 17 experiments · 121 microarray — …`
+
+        A zero of either kind stays selectable: the picker page then shows the
+        rows, greyed, with the same reason on each.
         """
         if not self.n_contrasts:
-            return "0 contrasts"
-        return (f"{self.n_contrasts} contrast"
-                f"{'' if self.n_contrasts == 1 else 's'} "
-                f"({self.n_rnaseq} RNA-seq, {self.n_microarray} microarray) in "
+            return "no contrasts in Expression Atlas"
+        head = (f"{self.n_drawable} drawable of {self.n_contrasts} contrast"
+                f"{'' if self.n_contrasts == 1 else 's'} in "
                 f"{self.n_experiments} experiment"
                 f"{'' if self.n_experiments == 1 else 's'}")
+        return f"{head} · {self.excluded_text}" if self.excluded_text else head
 
     @property
     def built_text(self) -> str:
@@ -341,6 +406,12 @@ class AtlasIndex:
             built_utc=self.built_utc,
             stale=self.is_stale(),
             n_failed_experiments=len(self.failed),
+            # Deliberately the SAME predicate as `picker_row`'s `drawable`, so
+            # the autocomplete's promise and the picker's rows cannot disagree
+            # about what is drawable. A reader who clicks a "17 drawable" line
+            # and finds 16 usable rows has been lied to by one of the two.
+            n_drawable=sum(1 for c in rows if c.is_rnaseq and not c.invalid_reason),
+            n_unsafe_sign=sum(1 for c in rows if c.is_rnaseq and c.invalid_reason),
         )
 
     def autocomplete_entry(self, ref: DiseaseRef) -> dict[str, Any]:
@@ -392,13 +463,16 @@ def _flags(c: IndexedContrast) -> list[dict[str, str]]:
     if not c.is_rnaseq:
         out.append({
             "key": "microarray",
-            "label": f"microarray ({c.platform}) — not drawable until stage 6",
-            "reason": ("microarray uses a second file layout "
-                       "({ACC}_{PLATFORM}-analytics.tsv and "
-                       "-normalized-expressions.tsv) and a different heatmap "
-                       "recipe. The row is greyed and still counted: hiding it "
-                       "would make this picker look like Atlas has only the "
-                       "RNA-seq contrasts.")})
+            "label": f"microarray ({c.platform}) — in Atlas, not read here",
+            "reason": (
+                "This contrast's statistics exist in Expression Atlas; this app "
+                "does not read them. Microarray support was measured and then "
+                "declined on 2026-10-02 (RNA-seq only — "
+                "docs/DECISION-RNASEQ-ONLY-2026-10-02.md), not deferred, so this "
+                "will not become drawable later. The row is greyed and still "
+                "counted: hiding it would make this picker look like Atlas has "
+                "only the RNA-seq contrasts, and 'nobody studied this' is a "
+                "different claim from 'we chose not to read this format'.")})
     if c.min_n < VERY_SMALL_N:
         out.append({"key": "n_lt_4",
                     "label": f"n<{VERY_SMALL_N} on a side (n={c.min_n})",
@@ -444,14 +518,23 @@ def picker_row(c: IndexedContrast, built_utc: str) -> dict[str, Any]:
         "test_disease_ids": list(c.test_disease_ids),
         "flags": flags,
         "flag_keys": sorted(keys),
-        # Drawable in stage 3 means: RNA-seq, and an id whose direction is
-        # established. Microarray waits for stage 6; an invalid id waits for
-        # nothing, because there is nothing to wait for.
+        # Drawable means: RNA-seq, and an id whose direction is established.
+        # Neither refusal is a "yet" -- microarray is a settled decision
+        # (2026-10-02, RNA-seq only) and an unsafe sign has nothing to wait for.
+        # The reason says WHERE the absence is, because a reader who cannot tell
+        # "Atlas has nothing" from "this app declines this" will read the second
+        # as the first.
         "drawable": c.is_rnaseq and not c.invalid_reason,
-        "not_drawable_reason": ("the sign of this contrast is unestablished"
-                                if c.invalid_reason else
-                                "microarray is not drawable until stage 6"
-                                if not c.is_rnaseq else ""),
+        "not_drawable_reason": (
+            "the sign of this contrast is unestablished: its id is not "
+            "{reference}_{test}, so which group 'up' refers to is unknown"
+            if c.invalid_reason else
+            f"this contrast exists in Expression Atlas on microarray design "
+            f"{c.platform}, and this app reads RNA-seq only — a settled "
+            f"decision of 2026-10-02, not a missing feature "
+            f"(docs/DECISION-RNASEQ-ONLY-2026-10-02.md). Atlas has the data; "
+            f"nothing here is drawn from it."
+            if not c.is_rnaseq else ""),
         "configuration_url": atlas_mod.configuration_url(c.accession),
     }
     if not c.invalid_reason:
@@ -542,12 +625,35 @@ def picker_payload(index: "AtlasIndex", ref: DiseaseRef, sort: str = "") -> dict
         "rows": rows,
         # Said in the payload rather than only in the panel's HTML, so the
         # statement travels with the data a test reads.
-        "no_default": ("No contrast is picked for you. 101 of the 138 Crohn's "
-                       "contrasts come from one trial, and the spike's verdict is "
-                       "that no sensible default exists."),
+        # The Crohn's numbers are the PRECEDENT that set this rule, not a claim
+        # about the disease on screen -- said that way round because this string
+        # renders directly under `dominance`, which carries THIS disease's real
+        # numbers, and two adjacent counts about different diseases read as one.
+        "no_default": ("No contrast is picked for you, for any disease. The rule "
+                       "was set by Crohn's, where 101 of 138 contrasts come from "
+                       "a single trial and the spike's verdict was that no "
+                       "sensible default exists; the dominance line above gives "
+                       "this disease's own figure."),
         "row_unit": ("Each row is one CONTRAST, not one experiment: an experiment "
                      "with 101 contrasts appears 101 times, because the sign, the "
                      "groups and the n per side differ per contrast."),
+        # In the payload, not only in the panel's HTML, for the same reason
+        # `no_default` is: the statement a reader relies on must travel with the
+        # data a test can read. An empty picker that does not say THIS is the
+        # failure task 2 exists to close.
+        "excludes": (
+            f"This app reads RNA-seq contrasts only. {summary.n_microarray} of "
+            f"the {summary.n_contrasts} contrasts listed here are microarray: "
+            f"they are in Expression Atlas, they are listed and counted below, "
+            f"and this app does not read them. That is a decision taken on "
+            f"2026-10-02 after measuring the platform, not a feature still "
+            f"coming — see docs/DECISION-RNASEQ-ONLY-2026-10-02.md."
+            if summary.n_microarray else
+            f"All {summary.n_contrasts} contrasts listed here are RNA-seq, which "
+            f"is what this app reads. Nothing is excluded by platform."
+            if summary.n_contrasts else
+            "Expression Atlas has no contrasts for this disease in this index — "
+            "nothing is being withheld by platform, there is nothing to withhold."),
     }
 
 
