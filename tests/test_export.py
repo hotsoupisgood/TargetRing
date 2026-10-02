@@ -54,6 +54,11 @@ STATIC = REPO / "targetring" / "static"
 # longer draws.
 RETIRED_RING_RUN = "20260924T061611Z-e8d4a4"
 
+# How the one data block is delimited in the document, so the `blob` fixture can
+# read back exactly what the file carries.
+_EXPORT_OPEN = "const EXPORT = "
+_EXPORT_CLOSE = ";\n</script>"
+
 
 def a_real_run() -> str:
     for d in sorted((p for p in RUNS.iterdir() if p.name.startswith("20")),
@@ -135,13 +140,29 @@ def loaded(run_id: str) -> table_mod.RunTable:
 
 
 @pytest.fixture(scope="module")
-def blob(run_id: str) -> dict:
-    return export_mod.export_blob(run_id)
+def html(run_id: str) -> str:
+    return export_mod.build_html(run_id)
 
 
 @pytest.fixture(scope="module")
-def html(run_id: str) -> str:
-    return export_mod.build_html(run_id)
+def blob(html: str) -> dict:
+    """The data the FILE ships, read back out of the file — not a second export.
+
+    `build_html` calls `export_blob` itself, so a `blob` fixture that called
+    `export_blob` again produced a SECOND export of the same run, with its own
+    `datetime.now()` stamp. Every `(html, blob)` pair in this file was then two
+    artefacts compared as if they were one, and
+    `test_the_run_is_stamped_on_the_face_of_it` lost a ~37 ms race against the
+    `%H:%M:%S` boundary roughly 3% of the time — a flake with no bug under it,
+    and worse, a stamp assertion that was never actually about this document.
+
+    Reading the blob back out is also the module's own thesis applied to its
+    fixtures: there is one payload, and the export is a RENDERING of it. The
+    escaping `_script_safe` applies is pure JSON `\\uXXXX`, so `json.loads`
+    recovers the dict with no un-escaping step to get wrong.
+    """
+    start = html.index(_EXPORT_OPEN) + len(_EXPORT_OPEN)
+    return json.loads(html[start:html.index(_EXPORT_CLOSE, start)])
 
 
 @pytest.fixture(scope="module")
