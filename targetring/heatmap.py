@@ -16,6 +16,30 @@ panels that make the null case *look* different rather than merely say it is:
 If either panel cannot be drawn, `render()` refuses rather than drawing panels
 1-3 and 6-7 alone and calling it a heatmap (plan §3 stage 4, §8).
 
+**What the 2026-10-06 panel review changed about the influence strip**, because
+its verdict was "real computation, decorative rendering" and the reasons
+generalise. The strip's statistic was a cross-gene average of
+`mean(z test) - mean(z ref)` taken WITH SIGN, flagged against `3 x the median
+absolute leave-one-out shift`. Three separate ways that misled, all measured:
+
+* the signed average let opposite-direction genes cancel, so a bidirectional
+  gene set reported a baseline near zero -- "no separation" where the truth is
+  "strong separation, in both directions". On two of three fixtures 98% of the
+  per-gene separation cancelled, and on one the baseline changed SIGN between
+  `direction="both"` and `direction="split"` on identical data;
+* the flag threshold was relative, so a tail always existed and something was
+  always flagged. The printed count was 3-11 on real contrasts and on nulls
+  built by permutation alike, and could never say "nothing here is
+  influential";
+* `max|delta| / baseline` -- the one quantity that does separate a real
+  contrast from a null one -- was computed and printed nowhere.
+
+So the baseline is now the UNSIGNED mean per-gene separation, the flag is an
+absolute fraction of it (`INFLUENCE_FLAG_FRACTION`), and the baseline, the
+ratio and the directional split are all printed. Nothing here ranks genes or
+produces a score (rule 7): these are stated descriptive statistics of one
+figure, each printed with its own definition beside it.
+
 RNA-seq only. Recipe: library-size CPM on the two groups' own samples, then
 log2(x+1), then a per-gene z-score across exactly the samples shown -- which is
 also why "block structure is guaranteed by construction" is printed on every
@@ -42,7 +66,12 @@ matplotlib.rcParams["svg.fonttype"] = "none"
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.colors import to_hex  # noqa: E402
 
-from .contrast import Accounting, AnalyticsRow, ContrastRef  # noqa: E402
+from .contrast import (  # noqa: E402
+    Accounting,
+    AnalyticsRow,
+    ContrastRef,
+    VERY_SMALL_N,
+)
 from .http import HardFailure  # noqa: E402
 from .palette import cmap_from, diverging_hexes, sequential_hexes  # noqa: E402
 
@@ -196,9 +225,80 @@ def _zscores(values: dict[str, float], samples: Sequence[str]) -> dict[str, floa
     return {s: (values[s] - m) / sd for s in samples}
 
 
-def _group_mean_z_diff(z_by_gene: dict[str, dict[str, float]],
-                       ref_samples: Sequence[str],
-                       test_samples: Sequence[str]) -> float:
+#: Panel S3. A sample is flagged when removing it moves the figure's whole
+#: between-group separation by at least this fraction of that separation --
+#: an ABSOLUTE criterion, so "nothing here is influential" is a reachable
+#: answer. It replaced `3 x median|delta|`, which is relative and therefore
+#: always finds a tail: the old flag count was 3-11 on every contrast and
+#: every constructed null alike, and could never report zero.
+#:
+#: Why 0.25 and not a number somebody liked. Measured on the fixtures
+#: (`/tmp/tr-repro/s3thresh.py`, four nulls built by drawing the "test" group
+#: at random from the REFERENCE side, so no group difference can exist):
+#:
+#:     real  E-GEOD-101794 g2_g1 (13 vs 61)   max|d| / baseline =  3.7%
+#:     real  E-GEOD-57945  g6_g4 (42 vs 24)                        4.7%
+#:     real  E-GEOD-57945  g6_g5 (42 vs  3)                       11.6%
+#:     null  g6_g5 permuted, seeds 0-3                 20.0 / 57.2 / 46.4 / 75.3%
+#:
+#: 0.25 clears every real contrast by better than 2x and catches three of the
+#: four nulls. The 20.0% trial sits under it, and that is stated rather than
+#: tuned away: this flag answers "does a quarter of this separation ride on
+#: one sample", which is a claim about influence, not a null-contrast
+#: detector. The discriminating ratio itself is printed on every render
+#: whether or not anything is flagged, which is the part that was missing.
+INFLUENCE_FLAG_FRACTION = 0.25
+
+
+def _group_mean_abs_z_separation(z_by_gene: dict[str, dict[str, float]],
+                                 ref_samples: Sequence[str],
+                                 test_samples: Sequence[str]) -> float:
+    """Mean across genes of the UNSIGNED per-gene group separation.
+
+    Panel S3. This function used to accumulate `mean(tv) - mean(rv)` **with
+    sign** and average that across genes, which let genes moving in opposite
+    directions cancel: a set that is half strongly up and half strongly down
+    averaged to approximately zero, and zero is what the figure's baseline
+    then reported -- "no separation" where the truth is "strong separation, in
+    both directions". Measured on the fixtures at n=60:
+
+        E-GEOD-101794 g2_g1   signed +0.2610   unsigned 1.0741   (24% survives)
+        E-GEOD-57945  g6_g4   signed -0.0110   unsigned 0.5877   ( 1.9%)
+        E-GEOD-57945  g6_g5   signed -0.0465   unsigned 2.4397   ( 1.9%)
+
+    Two of the three lose 98% of the per-gene separation to cancellation, and
+    `g6_g4`'s signed baseline even changes SIGN between `direction="both"`
+    (-0.0110) and `direction="split"` (+0.0245) on the same data -- the
+    figure's claimed direction flipping on a selection-rule change.
+
+    It survived because both development fixtures were one-directional
+    (59 up / 1 down, 55 up / 5 down on the untrimmed files), which is the only
+    regime where the signed average behaves.
+
+    Unsigned also makes the leave-one-out ratio work, which is why panel S2's
+    proposed `max|delta| / baseline` discriminator is only usable after this
+    change: the signed denominator collapses on exactly the contrasts the
+    ratio was meant to judge, giving 290% for a real contrast and 6.7% for
+    another real one.
+
+    This is NOT a score and ranks nothing (rule 7): it is one stated
+    descriptive statistic of the figure, printed with its own definition.
+    """
+    seps = []
+    for z in z_by_gene.values():
+        rv = [z[s] for s in ref_samples if s in z]
+        tv = [z[s] for s in test_samples if s in z]
+        if rv and tv:
+            seps.append(abs(mean(tv) - mean(rv)))
+    return mean(seps) if seps else 0.0
+
+
+def _group_mean_signed_z_diff(z_by_gene: dict[str, dict[str, float]],
+                              ref_samples: Sequence[str],
+                              test_samples: Sequence[str]) -> float:
+    """The old signed average, kept for one purpose only: so the figure can
+    state how much of the separation cancelled, rather than silently reporting
+    the cancelled number as the separation. Nothing is measured against it."""
     diffs = []
     for z in z_by_gene.values():
         rv = [z[s] for s in ref_samples if s in z]
@@ -231,10 +331,52 @@ class HeatmapData:
     influence: dict[str, float]
     influence_outliers: frozenset[str]
     influence_threshold: float
+    #: Mean UNSIGNED per-gene group separation in z. The quantity the influence
+    #: strip's deltas are changes IN, and -- panel S2 -- the quantity that was
+    #: computed and never printed. It is printed now.
+    baseline_separation: float = 0.0
+    #: The old signed cross-gene average. Carried so the figure can say how
+    #: much cancelled (panel S3); nothing is measured against it.
+    signed_mean_z_diff: float = 0.0
 
     @property
     def all_samples(self) -> tuple[str, ...]:
         return self.ref_samples + self.test_samples
+
+    @property
+    def small_n_caveat(self) -> str:
+        """Panel S1. `ContrastRef.min_n` existed at `contrast.py:147` and was
+        referenced nowhere in this module, `figure.py` or `manifest.py` — built
+        and never wired up — so once a reader had clicked past the picker the
+        only remaining trace of n=3 was the literal `(n=3)` inside a group
+        label. This is the wire."""
+        return self.ref.small_n_caveat
+
+    @property
+    def max_influence(self) -> float:
+        return max((abs(d) for d in self.influence.values()), default=0.0)
+
+    @property
+    def max_influence_fraction(self) -> float:
+        """`max|delta| / baseline` — panel S2's discriminating column, which it
+        measured at 16.5% on a real contrast against 87-201% on constructed
+        nulls. Both quantities already existed inside `compute()`; neither was
+        plotted or printed, so the two channels a reader actually had (an
+        autoscaled bar axis and a relative-threshold flag count) were the two
+        that cannot discriminate."""
+        if self.baseline_separation <= 0:
+            return 0.0
+        return self.max_influence / self.baseline_separation
+
+    @property
+    def directional_cancellation(self) -> float:
+        """How much of the per-gene separation the signed average destroys:
+        1.0 means it cancelled completely, 0.0 means the set is entirely
+        one-directional and signed and unsigned agree."""
+        if self.baseline_separation <= 0:
+            return 0.0
+        return max(0.0, 1.0 - abs(self.signed_mean_z_diff)
+                   / self.baseline_separation)
 
 
 def compute(ref: ContrastRef, top_rows: list[AnalyticsRow], raw: RawCounts,
@@ -265,7 +407,12 @@ def compute(ref: ContrastRef, top_rows: list[AnalyticsRow], raw: RawCounts,
     # applied here rather than re-derived from a separate ordering module).
     rows.sort(key=lambda r: r.pvalue)
 
-    baseline = _group_mean_z_diff(gene_z, ref_samples, test_samples)
+    # Panel S3: the baseline is the UNSIGNED mean per-gene separation, so
+    # opposite-direction genes no longer cancel it towards zero. The signed
+    # average is kept beside it only to be reported as cancellation.
+    baseline = _group_mean_abs_z_separation(gene_z, ref_samples, test_samples)
+    signed = _group_mean_signed_z_diff(gene_z, ref_samples, test_samples)
+
     influence: dict[str, float] = {}
     for s in all_samples:
         remaining = tuple(x for x in all_samples if x != s)
@@ -273,17 +420,26 @@ def compute(ref: ContrastRef, top_rows: list[AnalyticsRow], raw: RawCounts,
         rem_test = tuple(x for x in test_samples if x != s)
         z_wo = {gid: _zscores(vals, remaining)
                 for gid, vals in log2cpm_by_gene.items()}
-        influence[s] = _group_mean_z_diff(z_wo, rem_ref, rem_test) - baseline
+        influence[s] = _group_mean_abs_z_separation(
+            z_wo, rem_ref, rem_test) - baseline
 
-    med_abs = median(abs(d) for d in influence.values()) or 1e-9
-    threshold = 3.0 * med_abs
-    outliers = frozenset(s for s, d in influence.items() if abs(d) > threshold)
+    # Panel S2. This was `3.0 * median(abs(d))` -- a RELATIVE threshold, which
+    # always finds a tail. It flagged 3 or 4 samples on a real contrast and 4
+    # on every null trial, and it could never return zero, so the printed
+    # count carried no information at all. The criterion is now absolute: a
+    # sample is influential when removing it moves the figure's whole
+    # between-group separation by at least `INFLUENCE_FLAG_FRACTION` of that
+    # separation. "0 of 74 flagged" is now a reachable and meaningful answer.
+    threshold = INFLUENCE_FLAG_FRACTION * baseline
+    outliers = frozenset(s for s, d in influence.items()
+                         if baseline > 0 and abs(d) >= threshold)
 
     return HeatmapData(
         ref=ref, rows=rows, ref_samples=ref_samples, test_samples=test_samples,
         accounting=accounting, n_deduped_columns=raw.n_deduped_columns,
         influence=influence, influence_outliers=outliers,
-        influence_threshold=threshold)
+        influence_threshold=threshold, baseline_separation=baseline,
+        signed_mean_z_diff=signed)
 
 
 # ---------------------------------------------------------------------------
@@ -314,10 +470,62 @@ def raw_scale_sentence() -> str:
             "beside the z-pattern above.")
 
 
-def influence_sentence(threshold: float, n_outliers: int, n_samples: int) -> str:
-    return (f"Per-sample influence: leave-one-out change in the between-group "
-            f"mean-z difference. {n_outliers} of {n_samples} sample(s) flagged "
-            f"above |Δ| > {threshold:.3f} (3× the median absolute shift).")
+def influence_sentence(threshold: float, n_outliers: int, n_samples: int,
+                       baseline: float = 0.0,
+                       max_fraction: float = 0.0) -> str:
+    """Mandatory string 5, rewritten for panels S2 and S3.
+
+    What it used to say: *"N of M sample(s) flagged above |Δ| > t (3× the
+    median absolute shift)."* Two problems, both measured by the panel:
+
+    * the threshold was relative, so something was always flagged -- 3 or 4
+      samples on a real contrast and 4 on every constructed null -- and the
+      count could never be zero; and
+    * the one quantity that separates a real contrast from a null one,
+      `max|Δ| / baseline` (16.5% real against 87-201% null), was computed
+      inside `compute()` and printed nowhere, as was the baseline itself.
+
+    So this now prints the baseline and that ratio unconditionally, names the
+    baseline as an unsigned mean of per-gene separations so it cannot be read
+    as a direction, and states the threshold as the fraction it actually is.
+    """
+    return (f"Per-sample influence: leave-one-out change in this figure's "
+            f"between-group separation, which is {baseline:.3f} — the mean "
+            f"over the rows above of each gene's own |mean z(test) − mean "
+            f"z(ref)|, unsigned so that genes moving in opposite directions "
+            f"do not cancel. The most influential single sample moves it by "
+            f"{max_fraction * 100:.1f}% of that. {n_outliers} of {n_samples} "
+            f"sample(s) reach the {INFLUENCE_FLAG_FRACTION * 100:.0f}% "
+            f"threshold (|Δ| ≥ {threshold:.3f}); zero is a possible and "
+            f"meaningful answer.")
+
+
+def directional_balance_sentence(n_up: int, n_down: int, signed: float,
+                                 baseline: float) -> str:
+    """Mandatory string 8, new. Panels S3 and S5.
+
+    S5: `Accounting.n_up` / `n_down` were computed (`contrast.py:403-404`),
+    serialised to the client inside `asdict(accounting)`, and rendered by no
+    surface at all -- 59 up / 1 down was known by every layer and shown by
+    none, and `accounting_line()` omitted it. A top-N-by-p list being
+    effectively one-directional is a property of the selection rule that
+    decides which 60 of 25,232 genes the reader ever sees, so it is now on the
+    figure.
+
+    S3: and this is where the unsigned-baseline fix becomes visible in what
+    the figure CLAIMS rather than only in what it computes. A reader is told
+    the directional split, the signed average, and how much of the per-gene
+    separation that signed average destroys -- so a near-zero signed mean can
+    no longer be mistaken for "no change" when the truth is "strong, opposed".
+    """
+    total = n_up + n_down
+    cancelled = (max(0.0, 1.0 - abs(signed) / baseline) * 100.0
+                 if baseline > 0 else 0.0)
+    return (f"Directional balance of the selected rows: {n_up} up, {n_down} "
+            f"down of {total}. Their signed mean z difference is {signed:+.3f}, "
+            f"which is {cancelled:.0f}% smaller than the unsigned separation "
+            f"above because up and down genes cancel in a signed average — so "
+            f"a signed figure near zero means opposed, not absent.")
 
 
 def colour_direction_sentence() -> str:
@@ -365,26 +573,107 @@ def render(data: HeatmapData, out_svg: Path, out_png: Path | None = None) -> Hea
     seq_cmap = cmap_from(sequential_hexes("teal"), "heatmap_raw")
     fc_vals = [abs(r.log2fc) for r in data.rows]
 
+    # Panel S1: the small-n banner needs its own vertical budget, taken before
+    # the grid is laid out rather than overlaid on top of it. Overlaying would
+    # put it through the group labels, which is the collision the group-label
+    # row above is itself wrapped to avoid.
+    import textwrap
+
+    # Every vertical quantity below is in INCHES and divided by `fig_h` only at
+    # the point of use. Mixing the two is what put the first version of the
+    # small-n banner straight through the title: a figure-fraction offset that
+    # looks right on a 6-inch figure is a quarter of the offset on a 24-inch
+    # one, and this figure's height scales with the gene count.
+    TITLE_IN = 0.30          # title baseline, below the top edge
+    BANNER_GAP_IN = 0.16     # title to banner
+    LINE_IN = 0.125          # one wrapped banner line
+    CAP_W = 128              # caption wrap width, characters
+    # A 7.8pt line at linespacing 1.25 is 7.8*1.25/72 = 0.135in; the closing
+    # block's slot has to be at least that or the blocks walk into each other
+    # after the gridspec's `hspace` has taken its cut. Measured by rendering,
+    # not assumed: at 0.125 the influence sentence's last line sat on top of
+    # the directional-balance sentence's first.
+    CLOSING_LINE_IN = 0.175
+    CLOSING_SPACING = 1.25
+
+    small_n = data.small_n_caveat
+    caveat_lines = textwrap.wrap(small_n, 118) if small_n else []
+    banner_in = ((0.18 + LINE_IN * len(caveat_lines) + BANNER_GAP_IN)
+                 if caveat_lines else 0.0)
+
+    # The three closing sentences are pre-wrapped here so the row that holds
+    # them can be sized from the lines they actually take. They used to be
+    # drawn at three fixed fractions of a fixed-height row, which was fine for
+    # two short sentences and overprinted all three into each other once the
+    # influence sentence grew to carry the baseline and the ratio.
+    inf_sentence = influence_sentence(
+        data.influence_threshold, len(data.influence_outliers), n_samples,
+        baseline=data.baseline_separation,
+        max_fraction=data.max_influence_fraction)
+    balance_sentence = directional_balance_sentence(
+        data.accounting.n_up, data.accounting.n_down,
+        data.signed_mean_z_diff, data.baseline_separation)
+    accounting_line = data.accounting.accounting_line()
+    dedup_note = (f" · {data.n_deduped_columns} duplicate raw-count column(s) "
+                  f"deduped" if data.n_deduped_columns else "")
+
+    closing_blocks = [textwrap.wrap(s, CAP_W) for s in
+                      (inf_sentence, balance_sentence,
+                       accounting_line + dedup_note)]
+    n_closing_lines = sum(len(b) for b in closing_blocks)
+    closing_in = (CLOSING_LINE_IN * n_closing_lines
+                  + 0.14 * len(closing_blocks))
+
     row_h = max(0.16, min(0.30, 6.0 / max(n_genes, 1)))
-    fig_h = 2.6 + row_h * n_genes * 1.75
+    fig_h = (2.6 + row_h * n_genes * 1.75 + banner_in
+             + max(0.0, closing_in - 0.42))
     fig = plt.figure(figsize=(13.0, fig_h), dpi=100)
+    # The grid starts below the banner, so adding the banner moves nothing
+    # sideways and shrinks no panel -- it only makes the figure taller. A
+    # caveat that cost the z panel its rows is a caveat somebody eventually
+    # removes for looking bad.
+    grid_top = 1.0 - (TITLE_IN + banner_in + 0.10) / fig_h
     gs = fig.add_gridspec(
         7, 2,
         height_ratios=[0.55, row_h * n_genes, 0.46, row_h * n_genes * 0.85,
-                      0.34, 0.60, 0.42],
+                      0.34, 0.60, closing_in],
         width_ratios=[1.0, 0.05], hspace=0.28, wspace=0.05,
-        left=0.30, right=0.90, top=0.96, bottom=0.02)
+        left=0.30, right=0.90, top=grid_top, bottom=0.02)
 
     title = title_line(data.ref)
-    fig.suptitle(title, fontsize=13, y=0.985)
+    fig.suptitle(title, fontsize=13, y=1.0 - (TITLE_IN * 0.5) / fig_h)
+
+    # --- 0. the small-n banner (mandatory string 10; panel S1) --------------
+    # AGENTS.md's cardinal rule, applied literally: this contrast's figure is
+    # the most confident-looking one the app can draw and the least
+    # trustworthy, so it must not render clean. A caption line would not do it
+    # -- the whole defect is that every *other* channel on this figure reads as
+    # better-than-normal data, so the correction has to outrank them visually.
+    #
+    # Amber, not the red invariant banner, and the reason is `figure.py`'s own
+    # (`_draw_conditions`): an invariant being violated and a condition of the
+    # data are different facts and must not render identically, because crying
+    # wolf twice stops the red banner working the day it is real. Nothing here
+    # failed a check -- the numbers are Atlas's own and are correct. n<4 gets
+    # the louder of two ambers; both stay clearly distinct from red.
+    if caveat_lines:
+        loud = data.ref.min_n < VERY_SMALL_N
+        fig.text(
+            0.5, 1.0 - (TITLE_IN + BANNER_GAP_IN) / fig_h,
+            "\n".join(caveat_lines),
+            fontsize=8.6 if loud else 8.0, ha="center", va="top",
+            color="#4a3000", weight="bold" if loud else "normal", zorder=900,
+            bbox={"facecolor": "#f8cf8f" if loud else "#ffe9b8",
+                  "alpha": 0.98, "pad": 7,
+                  "edgecolor": "#b36b00" if loud else "#c98a00",
+                  "linewidth": 1.6 if loud else 1.2})
 
     # --- 1. group labels, in place above the z panel (mandatory string 2) --
     # Wrapped to roughly the pixel width its own block will occupy: a narrow
     # reference block (spike: n=13 of 74) next to a long prose label is
     # exactly how two "in place" labels end up printed through each other,
     # which is the same class of defect P3 found on the circos slide.
-    import textwrap
-
+    # (`textwrap` is imported above, for the small-n banner.)
     ax_group = fig.add_subplot(gs[0, 0])
     ax_group.set_xlim(0, n_samples)
     ax_group.set_ylim(0, 1)
@@ -477,22 +766,46 @@ def render(data: HeatmapData, out_svg: Path, out_png: Path | None = None) -> Hea
     ax_inf.axvline(ref_n - 0.5, color="#999999", lw=0.8, linestyle="--")
     ax_inf.set_xlim(-0.5, n_samples - 0.5)
     ax_inf.set_xticks([])
-    ax_inf.set_ylabel("Δ mean-z\ndiff.", fontsize=7)
+    ax_inf.set_ylabel("Δ mean-z\nseparation", fontsize=7)
     ax_inf.tick_params(labelsize=6.5)
 
-    inf_sentence = influence_sentence(
-        data.influence_threshold, len(data.influence_outliers), n_samples)
+    # Panel S2/S3: the flag threshold, drawn. The strip's y-axis is autoscaled,
+    # so a few tall bars against a flat baseline look identical whether the
+    # tallest is 2% or 200% of the separation -- only the tick labels differed.
+    # A marked threshold gives the bars something fixed to be read against, so
+    # "nothing reaches it" is visible and not merely narrated. The axis is also
+    # floored at the threshold, so a figure where nothing is influential cannot
+    # autoscale its noise up to look like the one where everything is.
+    thr = data.influence_threshold
+    if thr > 0:
+        for sign in (+1, -1):
+            ax_inf.axhline(sign * thr, color="#c0392b", lw=0.7, linestyle=":")
+        span = max(thr * 1.15, max((abs(d) for d in deltas), default=0.0) * 1.15)
+        ax_inf.set_ylim(-span, span)
+        ax_inf.text(n_samples - 0.5, thr,
+                    f" {INFLUENCE_FLAG_FRACTION * 100:.0f}% of separation",
+                    fontsize=6.0, color="#c0392b", va="bottom", ha="right")
+
+    # --- the three closing strings: influence (5), directional balance (8),
+    # --- three-stage accounting (7, I9).
+    #
+    # Laid out by counting the lines each one actually wraps to, rather than
+    # at three fixed fractions of a fixed-height row. The fixed fractions were
+    # fine while the influence sentence was one line; once it grew to carry the
+    # baseline and the leave-one-out ratio it ran straight through the other
+    # two, which is this repo's P3 defect class (`figure.py` keeps a whole
+    # `assert_text_does_not_overprint_text` for it) and would have made all
+    # three unreadable on the one artefact a reader actually has open.
     ax_infcap = fig.add_subplot(gs[6, 0])
     ax_infcap.axis("off")
-    ax_infcap.text(0.0, 0.85, inf_sentence, fontsize=7.8, va="top", wrap=True,
-                  transform=ax_infcap.transAxes)
-
-    # --- 7. the three-stage accounting line (mandatory string 7, I9) -------
-    accounting_line = data.accounting.accounting_line()
-    dedup_note = (f" · {data.n_deduped_columns} duplicate raw-count column(s) "
-                  f"deduped" if data.n_deduped_columns else "")
-    ax_infcap.text(0.0, 0.30, accounting_line + dedup_note, fontsize=7.8,
-                  va="top", color="#111111", transform=ax_infcap.transAxes)
+    colours_for = ("#111111", "#333333", "#111111")
+    line_frac = 1.0 / max(n_closing_lines + len(closing_blocks), 1)
+    y = 1.0
+    for block, colour in zip(closing_blocks, colours_for):
+        ax_infcap.text(0.0, y, "\n".join(block), fontsize=7.8, va="top",
+                      color=colour, linespacing=CLOSING_SPACING,
+                      transform=ax_infcap.transAxes)
+        y -= line_frac * (len(block) + 1)
 
     out_svg.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_svg, format="svg")
@@ -504,14 +817,20 @@ def render(data: HeatmapData, out_svg: Path, out_png: Path | None = None) -> Hea
     mandatory = [
         title, ref_label_text, test_label_text, zs_sentence, raw_sentence,
         inf_sentence, colour_sentence, accounting_line, sign_sentence,
+        balance_sentence,
     ]
+    # Conditional, and mandatory when it applies: I10 requires it on the SVG
+    # for any contrast with a side under SMALL_N.
+    if small_n:
+        mandatory.append(small_n)
     return HeatmapResult(svg_path=out_svg, mandatory_strings=mandatory,
                          n_genes=n_genes, n_samples=n_samples)
 
 
 __all__ = [
     "HeatmapData", "HeatmapGeneRow", "HeatmapRefused", "HeatmapResult",
-    "RawCounts", "colour_direction_sentence", "compute", "group_label",
+    "INFLUENCE_FLAG_FRACTION", "RawCounts", "colour_direction_sentence",
+    "compute", "directional_balance_sentence", "group_label",
     "influence_sentence", "load_raw_counts", "parse_raw_counts",
     "raw_scale_sentence", "render", "title_line", "zscore_sentence",
 ]

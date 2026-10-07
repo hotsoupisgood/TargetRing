@@ -57,6 +57,18 @@ _BAD_NUMERIC = {"", "na", "n/a", "nan", "null", "none"}
 #: `rnaseq`, and the picker greys on `platform != RNASEQ`.
 RNASEQ = "rnaseq"
 
+#: Below this on either side, a contrast is flagged. 75 of the 138 Crohn's
+#: contrasts. Not a threshold that removes anything -- a label.
+#: And below `VERY_SMALL_N`, a second, louder flag: 18 of 138, minimum n = 3.
+#:
+#: These live here, not in `atlas_index.py` where they started, because the
+#: picker is no longer their only consumer: `ContrastRef.small_n_caveat` and
+#: the heatmap's own banner read them too. `atlas_index` imports them back and
+#: re-exports them, so there is exactly one pair of numbers and the picker's
+#: flag and the figure's caveat cannot disagree about where the line is.
+SMALL_N = 8
+VERY_SMALL_N = 4
+
 
 class ContrastIdentityError(AssertionError):
     """I8 failed: the id is not `{reference}_{test}`.
@@ -147,9 +159,93 @@ class ContrastRef:
     def min_n(self) -> int:
         return min(self.n_ref, self.n_test)
 
+    @property
+    def small_n_caveat(self) -> str:
+        """Panel S1's intervention. Empty when both sides reach `SMALL_N`.
+
+        **The defect.** A small-*n* contrast produces this app's most
+        confident-looking and least trustworthy figure, and every mitigation
+        inverts on it. With three replicates DESeq2's dispersion estimate
+        collapses, adjusted p-values become extreme, and "top 60 by adjusted
+        p" then selects *preferentially the genes where it collapsed hardest*
+        — top-N-by-p is not a neutral filter here, it is an efficient sampler
+        of the artefact. Measured on `E-GEOD-57945 g6_g5` (42 vs 3) against
+        the well-powered `E-GEOD-101794 g2_g1` (13 vs 61), on the trimmed
+        fixtures:
+
+            best adjusted p   1.9e-35  vs  2.2e-12   (23 orders smaller)
+            median |log2FC|      1.95  vs      0.90   (2.2x larger)
+            genes with a statistic 875  vs      806   (MORE, reads as better)
+
+        Every channel a reader has points the wrong way: the raw-scale panel
+        exists to show a weak contrast has small effects and instead draws the
+        longest bars in the app; the accounting line reports more genes with a
+        statistic than the properly powered contrast; and the z panel is the
+        cleanest block structure of the three.
+
+        **Why this is a caveat and not a refusal.** The numbers are Atlas's
+        own and are all correct — what is wrong is the *reading*, and this
+        build already has a settled position on precisely that: the picker
+        deliberately does not remove small-*n* rows ("None of these removes a
+        row", `atlas_index._flags`) and its `n_lt_4` reason already says "a
+        group this small supports no useful dispersion estimate; the statistic
+        is Atlas's and is shown as it is". Refusing at stage 4 a contrast the
+        picker had just offered with a written reason would make the app
+        contradict itself, and would hide a contrast that genuinely exists in
+        Atlas — "nobody studied this" and "we declined to draw this" are
+        different claims, which is the same argument that keeps microarray
+        rows counted and greyed rather than dropped. The refusals this build
+        does make are categorical (microarray: a format it does not read;
+        no genes: selecting nothing), not judgements about statistical
+        strength.
+
+        So it renders, and per AGENTS.md's cardinal rule it does not render
+        clean: this sentence is a mandatory string on the heatmap (I10 fails
+        without it), it is drawn as a banner rather than a caption line, and
+        it becomes a `run_condition` on the circos and in the manifest.
+
+        It carries no score and ranks nothing (rule 7) — it is one stated fact
+        about the design of the experiment, with the threshold it was judged
+        against printed beside it.
+        """
+        if self.min_n >= SMALL_N:
+            return ""
+        if self.min_n < VERY_SMALL_N:
+            return (
+                f"SMALL n: {self.min_n} sample(s) on one side of this contrast "
+                f"(n={self.n_ref} vs {self.n_test}). A group this small "
+                f"supports no useful dispersion estimate, so this contrast's "
+                f"adjusted p-values are extreme for a reason that is not "
+                f"biological — and because the rows shown were selected by "
+                f"adjusted p, that selection preferentially picks the genes "
+                f"whose dispersion estimate collapsed hardest. "
+                f"The numbers shown are Atlas's own and are reproduced "
+                f"faithfully; the effect sizes and significances on this "
+                f"figure are not comparable with those from a well-powered "
+                f"contrast, and a clean block structure here is not evidence "
+                f"of a strong signature.")
+        return (
+            f"SMALL n: {self.min_n} sample(s) on one side of this contrast "
+            f"(n={self.n_ref} vs {self.n_test}), fewer than {SMALL_N}. "
+            f"Dispersion is estimated from few replicates, so this contrast's "
+            f"adjusted p-values and effect sizes are not comparable with those "
+            f"from a well-powered contrast, and the top-by-adjusted-p selection "
+            f"shown is biased towards the genes where that estimate is weakest.")
+
+    @property
+    def small_n_flag_key(self) -> str:
+        """The picker's own key for this contrast's small-*n* level, so the
+        figure, the manifest and the picker label the same contrast the same
+        way (`atlas_index._flags` emits these two strings)."""
+        if self.min_n >= SMALL_N:
+            return ""
+        return "n_lt_4" if self.min_n < VERY_SMALL_N else "n_lt_8"
+
     def as_dict(self) -> dict[str, Any]:
         return {**asdict(self), "sign_sentence": self.sign_sentence,
-                "is_rnaseq": self.is_rnaseq}
+                "is_rnaseq": self.is_rnaseq, "min_n": self.min_n,
+                "small_n_caveat": self.small_n_caveat,
+                "small_n_flag_key": self.small_n_flag_key}
 
 
 class MicroarrayNotDrawable(Exception):
@@ -494,6 +590,7 @@ async def build_gene_table(atlas: "atlas_mod.AtlasAdapter", resolver: Any,
 __all__ = [
     "Accounting", "AnalyticsRow", "ContrastIdentityError", "ContrastRef",
     "GeneTable", "GeneTableRow", "MicroarrayNotDrawable", "RNASEQ",
-    "SelectionDirection", "build_gene_table", "hydrate", "load_analytics",
-    "padj_column_label", "parse_analytics", "top_n_by_padj",
+    "SMALL_N", "SelectionDirection", "VERY_SMALL_N", "build_gene_table",
+    "hydrate", "load_analytics", "padj_column_label", "parse_analytics",
+    "top_n_by_padj",
 ]

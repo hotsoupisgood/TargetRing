@@ -52,6 +52,7 @@ from .adapters import atlas as atlas_mod
 from .adapters.atlas import AtlasAdapter
 from .adapters.ols import DiseaseRef
 from .cache import Cache
+from . import contrast as contrast_mod
 from .contrast import RNASEQ, ContrastRef
 from .http import HardFailure, Http, RateLimited
 
@@ -442,11 +443,18 @@ class AtlasIndex:
 # the picker
 # ---------------------------------------------------------------------------
 
-#: Below this on either side, the picker flags the contrast. 75 of the 138
-#: Crohn's contrasts. Not a threshold that removes anything -- a label.
-SMALL_N = 8
-#: And below this, a second, louder flag. 18 of 138, minimum n = 3.
-VERY_SMALL_N = 4
+#: Below this on either side, the picker flags the contrast (75 of the 138
+#: Crohn's contrasts); below `VERY_SMALL_N`, a second and louder flag (18 of
+#: 138, minimum n = 3). Neither removes a row.
+#:
+#: Re-exported from `contrast.py`, which now owns them. The picker was their
+#: only consumer until the heatmap had to draw the same line (panel S1), and
+#: two copies of a threshold is exactly how the picker's flag and the figure's
+#: caveat end up disagreeing about what "small" means. `__all__` still carries
+#: both names, so every existing importer of `atlas_index.SMALL_N` is
+#: unaffected.
+SMALL_N = contrast_mod.SMALL_N
+VERY_SMALL_N = contrast_mod.VERY_SMALL_N
 
 
 def _flags(c: IndexedContrast) -> list[dict[str, str]]:

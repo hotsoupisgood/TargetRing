@@ -26,9 +26,11 @@ from targetring.contrast import (
 )
 from targetring.http import HardFailure
 from targetring.invariants import (
+    _normalise_ws as _norm,
     check_contrast_identity,
     check_heatmap_states_its_recipe,
     check_three_stage_accounting,
+    svg_text_normalised,
 )
 
 FIXTURES = config.REPO_ROOT / "fixtures" / "atlas"
@@ -36,6 +38,9 @@ CROHNS_INDEX = FIXTURES / "index" / "crohns-index.json"
 
 REAL_ACC, REAL_CID = "E-GEOD-101794", "g2_g1"
 NULL_ACC, NULL_CID = "E-GEOD-57945", "g6_g4"
+#: Panel S1's contrast: 42 reference assays against 3 test assays. The app's
+#: most confident-looking and least trustworthy figure.
+SMALLN_ACC, SMALLN_CID = "E-GEOD-57945", "g6_g5"
 
 
 class NoNetwork:
@@ -79,6 +84,11 @@ def real_atlas(tmp_path) -> AtlasAdapter:
 @pytest.fixture()
 def null_atlas(tmp_path) -> AtlasAdapter:
     return _cached_atlas(NULL_ACC, tmp_path / "cache_null")
+
+
+@pytest.fixture()
+def smalln_atlas(tmp_path) -> AtlasAdapter:
+    return _cached_atlas(SMALLN_ACC, tmp_path / "cache_smalln")
 
 
 # ===========================================================================
@@ -451,3 +461,353 @@ class TestHeatmapRoute:
     def test_microarray_is_409(self, route_client) -> None:
         r = route_client.get("/api/contrast/E-GEOD-100833/g99_g98/heatmap")
         assert r.status_code in (404, 409)
+
+
+# ===========================================================================
+# Panel S1 — small n, the headline statistical defect
+# ===========================================================================
+
+
+class TestSmallNIsOnTheFigure:
+    """`E-GEOD-57945 g6_g5` is 42 reference assays against 3 test ones, and it
+    produces this app's most confident-looking figure from its least reliable
+    statistics. With three replicates DESeq2's dispersion estimate collapses,
+    adjusted p-values go extreme, and selecting the "top 60 by adjusted p" then
+    picks preferentially the genes where it collapsed hardest -- top-N-by-p is
+    not a neutral filter here, it is an efficient sampler of the artefact.
+
+    `ContrastRef.min_n` existed and was referenced nowhere in `heatmap.py`,
+    `figure.py` or `manifest.py`: built and never wired up. These tests are the
+    wire, and `test_every_channel_a_reader_has_points_the_wrong_way` is the
+    reproduction -- it asserts the inversion itself, so that if Atlas ever
+    changes the fixture such that small n stops looking better than a
+    well-powered contrast, the test says so rather than quietly passing.
+    """
+
+    @pytest.mark.asyncio
+    async def test_every_channel_a_reader_has_points_the_wrong_way(
+        self, real_atlas, smalln_atlas
+    ) -> None:
+        """The reproduction. Not an assertion that the app is right -- an
+        assertion that the DEFECT is real, so the caveat below is justified."""
+        well = await _build(REAL_ACC, REAL_CID, real_atlas, n=60)
+        small = await _build(SMALLN_ACC, SMALLN_CID, smalln_atlas, n=60)
+
+        assert small.ref.min_n == 3
+        assert well.ref.min_n >= 8
+
+        # 1. the significance channel: smaller p from the LESS reliable data
+        assert min(r.pvalue for r in small.rows) < min(r.pvalue for r in well.rows)
+
+        # 2. the effect-size channel -- the raw-scale panel exists to show a
+        #    weak contrast has small effects, and here it draws the LONGER bars
+        small_fc = sorted(abs(r.log2fc) for r in small.rows)
+        well_fc = sorted(abs(r.log2fc) for r in well.rows)
+        assert small_fc[len(small_fc) // 2] > well_fc[len(well_fc) // 2]
+
+        # 3. the accounting channel: MORE genes carry a statistic, which reads
+        #    as better data
+        assert (small.accounting.n_with_statistic
+                > well.accounting.n_with_statistic)
+
+    @pytest.mark.asyncio
+    async def test_the_caveat_is_drawn_on_the_small_n_heatmap(
+        self, smalln_atlas, tmp_path
+    ) -> None:
+        data = await _build(SMALLN_ACC, SMALLN_CID, smalln_atlas, n=20)
+        out = tmp_path / "smalln.svg"
+        result = hm.render(data, out)
+        body = svg_text_normalised(out)
+        assert data.small_n_caveat
+        assert _norm(data.small_n_caveat) in body
+        assert data.small_n_caveat in result.mandatory_strings
+        # It says the three things a reader needs: how small, that the
+        # statistics are affected, and that the selection rule interacts.
+        assert "3 sample(s)" in data.small_n_caveat
+        assert "dispersion" in data.small_n_caveat
+        assert "selected by adjusted p" in data.small_n_caveat
+
+    @pytest.mark.asyncio
+    async def test_a_well_powered_contrast_carries_no_caveat(
+        self, real_atlas, tmp_path
+    ) -> None:
+        """The flag has to be able to be absent, or it says nothing when
+        present. n=13 vs 61 is above both thresholds."""
+        data = await _build(REAL_ACC, REAL_CID, real_atlas, n=20)
+        assert data.small_n_caveat == ""
+        out = tmp_path / "well.svg"
+        hm.render(data, out)
+        assert "SMALL n" not in svg_text_normalised(out)
+
+    @pytest.mark.asyncio
+    async def test_i10_fails_if_a_small_n_heatmap_loses_its_caveat(
+        self, smalln_atlas, tmp_path
+    ) -> None:
+        """The caveat is mandatory, not decorative: strip it and the build's
+        own check refuses the figure. This is what makes it impossible to
+        quietly remove for looking bad."""
+        data = await _build(SMALLN_ACC, SMALLN_CID, smalln_atlas, n=20)
+        out = tmp_path / "smalln.svg"
+        result = hm.render(data, out)
+
+        ok = check_heatmap_states_its_recipe(
+            out, data.ref, data.accounting, result.n_samples, data)
+        assert ok.outcome == "PASS", ok.detail
+
+        # Damage only the caveat, leaving every other mandatory string intact.
+        # "dispersion" appears nowhere else on this figure, and matplotlib
+        # emits one <text> per wrapped line, so a word-level edit inside a line
+        # is the surgical way to break this one string and nothing else.
+        assert sum("dispersion" in s for s in result.mandatory_strings) == 1
+        out.write_text(out.read_text().replace("dispersion", "zzzzzzzzzz"))
+        bad = check_heatmap_states_its_recipe(
+            out, data.ref, data.accounting, result.n_samples, data)
+        assert bad.outcome == "FAIL"
+        assert "small-n caveat" in bad.detail
+
+    @pytest.mark.asyncio
+    async def test_i10_says_so_when_it_could_not_check_the_computed_strings(
+        self, smalln_atlas, tmp_path
+    ) -> None:
+        """Called without the HeatmapData, I10 cannot rebuild the three
+        strings that quote computed quantities. It must not report that as a
+        clean pass on all of them."""
+        data = await _build(SMALLN_ACC, SMALLN_CID, smalln_atlas, n=20)
+        out = tmp_path / "smalln.svg"
+        result = hm.render(data, out)
+        r = check_heatmap_states_its_recipe(
+            out, data.ref, data.accounting, result.n_samples)
+        assert r.outcome == "PASS"
+        assert "NOT checked" in r.detail
+        assert "small-n" in r.detail
+
+    def test_the_threshold_is_one_number_shared_with_the_picker(self) -> None:
+        """Two copies of "small" is how the picker's flag and the figure's
+        caveat end up disagreeing about where the line is."""
+        from targetring import atlas_index, contrast as contrast_mod
+
+        assert atlas_index.SMALL_N is contrast_mod.SMALL_N
+        assert atlas_index.VERY_SMALL_N is contrast_mod.VERY_SMALL_N
+
+    def test_the_caveat_tracks_the_threshold_on_both_sides(self) -> None:
+        from targetring.contrast import SMALL_N, VERY_SMALL_N, ContrastRef
+
+        def ref(n_ref: int, n_test: int) -> ContrastRef:
+            return ContrastRef(
+                accession="E-FAKE-1", contrast_id="g1_g2", ref_group="g1",
+                test_group="g2", ref_label="ref", test_label="test",
+                n_ref=n_ref, n_test=n_test, name="fake")
+
+        assert ref(SMALL_N, SMALL_N).small_n_caveat == ""
+        assert ref(SMALL_N, SMALL_N).small_n_flag_key == ""
+        assert ref(SMALL_N - 1, 40).small_n_flag_key == "n_lt_8"
+        assert ref(40, VERY_SMALL_N - 1).small_n_flag_key == "n_lt_4"
+        # Either side being small is enough; the defect does not care which.
+        assert ref(3, 40).small_n_caveat == ref(40, 3).small_n_caveat.replace(
+            "n=40 vs 3", "n=3 vs 40")
+
+    def test_the_caveat_contains_no_placeholder(self) -> None:
+        """It is printed verbatim by several surfaces; a leftover format
+        placeholder would reach the figure as literal text."""
+        from targetring.contrast import ContrastRef
+
+        r = ContrastRef(accession="E-FAKE-1", contrast_id="g1_g2",
+                        ref_group="g1", test_group="g2", ref_label="ref",
+                        test_label="test", n_ref=40, n_test=3, name="fake")
+        assert "{" not in r.small_n_caveat and "}" not in r.small_n_caveat
+
+
+# ===========================================================================
+# Panels S2 and S3 — the influence strip
+# ===========================================================================
+
+
+class TestDirectionalCancellation:
+    """Panel S3. `_group_mean_z_diff` averaged `mean(z test) - mean(z ref)`
+    across genes WITH SIGN, so opposite-direction genes cancelled and a
+    bidirectional set reported a baseline near zero -- "no separation" where
+    the truth is "strong separation, in both directions".
+    """
+
+    def test_a_perfectly_opposed_set_cancels_to_zero_when_signed(self) -> None:
+        """The defect in its purest form, on constructed data: ten genes up by
+        exactly as much as ten genes are down. The signed average is 0.0 and
+        the unsigned separation is large. Nothing about these twenty genes is
+        'no change'."""
+        ref_s, test_s = ("r1", "r2"), ("t1", "t2")
+        z_by_gene = {}
+        for i in range(10):
+            z_by_gene[f"up{i}"] = {"r1": -1.0, "r2": -1.0, "t1": 1.0, "t2": 1.0}
+            z_by_gene[f"dn{i}"] = {"r1": 1.0, "r2": 1.0, "t1": -1.0, "t2": -1.0}
+
+        signed = hm._group_mean_signed_z_diff(z_by_gene, ref_s, test_s)
+        unsigned = hm._group_mean_abs_z_separation(z_by_gene, ref_s, test_s)
+
+        assert abs(signed) < 1e-12, "the old statistic reports no separation"
+        assert unsigned == pytest.approx(2.0), (
+            "every single gene separates its groups by 2.0 in z; the figure's "
+            "baseline must say so")
+
+    def test_a_one_directional_set_agrees_with_the_old_statistic(self) -> None:
+        """The fix must not move the number in the regime the old one handled.
+        Both development fixtures were one-directional, which is exactly why
+        this survived -- it was only ever tested where it cannot fail."""
+        ref_s, test_s = ("r1", "r2"), ("t1", "t2")
+        z_by_gene = {f"up{i}": {"r1": -1.0, "r2": -1.0, "t1": 1.0, "t2": 1.0}
+                     for i in range(10)}
+        assert (hm._group_mean_abs_z_separation(z_by_gene, ref_s, test_s)
+                == pytest.approx(
+                    abs(hm._group_mean_signed_z_diff(z_by_gene, ref_s, test_s))))
+
+    @pytest.mark.asyncio
+    async def test_real_fixtures_lose_most_of_their_separation_to_the_signed_mean(
+        self, real_atlas, null_atlas
+    ) -> None:
+        """Not hypothetical: measured on both shipped fixtures. If either ever
+        stops cancelling, the directional-balance sentence's claim is wrong and
+        this says so."""
+        for acc, cid, atlas in ((REAL_ACC, REAL_CID, real_atlas),
+                                (NULL_ACC, NULL_CID, null_atlas)):
+            data = await _build(acc, cid, atlas, n=60)
+            assert data.baseline_separation > 0
+            assert abs(data.signed_mean_z_diff) < data.baseline_separation, (
+                f"{acc} {cid}: signed {data.signed_mean_z_diff:.4f} is not "
+                f"smaller than unsigned {data.baseline_separation:.4f}")
+            assert data.directional_cancellation > 0.5, (
+                f"{acc} {cid}: only "
+                f"{data.directional_cancellation * 100:.0f}% cancelled")
+
+    @pytest.mark.asyncio
+    async def test_the_figure_states_the_cancellation_rather_than_hiding_it(
+        self, real_atlas, tmp_path
+    ) -> None:
+        """S3's fix has to be visible in what the figure CLAIMS, not only in
+        what it computes."""
+        data = await _build(REAL_ACC, REAL_CID, real_atlas, n=30)
+        out = tmp_path / "h.svg"
+        result = hm.render(data, out)
+        body = svg_text_normalised(out)
+        balance = hm.directional_balance_sentence(
+            data.accounting.n_up, data.accounting.n_down,
+            data.signed_mean_z_diff, data.baseline_separation)
+        assert _norm(balance) in body
+        assert balance in result.mandatory_strings
+        assert "opposed, not absent" in balance
+        # Panel S5: n_up/n_down were computed, serialised, and rendered by no
+        # surface at all. They are on the figure now.
+        assert f"{data.accounting.n_up} up" in balance
+        assert f"{data.accounting.n_down} down" in balance
+
+
+class TestInfluenceFlagMeansSomething:
+    """Panel S2. The flag threshold was `3 x median|delta|` -- relative, so a
+    tail always exists and something is always flagged. It reported 3 or 4
+    samples on a real contrast and 4 on every constructed null, and could never
+    say "nothing here is influential".
+    """
+
+    def test_the_old_relative_threshold_could_never_report_zero(self) -> None:
+        """Why the criterion had to change, stated as a property of the old
+        rule rather than as an anecdote: for ANY set of deltas with a non-zero
+        spread, `3 x median|d|` leaves something above it only sometimes -- but
+        it can never be calibrated against the thing being measured, because it
+        is defined entirely by the sample it is drawn from. Scaling every delta
+        by 1000 leaves the old flag set identical and the real influence 1000x
+        larger."""
+        deltas = {f"s{i}": d for i, d in
+                  enumerate([0.001, 0.002, 0.001, 0.05, 0.002])}
+        big = {k: v * 1000 for k, v in deltas.items()}
+
+        def old_flags(ds: dict[str, float]) -> set[str]:
+            from statistics import median
+            thr = 3.0 * (median(abs(d) for d in ds.values()) or 1e-9)
+            return {s for s, d in ds.items() if abs(d) > thr}
+
+        assert old_flags(deltas) == old_flags(big), (
+            "the old flag is scale-free, so it says nothing about magnitude")
+
+    @pytest.mark.asyncio
+    async def test_zero_flagged_is_reachable_on_real_contrasts(
+        self, real_atlas, null_atlas, smalln_atlas
+    ) -> None:
+        """The point of an absolute criterion. On all three shipped contrasts
+        no single sample carries a quarter of the separation, and the figure is
+        now able to say so."""
+        for acc, cid, atlas in ((REAL_ACC, REAL_CID, real_atlas),
+                                (NULL_ACC, NULL_CID, null_atlas),
+                                (SMALLN_ACC, SMALLN_CID, smalln_atlas)):
+            data = await _build(acc, cid, atlas, n=60)
+            assert data.influence_outliers == frozenset(), (
+                f"{acc} {cid}: {sorted(data.influence_outliers)} flagged at "
+                f"{data.max_influence_fraction * 100:.1f}% of baseline")
+            assert data.max_influence_fraction < hm.INFLUENCE_FLAG_FRACTION
+
+    @pytest.mark.asyncio
+    async def test_a_sample_that_carries_the_separation_is_flagged(
+        self, real_atlas
+    ) -> None:
+        """And the flag still fires when it should. Constructed: one test
+        sample given an extreme value on every gene, so removing it genuinely
+        moves the separation."""
+        data = await _build(REAL_ACC, REAL_CID, real_atlas, n=20)
+        assert data.influence_outliers == frozenset()
+
+        rigged = dict(data.influence)
+        victim = data.test_samples[0]
+        rigged[victim] = data.baseline_separation * 0.9
+        rebuilt = hm.HeatmapData(
+            ref=data.ref, rows=data.rows, ref_samples=data.ref_samples,
+            test_samples=data.test_samples, accounting=data.accounting,
+            n_deduped_columns=0, influence=rigged,
+            influence_outliers=frozenset(
+                s for s, d in rigged.items()
+                if abs(d) >= hm.INFLUENCE_FLAG_FRACTION
+                * data.baseline_separation),
+            influence_threshold=(hm.INFLUENCE_FLAG_FRACTION
+                                 * data.baseline_separation),
+            baseline_separation=data.baseline_separation,
+            signed_mean_z_diff=data.signed_mean_z_diff)
+        assert rebuilt.influence_outliers == {victim}
+        assert rebuilt.max_influence_fraction == pytest.approx(0.9)
+
+    @pytest.mark.asyncio
+    async def test_the_discriminating_ratio_and_the_baseline_are_printed(
+        self, real_atlas, tmp_path
+    ) -> None:
+        """Panel S2's actual finding: both quantities existed inside
+        `compute()` and neither was plotted or printed, so the two channels the
+        reader had -- an autoscaled bar axis and a relative flag count -- were
+        the two that cannot discriminate."""
+        data = await _build(REAL_ACC, REAL_CID, real_atlas, n=30)
+        out = tmp_path / "h.svg"
+        result = hm.render(data, out)
+        body = svg_text_normalised(out)
+
+        sentence = hm.influence_sentence(
+            data.influence_threshold, len(data.influence_outliers),
+            len(data.all_samples), baseline=data.baseline_separation,
+            max_fraction=data.max_influence_fraction)
+        assert _norm(sentence) in body
+        assert sentence in result.mandatory_strings
+        assert f"{data.baseline_separation:.3f}" in sentence
+        assert f"{data.max_influence_fraction * 100:.1f}%" in sentence
+        assert "unsigned" in sentence
+
+    @pytest.mark.asyncio
+    async def test_i10_checks_the_two_computed_sentences(
+        self, real_atlas, tmp_path
+    ) -> None:
+        data = await _build(REAL_ACC, REAL_CID, real_atlas, n=20)
+        out = tmp_path / "h.svg"
+        result = hm.render(data, out)
+        ok = check_heatmap_states_its_recipe(
+            out, data.ref, data.accounting, result.n_samples, data)
+        assert ok.outcome == "PASS", ok.detail
+        assert "unsigned baseline" in ok.detail
+
+        body = out.read_text().replace("unsigned", "UNSIGNED")
+        out.write_text(body)
+        bad = check_heatmap_states_its_recipe(
+            out, data.ref, data.accounting, result.n_samples, data)
+        assert bad.outcome == "FAIL"
+        assert "influence sentence" in bad.detail

@@ -719,11 +719,25 @@ def _i9_three_stage_accounting(accounting: Any, svg_path: Path | None) -> Result
 
 
 def _i10_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
-                                   accounting: Any, n_samples: int) -> Result:
-    """Stage 4's I10 — the seven mandatory strings, re-derived from the same
-    builder functions `heatmap.render()` draws from and checked against the
-    rendered SVG. An SVG missing any one of them fails here rather than being
-    trusted to have drawn what the code intended."""
+                                   accounting: Any, n_samples: int,
+                                   data: Any = None) -> Result:
+    """Stage 4's I10 — the mandatory strings, re-derived from the same builder
+    functions `heatmap.render()` draws from and checked against the rendered
+    SVG. An SVG missing any one of them fails here rather than being trusted
+    to have drawn what the code intended.
+
+    `data` is the `HeatmapData` the figure was drawn from. Three of the
+    mandatory strings quote computed quantities and so cannot be rebuilt from
+    `(ref, accounting, n_samples)` alone: the influence sentence (the unsigned
+    baseline separation and the leave-one-out ratio), the directional-balance
+    sentence (the signed mean), and the small-n caveat. Passing `data` is what
+    lets this check them, and those are the three that matter most — they are
+    exactly the strings the 2026-10-06 panel found either absent or carrying
+    numbers that had been computed and never printed. Without `data` the eight
+    rebuildable strings are still checked and the PASS detail names the ones it
+    skipped, so a caller that forgets cannot read as a clean pass on all of
+    them.
+    """
     from . import heatmap as heatmap_mod
 
     if svg_path is None or ref is None or accounting is None:
@@ -750,20 +764,52 @@ def _i10_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
             heatmap_mod.colour_direction_sentence(),
         "7. three-stage accounting line":
             accounting.accounting_line(),
+        "9. sign sentence (I8)": ref.sign_sentence,
     }
+    if data is not None:
+        expected["5. per-sample influence sentence"] = (
+            heatmap_mod.influence_sentence(
+                data.influence_threshold, len(data.influence_outliers),
+                n_samples, baseline=data.baseline_separation,
+                max_fraction=data.max_influence_fraction))
+        expected["8. directional-balance sentence"] = (
+            heatmap_mod.directional_balance_sentence(
+                accounting.n_up, accounting.n_down,
+                data.signed_mean_z_diff, data.baseline_separation))
+        # Conditional by nature: only a small-n contrast has one, and on those
+        # it is not optional. A heatmap drawn from a group too small to support
+        # a dispersion estimate and NOT carrying this caveat is the single
+        # worst figure this app can produce (panel S1), so it fails I10.
+        if data.small_n_caveat:
+            expected["10. small-n caveat"] = data.small_n_caveat
+
     missing = [label for label, s in expected.items()
               if _normalise_ws(s) not in body]
     if missing:
         return Result(
             "I10", "heatmap states its recipe", "FAIL",
-            f"{len(missing)} of the 7 mandatory string(s) are missing from the "
-            f"rendered heatmap: {missing}. Per AGENTS.md, a heatmap missing "
-            f"any of these is not shipped.")
-    return Result("I10", "heatmap states its recipe", "PASS",
-                  "all 7 mandatory strings (title, both column-group labels, "
-                  "the z-score/block-structure sentence, the raw-scale "
-                  "sentence, the colour-direction sentence, the three-stage "
-                  "accounting line) are printed on the rendered heatmap")
+            f"{len(missing)} of the {len(expected)} mandatory string(s) are "
+            f"missing from the rendered heatmap: {missing}. Per AGENTS.md, a "
+            f"heatmap missing any of these is not shipped.")
+    if data is None:
+        return Result(
+            "I10", "heatmap states its recipe", "PASS",
+            f"all {len(expected)} mandatory strings rebuildable without the "
+            f"HeatmapData are printed on the rendered heatmap. NOT checked, "
+            f"because no HeatmapData was passed: the influence sentence, the "
+            f"directional-balance sentence, and whether a small-n caveat was "
+            f"required")
+    return Result(
+        "I10", "heatmap states its recipe", "PASS",
+        f"all {len(expected)} mandatory strings are printed on the rendered "
+        f"heatmap, including the influence sentence with its unsigned baseline "
+        f"({data.baseline_separation:.3f}) and leave-one-out ratio "
+        f"({data.max_influence_fraction * 100:.1f}%), the directional-balance "
+        f"sentence ({accounting.n_up} up / {accounting.n_down} down), and "
+        + ("the small-n caveat (min n = "
+           f"{min(ref.n_ref, ref.n_test)})" if data.small_n_caveat
+           else f"no small-n caveat (min n = {min(ref.n_ref, ref.n_test)}, "
+                f"which needs none)"))
 
 
 __all__ = ["check_all", "InvariantReport", "Result", "Outcome", "svg_text",
@@ -784,8 +830,10 @@ def check_three_stage_accounting(accounting: Any,
 
 
 def check_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
-                                    accounting: Any, n_samples: int) -> Result:
-    return _i10_heatmap_states_its_recipe(svg_path, ref, accounting, n_samples)
+                                    accounting: Any, n_samples: int,
+                                    data: Any = None) -> Result:
+    return _i10_heatmap_states_its_recipe(svg_path, ref, accounting,
+                                          n_samples, data)
 
 
 def _i11_phenotype_claims_citable(claims: Sequence[dict[str, Any]],

@@ -277,25 +277,45 @@ async def contrast_genes(accession: str, contrast_id: str, n: int = MAX_GENES,
 
 @app.get("/api/contrast/{accession}/{contrast_id}/heatmap")
 async def contrast_heatmap(accession: str, contrast_id: str,
-                           n: int = MAX_GENES) -> Any:
+                           n: int = MAX_GENES,
+                           direction: str = "both") -> Any:
     """Stage 4: the heatmap. Plan §8's rule applies literally here — if I10
     fails, this route refuses rather than serving a heatmap missing any of the
-    seven mandatory strings.
+    mandatory strings.
+
+    `direction` was missing until the 2026-10-06 panel (S6). Its absence meant
+    this route always selected with the `"both"` default while `/api/genes`
+    honoured whatever the caller asked for, so a `direction=split` gene table
+    and the heatmap served beside it shared only 31 of 60 genes — 29 different
+    genes, under a heatmap sentence reading "after selecting the top 60 by this
+    contrast's adjusted p", which was true of what it drew and false of the
+    table the reader was reading.
     """
     ref, err = _contrast_ref_or_error(accession, contrast_id)
     if err is not None:
         return err
+    if direction not in ("both", "split"):
+        return JSONResponse(
+            {"error": "bad_direction",
+             "message": "direction must be 'both' or 'split'"},
+            status_code=422)
     n = max(1, min(int(n), MAX_GENES))
     cache = Cache()
     try:
         async with Http() as http:
             atlas = AtlasAdapter(http, cache)
             resolver = Resolver(http, cache)
-            table = await contrast_mod.build_gene_table(atlas, resolver, ref, n=n)
-            # Reuse exactly the rows the gene table already selected and
-            # returned to the client — never a second selection pass that
-            # could drift from what step 3 showed (§9: a mismatch between a
-            # collapsed step and the figure it feeds is a bug).
+            table = await contrast_mod.build_gene_table(
+                atlas, resolver, ref, n=n, direction=direction)
+            # This re-runs stage 3's selection rather than receiving stage 3's
+            # rows, so the honest statement is that it reproduces them: it is
+            # deterministic given `(accession, contrast_id, n, direction)`, and
+            # those four are therefore what must match what step 3 was asked
+            # for. The comment here used to claim it "reuse[s] exactly the rows
+            # the gene table already selected ... never a second selection pass
+            # that could drift" — which was false twice over, because it IS a
+            # second selection pass and, until `direction` was threaded through
+            # above, one that could not even be asked for the same gene set.
             top_rows = [contrast_mod.AnalyticsRow(r.ensembl_id, r.atlas_symbol,
                                                   r.pvalue, r.log2fc)
                        for r in table.rows]
@@ -310,12 +330,22 @@ async def contrast_heatmap(accession: str, contrast_id: str,
 
     data = heatmap_mod.compute(table.ref, top_rows, raw, table.accounting)
     out_dir = RUNS_DIR / "heatmaps"
-    out_svg = out_dir / f"{accession}_{contrast_id}_{n}.svg"
-    out_png = out_dir / f"{accession}_{contrast_id}_{n}.png"
+    # `direction` is in the filename because it changes which genes are drawn:
+    # without it a `split` render and a `both` render of the same contrast
+    # overwrite each other, and a reader could be served the other one's
+    # cached file under this one's mandatory sentence.
+    stem = f"{accession}_{contrast_id}_{n}_{direction}"
+    out_svg = out_dir / f"{stem}.svg"
+    out_png = out_dir / f"{stem}.png"
     result = heatmap_mod.render(data, out_svg, out_png)
 
+    # `data` is passed so I10 can check the three mandatory strings that quote
+    # computed quantities — the influence sentence, the directional-balance
+    # sentence, and the small-n caveat. Without it those three go unchecked,
+    # and they are precisely the ones the 2026-10-06 panel found either absent
+    # or carrying numbers that had been computed and never printed.
     check = invariants_mod.check_heatmap_states_its_recipe(
-        out_svg, table.ref, table.accounting, result.n_samples)
+        out_svg, table.ref, table.accounting, result.n_samples, data)
     if check.failed:
         # AGENTS.md rule: a plausible wrong figure is worse than a crash.
         # Never serve an SVG this build's own check says is missing a
