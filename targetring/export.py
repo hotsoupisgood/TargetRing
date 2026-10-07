@@ -58,7 +58,8 @@ from . import citations as citations_mod
 from . import dim as dim_mod
 from . import table as table_mod
 from . import view as view_mod
-from .figure import FIGURE_TITLE, RING_SPECS
+from . import sources as SOURCES
+from .figure import FIGURE_TITLE, RING_SPECS, ring_specs_for
 from .manifest import git_sha
 from .order import (ALPHABETICAL, SORT_LABEL_JOIN, SORT_LABEL_PREFIX,
                     SORT_LABEL_TAIL, SORT_LABEL_UNSORTED, SUBMITTED, SortKey,
@@ -147,7 +148,8 @@ def sort_grades(t: table_mod.RunTable) -> Grades:
 
     cells = t.cells_by_ring()
     position = {g: i for i, g in enumerate(t.submitted_order)}
-    ring_labels = {s.key: s.label for s in RING_SPECS}
+    ring_labels = {s.key: s.label
+                   for s in ring_specs_for(SOURCES.DESource.from_manifest(t.manifest))}
     grades: dict[str, dict[str, int]] = {}
     phrase: dict[str, str] = {}
     for spec in orderable_keys(t.rings):
@@ -227,7 +229,8 @@ def sort_probes(t: table_mod.RunTable, g: Grades) -> list[dict[str, Any]]:
     """Python's row order, sentence and no-value block for a set of sort states,
     for the export to reproduce in the reader's browser before it draws."""
     cells = t.cells_by_ring()
-    ring_labels = {s.key: s.label for s in RING_SPECS}
+    ring_labels = {s.key: s.label
+                   for s in ring_specs_for(SOURCES.DESource.from_manifest(t.manifest))}
     out = []
     for keys in _key_sequences(orderable_keys(t.rings)):
         order = order_by_keys(t.submitted_order, cells, keys)
@@ -265,7 +268,8 @@ def dim_probes(t: table_mod.RunTable) -> list[dict[str, Any]]:
     to be subtly wrong and only the first of them changes what a row looks like.
     """
     cells = t.cells_by_ring()
-    specs = {s.key: s for s in RING_SPECS}
+    specs = {s.key: s
+             for s in ring_specs_for(SOURCES.DESource.from_manifest(t.manifest))}
     labels = {r["key"]: citations_mod.column_label(specs.get(r["key"]), r["label"])
               for r in t.rings}
     genes = list(t.genes)

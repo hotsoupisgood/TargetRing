@@ -285,25 +285,32 @@ SORT_LABEL_TAIL = (
     "Genes with no value on a key are last on it, never lowest.")
 
 
-def sort_phrase(spec: SortKey, ring_labels: dict[str, str] | None = None) -> str:
-    """What ONE key of the sort is called, in the sentence above the table."""
+def sort_phrase(spec: SortKey, ring_labels: dict[str, str] | None = None,
+                table_phrase: str = "") -> str:
+    """What ONE key of the sort is called, in the sentence above the table.
+
+    `table_phrase` is `sources.DESource.table_phrase` -- see `ordering_label`
+    for why "your submitted" cannot be a constant."""
     labels = ring_labels or {}
     if spec.ordering == SUBMITTED:
-        return "your submitted order" + (", reversed" if spec.reverse else "")
+        return ((table_phrase or "your submitted") + " order"
+                + (", reversed" if spec.reverse else ""))
     if spec.ordering == ALPHABETICAL:
         return "gene symbol, Z–A" if spec.reverse else "gene symbol, A–Z"
     ring = is_ring_ordering(spec.ordering) or "?"
     return f"'{labels.get(ring, ring)}' {'worst' if spec.reverse else 'best'} first"
 
 
-def sort_label(keys: Sequence[SortKey], ring_labels: dict[str, str] | None = None) -> str:
+def sort_label(keys: Sequence[SortKey], ring_labels: dict[str, str] | None = None,
+               table_phrase: str = "") -> str:
     """The sentence shown above the table. Same job as `ordering_label` on the
     figure: an order that carries meaning and is not stated is an unlabelled
     scale."""
     if not keys:
         return SORT_LABEL_UNSORTED
     return (SORT_LABEL_PREFIX
-            + SORT_LABEL_JOIN.join(sort_phrase(s, ring_labels) for s in keys)
+            + SORT_LABEL_JOIN.join(sort_phrase(s, ring_labels, table_phrase)
+                                   for s in keys)
             + SORT_LABEL_TAIL)
 
 
@@ -341,11 +348,21 @@ def parse_sort_keys(spec: str | Sequence[str] | None,
     return keys
 
 
-def ordering_label(ordering: str, ring_label: str | None = None) -> str:
+def ordering_label(ordering: str, ring_label: str | None = None,
+                   table_phrase: str = "") -> str:
     """The sentence printed on the figure. A spoke order that carries meaning and
-    is not stated is the same defect as an unlabelled colour scale."""
+    is not stated is the same defect as an unlabelled colour scale.
+
+    `table_phrase` names the input table this run's genes actually arrived in
+    (`sources.DESource.table_phrase`). Without it this says "your submitted DE
+    table", which is true on the paste path and false on an Atlas run -- where
+    the panel found it rendered prominently in the offline export's provenance
+    block, under the heading "spoke order the circle used", on a run whose
+    genes came from a contrast nobody submitted.
+    """
     if ordering == SUBMITTED:
-        return "spoke order: the order of your submitted DE table (unchanged)"
+        return (f"spoke order: the order of "
+                f"{table_phrase or 'your submitted DE table'} (unchanged)")
     if ordering == ALPHABETICAL:
         return "spoke order: alphabetical by gene symbol"
     ring = is_ring_ordering(ordering) or "?"

@@ -187,6 +187,12 @@ def build(
     filter_counts: dict[str, Any] | None = None,
     run_conditions: list[dict[str, str]] | None = None,
     ring_keys: list[str] | None = None,
+    # Where this run's logFC and adjusted p came from. The manifest knew the
+    # truth in `contrast.analytics_url` while `ring_sources[0].reason` two keys
+    # away said "the logFC column of the DE table you submitted — your own
+    # measurement": one artefact contradicting itself. Passing this is what
+    # stops that. See `sources.DESource`.
+    de_source: "sources_mod.DESource | None" = None,
     contrast: dict[str, Any] | None = None,
     selection_accounting: dict[str, Any] | None = None,
 ) -> Manifest:
@@ -220,7 +226,8 @@ def build(
         filters=filters or [],
         filter_counts=filter_counts or {},
         run_conditions=run_conditions or [],
-        ring_sources=sources_mod.as_manifest_rows(list(ring_keys or [])),
+        ring_sources=sources_mod.as_manifest_rows(list(ring_keys or []),
+                                                  de_source),
         contrast=contrast,
         selection_accounting=selection_accounting,
     )

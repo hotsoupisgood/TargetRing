@@ -847,7 +847,12 @@ async def scales(run_id: str) -> JSONResponse:
         "states": [{"key": k, "label": s["label"], "fill": s["fc"],
                     "hatch": s["hatch"], "edge": s["ec"]}
                    for k, s in STATE_STYLE.items()],
-        "rings": scale_rows(r.cells_by_ring),
+        # The web scales panel resolves rings 1 and 2 from the run's own
+        # manifest, like every other surface, so it cannot be the one place
+        # still calling an Atlas contrast's logFC "yours".
+        "rings": scale_rows(
+            r.cells_by_ring,
+            sources_mod.DESource.from_manifest(r.manifest.as_dict())),
     })
 
 

@@ -569,6 +569,49 @@ RING_SPECS: tuple[RingSpec, ...] = (
              table_label="k — external rings"),
 )
 
+#: The two rings whose provenance is the run's own DE input rather than an
+#: external source, and which therefore cannot be described by a constant.
+DE_INPUT_RINGS = ("logfc", "neg_log10_padj")
+
+
+def ring_specs_for(de: "SOURCES.DESource | None" = None) -> tuple[RingSpec, ...]:
+    """`RING_SPECS` with rings 1 and 2 described by where this run's numbers
+    actually came from.
+
+    `RING_SPECS` itself is the paste-path spelling, and was the ONLY spelling:
+    `RingSpec("logfc", "logFC (yours)", "submitted DE table", ...,
+    short_source="yours")`. On an Atlas run every word of that is false, and
+    because it is a module constant the same false label reached the figure's
+    ring name, its scale column, `caption.txt`, the manifest's `ring_sources`,
+    the Table tab, the offline export and the web scales panel — six surfaces
+    from one root cause. `git log -S'you submitted'` shows the text entered in
+    `6391a79` and was never revisited; it predates the contrast entry point.
+
+    Everything downstream already reads a list of `RingSpec` rather than the
+    constant — `render()` filters it, `caption()` walks it, `view.py` and
+    `export.py` index it — so resolving the right list once, per run, is enough
+    to correct all of them at the same time and in the same words.
+    """
+    source = de or SOURCES.DESource.pasted()
+    out: list[RingSpec] = []
+    for spec in RING_SPECS:
+        if spec.key not in DE_INPUT_RINGS:
+            out.append(spec)
+            continue
+        # The label's bracketed qualifier is rebuilt rather than string-patched:
+        # "logFC (yours)" -> "logFC (Atlas)" by regex would silently do nothing
+        # the day the label is reworded.
+        base = spec.label.split(" (")[0]
+        short_base = spec.short_label.split(" (")[0] if spec.short_label else ""
+        out.append(dc_replace(
+            spec,
+            label=f"{base} ({source.label_qualifier})",
+            source=source.source_phrase,
+            short_source=source.short_source,
+            short_label=(f"{short_base} ({source.label_qualifier})"
+                         if short_base else spec.short_label)))
+    return tuple(out)
+
 
 def ring_cmap(spec: RingSpec):
     """The colormap this ring draws from — its family, at its number of levels.
@@ -1552,6 +1595,13 @@ def render(
     # never reworded here, so the figure cannot say the sign a different way
     # than the manifest does. Empty on a paste-path run: `()` draws nothing.
     contrast_notes: Sequence[str] = (),
+    # Where THIS run's logFC and adjusted p actually came from. `None` is the
+    # paste path, which is what `RING_SPECS` has always hard-coded. An Atlas
+    # run passes its own, and rings 1 and 2 stop claiming to be a file the
+    # reader submitted. One value corrects the ring label, the scale column
+    # and the caption together, because all three read the ring list this
+    # resolves -- see `ring_specs_for` and `sources.DESource`.
+    de_source: "SOURCES.DESource | None" = None,
 ) -> FigureResult:
     assert_fills_disjoint()
     assert_greyscale_disjoint()
@@ -1568,7 +1618,7 @@ def render(
     if not genes:
         raise ValueError("no genes to render")
 
-    rings, norms, cmaps = _rings_norms_cmaps(cells_by_ring)
+    rings, norms, cmaps = _rings_norms_cmaps(cells_by_ring, de_source)
 
     # UX B1: pycirclize raises "Too large sector space size is set!!" at
     # n >= 181 with space=2, which reached the user as a raw traceback after
@@ -1876,17 +1926,23 @@ def render(
                         web_caveats=web_caveats)
 
 
-def _rings_norms_cmaps(cells_by_ring):
+def _rings_norms_cmaps(cells_by_ring, de_source=None):
     """The three things every render of this data has to agree about.
 
     v3.0 factors this out of `render` because `render_legend` draws the same
     scales onto a different canvas, and a legend whose ramps or ticks were
     computed by a second code path would be a legend that could disagree with
     its figure -- which is the one failure mode a detachable legend introduces.
-    They are derived from `cells_by_ring` and nothing else, so two renders of one
-    run cannot differ here.
+    They are derived from `cells_by_ring` and `de_source` and nothing else, so
+    two renders of one run cannot differ here.
+
+    `de_source` reaches this function rather than only `render` for the same
+    reason the rest of it is shared: the figure, the detachable legend and the
+    web scales panel all resolve their ring list here, and a ring labelled
+    "logFC (yours)" on one of them and "logFC (Atlas)" on another would be
+    exactly the disagreement this factoring exists to prevent.
     """
-    rings = [r for r in RING_SPECS if r.key in cells_by_ring]
+    rings = [r for r in ring_specs_for(de_source) if r.key in cells_by_ring]
     # v2.6: one colormap per ring, chosen by the ring's data type. The check that
     # no two rings outside a declared-comparable family can paint the same
     # colour runs on the rings this render is actually drawing, because a render
@@ -2292,7 +2348,7 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
     return blocks
 
 
-def scale_rows(cells_by_ring) -> list[dict]:
+def scale_rows(cells_by_ring, de_source=None) -> list[dict]:
     """The scale column as data, for the page to draw as HTML.
 
     v3.1 / UX v3 A2. The twelve scales are not leaving the app -- UX-v1-mvp.md
@@ -2308,7 +2364,7 @@ def scale_rows(cells_by_ring) -> list[dict]:
     implementation could disagree with the figure beside it, which is the whole
     argument §v3.0 made for `render_legend` sharing `_draw_ring_scales`.
     """
-    rings, norms, _ = _rings_norms_cmaps(cells_by_ring)
+    rings, norms, _ = _rings_norms_cmaps(cells_by_ring, de_source)
     out = []
     for i, spec in enumerate(rings, start=1):
         doc = spec.source_doc
@@ -3181,6 +3237,7 @@ def render_legend(
     input_count: int = 0,
     rendered_count: int = 0,
     gene_flags: dict[str, list[str]] | None = None,
+    de_source: "SOURCES.DESource | None" = None,
 ) -> Path:
     """The legend as its own image, for the slide that is not the circle.
 
@@ -3205,7 +3262,7 @@ def render_legend(
     """
     import dataclasses
 
-    rings, norms, cmaps = _rings_norms_cmaps(cells_by_ring)
+    rings, norms, cmaps = _rings_norms_cmaps(cells_by_ring, de_source)
     lay = LEGEND
     fig = plt.figure(figsize=lay.figsize, dpi=100)
     fig.patch.set_facecolor("#ffffff")

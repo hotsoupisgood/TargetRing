@@ -34,7 +34,8 @@ from typing import Any
 from . import citations as citations_mod
 from . import dim as dim_mod
 from . import table as table_mod
-from .figure import RING_SPECS, STATE_STYLE
+from . import sources as SOURCES
+from .figure import RING_SPECS, STATE_STYLE, ring_specs_for
 from .order import missing_on, order_by_keys, parse_sort_keys, sort_label
 from .run import FILTERABLE_RINGS
 
@@ -96,8 +97,18 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
     primary = keys[0].ordering if keys else ""
     block = missing_on(order, cells_by_ring, primary) if primary else []
 
-    specs = {s.key: s for s in RING_SPECS}
     m = t.manifest
+    # Resolved from the run's OWN manifest, not from whatever this process is
+    # holding: a run read back off disk has to say the same thing it said when
+    # it was written. `contrast` is null on a paste-path run and populated on
+    # every contrast run, which is what makes this exact.
+    #
+    # Without this, the Table tab, its citation strip and the export built from
+    # it all described an Atlas run's rings 1 and 2 as "logFC (yours)" / "the
+    # DE table you submitted — your own measurement", on the same page as the
+    # accession the genes actually came from. See `sources.DESource`.
+    de = SOURCES.DESource.from_manifest(m)
+    specs = {s.key: s for s in ring_specs_for(de)}
 
     # Classified over `order`, which is the rendered gene set and is decided
     # above and unaffected by this. `assert_nothing_left` is the guard that this
@@ -169,7 +180,8 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
         "k_max": t.k_max,
         "order": order,
         "sort": [{"ordering": k.ordering, "reverse": k.reverse} for k in keys],
-        "sort_note": sort_label(keys, {s.key: s.label for s in RING_SPECS}),
+        "sort_note": sort_label(keys, {k: v.label for k, v in specs.items()},
+                                de.table_phrase),
         "missing_block": block,
         # v3.7 item 1. Where these N columns come from, one row per ring, read
         # from `sources.RING_SOURCE_DOCS` and keyed on the rings this run drew.
@@ -182,7 +194,8 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
         # under `runs/` and for `?run=<id>` on a fresh page.
         "citations": citations_mod.citation_rows(
             run_id=t.run_id, rings=t.rings, cells=t.cells, specs=specs,
-            manifest_rows=m.get("ring_sources") or [], record_url=record_url),
+            manifest_rows=m.get("ring_sources") or [], record_url=record_url,
+            de=de),
         "citation_note": citations_mod.NO_DATA_NOTE,
         # AGENTS.md rule 3. Re-asserted in `table.load` — a run whose counts do
         # not add up raises there and never reaches this response — and repeated

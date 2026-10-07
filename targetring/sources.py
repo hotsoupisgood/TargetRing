@@ -68,6 +68,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
+from typing import Any
 
 from . import config
 
@@ -386,22 +387,149 @@ DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
 # the reader's actual question — where did this number come from? — unanswered.
 # Every one of the three has a definite provenance; none of them has a URL, and
 # inventing one would be fabricating a citation.
-UNLINKED_RINGS: dict[str, str] = {
-    "logfc": ("the logFC column of the DE table you submitted — your own "
-              "measurement, read straight off your file and not transformed. The "
-              "run's manifest records which header it was read from "
-              "(`input.columns.logfc`) and `values.csv` carries the value per gene"),
-    "neg_log10_padj": ("the adjusted-p column of the DE table you submitted, drawn "
-                       "as −log10(padj) so that more significant is larger — your "
-                       "own measurement, with that one transform and nothing else. "
-                       "The run's manifest records which header it was read from "
-                       "(`input.columns.padj`) and the cell detail prints the "
-                       "original p back"),
-    "completeness": ("computed here, by counting rings 3-11: k is how many of the "
-                     "nine external rings have a real measurement for this gene. It "
-                     "is arithmetic over the other rings' cells, so its provenance "
-                     "is theirs — no source of its own is read for it"),
-}
+#: The `completeness` ring is the only one of the three whose provenance does
+#: not depend on where this run's DE numbers came from -- it is arithmetic over
+#: the other rings either way.
+_COMPLETENESS_REASON = (
+    "computed here, by counting rings 3-11: k is how many of the "
+    "nine external rings have a real measurement for this gene. It "
+    "is arithmetic over the other rings' cells, so its provenance "
+    "is theirs — no source of its own is read for it")
+
+
+@dataclass(frozen=True)
+class DESource:
+    """Where THIS run's logFC and adjusted-p actually came from.
+
+    **The defect this exists to kill.** Rings 1 and 2 were described by
+    module-level constants that assumed the paste path: "logFC (yours)",
+    "submitted DE table", "the logFC column of the DE table you submitted —
+    your own measurement, read straight off your file". `git log -S'you
+    submitted'` shows the string entered in `6391a79` and was never touched
+    again -- it predates the Atlas contrast entry point entirely.
+
+    On an Atlas run every one of those claims is false, and because the strings
+    are constants the same falsehood reached six surfaces at once: the figure's
+    ring label and scale column, `caption.txt`, `manifest.json`'s
+    `ring_sources`, the Table tab's citation strip, the offline export, and the
+    web scales panel. A reader handed `caption.txt` alone would conclude Puck
+    submitted his own DE table and would have no way to find the Atlas
+    experiment -- while the same manifest's `contrast.analytics_url` named the
+    real source two keys away.
+
+    That is this module's own docstring failing at its one job: "the legend,
+    the caption and the manifest must not be able to disagree about where a
+    number came from". They could not disagree with each other; they could all
+    be wrong together.
+
+    So the provenance of rings 1 and 2 is a **property of the run**, resolved
+    once here and read by every surface, exactly as `RING_SOURCE_DOCS` is for
+    the other nine. `from_manifest` exists because a run loaded off disk must
+    reach the same answer as the run that wrote it, from the artefact itself
+    rather than from whatever the process happens to remember.
+    """
+
+    kind: str
+    #: Four to twelve characters for the figure's scale column.
+    short_source: str
+    #: What goes in brackets after the ring name: "logFC (yours)" / "(Atlas)".
+    label_qualifier: str
+    #: The `RingSpec.source` one-liner.
+    source_phrase: str
+    #: How to name the input table in an ordering note or a prose sentence.
+    table_phrase: str
+    logfc_reason: str
+    padj_reason: str
+
+    @staticmethod
+    def pasted() -> "DESource":
+        return DESource(
+            kind="pasted", short_source="yours", label_qualifier="yours",
+            source_phrase="submitted DE table",
+            table_phrase="your submitted DE table",
+            logfc_reason=(
+                "the logFC column of the DE table you submitted — your own "
+                "measurement, read straight off your file and not transformed. "
+                "The run's manifest records which header it was read from "
+                "(`input.columns.logfc`) and `values.csv` carries the value "
+                "per gene"),
+            padj_reason=(
+                "the adjusted-p column of the DE table you submitted, drawn "
+                "as −log10(padj) so that more significant is larger — your "
+                "own measurement, with that one transform and nothing else. "
+                "The run's manifest records which header it was read from "
+                "(`input.columns.padj`) and the cell detail prints the "
+                "original p back"),
+        )
+
+    @staticmethod
+    def from_contrast(accession: str, contrast_id: str,
+                      ensembl_release: str = "", pipeline: str = "") -> "DESource":
+        """An Expression Atlas contrast. Names the file and the two columns,
+        because that is what a reader needs to check the number -- and because
+        the old text's forwarding pointer (`input.columns.logfc`) pointed at a
+        manifest key that does not exist on any run."""
+        where = f"{accession} {contrast_id}"
+        release = (f", Ensembl {ensembl_release}" if ensembl_release else "")
+        how = (f" ({pipeline})" if pipeline else "")
+        return DESource(
+            kind="contrast", short_source="Expression Atlas",
+            label_qualifier="Atlas",
+            source_phrase=f"Expression Atlas {where}",
+            table_phrase=f"the {where} contrast's own -analytics.tsv",
+            logfc_reason=(
+                f"the `{contrast_id}.log2foldchange` column of "
+                f"{accession}-analytics.tsv, read from Expression Atlas{release} "
+                f"for contrast {contrast_id}{how}. Not a table you submitted: "
+                f"this run selected these genes from that contrast. The run's "
+                f"manifest records the file's URL under `contrast.analytics_url` "
+                f"and `values.csv` carries the value per gene"),
+            padj_reason=(
+                f"the `{contrast_id}.p-value` column of "
+                f"{accession}-analytics.tsv, read from Expression Atlas{release} "
+                f"for contrast {contrast_id}{how} and drawn as −log10(padj) so "
+                f"that more significant is larger — that one transform and "
+                f"nothing else. Not a table you submitted. The run's manifest "
+                f"records the file's URL under `contrast.analytics_url` and the "
+                f"cell detail prints the original p back"),
+        )
+
+    @staticmethod
+    def from_manifest(manifest: dict[str, Any] | None) -> "DESource":
+        """Resolve from a run's own artefact, so a run read back off disk says
+        the same thing it said when it was written. A manifest with no
+        `contrast` block is a paste-path run -- that key is `null` there and
+        populated on every contrast run, which is what makes this safe."""
+        contrast = (manifest or {}).get("contrast") or {}
+        acc = contrast.get("accession")
+        cid = contrast.get("contrast_id")
+        if not acc or not cid:
+            return DESource.pasted()
+        return DESource.from_contrast(
+            acc, cid, str(contrast.get("ensembl_release") or ""),
+            str(contrast.get("pipeline") or ""))
+
+    def unlinked_rings(self) -> dict[str, str]:
+        return {"logfc": self.logfc_reason,
+                "neg_log10_padj": self.padj_reason,
+                "completeness": _COMPLETENESS_REASON}
+
+
+# Stated, not omitted. A reader who sees links on ten rings and none on three is
+# entitled to know whether the other three were forgotten.
+#
+# This is the PASTE-PATH default, kept as a module constant because
+# `assert_registry_is_coherent` and every caller that has no run in hand needs
+# a set of keys to check against, and because it is what a run with no contrast
+# genuinely says. Any surface describing an actual run must go through
+# `DESource.unlinked_rings()` instead -- see `DESource` for why.
+UNLINKED_RINGS: dict[str, str] = DESource.pasted().unlinked_rings()
+
+
+def unlinked_rings_for(de: "DESource | None") -> dict[str, str]:
+    """The three unlinked rings' reasons for one run. `None` means the
+    paste-path default, which is also what a paste-path run resolves to."""
+    return (de or DESource.pasted()).unlinked_rings()
 
 
 def unresolved_rings(ring_keys: Iterable[str]) -> list[str]:
@@ -437,23 +565,29 @@ def assert_every_ring_resolves(ring_keys: Iterable[str]) -> None:
             f"borrow a neighbouring ring's URL to do it.")
 
 
-def as_manifest_rows(ring_keys: list[str]) -> list[dict[str, str]]:
+def as_manifest_rows(ring_keys: list[str],
+                     de: "DESource | None" = None) -> list[dict[str, str]]:
     """The manifest's copy of the legend's citations, in ring order.
 
     Built from the same dict the figure draws from, which is the whole point:
     a figure and its manifest cannot disagree about where a number came from,
     because there is one registry and neither of them owns it.
 
+    `de` is this run's DE provenance. Passing it is what stops the manifest
+    describing an Atlas run's rings 1 and 2 as "the DE table you submitted —
+    your own measurement" two keys away from its own `contrast.analytics_url`.
+
     Raises rather than defaulting. There is no row shape for "we do not know", so
     there is no row: see `assert_every_ring_resolves`.
     """
     assert_every_ring_resolves(ring_keys)
+    unlinked = unlinked_rings_for(de)
     rows = []
     for key in ring_keys:
         doc = RING_SOURCE_DOCS.get(key)
         if doc is None:
             rows.append({"ring": key, "linked": "no",
-                         "reason": UNLINKED_RINGS[key],
+                         "reason": unlinked[key],
                          "legend_text": "", "doc_url": "", "endpoint": "",
                          "version": "", "reads": ""})
             continue
@@ -553,6 +687,7 @@ def data_source_rows(keys: Iterable[str]) -> list[dict[str, str]]:
     return rows
 
 
-__all__ = ["SourceDoc", "RING_SOURCE_DOCS", "DATA_SOURCE_DOCS", "UNLINKED_RINGS",
-           "as_manifest_rows", "assert_registry_is_coherent", "data_source_rows",
-           "unresolved_rings", "assert_every_ring_resolves"]
+__all__ = ["DESource", "SourceDoc", "RING_SOURCE_DOCS", "DATA_SOURCE_DOCS",
+           "UNLINKED_RINGS", "as_manifest_rows", "assert_registry_is_coherent",
+           "data_source_rows", "unlinked_rings_for", "unresolved_rings",
+           "assert_every_ring_resolves"]

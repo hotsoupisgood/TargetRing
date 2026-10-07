@@ -111,16 +111,23 @@ NO_DATA_NOTE = (
 )
 
 
-def unlinked_reason(ring_key: str, short_source: str = "") -> str:
+def unlinked_reason(ring_key: str, short_source: str = "",
+                    de: "sources.DESource | None" = None) -> str:
     """Why this ring has no citation, in this build's own words.
 
-    Three kinds of gap and they are different facts: a ring whose number is
-    Puck's own or derived here (`sources.UNLINKED_RINGS`), a ring this build
-    retired (`RETIRED_RINGS`), and a ring nobody has accounted for — which is a
-    bug, and says so rather than printing a blank.
+    Three kinds of gap and they are different facts: a ring whose number comes
+    from this run's own DE input or is derived here (`sources.DESource`), a
+    ring this build retired (`RETIRED_RINGS`), and a ring nobody has accounted
+    for — which is a bug, and says so rather than printing a blank.
+
+    `de` is the run's DE provenance. Without it this answers for the paste
+    path, which is what the old module constant hard-coded for every run and
+    is why an Atlas run's rings 1 and 2 read "the DE table you submitted —
+    your own measurement" on six surfaces at once.
     """
-    if ring_key in sources.UNLINKED_RINGS:
-        return sources.UNLINKED_RINGS[ring_key]
+    unlinked = sources.unlinked_rings_for(de)
+    if ring_key in unlinked:
+        return unlinked[ring_key]
     if ring_key in RETIRED_RINGS:
         return RETIRED_RINGS[ring_key]
     return (f"this build's source registry has no entry for {ring_key!r} and no "
@@ -132,7 +139,8 @@ def unlinked_reason(ring_key: str, short_source: str = "") -> str:
 
 def cell_provenance(state: str, ring_key: str, run_id: str,
                     short_source: str = "",
-                    record_url: str = "") -> dict[str, str]:
+                    record_url: str = "",
+                    de: "sources.DESource | None" = None) -> dict[str, str]:
     """Where a reader checks ONE cell — the one function both surfaces read.
 
     v3.7 item 3. `failed` and `no_data` are the two states that look alike on a
@@ -167,7 +175,7 @@ def cell_provenance(state: str, ring_key: str, run_id: str,
     doc = sources.RING_SOURCE_DOCS.get(ring_key)
     if doc is None:
         return {"kind": "unlinked", "url": "", "text": "",
-                "why": unlinked_reason(ring_key, short_source)}
+                "why": unlinked_reason(ring_key, short_source, de)}
     # v3.9. A ring can have a citation AND be one this build stopped drawing, and
     # both matter to a reader of an old run: the first says where the number came
     # from, the second says why there is no scale for the column beside it.
@@ -202,7 +210,8 @@ def citation_rows(run_id: str, rings: list[dict[str, str]],
                   cells: dict[str, dict[str, Any]],
                   specs: dict[str, Any],
                   manifest_rows: list[dict[str, str]] | None = None,
-                  record_url: str = "") -> list[dict[str, Any]]:
+                  record_url: str = "",
+                  de: "sources.DESource | None" = None) -> list[dict[str, Any]]:
     """One row per ring, numbered to match the grid's column numbers.
 
     `rings` and `cells` are `table.RunTable`'s — the rings the run actually drew,
@@ -221,7 +230,7 @@ def citation_rows(run_id: str, rings: list[dict[str, str]],
         short_source = spec.short_source if spec is not None else ""
         # Both targets from one function, so the row cannot say the source link
         # answers a failed cell while `cell_provenance` says it does not.
-        source = cell_provenance("no_data", key, run_id, short_source)
+        source = cell_provenance("no_data", key, run_id, short_source, de=de)
         failed_genes = sorted(g for g, c in (cells.get(key) or {}).items()
                               if c.state == "failed")
         row: dict[str, Any] = {
@@ -238,7 +247,7 @@ def citation_rows(run_id: str, rings: list[dict[str, str]],
             "reason": source["why"],
             "failed_genes": failed_genes,
             "failed_target": (cell_provenance("failed", key, run_id, short_source,
-                                              record_url)
+                                              record_url, de)
                               if failed_genes else None),
             "recorded_drift": _drift(key, recorded.get(key) or {}),
         }

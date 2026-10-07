@@ -73,6 +73,7 @@ from .order import (
 )
 from .regression import five_id_regression
 from .resolve import Resolver, ledger_reason
+from . import sources as sources_mod
 from . import spend
 from .states import Cell, no_data, value
 
@@ -446,9 +447,22 @@ async def run_analysis(
         for g in genes
     }
     ordering = normalise_ordering(ordering, cells_by_ring)
-    ring_labels = {s.key: s.label for s in figure.RING_SPECS}
+    # Rings 1 and 2 are this run's OWN DE input, so what they are called and
+    # where they are said to come from is a property of the run, not a
+    # constant. On a contrast run `RING_SPECS`'s "logFC (yours)" / "submitted
+    # DE table" is false, and it was reaching the figure, the caption, the
+    # manifest, the Table tab, the export and the web scales panel together.
+    # Resolved once, here, and handed to each of them.
+    de_source = (
+        sources_mod.DESource.from_contrast(
+            contrast.accession, contrast.contrast_id,
+            contrast.ensembl_release, contrast.pipeline)
+        if contrast is not None else sources_mod.DESource.pasted())
+    ring_specs = figure.ring_specs_for(de_source)
+    ring_labels = {s.key: s.label for s in ring_specs}
     ring_key = order_mod.is_ring_ordering(ordering)
-    ordering_note = ordering_label(ordering, ring_labels.get(ring_key or ""))
+    ordering_note = ordering_label(ordering, ring_labels.get(ring_key or ""),
+                                   de_source.table_phrase)
     filter_notes = filters_mod.filter_lines(active_filters, ring_labels)
     gene_order = order_for_figure(genes, cells_by_ring, ordering)
 
@@ -618,6 +632,7 @@ async def run_analysis(
             gene_ids={g: by_gene[g][1].ensembl_id for g in gene_order},
             invariant_summary=invariant_summary,
             contrast_notes=contrast_notes,
+            de_source=de_source,
         )
 
     fig_result = do_render([])
@@ -718,7 +733,7 @@ async def run_analysis(
         provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
         ordering_note=ordering_note, filter_notes=filter_notes,
         input_count=parsed.input_row_count, rendered_count=rendered_count,
-        gene_flags=severe_liability_flags)
+        gene_flags=severe_liability_flags, de_source=de_source)
 
     # Seven files, four layouts, one data set. This says each file is the render
     # its name promises -- see the function for the bug that earned it.
@@ -870,7 +885,8 @@ async def run_analysis(
         # v2.8. In the figure's own radial order, so the manifest's citation list
         # reads in the same order as the legend column a reader is comparing it
         # against.
-        ring_keys=[s.key for s in figure.RING_SPECS],
+        ring_keys=[s.key for s in ring_specs],
+        de_source=de_source,
         contrast=contrast.as_dict() if contrast is not None else None,
         selection_accounting=(asdict(selection_accounting)
                               if selection_accounting is not None else None),
