@@ -118,6 +118,85 @@ class TestParseRawCounts:
                                 ("S1", "S2"))
 
 
+class TestParseRawCountsNeverImputes:
+    """Panel S7 / rule 1. This parser used to end an unparseable numeric cell
+    with `x = 0.0`, which is the one thing AGENTS.md rule 1 forbids by name:
+    the gene gets a real-looking low count (deep blue after z-scoring) AND the
+    zero is still summed into `library_size`, so one bad cell understates the
+    library and inflates every other gene's CPM in that sample column.
+
+    The panel scanned both real Atlas raw-count files (608k and 644k assay
+    cells) and found zero unparseable cells, so none of this fires on today's
+    data. It is guarded anyway: the exposure is a truncated download or a
+    partially-written cache entry, and the cache stores response text with no
+    completeness check.
+    """
+
+    HEADER = "Gene ID\tGene Name\tS1\tS2\tS3\n"
+    WANTED = {"ENSG00000000001"}
+    ASSAYS = ("S1", "S2", "S3")
+
+    def _parse(self, body: str):  # noqa: ANN202
+        return hm.parse_raw_counts(self.HEADER + body, "E-FAKE",
+                                   self.WANTED, self.ASSAYS)
+
+    def test_an_unparseable_cell_refuses_instead_of_imputing_zero(self) -> None:
+        with pytest.raises(HardFailure, match="not a number"):
+            self._parse("ENSG00000000001\tAAA\tNA\t20\t30\n")
+
+    def test_the_refusal_names_rule_1_and_the_cpm_consequence(self) -> None:
+        with pytest.raises(HardFailure) as e:
+            self._parse("ENSG00000000001\tAAA\tNA\t20\t30\n")
+        msg = str(e.value)
+        assert "missing is not low" in msg
+        assert "library size" in msg
+        # The reader is told which cell, not just that one existed.
+        assert "'S1'" in msg and "ENSG00000000001" in msg
+
+    def test_an_empty_cell_refuses(self) -> None:
+        with pytest.raises(HardFailure, match="not a number"):
+            self._parse("ENSG00000000001\tAAA\t\t20\t30\n")
+
+    def test_a_truncated_row_refuses_rather_than_reading_the_gap_as_zero(self) -> None:
+        # Two assay columns simply absent from the line. Previously 0.0, 0.0.
+        with pytest.raises(HardFailure, match="truncated"):
+            self._parse("ENSG00000000001\tAAA\t10\n")
+
+    def test_nan_and_inf_are_refused_even_though_float_accepts_them(self) -> None:
+        # `float("nan")` and `float("inf")` do NOT raise ValueError, so the old
+        # try/except never saw these at all -- they went straight into the
+        # matrix. `states.Cell` refuses both; so does this now.
+        for bad in ("nan", "inf", "-inf"):
+            with pytest.raises(HardFailure, match="non-finite"):
+                self._parse(f"ENSG00000000001\tAAA\t{bad}\t20\t30\n")
+
+    def test_a_bad_cell_on_an_unselected_gene_still_refuses(self) -> None:
+        """The library size is computed from every row of the file, not only
+        the selected genes (`RawCounts`'s own docstring), so a bad cell on a
+        gene nobody asked for still corrupts the denominator for the genes
+        that were."""
+        with pytest.raises(HardFailure, match="not a number"):
+            self._parse("ENSG00000000001\tAAA\t10\t20\t30\n"
+                        "ENSG00000000009\tZZZ\tNA\t20\t30\n")
+
+    def test_a_clean_file_is_unaffected(self) -> None:
+        raw = self._parse("ENSG00000000001\tAAA\t10\t20\t30\n"
+                          "ENSG00000000002\tBBB\t40\t50\t60\n")
+        assert raw.counts["ENSG00000000001"]["S1"] == 10.0
+        assert raw.library_size["S1"] == 50.0
+
+    @pytest.mark.asyncio
+    async def test_both_real_atlas_fixtures_still_parse(
+        self, real_atlas, null_atlas
+    ) -> None:
+        """The refusal is only defensible because real data does not trigger
+        it. If this ever fails, the fix has become a denial of service."""
+        for acc, cid, atlas in ((REAL_ACC, REAL_CID, real_atlas),
+                                (NULL_ACC, NULL_CID, null_atlas)):
+            data = await _build(acc, cid, atlas, n=10)
+            assert len(data.rows) == 10
+
+
 # ===========================================================================
 # compute() — CPM, z, influence
 # ===========================================================================

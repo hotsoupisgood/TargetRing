@@ -103,11 +103,47 @@ def parse_raw_counts(text: str, acc: str, wanted_genes: set[str],
         gid = parts[0].strip()
         row: dict[str, float] = {}
         for a, idx in wanted_idx.items():
-            raw = parts[idx].strip() if idx < len(parts) else ""
+            # Rule 1, at the one place in this function that used to break it.
+            # This read `except ValueError: x = 0.0`, which gave an unparseable
+            # cell, an empty cell and a SHORT ROW a real-looking count of zero.
+            # Two rule-1 violations in one line: the gene got a value it does
+            # not have (after CPM -> log2 -> z a strongly negative z, drawn deep
+            # blue -- "missing read as low", exactly what rule 1 forbids), and
+            # the zero was still added to `library_size`, understating the
+            # library so that every OTHER gene's CPM in that column came out
+            # inflated. One bad cell therefore rescaled a whole sample column.
+            #
+            # There is no fourth state available here: this layer feeds a
+            # matplotlib `imshow`, which has no hatched `no_data` cell, and
+            # omitting the cell would leave the library size wrong anyway. So
+            # this refuses, which is what the rest of this function already does
+            # for a missing assay column and a missing gene row.
+            if idx >= len(parts):
+                raise HardFailure(
+                    f"{acc}-raw-counts.tsv:{lineno} has {len(parts)} field(s) "
+                    f"but column {idx} is assay {a!r}; the row is truncated. A "
+                    f"short row is refused, never read as a zero count — that "
+                    f"would give this gene a value it does not have and "
+                    f"understate {a}'s library size, inflating every other "
+                    f"gene's CPM in that column.")
+            raw = parts[idx].strip()
             try:
                 x = float(raw)
             except ValueError:
-                x = 0.0
+                raise HardFailure(
+                    f"{acc}-raw-counts.tsv:{lineno} assay {a!r} for gene "
+                    f"{gid!r} is {raw!r}, which is not a number. Refused rather "
+                    f"than imputed to 0.0 (rule 1: missing is not low) — a zero "
+                    f"here would be drawn as a real low-expression cell and "
+                    f"would also understate {a}'s library size, inflating every "
+                    f"other gene's CPM in that column. The likeliest cause is a "
+                    f"truncated download or a partially-written cache entry.") from None
+            if math.isnan(x) or math.isinf(x):
+                raise HardFailure(
+                    f"{acc}-raw-counts.tsv:{lineno} assay {a!r} for gene "
+                    f"{gid!r} parsed as {raw!r} -> {x}; a non-finite count is "
+                    f"refused for the same reason `states.Cell` refuses one — "
+                    f"it cannot be z-scored and would poison the whole row.")
             row[a] = x
             library_size[a] += x
         if gid in wanted_genes:
