@@ -23,6 +23,69 @@ ROWS = [
 ]
 
 
+#: The shape `phenotype.summary_rows` actually sends, since the (phenotype,
+#: model, paper) cartesian product was replaced by one row per (phenotype,
+#: model) carrying the MODEL's literature nested under it.
+NESTED_ROWS = [
+    {"row_id": 1, "mp_label": "abnormal heart morphology", "model_id": "MGI:1",
+     "level": "asserted",
+     "papers": [
+         {"pmid": "111", "title": "BRAF knockouts show cardiac defects",
+          "sentence": "Braf mutant embryos show abnormal heart looping."},
+         {"pmid": "222", "title": "A follow-up study", "sentence": None},
+     ]},
+    {"row_id": 2, "mp_label": "no abnormal phenotype detected",
+     "model_id": "MGI:2", "level": "asserted-negative", "papers": []},
+]
+
+
+class TestI11ReadsNestedPapers:
+    """A quote may come from a row's own `mp_label` or from any of its PAPERS'
+    title/sentence. Before the join was fixed every quotable string sat flat on
+    the row, because each row carried exactly one paper -- which was itself the
+    defect. I11 has to follow the text to where it now lives, or it starts
+    refusing honest claims."""
+
+    def test_a_quote_from_a_nested_paper_passes(self) -> None:
+        claims = [{"text": "Cardiac defects are among the curated phenotypes.",
+                   "row_ids": [1], "quote": "abnormal heart looping"}]
+        assert invariants_mod.check_phenotype_claims_citable(
+            claims, NESTED_ROWS).outcome == "PASS"
+
+    def test_a_quote_from_the_second_paper_on_the_same_row_passes(self) -> None:
+        claims = [{"text": "x", "row_ids": [1], "quote": "A follow-up study"}]
+        assert invariants_mod.check_phenotype_claims_citable(
+            claims, NESTED_ROWS).outcome == "PASS"
+
+    def test_a_quote_from_the_rows_own_mp_label_still_passes(self) -> None:
+        claims = [{"text": "x", "row_ids": [2],
+                   "quote": "no abnormal phenotype detected"}]
+        assert invariants_mod.check_phenotype_claims_citable(
+            claims, NESTED_ROWS).outcome == "PASS"
+
+    def test_a_quote_from_another_rows_paper_is_still_refused(self) -> None:
+        """Nesting widens what one row can be quoted from. It must not widen
+        what a claim can cite -- row 2 has no papers at all."""
+        claims = [{"text": "x", "row_ids": [2], "quote": "abnormal heart looping"}]
+        r = invariants_mod.check_phenotype_claims_citable(claims, NESTED_ROWS)
+        assert r.outcome == "FAIL"
+        assert "papers" in r.detail
+
+    def test_a_fabricated_quote_is_still_refused(self) -> None:
+        claims = [{"text": "x", "row_ids": [1],
+                   "quote": "Braf causes heart disease in humans"}]
+        assert invariants_mod.check_phenotype_claims_citable(
+            claims, NESTED_ROWS).outcome == "FAIL"
+
+    def test_the_flat_row_shape_is_still_accepted(self) -> None:
+        """`_citable_text` reads both shapes deliberately: quietly ignoring the
+        flat fields would refuse honest claims from any caller still passing
+        them."""
+        claims = [{"text": "x", "row_ids": [1], "quote": "abnormal heart looping"}]
+        assert invariants_mod.check_phenotype_claims_citable(
+            claims, ROWS).outcome == "PASS"
+
+
 class TestI11Citability:
     def test_claims_citing_real_rows_with_verbatim_quotes_pass(self) -> None:
         claims = [{"text": "Braf mutants show cardiac defects.", "row_ids": [1],

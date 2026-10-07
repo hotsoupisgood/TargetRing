@@ -836,6 +836,24 @@ def check_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
                                           n_samples, data)
 
 
+def _citable_text(row: dict[str, Any]) -> str:
+    """Everything a claim is allowed to quote from one row.
+
+    A phenotype row is one (phenotype, model) pair, and its papers are the
+    MODEL's literature, carried as a nested `papers` list -- so a quote may
+    come from the row's own `mp_label` or from any of its papers' `title` or
+    `sentence`. The flat per-row `title`/`sentence` are still read, because a
+    row shape without `papers` is still valid input to this function and
+    quietly ignoring half the quotable text would refuse honest claims.
+    """
+    parts = [str(row.get("mp_label") or ""),
+             str(row.get("title") or ""), str(row.get("sentence") or "")]
+    for paper in row.get("papers") or []:
+        parts.append(str(paper.get("title") or ""))
+        parts.append(str(paper.get("sentence") or ""))
+    return " ".join(p for p in parts if p)
+
+
 def _i11_phenotype_claims_citable(claims: Sequence[dict[str, Any]],
                                   rows: Sequence[dict[str, Any]]) -> Result:
     """Stage 7's I11 — every claim in a phenotype-page LLM summary must cite
@@ -882,19 +900,15 @@ def _i11_phenotype_claims_citable(claims: Sequence[dict[str, Any]],
             return Result(
                 "I11", "phenotype summary claims are citable", "FAIL",
                 f"claim {i} carries no quote to verify against its cited rows")
-        cited_text = [
-            f"{by_id[rid].get('title') or ''} {by_id[rid].get('sentence') or ''} "
-            f"{by_id[rid].get('mp_label') or ''}"
-            for rid in row_ids
-        ]
+        cited_text = [_citable_text(by_id[rid]) for rid in row_ids]
         if not any(quote in text for text in cited_text):
             return Result(
                 "I11", "phenotype summary claims are citable", "FAIL",
                 f"claim {i}'s quote {quote!r} is not a substring of the "
-                f"title/sentence/mp_label of any row it cites ({row_ids}); the "
-                f"model paraphrased instead of quoting verbatim, which this "
-                f"check cannot tell apart from a fabricated claim, so both are "
-                f"refused the same way")
+                f"mp_label, or of any of its papers' title/sentence, of any row "
+                f"it cites ({row_ids}); the model paraphrased instead of "
+                f"quoting verbatim, which this check cannot tell apart from a "
+                f"fabricated claim, so both are refused the same way")
     return Result("I11", "phenotype summary claims are citable", "PASS",
                   f"{len(claims)} claim(s), every row_id exists among the "
                   f"{len(rows)} row(s) sent to the model, every quote is a "

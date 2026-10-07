@@ -53,11 +53,21 @@ class PhenotypeSummary(BaseModel):
 
 SYSTEM_PROMPT = """You summarise a table of mouse phenotype records for one human gene.
 
-You will be given a JSON array of rows. Each row has: row_id (an integer),
-mp_label (an MGI phenotype term), model (an MGI biological model id), pmid,
-title (a paper title, or null), sentence (one sentence from that paper's
-abstract naming the gene or its mouse ortholog, or the string "gene not named
-in abstract"), and level (one of: asserted, asserted-negative, none found).
+You will be given a JSON array of rows. Each row is one (phenotype, model)
+pair MGI curated, and has: row_id (an integer), mp_label (an MGI phenotype
+term), model_id (an MGI biological model id), level (one of: asserted,
+asserted-negative, none found), and papers (a list).
+
+Each entry in papers has pmid, title (a paper title, or null) and sentence
+(one sentence from that paper's abstract naming the gene or its mouse
+ortholog, or the string "gene not named in abstract").
+
+The papers on a row are that MODEL's literature. MGI curates which models show
+a phenotype and which papers describe each model as two SEPARATE things, and
+does not attribute a paper to a particular phenotype. So you must never write
+that a paper reported, showed, found or described a phenotype. You may write
+that a model is associated with a phenotype, and separately that a paper is
+among the literature for that model.
 
 Your ONLY source of information is this table. You have not been given, and
 must not reference, any differential-expression data, any run, region, or
@@ -67,17 +77,19 @@ Write a short set of claims, grouped by phenotype class where the rows allow
 it, one claim per sentence. Every claim MUST:
   - cite the row_ids (integers from the table) it is based on;
   - carry a "quote" field that is copied VERBATIM (exact substring, same
-    case) from the title, sentence, or mp_label of at least one row it cites.
+    case) from the mp_label of a row it cites, or from the title or sentence
+    of one of that row's papers.
 
 You must NOT:
+  - attribute a phenotype to a paper, or a paper to a phenotype;
   - propose a mechanism for how the gene causes any phenotype;
   - use direction-of-effect language ("increases", "decreases", "causes",
     "leads to") that the rows themselves do not use;
   - write "suggests", "implies", "indicates", or any similar hedge that turns
     an observation into an inference;
   - make any recommendation of any kind;
-  - claim anything not directly stated in a row's title, sentence, or
-    mp_label.
+  - claim anything not directly stated in a row's mp_label or in one of its
+    papers' title or sentence.
 
 If the rows support no citable claim at all, return an empty claims list.
 Summarise only what the rows say. Do not add outside knowledge."""

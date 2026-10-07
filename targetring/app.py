@@ -739,6 +739,16 @@ async def gene_phenotypes(run_id: str, gene: str) -> JSONResponse:
         "n_distinct_pmids": table.n_distinct_pmids,
         "n_articles_fetched": table.n_articles_fetched,
         "max_articles_cap": table.max_articles_cap,
+        # The honest counts, each naming what it counts. One row is one
+        # (phenotype, model) pair MGI curated -- not a (phenotype, model,
+        # paper) triple this app manufactured by crossing the model's
+        # literature into the phenotype. `counts_line` and `provenance_note`
+        # are built in `phenotype.py` so no surface can word them differently.
+        "n_rows": len(table.rows),
+        "n_distinct_phenotypes": table.n_distinct_phenotypes,
+        "n_distinct_models": table.n_distinct_models,
+        "counts_line": table.counts_line(),
+        "provenance_note": table.provenance_note(),
         "summary_max_rows_cap": PHENOTYPE_SUMMARY_MAX_ROWS,
         "level_counts": table.level_counts,
         "rule6_asserted_label": phenotype_mod.RULE6_ASSERTED_LABEL,

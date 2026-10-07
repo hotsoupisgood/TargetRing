@@ -93,32 +93,118 @@ def build(rec=None):
         rec, gene_symbol="BRAF", ensembl_id=rec.ensembl_id, http=None, cache=None))
 
 
+def _paper(table, pmid: str) -> dict:
+    """One paper out of the nested `papers` lists. Papers belong to the MODEL,
+    so the same PMID can legitimately appear on several (phenotype, model)
+    rows; this returns the first and asserts they agree, because two different
+    renderings of one paper would be its own provenance defect."""
+    found = [p for r in table.rows for p in r["papers"] if p["pmid"] == pmid]
+    assert found, f"no paper {pmid!r} in the table"
+    assert all(p == found[0] for p in found)
+    return found[0]
+
+
 # ---------------------------------------------------------------------------
-# 7a: build_table_rows -- the raw flattening, missing models/PMIDs kept
+# 7a: build_table_rows -- one row per (phenotype, model), papers nested
 # ---------------------------------------------------------------------------
 
 class TestBuildTableRows:
-    def test_one_row_per_phenotype_model_pmid(self) -> None:
+    def test_one_row_per_phenotype_and_model_not_per_paper(self) -> None:
+        """MGI curates phenotype <- model and model -> papers as two separate
+        things. One row is the first; the papers hang off it as the second."""
         rows = phenotype_mod.build_table_rows(braf_record())
-        assert len(rows) == 4  # 2 pmids + 1 no-pmid model + 1 no-model phenotype
-        pmids = [r["pmid"] for r in rows]
-        assert pmids.count("111") == 1 and pmids.count("222") == 1
-        assert pmids.count(None) == 2
+        # 1 model on MP:0000074 + 1 model on MP:0002169 + 1 model-less
+        # phenotype = 3. The two PMIDs on MGI:1 do NOT multiply it to 4.
+        assert len(rows) == 3
+        heart = next(r for r in rows if r["mp_id"] == "MP:0000074")
+        assert heart["pmids"] == ["111", "222"]
 
     def test_a_phenotype_with_no_biological_models_is_kept_not_dropped(self) -> None:
         rows = phenotype_mod.build_table_rows(braf_record())
         craniofacial = [r for r in rows if r["mp_id"] == "MP:0000368"]
         assert len(craniofacial) == 1
         assert craniofacial[0]["model_id"] is None
+        assert craniofacial[0]["pmids"] == []
 
-    def test_a_model_with_no_literature_is_kept_with_pmid_none(self) -> None:
+    def test_a_model_with_no_literature_is_kept_with_an_empty_paper_list(self) -> None:
         rows = phenotype_mod.build_table_rows(braf_record())
         negative = [r for r in rows if r["mp_id"] == "MP:0002169"]
         assert len(negative) == 1
-        assert negative[0]["pmid"] is None
+        assert negative[0]["pmids"] == []
 
     def test_a_gene_with_no_mouse_phenotypes_produces_zero_rows(self) -> None:
         assert phenotype_mod.build_table_rows(braf_record(mouse_phenotypes=[])) == []
+
+    def test_no_row_carries_a_single_paper_as_its_own(self) -> None:
+        """The defect, stated as a property. A flat `pmid` on a (phenotype,
+        model) row IS the claim that this paper is about this phenotype."""
+        for r in phenotype_mod.build_table_rows(braf_record()):
+            assert "pmid" not in r
+            assert isinstance(r["pmids"], list)
+
+    def test_duplicate_pmids_within_one_model_are_counted_once(self) -> None:
+        rec = braf_record([{
+            "modelPhenotypeId": "MP:1", "modelPhenotypeLabel": "x",
+            "biologicalModels": [{"id": "MGI:9", "literature": ["7", "7", "8"]}],
+        }])
+        assert phenotype_mod.build_table_rows(rec)[0]["pmids"] == ["7", "8"]
+
+
+class TestTheJoinDoesNotManufactureEvidence:
+    """Panel finding G. `build_table_rows` crossed `mousePhenotypes x
+    biologicalModels x model["literature"]`, so a BRAF-shaped record produced
+    roughly 1,800 rows from about 20 real papers -- each carrying rule 6's
+    "abstract asserts target manipulation altered the phenotype (unverified)"
+    as though that paper had asserted that phenotype. A reader counting rows
+    concludes there are ~1,785 independent assertions.
+
+    Same defect class as rule 2's "join by identifier, never by index": a join
+    that invents a relationship the source never stated.
+    """
+
+    @staticmethod
+    def _wide_record(n_pheno: int = 90, n_models: int = 4, n_pmids: int = 5):
+        pmids = [f"1000{i}" for i in range(n_pmids)]
+        models = [{"id": f"MGI:{i}", "allelicComposition": f"ac{i}",
+                   "geneticBackground": "B6", "literature": pmids}
+                  for i in range(n_models)]
+        return braf_record([
+            {"modelPhenotypeId": f"MP:{i:07d}",
+             "modelPhenotypeLabel": f"phenotype {i}",
+             "targetInModel": "Braf", "biologicalModels": models}
+            for i in range(n_pheno)])
+
+    def test_rows_are_not_the_cartesian_product(self) -> None:
+        rows = phenotype_mod.build_table_rows(self._wide_record())
+        assert len(rows) == 90 * 4, "one row per (phenotype, model)"
+        assert len(rows) != 90 * 4 * 5, "the old join's row count"
+
+    def test_the_paper_count_is_the_number_of_real_papers(self) -> None:
+        rows = phenotype_mod.build_table_rows(self._wide_record())
+        assert len({p for r in rows for p in r["pmids"]}) == 5
+
+    def test_the_counts_line_names_what_each_number_counts(self) -> None:
+        table = build(self._wide_record(n_pheno=3, n_models=2, n_pmids=2))
+        line = table.counts_line()
+        assert "6 (phenotype, model) pair(s)" in line
+        assert "3 distinct phenotype(s)" in line
+        assert "2 distinct model(s)" in line
+        assert "2 distinct paper(s)" in line
+        # The thing it must never offer: one bare number that reads as a count
+        # of independent assertions.
+        assert "row(s)" not in line
+
+    def test_every_row_says_whose_literature_its_papers_are(self) -> None:
+        for r in build().rows:
+            assert "MODEL" in r["papers_note"]
+            assert ("does not attribute a paper to a particular phenotype"
+                    in r["papers_note"])
+
+    def test_the_provenance_note_states_the_two_separate_curations(self) -> None:
+        note = build().provenance_note()
+        assert "two things separately" in note
+        assert "(phenotype, model) pair" in note
+        assert "MGI does not attribute a paper to a particular phenotype" in note
 
 
 class TestFirstSentenceNaming:
@@ -176,27 +262,36 @@ class TestBuildTable:
         assert table.rows == []
 
     def test_fetched_abstract_produces_a_sentence(self) -> None:
-        table = build()
-        row = next(r for r in table.rows if r["pmid"] == "111")
-        assert row["abstract_status"] == "fetched"
-        assert "heart looping" in row["sentence"]
+        paper = _paper(build(), "111")
+        assert paper["abstract_status"] == "fetched"
+        assert "heart looping" in paper["sentence"]
 
     def test_pmid_with_no_abstract_text_is_unavailable_not_dropped(self) -> None:
-        table = build()
-        row = next(r for r in table.rows if r["pmid"] == "222")
-        assert row["abstract_status"] == "abstract unavailable"
-        assert row["title"] == "A follow-up study"  # title kept even with no abstract
+        paper = _paper(build(), "222")
+        assert paper["abstract_status"] == "abstract unavailable"
+        assert paper["title"] == "A follow-up study"  # kept even with no abstract
 
     def test_row_with_no_pmid_is_marked_no_pmid_on_record(self) -> None:
         table = build()
         row = next(r for r in table.rows if r["mp_id"] == "MP:0002169")
+        assert row["papers"] == []
         assert row["abstract_status"] == "no PMID on record"
+
+    def test_both_of_a_models_papers_stay_on_its_one_row(self) -> None:
+        """The two PMIDs on MGI:1 are that model's literature. They belong on
+        the model's row together, not as two rows that each imply a separate
+        phenotype assertion."""
+        table = build()
+        row = next(r for r in table.rows if r["mp_id"] == "MP:0000074")
+        assert [p["pmid"] for p in row["papers"]] == ["111", "222"]
+        assert row["n_papers"] == 2
 
     def test_articles_beyond_the_cap_are_not_fetched_and_say_so(self, monkeypatch) -> None:
         monkeypatch.setattr(config, "PHENOTYPE_MAX_ARTICLES", 1)
         table = build()
-        capped = [r for r in table.rows if "beyond the 1-article cap" in (r["abstract_status"] or "")]
-        assert capped, "expected at least one row past the lowered cap"
+        capped = [p for r in table.rows for p in r["papers"]
+                  if "beyond the 1-article cap" in (p["abstract_status"] or "")]
+        assert capped, "expected at least one paper past the lowered cap"
 
     def test_mouse_symbol_is_read_from_targetInModel(self) -> None:
         assert build().mouse_symbol == "Braf"
@@ -222,10 +317,18 @@ class TestSummaryRows:
 
     def test_only_the_named_fields_travel(self) -> None:
         rows = phenotype_mod.summary_rows(build())
-        assert set(rows[0]) == {"row_id", "mp_label", "model_id", "pmid", "title",
-                                "sentence", "level"}
+        assert set(rows[0]) == {"row_id", "mp_label", "model_id", "papers",
+                                "level"}
         assert "allelic_composition" not in rows[0]
         assert "genetic_background" not in rows[0]
+
+    def test_the_model_sees_papers_as_a_list_not_one_per_row(self) -> None:
+        """Rule 10 aside, this is what stops the model from writing "paper X
+        showed phenotype Y": it never receives a row that pairs exactly one
+        paper with exactly one phenotype."""
+        rows = phenotype_mod.summary_rows(build())
+        assert all(isinstance(r["papers"], list) for r in rows)
+        assert all("pmid" not in r for r in rows)
 
 
 # ---------------------------------------------------------------------------
@@ -238,8 +341,12 @@ def ledger(tmp_path):
 
 
 def _valid_claims(table) -> list[dict]:
+    """A quote may come from a row's `mp_label` or from any of its PAPERS'
+    title/sentence -- the papers are nested now, so I11 looks inside them."""
     rows = phenotype_mod.summary_rows(table)
-    row = next(r for r in rows if r.get("sentence") and "heart looping" in (r["sentence"] or ""))
+    row = next(r for r in rows
+               if any("heart looping" in (p.get("sentence") or "")
+                      for p in r.get("papers") or []))
     return [{"text": "Braf mutants show cardiac defects.", "row_ids": [row["row_id"]],
              "quote": "heart looping"}]
 

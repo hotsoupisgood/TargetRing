@@ -2,13 +2,21 @@
 in the disease->contrast->heatmap flow.
 
 **7a, the table: structured sources only, no LLM, no cost.** Rows come from
-Open Targets `mousePhenotypes` x `biologicalModels` x `literature` — one row
-per (phenotype, model, PMID) — plus, for each distinct PMID up to
-`config.PHENOTYPE_MAX_ARTICLES`, one Europe PMC article fetch. Every row
-carries a rule-6 level (`asserted` / `asserted-negative`) with its verbatim
-label, and a sentence: the first abstract sentence naming the gene or its
-mouse symbol, or "gene not named in abstract" when none does. A gene with no
-mousePhenotypes rows at all is `none found` and the page stops — no LLM call.
+Open Targets `mousePhenotypes` x `biologicalModels` — **one row per
+(phenotype, model)**, which is the pair MGI actually curates — and each row
+carries that MODEL's `literature` as a nested `papers` list, plus, for each
+distinct PMID up to `config.PHENOTYPE_MAX_ARTICLES`, one Europe PMC article
+fetch. Every row carries a rule-6 level (`asserted` / `asserted-negative`)
+with its verbatim label, and every paper carries a sentence: the first
+abstract sentence naming the gene or its mouse symbol, or "gene not named in
+abstract" when none does. A gene with no mousePhenotypes rows at all is
+`none found` and the page stops — no LLM call.
+
+It used to cross `literature` INTO the row, one row per (phenotype, model,
+PMID). The PMID list belongs to the model, so every such row asserted a
+paper-to-phenotype link that is nowhere in the data, and carried rule 6's
+sentence as though that paper had asserted that phenotype — about 1,800 rows
+from roughly 20 real papers on a gene like BRAF. See `build_table_rows`.
 
 **7b, the summary: the one paid call.** `llm.PhenotypeLLMClient.complete()` on
 `summary_rows()` — the first `config.PHENOTYPE_SUMMARY_MAX_ROWS` table rows
@@ -100,16 +108,66 @@ class PhenotypeTable:
             out[r["level"]] = out.get(r["level"], 0) + 1
         return out
 
+    @property
+    def n_distinct_phenotypes(self) -> int:
+        return len({r["mp_id"] for r in self.rows})
+
+    @property
+    def n_distinct_models(self) -> int:
+        return len({r["model_id"] for r in self.rows if r["model_id"]})
+
+    def counts_line(self) -> str:
+        """The honest count, built here so no surface can state a different
+        one. The header this replaces read "1800 row(s) (1785 asserted, 15
+        asserted-negative) · 20 distinct PMID(s)" over a cartesian product,
+        which invites exactly the reading "1,785 independent assertions".
+
+        Each number is now named by what it counts, and the three are stated
+        as the distinct things they are rather than multiplied together.
+        """
+        return (f"{len(self.rows)} (phenotype, model) pair(s) · "
+                f"{self.n_distinct_phenotypes} distinct phenotype(s) · "
+                f"{self.n_distinct_models} distinct model(s) · "
+                f"{self.n_distinct_pmids} distinct paper(s), "
+                f"{self.n_articles_fetched} fetched")
+
+    def provenance_note(self) -> str:
+        return PROVENANCE_NOTE
+
 
 def build_table_rows(rec: OTRecord) -> list[dict[str, Any]]:
-    """The raw (phenotype, model, PMID) expansion, before any article fetch.
+    """One row per **(phenotype, model)** — the pair MGI actually curates.
 
-    Missing models or missing PMIDs on a row are kept, not dropped (AGENTS.md
-    rule 1's spirit applied one level down from "gene"): a phenotype MGI
-    curates with no biologicalModels record, or a model with no literature PMID
-    on it, is a real and different fact from that phenotype not existing at
-    all, and collapsing the two would read as fewer papers than MGI actually
-    cites.
+    **The join this replaces, and why it manufactured evidence.** This used to
+    expand `mousePhenotypes x biologicalModels x model["literature"]`, one row
+    per *(phenotype, model, PMID)*. The PMID list belongs to the **model**, not
+    to the phenotype, so every such row asserted a paper-to-phenotype link that
+    is nowhere in the data — and each one carried rule 6's sentence ("abstract
+    asserts target manipulation altered the phenotype (unverified)") as though
+    that specific paper had asserted that specific phenotype.
+
+    The arithmetic is unforgiving. Open Targets' BRAF record curates roughly 90
+    phenotypes against a handful of models that share about 20 papers between
+    them; the triple product is ~1,800 rows. A reader counting them concludes
+    there are ~1,785 independent assertions. There are at most 20 papers, and
+    MGI attributes none of them to a specific phenotype. Reproduced on a
+    record of that shape (90 phenotypes x 4 models x 5 PMIDs): 1,800 rows, 5
+    distinct papers.
+
+    MGI curates two separate things — phenotype <- model, and model -> papers.
+    This function now emits exactly the first, and hangs the second off it as
+    the **model's** literature. Nothing is lost: every PMID is still on the
+    row, still fetched, still shown. What is gone is the claim that any one of
+    them is about this phenotype.
+
+    That is the same defect class as rule 2's "join by identifier, never by
+    index": a join that invents a relationship the source never stated.
+
+    Missing models and empty literature lists are still kept, not dropped
+    (rule 1's spirit one level down from "gene"): a phenotype MGI curates with
+    no `biologicalModels` record, and a model with no literature on it, are
+    real and different facts from the phenotype not existing, and collapsing
+    them would read as fewer papers than MGI actually cites.
     """
     rows: list[dict[str, Any]] = []
     for mp in rec.mouse_phenotypes:
@@ -119,19 +177,30 @@ def build_table_rows(rec: OTRecord) -> list[dict[str, Any]]:
         if not models:
             rows.append({"mp_id": mp_id, "mp_label": mp_label, "model_id": None,
                         "allelic_composition": None, "genetic_background": None,
-                        "pmid": None})
+                        "pmids": []})
             continue
         for m in models:
-            lits = m.get("literature") or []
-            base = {"mp_id": mp_id, "mp_label": mp_label, "model_id": m.get("id"),
-                    "allelic_composition": m.get("allelicComposition"),
-                    "genetic_background": m.get("geneticBackground")}
-            if not lits:
-                rows.append({**base, "pmid": None})
-                continue
-            for pmid in lits:
-                rows.append({**base, "pmid": str(pmid)})
+            rows.append({
+                "mp_id": mp_id, "mp_label": mp_label, "model_id": m.get("id"),
+                "allelic_composition": m.get("allelicComposition"),
+                "genetic_background": m.get("geneticBackground"),
+                # Deduplicated, order preserved. A PMID repeated inside one
+                # model's literature list is one paper, and counting it twice
+                # is the same overstatement in miniature.
+                "pmids": list(dict.fromkeys(str(p) for p in
+                                            (m.get("literature") or []))),
+            })
     return rows
+
+
+#: What the table may claim, printed above it. The counts line is built from
+#: the table's own fields so it cannot drift from the rows (`PhenotypeTable`).
+PROVENANCE_NOTE = (
+    "MGI curates two things separately: which biological models show a "
+    "phenotype, and which papers describe each model. One row here is one "
+    "(phenotype, model) pair MGI curated. The papers on a row are that "
+    "MODEL's literature — MGI does not attribute a paper to a particular "
+    "phenotype, and neither does this table.")
 
 
 async def build_table(rec: OTRecord, *, gene_symbol: str, ensembl_id: str,
@@ -144,7 +213,8 @@ async def build_table(rec: OTRecord, *, gene_symbol: str, ensembl_id: str,
         (mp.get("targetInModel") for mp in rec.mouse_phenotypes if mp.get("targetInModel")),
         None)
 
-    distinct_pmids = list(dict.fromkeys(r["pmid"] for r in base_rows if r["pmid"]))
+    distinct_pmids = list(dict.fromkeys(
+        p for r in base_rows for p in r["pmids"]))
     to_fetch = distinct_pmids[:config.PHENOTYPE_MAX_ARTICLES]
     adapter = EuropePMCAdapter(http, cache)
     articles: dict[str, ArticleRecord] = {}
@@ -153,34 +223,48 @@ async def build_table(rec: OTRecord, *, gene_symbol: str, ensembl_id: str,
         results = await asyncio.gather(*(adapter.fetch_article(p) for p in to_fetch))
         articles = {a.pmid: a for a in results}
 
+    def _paper(pmid: str) -> dict[str, Any]:
+        art = articles.get(pmid)
+        if art is None:
+            return {"pmid": pmid, "title": None, "year": None, "journal": None,
+                    "abstract_status": (f"not fetched (beyond the "
+                                        f"{config.PHENOTYPE_MAX_ARTICLES}-article cap)"),
+                    "sentence": None}
+        if art.error:
+            return {"pmid": pmid, "title": art.title, "year": art.year,
+                    "journal": art.journal,
+                    "abstract_status": f"abstract unavailable ({art.error[:120]})",
+                    "sentence": None}
+        if not art.abstract_available:
+            return {"pmid": pmid, "title": art.title, "year": art.year,
+                    "journal": art.journal,
+                    "abstract_status": "abstract unavailable",
+                    "sentence": first_sentence_naming(None)}
+        return {"pmid": pmid, "title": art.title, "year": art.year,
+                "journal": art.journal, "abstract_status": "fetched",
+                "sentence": first_sentence_naming(art.abstract_text,
+                                                  gene_symbol, mouse_symbol)}
+
     rows: list[dict[str, Any]] = []
     for i, r in enumerate(base_rows, start=1):
         level = LEVEL_ASSERTED_NEGATIVE if _is_negative_label(r["mp_label"]) else LEVEL_ASSERTED
-        art = articles.get(r["pmid"]) if r["pmid"] else None
-        if r["pmid"] is None:
-            abstract_status = "no PMID on record"
-            title = year = journal = sentence = None
-        elif art is None:
-            abstract_status = f"not fetched (beyond the {config.PHENOTYPE_MAX_ARTICLES}-article cap)"
-            title = year = journal = sentence = None
-        elif art.error:
-            abstract_status = f"abstract unavailable ({art.error[:120]})"
-            title, year, journal, sentence = art.title, art.year, art.journal, None
-        elif not art.abstract_available:
-            abstract_status = "abstract unavailable"
-            title, year, journal = art.title, art.year, art.journal
-            sentence = first_sentence_naming(None)
-        else:
-            abstract_status = "fetched"
-            title, year, journal = art.title, art.year, art.journal
-            sentence = first_sentence_naming(art.abstract_text, gene_symbol, mouse_symbol)
+        papers = [_paper(p) for p in r["pmids"]]
         rows.append({
             "row_id": i, "mp_id": r["mp_id"], "mp_label": r["mp_label"],
-            "model_id": r["model_id"], "allelic_composition": r["allelic_composition"],
-            "genetic_background": r["genetic_background"], "pmid": r["pmid"],
+            "model_id": r["model_id"],
+            "allelic_composition": r["allelic_composition"],
+            "genetic_background": r["genetic_background"],
             "level": level, "level_label": _LEVEL_LABEL[level],
-            "title": title, "year": year, "journal": journal,
-            "abstract_status": abstract_status, "sentence": sentence,
+            # The model's literature, labelled as such. There is deliberately
+            # no per-row `pmid`/`title`/`sentence` any more: a single paper
+            # hoisted onto a (phenotype, model) row is the very claim this
+            # join stopped making.
+            "papers": papers,
+            "n_papers": len(papers),
+            "papers_note": ("papers curated for this MODEL; MGI does not "
+                            "attribute a paper to a particular phenotype"),
+            "abstract_status": ("no PMID on record" if not papers
+                                else f"{len(papers)} paper(s) on this model"),
         })
 
     return PhenotypeTable(
@@ -204,7 +288,7 @@ def summary_rows(table: PhenotypeTable) -> list[dict[str, Any]]:
     sent, and correctly fails "row_id does not exist" rather than being judged
     against the full table it never saw.
     """
-    fields = ("row_id", "mp_label", "model_id", "pmid", "title", "sentence", "level")
+    fields = ("row_id", "mp_label", "model_id", "papers", "level")
     cut = table.rows[:config.PHENOTYPE_SUMMARY_MAX_ROWS]
     return [{k: r.get(k) for k in fields} for r in cut]
 
@@ -340,7 +424,7 @@ def summarize(table: PhenotypeTable, *, client: llm_mod.PhenotypeLLMClient,
 
 __all__ = [
     "LEVEL_ASSERTED", "LEVEL_ASSERTED_NEGATIVE", "LEVEL_NONE_FOUND",
-    "PhenotypeTable", "RULE6_ASSERTED_LABEL", "SummaryOutcome",
-    "build_table", "build_table_rows", "first_sentence_naming", "summarize",
-    "summary_rows",
+    "PROVENANCE_NOTE", "PhenotypeTable", "RULE6_ASSERTED_LABEL",
+    "SummaryOutcome", "build_table", "build_table_rows",
+    "first_sentence_naming", "summarize", "summary_rows",
 ]
