@@ -936,6 +936,30 @@ async def run_values(run_id: str, sort: str = "", dim: str = "") -> JSONResponse
     return JSONResponse(body)
 
 
+@app.get("/api/run/{run_id}/evidence")
+async def run_evidence(run_id: str) -> JSONResponse:
+    """One run as evidence per target — the go/no-go surface.
+
+    Registered above `/{filename}` for the same reason `values` is: that route
+    is a catch-all and `evidence` is a different path segment.
+
+    It takes no `sort` and no `dim`. That is not an omission — `view.
+    evidence_payload` explains it: the order is the one the run drew its spokes
+    in, and letting a caller reorder this surface by anything would make it a
+    ranking, which AGENTS.md rule 7 forbids and which this surface exists to not
+    be. The Table tab is where a reader changes the order, under a name.
+
+    No `ValueError` arm here, therefore: with no sort and no dim there is no
+    ordering to refuse and no threshold to reject, so `TableUnavailable` is the
+    only refusal this route can produce.
+    """
+    try:
+        body = view_mod.evidence_payload(run_id, in_memory=run_id in _runs)
+    except table_mod.TableUnavailable as e:
+        return JSONResponse({"error": "table_unavailable", "message": str(e)},
+                            status_code=404)
+    return JSONResponse(body)
+
 
 @app.get("/api/run/{run_id}/{filename}")
 async def artefact(run_id: str, filename: str) -> FileResponse:

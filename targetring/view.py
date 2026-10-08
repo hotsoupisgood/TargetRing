@@ -33,6 +33,7 @@ from typing import Any
 
 from . import citations as citations_mod
 from . import dim as dim_mod
+from . import evidence as evidence_mod
 from . import table as table_mod
 from . import sources as SOURCES
 from .figure import RING_SPECS, STATE_STYLE, ring_specs_for
@@ -248,5 +249,113 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
     }
 
 
-__all__ = ["table_payload", "dimmable_rings", "app_artefact_links",
-           "DRAWER_AVAILABLE_NOTE", "DRAWER_ON_DISK_NOTE"]
+#: What the evidence surface says it is, on the surface itself rather than only
+#: in this docstring. Authored here for `view.py`'s standing reason: a claim
+#: about what an artefact does not do is a claim, and the page draws claims
+#: rather than writing them.
+EVIDENCE_NOTE = (
+    "Evidence per target, in the order this run drew its spokes. This surface "
+    "does not rank, score or recommend: it states what each source found, what "
+    "it did not, and where two sources disagree. The go/no-go call is yours.")
+
+#: The sentence that stops an empty findings list reading as a clean bill of
+#: health. It is the whole reason `unevaluable` is a separate outcome.
+EVIDENCE_EMPTY_NOTE = (
+    "No finding is not the same as no problem: a rule whose rings have no "
+    "measurement is reported as unevaluable, never as clear.")
+
+
+def evidence_payload(run_id: str, *, in_memory: bool = False,
+                     record_url: str = "",
+                     drawer_note: str = "",
+                     artefact_links: list[dict[str, str]] | None = None,
+                     ) -> dict[str, Any]:
+    """One run as evidence per target — the go/no-go surface, with no verdict.
+
+    Built **on top of** `table_payload` rather than beside it, and that is the
+    load-bearing decision: `table_payload`'s docstring above says two builders
+    of one grid is how the app and the file Puck carries come to disagree about
+    a number, and a third builder would be the same defect again. So the cells,
+    the states, the rings, the citations, the counts and the ledger are all the
+    same pivot of `values.csv` the Table tab and the export already draw, and
+    this function only adds the per-gene readings in `evidence.py`.
+
+    Called with no `sort` and no `dim` on purpose. The order is the one the run
+    drew its spokes in, which is decided, stated on the figure and checked in
+    the artefact (AGENTS.md rule 7); re-ordering genes here by how much evidence
+    they have would be a ranking, which is the one thing this surface must not
+    be. A reader who wants another order has the Table tab, where the ordering
+    is `order.py`'s and is named on screen.
+
+    Raises exactly what `table_payload` raises, for the same reasons.
+    """
+    base = table_payload(run_id, "", "", in_memory=in_memory,
+                         record_url=record_url, drawer_note=drawer_note,
+                         artefact_links=artefact_links)
+    t = table_mod.load(run_id)
+    cells_by_ring = t.cells_by_ring()
+    ring_keys = [r["key"] for r in t.rings]
+    # `completeness` is excluded from the gap list for the reason its own
+    # RingSpec gives: it is a derived gauge over the other rings, so counting it
+    # as a gap would be counting the gaps twice.
+    gap_keys = [k for k in ring_keys if k != "completeness"]
+
+    # Per gene, keyed by gene, in `base["order"]`'s order. Rebuilt per gene from
+    # the ring-major pivot because `evidence.py` reads a gene's row.
+    findings: dict[str, list[dict[str, Any]]] = {}
+    gaps: dict[str, dict[str, list[str]]] = {}
+    for g in base["order"]:
+        row = {k: cells_by_ring[k][g] for k in ring_keys if g in cells_by_ring[k]}
+        findings[g] = evidence_mod.evaluate_gene(row)
+        gaps[g] = evidence_mod.gaps_for_gene(row, gap_keys)
+
+    return {
+        **base,
+        "evidence_note": EVIDENCE_NOTE,
+        "evidence_empty_note": EVIDENCE_EMPTY_NOTE,
+        "findings": findings,
+        "gaps": gaps,
+        # The rule catalogue, so the surface can list what it checked even for a
+        # gene where every rule was unevaluable. Without this a reader cannot
+        # tell "six rules, all unevaluable" from "nothing was checked".
+        "rules": [{"key": r.key, "kind": r.kind, "rings": list(r.rings),
+                   "why": r.why} for r in evidence_mod.RULES],
+        # Column labels for the ring keys the findings name, so the UI never has
+        # to build a second name for a ring (v3.7 item 4's defect).
+        "ring_labels": {r["key"]: r["column_label"] for r in base["rings"]},
+        # Run-level descriptive counts. Per-RUN, never per-gene: a per-gene
+        # count of findings, sorted, is a composite score under another name
+        # (the reasoning `table_payload` gives for having no per-gene count of
+        # dim filters matched).
+        "finding_counts": _finding_counts(findings),
+    }
+
+
+def _finding_counts(findings: dict[str, list[dict[str, Any]]]) -> dict[str, int]:
+    """How many genes have at least one firing contradiction, at least one
+    firing flag, and at least one unevaluable rule.
+
+    Three independent counts of genes, not a total of findings: a target with
+    two contradictions is not twice a target with one, and a sum would invite
+    exactly that reading.
+    """
+    def any_of(entries: list[dict[str, Any]], kind: str) -> bool:
+        return any(e["outcome"] == evidence_mod.FIRES and e["kind"] == kind
+                   for e in entries)
+
+    return {
+        "genes": len(findings),
+        "with_contradiction": sum(
+            1 for e in findings.values()
+            if any_of(e, evidence_mod.CONTRADICTION)),
+        "with_flag": sum(1 for e in findings.values()
+                         if any_of(e, evidence_mod.FLAG)),
+        "with_unevaluable": sum(
+            1 for e in findings.values()
+            if any(x["outcome"] == evidence_mod.UNEVALUABLE for x in e)),
+    }
+
+
+__all__ = ["table_payload", "evidence_payload", "dimmable_rings",
+           "app_artefact_links", "DRAWER_AVAILABLE_NOTE",
+           "DRAWER_ON_DISK_NOTE", "EVIDENCE_NOTE", "EVIDENCE_EMPTY_NOTE"]
