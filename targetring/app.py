@@ -99,6 +99,39 @@ async def headerwashcss() -> FileResponse:
                         headers=_NO_STORE)
 
 
+def _wash(name: str) -> FileResponse:
+    """One of the two masthead washes, by exact filename.
+
+    Two explicit routes rather than one `{variant}` route, for the reason every
+    other static route here is explicit: a path segment interpolated into
+    `STATIC / ...` is how a file server starts serving more than two files, and
+    a literal name cannot be traversed. (It is also the only shape that works —
+    a path parameter does not match the empty string, so `/header-wash.png`
+    404ed while `/header-wash-dark.png` served.)
+
+    `header-wash.css` mounts these with a RELATIVE url(), so it resolves against
+    the stylesheet's own URL and both sit at the root here.
+    """
+    path = STATIC / name
+    if not path.exists():
+        # The accent is optional by design: `header-wash.css` sets only
+        # `background-image`, so a missing file degrades the header to plain
+        # tinted paper. A 404 and not a 500 — a missing accent is not an error.
+        raise HTTPException(404, "the wash has not been generated; run "
+                                 "scripts/make_header_wash.py")
+    return FileResponse(path, media_type="image/png", headers=_NO_STORE)
+
+
+@app.get("/header-wash.png")
+async def headerwashpng() -> FileResponse:
+    return _wash("header-wash.png")
+
+
+@app.get("/header-wash-dark.png")
+async def headerwashdarkpng() -> FileResponse:
+    return _wash("header-wash-dark.png")
+
+
 @app.get("/api/regions")
 async def regions() -> dict[str, Any]:
     global _regions_cache
