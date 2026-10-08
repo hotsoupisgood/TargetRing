@@ -426,7 +426,18 @@ class TestTheConstraintsThisWorkWasGiven:
             self, client) -> None:
         html = (STATIC / "index.html").read_text()
         tabs = re.findall(r'class="tab[^"]*" data-tab="([a-z]+)"', html)
-        assert tabs == ["figure", "table", "ledger", "invariants", "caveats"]
+        # An exact list, deliberately: this is a tripwire for a tab arriving
+        # without a decision behind it, so it is updated by hand when one is
+        # commissioned and never relaxed into a subset check.
+        #
+        # `evidence` was added 2026-10-07 at Puck's request — the go/no-go
+        # surface, `evidence.py`. It is not what this constraint was about:
+        # v3.7 was told not to answer the source-link defect by adding a
+        # Sources tab or a thirteenth column, and the evidence tab is neither.
+        # It adds no column to the grid, and both assertions below still hold
+        # unchanged.
+        assert tabs == ["figure", "table", "evidence", "ledger", "invariants",
+                        "caveats"]
         assert "sources" not in tabs
         run_id = _loadable()[-1]
         d = client.get(f"/api/run/{run_id}/values").json()
