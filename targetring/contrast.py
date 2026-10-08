@@ -233,6 +233,49 @@ class ContrastRef:
             f"shown is biased towards the genes where that estimate is weakest.")
 
     @property
+    def small_n_headline(self) -> str:
+        """The same fact as `small_n_caveat`, in one line, for the circos.
+
+        The caveat above is 500-700 characters: that is right for the heatmap,
+        where it is a banner on a figure with room for it, and wrong for the
+        circos, whose amber run-condition block draws six unwrapped lines at
+        7.5 pt and whose canvas assertions (`assert_text_within_canvas`,
+        `assert_no_text_over_the_rings`) are what stop a figure overprinting
+        its own data.
+
+        So this is a property and not a caller-built summary, for exactly the
+        reason `sign_sentence` is one: two surfaces describing one contrast's n
+        must not be able to word it differently, and must not be able to drift
+        apart when one of them is edited. Empty precisely when the caveat is
+        empty -- a reader who sees this absent on one artefact and the caveat
+        present on another would be looking at a bug.
+
+        It carries no score and ranks nothing (AGENTS.md rule 7): one stated
+        fact about the design of the experiment, with the threshold it was
+        judged against printed beside it.
+        """
+        if self.min_n >= SMALL_N:
+            return ""
+        return (f"SMALL n: {self.min_n} sample(s) on one side of this contrast "
+                f"(n={self.n_ref} vs {self.n_test}), fewer than {SMALL_N}")
+
+    @property
+    def small_n_affects(self) -> str:
+        """The consequence clause for the run-condition channel, which pairs
+        every condition with what it affects. Says the one thing a reader of
+        this figure most needs and is least likely to infer: the selection
+        rule is not neutral here, so a clean figure is not evidence."""
+        if self.min_n >= SMALL_N:
+            return ""
+        return ("dispersion is estimated from few replicates, so this "
+                "contrast's adjusted p-values and effect sizes are not "
+                "comparable with a well-powered contrast's, and the "
+                "top-by-adjusted-p selection these genes came from is biased "
+                "towards the genes where that estimate is weakest; the numbers "
+                "shown are Atlas's own and are reproduced faithfully, but a "
+                "clean figure here is not evidence of a strong signature")
+
+    @property
     def small_n_flag_key(self) -> str:
         """The picker's own key for this contrast's small-*n* level, so the
         figure, the manifest and the picker label the same contrast the same
@@ -245,6 +288,8 @@ class ContrastRef:
         return {**asdict(self), "sign_sentence": self.sign_sentence,
                 "is_rnaseq": self.is_rnaseq, "min_n": self.min_n,
                 "small_n_caveat": self.small_n_caveat,
+                "small_n_headline": self.small_n_headline,
+                "small_n_affects": self.small_n_affects,
                 "small_n_flag_key": self.small_n_flag_key}
 
 

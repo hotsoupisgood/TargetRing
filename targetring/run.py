@@ -511,6 +511,28 @@ async def run_analysis(
     # UX A1. These render amber and below the rings, never as the red
     # DO-NOT-TRUST banner. See `figure._draw_conditions`.
     conditions: list[tuple[str, str]] = []
+    # Panel S1, the half of it that was still open. `heatmap.py`'s own
+    # docstring stated the scope -- "a mandatory string on the heatmap ... and
+    # it becomes a `run_condition` on the circos and in the manifest" -- and
+    # only the heatmap half was wired: `small_n_caveat` was referenced in
+    # `heatmap.py` and `invariants.py` and nowhere in this module, `figure.py`
+    # or `manifest.py`. So the heatmap of a 3-sample contrast carried an amber
+    # banner while the circos built from the same 3 samples rendered clean,
+    # and the circos is the headline output. A reader who went from the picker
+    # straight to "analyse" never saw it.
+    #
+    # FIRST in the list on purpose: `figure._draw_conditions` draws
+    # `conditions[:6]`, so a run that also lost Pharos and overspent on ChEMBL
+    # must not be able to push the one condition about the trustworthiness of
+    # every number on the figure off the bottom of the block.
+    #
+    # Amber and not the red banner, and `figure._draw_banner`'s own reasoning
+    # is why: nothing here failed a check. The numbers are Atlas's own and are
+    # correct -- what is wrong is the reading. Rendering a condition of the
+    # data identically to a violated invariant is how the red banner stops
+    # working the day it is real.
+    if contrast is not None and contrast.small_n_headline:
+        conditions.append((contrast.small_n_headline, contrast.small_n_affects))
     if unreachable:
         conditions.append((
             "the Europe PMC integrity probe did not answer",
