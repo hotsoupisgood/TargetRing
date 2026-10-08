@@ -1291,9 +1291,7 @@ td.cell-no-data, .grid td.no-data {
    section gets both modes right where a hex here would get one of them wrong.
 
    The hierarchy IS the honesty, by the same argument as the figure's reserved
-   fills. Three severities, each with a BORDER as well as a wash, because a wash
-   alone is the one channel that survives neither greyscale nor either common
-   colour-vision deficiency:
+   fills. Three severities, each with a BORDER as well as a wash:
 
      sources disagree  -> critical. Only this one says the figure's own numbers
                           may be wrong.
@@ -1302,7 +1300,21 @@ td.cell-no-data, .grid td.no-data {
                           This is the whole reason `evidence.py` has a third
                           outcome: a reader scanning for trouble must not have
                           to notice an ABSENCE of green. Quiet styling here would
-                          undo in CSS what that outcome exists to do. */
+                          undo in CSS what that outcome exists to do.
+
+   MEASURED, 2026-10-07, and it does not all hold — see
+   `docs/design/PALETTE-VALIDATION-2026-10-07.md`. Critical separates from both
+   of the others in colour (worst dE 13.8 light / 11.9 dark, across normal,
+   protan and deutan) and in greyscale (dLum 0.12-0.14), so the one severity
+   that matters most is carried by colour, by border and by lightness.
+
+   `serious` and `ink-4` do NOT separate that way: worst dE 8.0 (protan) and
+   dLum 0.017, which is the same grey on a greyscale print. So the border is
+   not what tells a flag from an unevaluable reading. What does, in every
+   condition including monochrome, is the PILL TEXT -- the literal words "flag"
+   and "cannot be checked". That is why every finding carries a worded pill and
+   not a bare coloured rule, and why no severity here is encoded by colour
+   alone. */
 
 .ev-meta { margin: var(--tr-s-3) 0; color: var(--tr-ink-3);
            font-size: var(--tr-t-small); }
