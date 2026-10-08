@@ -83,6 +83,22 @@ async def appcss() -> FileResponse:
                         headers=_NO_STORE)
 
 
+@app.get("/header-wash.css")
+async def headerwashcss() -> FileResponse:
+    """The masthead accent, served separately because it is the one stylesheet
+    allowed to name an image -- see `static/header-wash.css` for why, and
+    `test_export.py::test_the_stylesheet_is_inlined_and_imports_nothing` for
+    the check that forces the split.
+
+    Routes here are per-file and there is no `StaticFiles` mount, so a
+    `<link>` added to `index.html` without a route beside it is a 404 and the
+    accent is silently absent -- the stylesheet degrades to plain tinted paper
+    exactly as a missing PNG does, which is the failure mode that hides it.
+    """
+    return FileResponse(STATIC / "header-wash.css", media_type="text/css",
+                        headers=_NO_STORE)
+
+
 @app.get("/api/regions")
 async def regions() -> dict[str, Any]:
     global _regions_cache
