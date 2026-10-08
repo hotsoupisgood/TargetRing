@@ -163,6 +163,13 @@
            reading of the sources: it is a pivot of `values.csv`, the artefact
            invariant 1 already asserts is cell-for-cell what was drawn. -->
       <button class="tab" data-tab="table">Table</button>
+      <!-- The go/no-go surface. Named "Evidence" and not "Go / no-go" because it
+           does not produce one: rule 7 forbids ranking, scoring and eligibility,
+           and a verdict is that machinery renamed. It states what each source
+           found per target, what it did not, and where two of them disagree.
+           See `evidence.py` for the rules and why each one is a fact rather
+           than a judgement. -->
+      <button class="tab" data-tab="evidence">Evidence</button>
       <button class="tab" data-tab="ledger">Drop ledger</button>
       <button class="tab" data-tab="invariants">Invariants</button>
       <button class="tab" data-tab="caveats">What this is not</button>
@@ -354,6 +361,23 @@
            404s for all ~250 runs under `runs/`. -->
       <div id="table-sources"></div>
       <div id="table-ledger"></div>
+    </div>
+
+    <!-- The evidence pane carries its own run picker for the reason the Table
+         pane does: it reads artefacts, so it can open any of the runs under
+         `runs/` and not only the one in memory. `evidence-status` is where a
+         refusal is printed — an empty surface with no sentence reads as a
+         broken tab. -->
+    <div class="tabpane" id="pane-evidence" hidden>
+      <div class="row table-pick">
+        <label for="evidence-run">Run</label>
+        <input id="evidence-run" list="evidence-runs" spellcheck="false"
+               placeholder="20260928T044236Z-893dec" size="30">
+        <datalist id="evidence-runs"></datalist>
+        <button id="evidence-load" class="ghost">load</button>
+      </div>
+      <div id="evidence-status" class="hint"></div>
+      <div id="evidence"></div>
     </div>
 
     <div class="tabpane" id="pane-ledger" hidden><div id="ledger"></div></div>

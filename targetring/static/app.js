@@ -85,6 +85,13 @@ async function init() {
     ).join("");
     $("#table-run-note").textContent =
       `${(r.runs || []).length} recent run(s) on this machine.`;
+    // The evidence pane's picker offers the same runs from the same fetch —
+    // two lists built from two calls could disagree about what is on disk.
+    $("#evidence-runs").innerHTML = $("#table-runs").innerHTML;
+  });
+  $("#evidence-load").onclick = () => loadEvidence($("#evidence-run").value);
+  $("#evidence-run").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loadEvidence($("#evidence-run").value);
   });
   $("#table-load").onclick = () => { TABLE.sort = []; TABLE.dim = []; TABLE.dimDraft = null;
     loadTable(picker.value); };
@@ -109,6 +116,9 @@ async function init() {
        figure.svg</a>.</p>`;
     showTab("table");
     picker.value = wanted;
+    // The evidence pane's picker too, so switching to that tab opens the run
+    // the reader deep-linked rather than asking for one again.
+    $("#evidence-run").value = wanted;
     loadTable(wanted);
   }
 
@@ -705,6 +715,20 @@ function showTab(name) {
     if (RUN && TABLE.run_id !== RUN.run_id) loadTable(RUN.run_id);
     else if (!TABLE.run_id) loadTable("");
   }
+  // Same rule for the evidence surface, and for the same reason: it is the run
+  // the figure is, a reader who never opens the tab should not pay for it, and
+  // with no run either way the pane has to say what to do.
+  //
+  // The picker's own value is the fallback, and it is not optional: on the
+  // `?run=<id>` deep-link path there is no figure in memory, so `RUN` is null
+  // and the only thing that knows which run the reader asked for is the input.
+  // Without this the tab said "No run loaded" about a run the Table tab beside
+  // it was already showing.
+  if (name === "evidence") {
+    const wanted = (RUN && RUN.run_id) || $("#evidence-run").value || "";
+    if (wanted && EVIDENCE.run_id !== wanted) loadEvidence(wanted);
+    else if (!EVIDENCE.run_id) loadEvidence("");
+  }
 }
 
 // ---------- run ----------
@@ -1150,6 +1174,193 @@ function renderCaveats(b) {
      The default is your own table's order — it is your measurement, not a composite
      this app invented.</p>
      ${llmAccountsHtml(b.llm)}`;
+}
+
+// ---------- evidence (the go/no-go surface) ----------
+//
+// It reads `/api/run/{id}/evidence`, which is `view.evidence_payload` — the same
+// pivot of `values.csv` the Table tab draws, plus `evidence.py`'s per-gene
+// readings. Nothing here computes a finding: the rules, their outcomes and the
+// definition printed beside each one all arrive decided, for `view.py`'s standing
+// reason — the page draws claims, it does not write them.
+//
+// THE LAYOUT IS THE HONESTY. Three rules govern it:
+//
+// 1. Unevaluable is never drawn like clear, and sits ABOVE it. A reader scanning
+//    for red must not have to notice an absence of green. `evidence.py` makes
+//    missing inputs a third outcome; this is that outcome having somewhere to go.
+// 2. No card gets a green headline. A gene with one cleared rule and five
+//    unevaluable ones would read as a pass, which is rule 1's defect wearing a
+//    tick. Cleared rules collapse into a count behind a disclosure.
+// 3. No card shows a number of findings, and the cards are never reordered.
+//    `order` is the run's own spoke order (rule 7); sorting by findings here
+//    would be the ranking the whole surface exists to not be.
+
+const EVIDENCE = { run_id: "" };
+
+async function loadEvidence(runId) {
+  const id = (runId || "").trim();
+  if (!id) {
+    $("#evidence-status").textContent =
+      "No run loaded. Draw a figure, or type a run id above — every run under " +
+      "runs/ can be opened by id.";
+    return;
+  }
+  $("#evidence-status").className = "hint";
+  $("#evidence-status").textContent = `loading ${id}…`;
+  let res, d;
+  try {
+    res = await fetch(`/api/run/${encodeURIComponent(id)}/evidence`);
+    d = await res.json();
+  } catch (e) {
+    $("#evidence-status").className = "err";
+    $("#evidence-status").textContent = "Request failed: " + e;
+    return;
+  }
+  if (!res.ok) {
+    // Refused, not approximated, and the previous surface stays on screen rather
+    // than being replaced by an empty one that looks like "nothing to report".
+    $("#evidence-status").className = "err";
+    $("#evidence-status").textContent =
+      d.message || "the evidence surface could not be loaded";
+    return;
+  }
+  EVIDENCE.run_id = d.run_id;
+  $("#evidence-status").className = "hint";
+  $("#evidence-status").textContent = "";
+  $("#evidence-run").value = d.run_id;
+  renderEvidence(d);
+}
+
+//: The three non-value states, worded as what a reader should do about each —
+//: `failed` is the one a re-run fixes, and collapsing it into `no_data` would
+//: tell somebody to stop looking where the honest answer is "ask again".
+const GAP_WORDS = {
+  failed: ["the call broke", "bad"],
+  no_data: ["the source says nothing", "grey"],
+  not_applicable: ["does not apply to this gene", "grey"],
+};
+
+function evidenceFindingHtml(f, labels) {
+  const rings = (f.rings || []).map((r) =>
+    `<code>${esc(labels[r] || r)}</code>`).join(" + ");
+  // The definition that makes this a finding, behind a disclosure so the card
+  // stays scannable — but always present, never summarised by the page.
+  //
+  // The summary is worded off the OUTCOME, not off the kind: "why this is a
+  // disagreement" over a reading that could not be run claims a disagreement
+  // was found, which is the opposite of what `unevaluable` means.
+  const summary = f.outcome !== "fires" ? "what this check is"
+    : f.kind === "contradiction" ? "why this is a disagreement" : "why this is flagged";
+  const why = `<details class="ev-why"><summary>${summary}</summary>
+    <p class="reason">${esc(f.why)}</p>
+    <p class="hint">Reads ${rings}</p></details>`;
+
+  if (f.outcome === "fires") {
+    return `<li class="ev-fires ev-${esc(f.kind)}">
+      <span class="pill ${f.kind === "contradiction" ? "bad" : "warn"}">${
+        f.kind === "contradiction" ? "sources disagree" : "flag"}</span>
+      <span class="ev-headline">${esc(f.headline)}</span>${why}</li>`;
+  }
+  if (f.outcome === "unevaluable") {
+    const missing = (f.missing_rings || []).map((r) => {
+      const st = (f.missing_states || {})[r];
+      const nd = (f.not_drawn || []).includes(r);
+      const word = nd ? "this run did not draw it"
+        : (GAP_WORDS[st] ? GAP_WORDS[st][0] : esc(st));
+      return `<code>${esc(labels[r] || r)}</code> — ${esc(word)}`;
+    }).join("; ");
+    // The rule's NAME, muted and prefixed — not phrased as the headline a
+    // firing rule gets. "approved but not tclin" set like a finding reads as
+    // one, which is the one thing an unevaluable reading has not established.
+    return `<li class="ev-unevaluable">
+      <span class="pill grey">cannot be checked</span>
+      <span class="ev-rulename">check: ${esc(f.rule.replace(/_/g, " "))}</span>
+      <p class="reason">Needs a measurement for: ${missing}.</p>${why}</li>`;
+  }
+  return "";  // `clear` is counted, not listed — see rule 2 above.
+}
+
+function evidenceGeneHtml(g, d) {
+  const labels = d.ring_labels || {};
+  const findings = d.findings[g.gene] || [];
+  const gaps = d.gaps[g.gene] || {};
+  const fires = findings.filter((f) => f.outcome === "fires");
+  const unevaluable = findings.filter((f) => f.outcome === "unevaluable");
+  const clear = findings.filter((f) => f.outcome === "clear");
+
+  // Contradictions before flags before unevaluable. Within the firing group a
+  // source disagreement outranks a history, because only one of the two says
+  // the figure's own numbers may be wrong.
+  const ordered = [
+    ...fires.filter((f) => f.kind === "contradiction"),
+    ...fires.filter((f) => f.kind === "flag"),
+    ...unevaluable,
+  ];
+
+  const gapHtml = Object.entries(gaps)
+    .filter(([, keys]) => keys.length)
+    .map(([state, keys]) => `<li><span class="pill ${
+      GAP_WORDS[state] ? GAP_WORDS[state][1] : "grey"}">${esc(state)}</span>
+      ${esc(GAP_WORDS[state] ? GAP_WORDS[state][0] : "")} —
+      ${keys.map((k) => `<code>${esc(labels[k] || k)}</code>`).join(", ")}</li>`)
+    .join("");
+
+  // A <div>, NOT a <header>: `app.css`'s masthead rule is the bare element
+  // selector `header`, so a <header> here inherits min-height 128px, the
+  // masthead padding and its bottom rule — and would inherit the watercolour
+  // wash too, once `header-wash.css` has its PNG. It rendered as a 65 px void
+  // and a stray line above every card.
+  return `<article class="ev-card">
+    <div class="ev-head">
+      <h4>${esc(g.gene)}</h4>
+      ${g.ensembl_id ? `<code class="ev-ens">${esc(g.ensembl_id)}</code>` : ""}
+      <span class="ev-k">k = ${esc(g.k)} of ${esc(d.k_max)} external rings
+        measured</span>
+    </div>
+    ${gapHtml ? `<div class="ev-gaps"><h5>No measurement</h5>
+      <ul class="tight">${gapHtml}</ul></div>` : ""}
+    ${ordered.length ? `<ul class="ev-findings">${
+      ordered.map((f) => evidenceFindingHtml(f, labels)).join("")}</ul>`
+      : `<p class="hint">No rule fired and none was unevaluable.</p>`}
+    ${clear.length ? `<details class="ev-clear"><summary>${clear.length} reading${
+      clear.length === 1 ? "" : "s"} checked and did not hold</summary>
+      <ul class="tight">${clear.map((f) =>
+        `<li>${esc(f.rule.replace(/_/g, " "))}</li>`).join("")}</ul></details>`
+      : ""}
+  </article>`;
+}
+
+function renderEvidence(d) {
+  const fc = d.finding_counts || {};
+  // The run-level line. Counts of GENES, three of them, never a total of
+  // findings — a target with two disagreements is not twice one.
+  const counts = `<ul class="tight ev-counts">
+    <li><b>${esc(fc.genes)}</b> target(s) on this figure</li>
+    <li><b>${esc(fc.with_contradiction)}</b> where two sources disagree</li>
+    <li><b>${esc(fc.with_flag)}</b> carrying a flag</li>
+    <li><b>${esc(fc.with_unevaluable)}</b> with at least one reading that
+      cannot be checked</li></ul>`;
+
+  $("#evidence").innerHTML =
+    `<div class="note warn"><b>${esc(d.evidence_note)}</b></div>
+     <p class="hint">${esc(d.evidence_empty_note)}</p>
+     <div class="ev-meta">
+       <code>${esc(d.run_id)}</code> · ${esc(d.region || "")} ·
+       ${esc(d.timestamp_utc || "")}
+       <p class="hint">Order: ${esc(d.ordering_note || d.ordering || "")}
+       — the order this run drew its spokes in. This surface does not reorder
+       it.</p>
+     </div>
+     ${counts}
+     <h4>What was checked</h4>
+     <ul class="tight ev-rules">${(d.rules || []).map((r) =>
+       `<li><span class="pill ${r.kind === "contradiction" ? "bad" : "warn"}">${
+         esc(r.kind)}</span> ${esc(r.key.replace(/_/g, " "))}</li>`).join("")}</ul>
+     <div class="ev-cards">${d.order.map((name) => {
+       const g = d.genes.find((x) => x.gene === name);
+       return g ? evidenceGeneHtml(g, d) : "";
+     }).join("")}</div>`;
 }
 
 // Stage 0. Two paid features, two caps, two counters, and BOTH lines every time.

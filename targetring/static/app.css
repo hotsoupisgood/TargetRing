@@ -549,8 +549,16 @@ td.reason { color: var(--muted); }
 .note { background: #f4f6f8; border-left: 3px solid var(--line); padding: 8px 12px;
         font-size: 12.5px; color: var(--muted); margin: 8px 0; }
 .note.warn { border-left-color: var(--warn); color: var(--warn); background: #fdf8f1; }
-code { font: 12px ui-monospace, Menlo, monospace; background: #f2f3f5; padding: 1px 4px;
-       border-radius: 3px; }
+/* Tokens, not a literal, and the colour is set rather than inherited. This read
+   `background: #f2f3f5` with no `color`: in dark mode `--tr-ink` IS #f2f3f5, so
+   every inline code span in the app rendered as a white box with white text —
+   the ring names on the evidence cards, the gene ids in the drop ledger, the
+   accession in the citation strip. Light mode was unaffected, which is why it
+   survived: the dark block at the top of this file is derived against #15171b
+   rather than inverted, and a hard-coded hex opts out of it silently. */
+code { font: 12px ui-monospace, Menlo, monospace;
+       background: var(--tr-surface-sunk); color: var(--tr-ink-2);
+       padding: 1px 4px; border-radius: 3px; }
 ul.tight { margin: 4px 0; padding-left: 20px; }
 ul.tight li { margin: 2px 0; }
 
@@ -1274,4 +1282,102 @@ td.cell-no-data, .grid td.no-data {
   body { background: #fff; }
   header { background-image: none; }
   .scroll-x { max-height: none; overflow: visible; }
+}
+
+/* --- 11. The evidence surface (the go/no-go tab).
+   ------------------------------------------------
+   Tokens only, no literal colour: dark mode is derived against #15171b rather
+   than inverted (see the dark block at the top of this file), so a token-only
+   section gets both modes right where a hex here would get one of them wrong.
+
+   The hierarchy IS the honesty, by the same argument as the figure's reserved
+   fills. Three severities, each with a BORDER as well as a wash, because a wash
+   alone is the one channel that survives neither greyscale nor either common
+   colour-vision deficiency:
+
+     sources disagree  -> critical. Only this one says the figure's own numbers
+                          may be wrong.
+     flag              -> serious. A history or a stated caveat, not a defect.
+     cannot be checked -> a full-strength neutral rule, deliberately NOT faded.
+                          This is the whole reason `evidence.py` has a third
+                          outcome: a reader scanning for trouble must not have
+                          to notice an ABSENCE of green. Quiet styling here would
+                          undo in CSS what that outcome exists to do. */
+
+.ev-meta { margin: var(--tr-s-3) 0; color: var(--tr-ink-3);
+           font-size: var(--tr-t-small); }
+.ev-counts { margin: var(--tr-s-3) 0 var(--tr-s-5); }
+.ev-counts b { color: var(--tr-ink); font-variant-numeric: tabular-nums; }
+.ev-rules { margin-bottom: var(--tr-s-5); }
+
+.ev-cards { display: grid; gap: var(--tr-s-4); }
+
+.ev-card { border: 1px solid var(--tr-rule); border-radius: var(--tr-radius);
+           padding: var(--tr-s-4); background: var(--tr-surface); }
+
+/* The gene is the heading and `k` sits on the same line as a measured fact
+   rather than a badge: it orders nothing and selects nothing (its own
+   RingSpec), and a pill would make it look like a grade. */
+.ev-head { display: flex; align-items: baseline; gap: var(--tr-s-3);
+           flex-wrap: wrap; margin-bottom: var(--tr-s-3); }
+.ev-head h4 { margin: 0; font-size: var(--tr-t-h3); font-weight: 600;
+              letter-spacing: var(--tr-tracking-tight); }
+.ev-ens { color: var(--tr-ink-4); font-size: var(--tr-t-micro); }
+.ev-k { margin-left: auto; color: var(--tr-ink-3);
+        font-size: var(--tr-t-micro); font-variant-numeric: tabular-nums; }
+
+.ev-gaps { margin-bottom: var(--tr-s-3); }
+.ev-card h5 { margin: 0 0 var(--tr-s-2); font-size: var(--tr-t-h4);
+              text-transform: uppercase;
+              letter-spacing: var(--tr-tracking-caps);
+              color: var(--tr-ink-3); font-weight: 600; }
+
+.ev-findings { list-style: none; margin: 0; padding: 0;
+               display: grid; gap: var(--tr-s-2); }
+.ev-findings > li { border-left: 3px solid var(--tr-rule-strong);
+                    padding: var(--tr-s-2) var(--tr-s-3);
+                    border-radius: var(--tr-radius-sm);
+                    background: var(--tr-surface-sunk); }
+.ev-findings > li.ev-contradiction {
+  border-left-color: var(--tr-status-critical);
+  background: var(--tr-status-critical-wash); }
+.ev-findings > li.ev-flag {
+  border-left-color: var(--tr-status-serious);
+  background: var(--tr-status-serious-wash); }
+/* Unevaluable keeps the sunk surface and a full-strength rule. It is not an
+   error and must not be drawn as one; it is not a pass either. */
+.ev-findings > li.ev-unevaluable { border-left-color: var(--tr-ink-4); }
+
+.ev-headline { font-size: var(--tr-t-body); color: var(--tr-ink);
+               line-height: var(--tr-lh-snug); }
+.ev-fires .ev-headline { font-weight: 600; }
+
+/* The name of a check that could not be run. Muted and set apart from
+   `.ev-headline` on purpose: a rule name set like a finding reads as a finding,
+   and "approved but not tclin" is exactly the sentence an unevaluable reading
+   has NOT established. */
+.ev-rulename { font-size: var(--tr-t-micro); color: var(--tr-ink-3);
+               font-variant: small-caps; letter-spacing: 0.02em; }
+
+.ev-why { margin-top: var(--tr-s-2); font-size: var(--tr-t-micro); }
+.ev-why > summary { cursor: pointer; color: var(--tr-ink-3); }
+.ev-why > summary:hover { color: var(--tr-ink); }
+.ev-why .reason { margin: var(--tr-s-2) 0 0; color: var(--tr-ink-2);
+                  max-width: var(--tr-measure); }
+
+/* Cleared readings collapse. A green tick per card would let a gene with one
+   cleared rule and five unevaluable ones read as a pass — rule 1's defect
+   wearing a tick — so the count is the whole headline and it is not coloured. */
+.ev-clear { margin-top: var(--tr-s-3); font-size: var(--tr-t-micro); }
+.ev-clear > summary { cursor: pointer; color: var(--tr-ink-4); }
+.ev-clear > summary:hover { color: var(--tr-ink-2); }
+
+/* Two columns once there is room for two measures side by side. */
+@media (min-width: 72rem) {
+  .ev-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media print {
+  .ev-card { break-inside: avoid; }
+  .ev-why > summary, .ev-clear > summary { color: var(--tr-ink-2); }
 }

@@ -1,0 +1,29 @@
+{
+  "run_id": "20260928T044236Z-893dec",
+  "probes": {
+    "light": {
+      "tab_is_active": true,
+      "pane_visible": true,
+      "cards": 14,
+      "contradictions": 1,
+      "flags": 4,
+      "unevaluable": 18,
+      "counts_line": "14 target(s) on this figure 1 where two sources disagree 4 carrying a flag 10 with at least one reading that cannot be checked",
+      "note": "Evidence per target, in the order this run drew its spokes. This surface does not rank, score or recommend: it states what each source found, what it did not, and where two sources disagree. The go/no-go call is yours.",
+      "first_card": "PCSK9 ENSG00000169174 k = 8 of 9 external rings measured No measurement no_data the source says nothing \u2014 Chemical probe available flag safety flags and constraint sit on the amber arm (+0.11 of a possible +1.00)why this is flagged The ring's own label is 'NOT evidence of safety'. A positive value means flags were found; it does not quantify risk. The converse matters more and is why this is a fla",
+      "banned_in_headlines": []
+    },
+    "dark": {
+      "tab_is_active": true,
+      "pane_visible": true,
+      "cards": 14,
+      "contradictions": 1,
+      "flags": 4,
+      "unevaluable": 18,
+      "counts_line": "14 target(s) on this figure 1 where two sources disagree 4 carrying a flag 10 with at least one reading that cannot be checked",
+      "note": "Evidence per target, in the order this run drew its spokes. This surface does not rank, score or recommend: it states what each source found, what it did not, and where two sources disagree. The go/no-go call is yours.",
+      "first_card": "PCSK9 ENSG00000169174 k = 8 of 9 external rings measured No measurement no_data the source says nothing \u2014 Chemical probe available flag safety flags and constraint sit on the amber arm (+0.11 of a possible +1.00)why this is flagged The ring's own label is 'NOT evidence of safety'. A positive value means flags were found; it does not quantify risk. The converse matters more and is why this is a fla",
+      "banned_in_headlines": []
+    }
+  }
+}
