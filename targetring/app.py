@@ -20,6 +20,7 @@ from .adapters.literature import EuropePMCAdapter
 from .adapters.ols import OLSAdapter
 from .adapters.opentargets import OpenTargetsAdapter
 from . import atlas_index
+from . import autopick as autopick_mod
 from .cache import Cache
 from . import contrast as contrast_mod
 from . import dim as dim_mod
@@ -965,6 +966,52 @@ async def run_values(run_id: str, sort: str = "", dim: str = "") -> JSONResponse
             return JSONResponse({"error": "dim_rejected", "message": str(e)},
                                 status_code=422)
         return JSONResponse({"error": "sort_rejected", "message": str(e)},
+                            status_code=422)
+    return JSONResponse(body)
+
+
+@app.get("/api/autopick")
+async def autopick(disease: str = "") -> JSONResponse:
+    """Choose a contrast for one disease, autonomously and auditably.
+
+    Puck's decision of 2026-10-09 (`docs/DECISION-AUTOPICK-2026-10-09.md`), and
+    a deliberate reversal of this build's earlier refusal to name a default.
+
+    A SEPARATE ROUTE, not a field on `/api/contrasts`. `picker_payload`'s
+    refusal is about the listing — 138 rows arriving with one already blessed,
+    which a reader cannot help but read as the app's opinion — and that refusal
+    is untouched and still asserted by its tests. This is an action a caller
+    explicitly invokes, and the answer carries the rule that produced it, the
+    candidates it chose among and every row it excluded with a reason.
+
+    Resolves the disease through the same `OLSAdapter` the picker does, so an
+    obsolete Atlas-side id is refused here exactly as it is there rather than
+    being chosen from.
+    """
+    want = (disease or "").strip()
+    if not want:
+        raise HTTPException(400, "autopick requires a disease id")
+    try:
+        index = _atlas_index()
+    except IndexMissing as e:
+        return JSONResponse({"error": "index_missing", "message": str(e)},
+                            status_code=503)
+    cache = Cache()
+    try:
+        async with Http() as http:
+            ref = await OLSAdapter(http, cache).resolve_id(want)
+    except HardFailure as e:
+        return JSONResponse(
+            {"error": "disease_not_resolvable", "message": str(e)},
+            status_code=422)
+    rows = atlas_index.picker_payload(index, ref)["rows"]
+    result = autopick_mod.pick(rows)
+    body = {"disease": {"label": ref.label, "current_id": ref.current_id},
+            "index": index.provenance(), **result.as_dict()}
+    if result.chosen is None:
+        # A refusal, not an empty pick. 422 rather than 200-with-null so a
+        # caller cannot treat "nothing was eligible" as "nothing was found".
+        return JSONResponse({**body, "error": "no_eligible_contrast"},
                             status_code=422)
     return JSONResponse(body)
 
