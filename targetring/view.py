@@ -37,8 +37,8 @@ from . import evidence as evidence_mod
 from . import table as table_mod
 from . import sources as SOURCES
 from .figure import RING_SPECS, STATE_STYLE, ring_specs_for
-from .order import (is_ring_ordering, missing_on, order_by_keys,
-                    ordering_label, parse_sort_keys, sort_label)
+from .order import (EXTERNAL_RINGS, is_ring_ordering, missing_on,
+                    order_by_keys, ordering_label, parse_sort_keys, sort_label)
 from .run import FILTERABLE_RINGS
 
 # What the app says beside a grid whose run IS in memory, and what it says when it
@@ -353,10 +353,30 @@ def evidence_payload(run_id: str, *, in_memory: bool = False,
     t = table_mod.load(run_id)
     cells_by_ring = t.cells_by_ring()
     ring_keys = [r["key"] for r in t.rings]
-    # `completeness` is excluded from the gap list for the reason its own
-    # RingSpec gives: it is a derived gauge over the other rings, so counting it
-    # as a gap would be counting the gaps twice.
-    gap_keys = [k for k in ring_keys if k != "completeness"]
+    # THE NINE EXTERNAL RINGS, and nothing else — the same set `k` counts.
+    #
+    # This read `[k for k in ring_keys if k != "completeness"]`, which left the
+    # two DE rings (`logfc`, `neg_log10_padj`) in the gap scan while `k` on the
+    # same card counts "of 9 external rings" and no rule reads them. Two numbers
+    # on one card disagreeing about which rings are in scope, and a listed gap
+    # for a ring the surface does not otherwise watch.
+    #
+    # They could never fire in any case: `de_input` sends a row with an
+    # unusable logFC or a missing padj to the drop ledger
+    # (`dropped_bad_logfc`, `dropped_no_padj`), so a RENDERED gene always has
+    # both. Measured over the 260 runs under `runs/`: zero rendered genes with
+    # a DE cell that is not a value. A check that cannot fire but looks like one
+    # is worse than no check, because it implies the surface is watching.
+    #
+    # And it is the right scope on the merits, not just the tidy one: logFC and
+    # adjusted p are the INPUT that selected this gene set, not evidence about
+    # the target from somewhere else. A reading built on them would be the
+    # surface reasoning about effect size, which is the first step of the
+    # scoring rule 7 removed.
+    #
+    # `completeness` is out for its own reason, unchanged: it is a derived gauge
+    # over the other nine, so counting it would count the gaps twice.
+    gap_keys = [k for k in ring_keys if k in EXTERNAL_RINGS]
 
     # Per gene, keyed by gene, in `base["order"]`'s order. Rebuilt per gene from
     # the ring-major pivot because `evidence.py` reads a gene's row.

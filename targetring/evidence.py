@@ -265,6 +265,14 @@ def gaps_for_gene(cells: dict[str, Cell], ring_keys: list[str]
     """The rings with no measurement, grouped by WHICH of the three non-value
     states they are in.
 
+    `ring_keys` is the caller's scope and `view.evidence_payload` passes the
+    nine EXTERNAL rings — the same set `k` counts and the only rings any rule
+    reads. The two DE rings are deliberately outside it: logFC and adjusted p
+    are the input that selected this gene set, not evidence about the target,
+    and a reading built on them would be this surface reasoning about effect
+    size (rule 7). They also cannot be absent on a rendered gene, because
+    `de_input` drops an unusable logFC or a missing padj to the drop ledger.
+
     Grouped rather than counted, and never summed into one "missingness"
     number: `failed` is a call that broke and is fixable by re-running, while
     `no_data` is the source genuinely saying nothing and `not_applicable` is the

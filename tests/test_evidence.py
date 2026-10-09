@@ -284,6 +284,46 @@ class TestGapsKeepTheFourStatesApart:
             for state, keys in gaps.items():
                 assert "completeness" not in keys, (gene, state)
 
+    def test_the_gap_scan_is_exactly_the_rings_k_counts(self, payload) -> None:
+        """One scope per card. The scan used to be every ring except
+        `completeness`, which left the two DE rings in it while `k` on the same
+        card counts the nine external ones and no rule reads them — two numbers
+        disagreeing about what is in scope."""
+        from targetring.order import EXTERNAL_RINGS
+        drawn = {r["key"] for r in payload["rings"]}
+        scanned = set(EXTERNAL_RINGS) & drawn
+        assert len(scanned) == payload["k_max"], (scanned, payload["k_max"])
+        for gene, gaps in payload["gaps"].items():
+            for state, keys in gaps.items():
+                assert set(keys) <= scanned, (gene, state, keys)
+
+    def test_the_de_rings_are_never_scanned_as_gaps(self, payload) -> None:
+        """logFC and adjusted p are the INPUT that selected this gene set, not
+        evidence about the target. A reading built on them would be this surface
+        reasoning about effect size, which is where scoring starts (rule 7)."""
+        for gene, gaps in payload["gaps"].items():
+            for state, keys in gaps.items():
+                assert "logfc" not in keys, (gene, state)
+                assert "neg_log10_padj" not in keys, (gene, state)
+
+    def test_no_rule_reads_a_de_ring_either(self, payload) -> None:
+        """The other half of the same scope: if a rule read logFC, excluding it
+        from the gap scan would hide a genuine unevaluable reading."""
+        for rule in payload["rules"]:
+            assert "logfc" not in rule["rings"], rule["key"]
+            assert "neg_log10_padj" not in rule["rings"], rule["key"]
+
+    def test_a_de_ring_cannot_be_absent_on_a_rendered_gene_anyway(self, payload
+                                                                   ) -> None:
+        """Why excluding them loses nothing: `de_input` sends a row with an
+        unusable logFC or a missing padj to the drop ledger, so a gene that
+        reached the figure carries both."""
+        by_gene = {g["gene"]: g for g in payload["genes"]}
+        for gene, g in by_gene.items():
+            for ring in ("logfc", "neg_log10_padj"):
+                if ring in g["cells"]:
+                    assert g["cells"][ring]["state"] == "value", (gene, ring)
+
     def test_every_rendered_gene_has_a_gap_entry(self, payload) -> None:
         assert set(payload["gaps"]) == set(payload["order"])
 

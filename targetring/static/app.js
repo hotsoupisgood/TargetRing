@@ -1318,7 +1318,12 @@ function evidenceGeneHtml(g, d) {
       <span class="ev-k">k = ${esc(g.k)} of ${esc(d.k_max)} external rings
         measured</span>
     </div>
-    ${gapHtml ? `<div class="ev-gaps"><h5>No measurement</h5>
+    ${/* The heading names its scope. The nine external rings are what `k` on
+          the line above counts and what every rule reads; logFC and adjusted p
+          are this run's INPUT rather than evidence about the target, so they
+          are not scanned here and the card does not imply they were. */""}
+    ${gapHtml ? `<div class="ev-gaps"><h5>No measurement — of the ${
+      esc(d.k_max)} external rings</h5>
       <ul class="tight">${gapHtml}</ul></div>` : ""}
     ${ordered.length ? `<ul class="ev-findings">${
       ordered.map((f) => evidenceFindingHtml(f, labels)).join("")}</ul>`
