@@ -109,7 +109,10 @@ def _ordering_note(m: dict[str, Any], specs: dict[str, Any],
 
     ring_key = is_ring_ordering(ordering)
     ring_label = specs[ring_key].label if ring_key in specs else None
-    note = ordering_label(ordering, ring_label, de.table_phrase)
+    # `table_phrase_short`, matching `run.py`: this re-resolves the sentence the
+    # FIGURE carries, so it must be built the same way or every new contrast run
+    # would report a drift against its own manifest.
+    note = ordering_label(ordering, ring_label, de.table_phrase_short)
 
     drift = ""
     if recorded and recorded != note:

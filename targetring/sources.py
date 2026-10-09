@@ -436,10 +436,35 @@ class DESource:
     label_qualifier: str
     #: The `RingSpec.source` one-liner.
     source_phrase: str
-    #: How to name the input table in an ordering note or a prose sentence.
+    #: How to name the input table in a prose sentence with room for it — the
+    #: Table tab's sort label, the export's provenance block.
     table_phrase: str
     logfc_reason: str
     padj_reason: str
+    #: The same fact, short enough for the circos's centre hole. Defaulted so a
+    #: caller that builds a `DESource` positionally keeps working; both factory
+    #: methods set it explicitly.
+    #:
+    #: Two phrasings of one thing, for exactly the reason `ContrastRef` carries
+    #: both `small_n_caveat` and `small_n_headline`: the hole is a fixed
+    #: fraction of the canvas, `fit_centre_to_the_hole` shrinks the whole stack
+    #: until it fits or reaches `CENTRE_MIN_SCALE`, and past that floor
+    #: `assert_centre_fits_the_hole` aborts the render rather than print the
+    #: caveat across the data.
+    #:
+    #: `c24c8ec` put the full phrase in the ordering note and took the figure
+    #: past that floor: "spoke order: the order of the E-GEOD-101794 g2_g1
+    #: contrast's own -analytics.tsv (unchanged)" is 91 characters against the
+    #: paste path's 61. It wrapped to more lines, the stack grew taller, and
+    #: 'targetring v2' ended up 130px out of a 129px hole — so EVERY contrast
+    #: run on the default `submitted` ordering aborted, from 2026-10-07 until
+    #: this was added. `alphabetical` kept working, because its note names no
+    #: table at all.
+    #:
+    #: A property of the source rather than a truncation at the call site, so
+    #: two surfaces cannot word one contrast differently or drift apart when one
+    #: of them is edited.
+    table_phrase_short: str = ""
 
     @staticmethod
     def pasted() -> "DESource":
@@ -447,6 +472,9 @@ class DESource:
             kind="pasted", short_source="yours", label_qualifier="yours",
             source_phrase="submitted DE table",
             table_phrase="your submitted DE table",
+            # Already short, and unchanged: the paste path is the length the
+            # hole was laid out around.
+            table_phrase_short="your submitted DE table",
             logfc_reason=(
                 "the logFC column of the DE table you submitted — your own "
                 "measurement, read straight off your file and not transformed. "
@@ -477,6 +505,12 @@ class DESource:
             label_qualifier="Atlas",
             source_phrase=f"Expression Atlas {where}",
             table_phrase=f"the {where} contrast's own -analytics.tsv",
+            # "Atlas E-GEOD-101794 g2_g1" — 25 characters against the full
+            # phrase's 52, which puts the ordering note within two characters
+            # of the paste path's length. `Atlas` rather than `Expression
+            # Atlas` because that is already the figure's own word for this
+            # source: `label_qualifier` prints "logFC (Atlas)" one band away.
+            table_phrase_short=f"Atlas {where}",
             logfc_reason=(
                 f"the `{contrast_id}.log2foldchange` column of "
                 f"{accession}-analytics.tsv, read from Expression Atlas{release} "

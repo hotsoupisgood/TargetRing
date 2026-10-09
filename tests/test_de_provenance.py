@@ -13,17 +13,29 @@ measurement, read straight off your file"`. On a contrast run every word is
 false, and because they were constants the same falsehood reached six surfaces
 from one root cause.
 
-The three contrast runs under `runs/` were written on 2026-10-03, four days
-before the fix, so their artefacts are the reproduction preserved on disk:
+Three contrast runs under `runs/` were written on 2026-10-03, four days before
+the fix, so their artefacts are the reproduction preserved on disk (`LEGACY_RUNS`):
 `TestTheDefectIsFrozenOnDisk` reads their `manifest.json` and finds Atlas genes
 described as Puck's own submitted table. Those bytes cannot be corrected
-retroactively and the tests say so rather than passing over it.
+retroactively and the tests say so rather than passing over it. **Do not delete
+those runs** — several classes here are parametrized over them.
 
-What CAN be checked is that everything resolved at read time is right now, which
-is what `DESource.from_manifest` is for: a run loaded off disk must reach the
-same answer as the run that wrote it, from the artefact rather than from process
-state. `TestEverySurfaceResolvesFromTheRun` is that check, on those same three
-runs.
+Runs remade on 2026-10-09 (`REMADE_RUNS`) are the other half: their stored
+sentence names the contrast and agrees with what the read path resolves, so
+nothing reports drift. The two sets are kept apart because asserting the defect
+on a remade run would be asserting the fix did not work, and a contrast run
+ordered `alphabetical` belongs to neither — its note names no table at all.
+
+What CAN be checked on the legacy runs is that everything resolved at read time
+is right now, which is what `DESource.from_manifest` is for: a run loaded off
+disk must reach the same answer as the run that wrote it, from the artefact
+rather than from process state. `TestEverySurfaceResolvesFromTheRun` is that
+check, over every contrast run on disk.
+
+`TestTheOrderingNoteFitsTheCentreHole` is a later regression and the most
+serious one here: the fix in `c24c8ec` made the ordering note 91 characters,
+which took the circos's centre stack past its minimum font scale and **aborted
+every contrast render on the default ordering** for two days. See that class.
 
 One surface is deliberately NOT asserted clean, and `TestTheLegacyLabelIsADecisionNotABug`
 records why: `citations.citation_rows` prints "the run's own label, as the
@@ -48,6 +60,7 @@ from targetring import sources as S
 from targetring import view as view_mod
 from targetring.contrast import AnalyticsRow, top_n_by_padj
 from targetring.figure import ring_specs_for
+from targetring.order import ordering_label
 
 REPO = Path(__file__).resolve().parent.parent
 RUNS = REPO / "runs"
@@ -80,6 +93,26 @@ def contrast_runs() -> list[str]:
 
 
 CONTRAST_RUNS = contrast_runs()
+
+#: Contrast runs ordered by the submitted table — the only ones whose stored
+#: note names a table at all. A contrast run ordered `alphabetical` or by a ring
+#: carries no table phrase, so it is neither evidence of the defect nor of the
+#: fix, and parametrizing it into either set asserts something that was never
+#: true of it.
+SUBMITTED_ORDER_RUNS = [r for r in CONTRAST_RUNS
+                        if _manifest(r).get("ordering") == "submitted"]
+
+#: Written BEFORE c24c8ec: the frozen sentence calls an Atlas contrast the
+#: user's own table. These are the reproduction and must not be deleted.
+LEGACY_RUNS = [r for r in SUBMITTED_ORDER_RUNS
+               if "submitted DE table" in (_manifest(r).get("ordering_note") or "")]
+
+#: Written AFTER the fix (2026-10-09): the stored sentence names the contrast
+#: and agrees with what the read path resolves.
+REMADE_RUNS = [r for r in SUBMITTED_ORDER_RUNS
+               if (_manifest(r).get("ordering_note") or "").startswith(
+                   "spoke order: the order of Atlas ")]
+
 pytestmark = pytest.mark.skipif(not CONTRAST_RUNS,
                                 reason="no contrast run on disk to audit")
 
@@ -90,12 +123,18 @@ pytestmark = pytest.mark.skipif(not CONTRAST_RUNS,
 class TestTheDefectIsFrozenOnDisk:
     """The reproduction. These artefacts were written before the fix and say
     something false; a test that could not see that would not be testing the
-    defect, only the current code path."""
+    defect, only the current code path.
+
+    Parametrized over `LEGACY_RUNS` and not every contrast run: runs remade
+    after the fix carry a correct sentence, and asserting the defect on them
+    would be asserting that the fix did not work.
+    """
 
     def test_there_are_contrast_runs_to_audit(self) -> None:
         assert CONTRAST_RUNS, "the audit read nothing"
+        assert LEGACY_RUNS, "the pre-fix reproduction is gone from runs/"
 
-    @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
+    @pytest.mark.parametrize("run_id", LEGACY_RUNS)
     def test_the_frozen_ring_sources_describe_atlas_genes_as_submitted(
             self, run_id) -> None:
         """What a reader of `manifest.json` alone is told. If this ever starts
@@ -113,7 +152,7 @@ class TestTheDefectIsFrozenOnDisk:
                 f"{run_id}/{ring} no longer carries the old text — if this run "
                 f"was rewritten after c24c8ec, drop it from this class")
 
-    @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
+    @pytest.mark.parametrize("run_id", LEGACY_RUNS)
     def test_the_frozen_ordering_note_still_says_submitted(self, run_id) -> None:
         """The stored sentence, which is what a reader of `manifest.json` alone
         is told. It is no longer what the app prints — see
@@ -141,7 +180,7 @@ class TestTheOrderingNoteIsResolvedNotReadBack:
     away. See `view._ordering_note`.
     """
 
-    @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
+    @pytest.mark.parametrize("run_id", SUBMITTED_ORDER_RUNS)
     def test_the_note_names_the_contrast_and_not_your_table(self, run_id
                                                              ) -> None:
         p = view_mod.table_payload(run_id)
@@ -152,7 +191,7 @@ class TestTheOrderingNoteIsResolvedNotReadBack:
         assert c["accession"] in p["ordering_note"]
         assert c["contrast_id"] in p["ordering_note"]
 
-    @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
+    @pytest.mark.parametrize("run_id", LEGACY_RUNS)
     def test_the_stored_sentence_is_carried_and_the_drift_is_stated(
             self, run_id) -> None:
         """`citations._drift`'s rule -- said, not resolved silently. A reader
@@ -164,6 +203,16 @@ class TestTheOrderingNoteIsResolvedNotReadBack:
         assert p["ordering_note_recorded"] != p["ordering_note"]
         assert p["ordering_note_recorded"] in p["ordering_note_drift"]
         assert "manifest recorded" in p["ordering_note_drift"]
+
+    def test_a_run_that_records_no_ordering_keeps_its_stored_sentence(self
+                                                                      ) -> None:
+        """Nothing to resolve from, so nothing is invented: the stored string is
+        returned rather than replaced by a guess."""
+        out = view_mod._ordering_note(
+            {"ordering_note": "spoke order: something a later build forgot"},
+            {}, S.DESource.pasted())
+        assert out["ordering_note"] == "spoke order: something a later build forgot"
+        assert out["ordering_note_drift"] == ""
 
     def test_a_paste_run_is_untouched_and_claims_no_drift(self) -> None:
         """The blast radius. Measured across every run on disk: 3 change, 162
@@ -185,15 +234,120 @@ class TestTheOrderingNoteIsResolvedNotReadBack:
             assert not p["ordering_note_drift"], d.name
         assert not changed, changed[:3]
 
-    def test_a_run_that_records_no_ordering_keeps_its_stored_sentence(self
-                                                                      ) -> None:
-        """Nothing to resolve from, so nothing is invented: the stored string is
-        returned rather than replaced by a guess."""
-        out = view_mod._ordering_note(
-            {"ordering_note": "spoke order: something a later build forgot"},
-            {}, S.DESource.pasted())
-        assert out["ordering_note"] == "spoke order: something a later build forgot"
-        assert out["ordering_note_drift"] == ""
+    def test_the_note_is_built_from_the_short_phrase_on_both_paths(self) -> None:
+        """`run.py` writes this sentence onto the figure and into the manifest;
+        `view._ordering_note` re-resolves it at read time. They must build it
+        the same way or every new contrast run reports a drift against its own
+        manifest."""
+        run_src = (REPO / "targetring" / "run.py").read_text()
+        view_src = (REPO / "targetring" / "view.py").read_text()
+        assert "de_source.table_phrase_short" in run_src
+        assert "de.table_phrase_short" in view_src
+        # and neither builds the figure's note from the long phrase
+        assert "ordering_label(ordering, ring_labels.get(ring_key or \"\"),\n"\
+               "                                   de_source.table_phrase)" not in run_src
+
+
+class TestTheOrderingNoteFitsTheCentreHole:
+    """The regression that stopped every contrast run rendering.
+
+    `c24c8ec` set the ordering note from `DESource.table_phrase`, which on a
+    contrast is "the E-GEOD-101794 g2_g1 contrast's own -analytics.tsv". The
+    sentence is drawn in the circos's centre hole;
+    `figure.fit_centre_to_the_hole` shrinks the whole centre stack until it
+    fits or reaches `CENTRE_MIN_SCALE`, and past that floor
+    `assert_centre_fits_the_hole` aborts the render rather than print the
+    caveat across the data. The long phrase wrapped to more lines, the stack
+    grew taller, and 'targetring v2' ended up 130px out of a 129px hole.
+
+    Every Atlas contrast run on the default `submitted` ordering aborted with
+    HTTP 500 from 2026-10-07 until `table_phrase_short` was added.
+    `alphabetical` kept working throughout, because its note names no table —
+    which is why nothing noticed.
+
+    Guarded by length rather than by rendering: the offline contrast tests in
+    `test_from_contrast.py` run with patched adapters, which produce a lighter
+    centre stack than a real run and did not reproduce it. The measurable
+    property that actually broke is that the hole was laid out around the paste
+    path's sentence and the contrast one outgrew it.
+    """
+
+    #: The paste path's note is the length the centre hole was laid out around.
+    #: A contrast's may exceed it a little; 91 characters is where it aborted.
+    BUDGET = 8
+
+    def paste_note(self) -> str:
+        return ordering_label("submitted", None, S.DESource.pasted()
+                              .table_phrase_short)
+
+    def contrast_note(self, acc="E-GEOD-101794", cid="g2_g1") -> str:
+        return ordering_label("submitted", None,
+                              S.DESource.from_contrast(acc, cid)
+                              .table_phrase_short)
+
+    def test_the_contrast_note_is_within_the_paste_paths_budget(self) -> None:
+        paste, contrast = self.paste_note(), self.contrast_note()
+        assert len(contrast) <= len(paste) + self.BUDGET, (
+            f"{len(contrast)} chars vs the paste path's {len(paste)}: "
+            f"{contrast!r}")
+
+    def test_the_full_phrase_would_still_blow_the_budget(self) -> None:
+        """The reproduction. If this ever stops being true the regression has
+        been fixed some other way and this class can be re-read."""
+        long_note = ordering_label(
+            "submitted", None,
+            S.DESource.from_contrast("E-GEOD-101794", "g2_g1").table_phrase)
+        assert len(long_note) > len(self.paste_note()) + self.BUDGET
+        assert len(long_note) >= 90, long_note
+
+    def test_the_short_note_still_names_the_contrast(self) -> None:
+        """Shortening must not cost the provenance — that is what c24c8ec was
+        for, and a note that fits by saying nothing is the original defect."""
+        note = self.contrast_note()
+        assert "E-GEOD-101794" in note
+        assert "g2_g1" in note
+        assert "Atlas" in note
+        assert "submitted DE table" not in note
+
+    def test_the_short_phrase_uses_the_figures_own_word_for_the_source(self
+                                                                       ) -> None:
+        """`Atlas`, matching `label_qualifier`, which prints "logFC (Atlas)" one
+        band away from this sentence."""
+        de = S.DESource.from_contrast("E-GEOD-1", "g1_g2")
+        assert de.label_qualifier in de.table_phrase_short
+
+    def test_the_paste_path_short_phrase_is_unchanged(self) -> None:
+        de = S.DESource.pasted()
+        assert de.table_phrase_short == de.table_phrase == "your submitted DE table"
+
+    @pytest.mark.parametrize("acc,cid", [
+        ("E-GEOD-101794", "g2_g1"), ("E-MTAB-123456", "g10_g11"),
+        ("E-GEOD-57945", "g6_g5"),
+    ])
+    def test_the_budget_holds_for_other_accessions(self, acc, cid) -> None:
+        assert len(self.contrast_note(acc, cid)) <= len(self.paste_note()) + self.BUDGET
+
+    def test_a_ring_ordering_note_names_no_table_at_all(self) -> None:
+        """Why `alphabetical` kept working: these notes carry no table phrase,
+        so they were never affected and never signalled the defect."""
+        for ordering in ("alphabetical", "ring:tdl"):
+            note = ordering_label(ordering, "TDL", "a very long table phrase "
+                                                   "that should not appear")
+            assert "very long table phrase" not in note
+
+    def test_a_real_contrast_run_on_disk_carries_the_short_note(self) -> None:
+        """End to end: the runs re-made on 2026-10-09 after the fix."""
+        remade = [r for r in contrast_runs()
+                  if (_manifest(r).get("ordering_note") or "").startswith(
+                      "spoke order: the order of Atlas ")]
+        if not remade:
+            pytest.skip("no post-fix contrast run on disk")
+        for run_id in remade:
+            note = _manifest(run_id)["ordering_note"]
+            assert "contrast's own -analytics.tsv" not in note
+            p = view_mod.table_payload(run_id)
+            assert p["ordering_note"] == note
+            assert not p["ordering_note_drift"], run_id
 
 
 class TestEverySurfaceResolvesFromTheRun:

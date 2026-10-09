@@ -461,8 +461,12 @@ async def run_analysis(
     ring_specs = figure.ring_specs_for(de_source)
     ring_labels = {s.key: s.label for s in ring_specs}
     ring_key = order_mod.is_ring_ordering(ordering)
+    # `table_phrase_short`, not `table_phrase`: this sentence is drawn in the
+    # circos's centre hole, and the full phrase pushed the centre stack past
+    # `CENTRE_MIN_SCALE`, which aborted every contrast render on the default
+    # ordering. See `sources.DESource.table_phrase_short`.
     ordering_note = ordering_label(ordering, ring_labels.get(ring_key or ""),
-                                   de_source.table_phrase)
+                                   de_source.table_phrase_short)
     filter_notes = filters_mod.filter_lines(active_filters, ring_labels)
     gene_order = order_for_figure(genes, cells_by_ring, ordering)
 
