@@ -2785,3 +2785,74 @@ class TestTheGeneTablePreselectsWhatTheServerSelected:
         js = (STATIC / "app.js").read_text()
         assert "all of them, by this contrast's own adjusted p" in js
         assert "untick to narrow" in js
+
+
+class TestTheContrastIsChosenOnFirstView:
+    """`docs/DECISION-AUTOPICK-2026-10-09.md` — the app chooses by default and
+    the full table moves behind a disclosure.
+
+    The philosophy: a simple first view, with the detail reachable behind it.
+    A 138-row table presented cold is not neutral, it is unusable, and a reader
+    resolves it by taking the first drawable row rather than reading 138.
+    """
+
+    def test_the_pick_is_fetched_as_its_own_request(self) -> None:
+        """Not a field on the listing. `picker_payload` stays neutral, and its
+        own test still asserts no `selected` key exists."""
+        js = (STATIC / "app.js").read_text()
+        assert "/api/autopick?disease=" in js
+
+    def test_a_failed_pick_still_leaves_a_usable_page(self) -> None:
+        """The table is the thing that always works, so the pick is best-effort
+        over it — never a blocker."""
+        js = (STATIC / "app.js").read_text()
+        block = js[js.index("/api/autopick?disease="):]
+        block = block[:block.index("renderContrasts(")]
+        assert "catch" in block
+        assert "picked = null" in block
+
+    def test_the_full_table_is_collapsed_only_when_there_is_a_pick(self) -> None:
+        """With no pick it is the only way forward and must stay open."""
+        js = (STATIC / "app.js").read_text()
+        assert 'const open = picked && picked.chosen ? "" : " open";' in js
+
+    def test_every_row_is_still_rendered(self) -> None:
+        """Behind a disclosure, not behind a filter. `_flags`' rule: a picker
+        that dropped the microarray rows would leave a reader believing Atlas
+        has only the drawable ones."""
+        js = (STATIC / "app.js").read_text()
+        assert "b.rows.map((r, i) => contrastRowHtml(r, i))" in js
+
+    def test_the_pick_shows_its_rule_and_its_exclusions(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function pickedContrastHtml"):]
+        fn = fn[:fn.index("\nfunction ")]
+        assert "stated_rule" in fn
+        assert "n_considered" in fn
+        assert "excluded" in fn
+        assert "how this was chosen" in fn
+
+    def test_the_pick_states_what_the_control_side_is(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function pickedContrastHtml"):]
+        fn = fn[:fn.index("\nfunction ")]
+        assert "control_caveat" in fn
+
+    def test_choosing_a_different_one_is_one_click(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        assert 'id="show-all-contrasts"' in js
+        assert '$("#show-all-contrasts")' in js
+
+    def test_the_pick_goes_through_the_same_path_as_a_manual_choice(self) -> None:
+        """From the row the listing already carries, so the pick cannot send a
+        `ContrastRef` the picker never built and step 3 behaves identically."""
+        js = (STATIC / "app.js").read_text()
+        blk = js[js.index('const use = $("#use-picked");'):]
+        blk = blk[:blk.index("const show =")]
+        assert "selectContrast(match)" in blk
+
+    def test_a_pick_the_listing_does_not_contain_is_refused(self) -> None:
+        """They are built from the same index, so a mismatch means one is
+        stale — refuse rather than proceed."""
+        js = (STATIC / "app.js").read_text()
+        assert "the chosen contrast is not in this listing" in js

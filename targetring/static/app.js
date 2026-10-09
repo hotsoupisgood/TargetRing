@@ -303,15 +303,71 @@ async function loadContrasts(d, _ix) {
       ${esc(b.message || "")}<br><span class="hint">${esc(b.note || "")}</span></div>`;
     return;
   }
-  renderContrasts(b);
+  // The pick, fetched alongside the listing. `docs/DECISION-AUTOPICK-2026-10-09.md`
+  // is why: a 138-row table presented cold is not neutral, it is unusable, and a
+  // reader resolves it by taking the first drawable row rather than reading 138.
+  //
+  // A SEPARATE request, not a field on the listing. `picker_payload` stays
+  // neutral and its test still asserts no `selected` key exists — the listing
+  // describes, it does not bless. A failure here is not fatal: the table is the
+  // thing that always works, so the pick is best-effort over it.
+  let picked = null;
+  try {
+    const pr = await fetch("/api/autopick?disease=" +
+                           encodeURIComponent(d.current_id));
+    const pb = await pr.json();
+    if (pr.ok) picked = pb;
+  } catch (e) { picked = null; }
+  renderContrasts(b, picked);
 }
 
-function renderContrasts(b) {
+// The chosen contrast, as the first thing on the panel.
+//
+// `docs/DECISION-AUTOPICK-2026-10-09.md`: the app chooses by default and the
+// 138-row table moves behind a disclosure. Everything the reader would have
+// seen while choosing is still here — the rule as a sentence, how many
+// candidates there were, why the rest were not eligible, and what the control
+// side actually is — one click away rather than in the way.
+function pickedContrastHtml(picked) {
+  if (!picked || !picked.chosen) return "";
+  const p = picked.chosen;
+  const n = picked.n_considered;
+  return `<div class="note picked">
+    <p class="picked-line"><b>Chosen for you:</b>
+      <code>${esc(p.accession)}</code> <code>${esc(p.contrast_id)}</code> —
+      ${esc(p.test_label)} <b>(${p.n_test})</b> vs
+      ${esc(p.ref_label)} <b>(${p.n_ref})</b></p>
+    <p class="hint">${esc(picked.reason)}.</p>
+    ${picked.control_caveat
+      ? `<p class="hint"><b>The control side:</b> ${esc(picked.control_caveat)}.</p>`
+      : ""}
+    <div class="row">
+      <button id="use-picked" class="primary">
+        Use this contrast — step 3: the gene table →</button>
+      <button id="show-all-contrasts" class="ghost">choose a different one</button>
+    </div>
+    <details class="ev-why"><summary>how this was chosen</summary>
+      <p class="reason">${esc(picked.stated_rule)}.</p>
+      <p class="hint">${n} contrast(s) were eligible;
+        ${picked.excluded.length} were not —
+        ${esc([...new Set(picked.excluded.map((e) => e.excluded_reason))].join(" "))}</p>
+    </details></div>`;
+}
+
+function renderContrasts(b, picked) {
   const f = b.flag_counts;
   const c = b.counts;
+  // With a pick on screen the full table is collapsed; without one it is the
+  // only way forward and stays open.
+  const open = picked && picked.chosen ? "" : " open";
   $("#contrast-panel").innerHTML = `
     <h2>Contrasts</h2>
     <p class="picker-head"><b>${esc(c.count_text)}</b> · ${esc(c.built_text)}</p>
+    ${pickedContrastHtml(picked)}
+    <details id="all-contrasts"${open}>
+    <summary><b>All ${b.rows.length} contrasts</b> — choose a different one,
+      or check how the choice above was made</summary>
+    <div class="reveal">
     <div class="note ${c.availability === "none_supported" ? "warn" : ""}"
       ><b>What this app excludes:</b> ${esc(b.excludes)}</div>
     ${b.dominance ? `<div class="note warn"><b>${esc(b.dominance.text)}</b> —
@@ -345,7 +401,8 @@ function renderContrasts(b) {
       <th>tissue</th><th>platform</th><th>compares</th><th>drawable?</th><th>flags</th>
     </tr></thead><tbody>${b.rows.map((r, i) => contrastRowHtml(r, i)).join("")}
     </tbody></table></div>
-    <div id="contrast-detail"></div>`;
+    <div id="contrast-detail"></div>
+    </div></details>`;
   $("#picker-sort").onchange = (e) => {
     PICKER.sort = e.target.value;
     loadContrasts(PICKER.disease, b.index);
@@ -354,6 +411,29 @@ function renderContrasts(b) {
     const el = $(`#crow-${i}`);
     if (el) el.onclick = () => showContrast(r);
   });
+
+  // The chosen contrast goes through `selectContrast` like any other, from the
+  // row the listing already carries — so the pick cannot send a `ContrastRef`
+  // the picker never built, and step 3 behaves identically either way.
+  if (picked && picked.chosen) {
+    const match = b.rows.find((r) => r.accession === picked.chosen.accession
+                                  && r.contrast_id === picked.chosen.contrast_id);
+    const use = $("#use-picked");
+    if (use && match) use.onclick = () => selectContrast(match);
+    else if (use) {
+      // The listing and the pick disagree about what exists. Refuse rather than
+      // proceed: they are built from the same index, so this means one of them
+      // is stale.
+      use.disabled = true;
+      use.textContent = "the chosen contrast is not in this listing";
+    }
+    const show = $("#show-all-contrasts");
+    if (show) show.onclick = () => {
+      const d = $("#all-contrasts");
+      d.open = true;
+      d.scrollIntoView({ block: "start" });
+    };
+  }
 }
 
 function contrastRowHtml(r, i) {

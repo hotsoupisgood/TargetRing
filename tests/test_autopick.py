@@ -168,3 +168,40 @@ class TestTheAuditTrail:
         assert len(p.considered) == 17
         assert len(p.excluded) == len(crohns_rows) - 17
         assert all(c.comparison == "case_vs_unaffected" for c in p.considered)
+
+
+class TestTheRoute:
+    """`/api/autopick` is a separate action, not a field on the listing."""
+
+    @pytest.fixture(scope="class")
+    def client(self):
+        from fastapi.testclient import TestClient
+        from targetring.app import app
+        return TestClient(app)
+
+    def test_it_chooses_and_shows_its_working(self, client) -> None:
+        r = client.get("/api/autopick", params={"disease": "MONDO_0005011"})
+        assert r.status_code == 200
+        d = r.json()
+        assert d["chosen"]["accession"] and d["chosen"]["contrast_id"]
+        assert d["stated_rule"] and d["reason"]
+        assert d["n_considered"] >= 1
+        assert d["excluded"], "the rows it did not consider must be named"
+
+    def test_a_disease_is_required(self, client) -> None:
+        assert client.get("/api/autopick").status_code == 400
+
+    def test_an_unresolvable_disease_is_refused_not_guessed_at(self, client) -> None:
+        r = client.get("/api/autopick", params={"disease": "NOT_A_TERM_12345"})
+        assert r.status_code == 422
+        assert r.json()["error"] == "disease_not_resolvable"
+
+    def test_the_listing_is_still_neutral(self, client) -> None:
+        """The refusal this reversal does NOT touch: `/api/contrasts` names no
+        default. The pick is a separate request a caller makes on purpose."""
+        r = client.get("/api/contrasts", params={"disease": "MONDO_0005011"})
+        assert r.status_code == 200
+        body = r.json()
+        for banned in ("selected", "recommended", "default", "best", "chosen"):
+            assert banned not in body, banned
+            assert banned not in body["rows"][0], banned

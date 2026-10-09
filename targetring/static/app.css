@@ -1393,3 +1393,27 @@ td.cell-no-data, .grid td.no-data {
   .ev-card { break-inside: avoid; }
   .ev-why > summary, .ev-clear > summary { color: var(--tr-ink-2); }
 }
+
+/* --- 12. The chosen contrast.
+   ---------------------------
+   `docs/DECISION-AUTOPICK-2026-10-09.md`: the app chooses on first view and the
+   full 138-row table moves behind a disclosure. This block is the simple layer;
+   the disclosure under it is the layer that lets someone check the choice.
+
+   Accented, not alarmed. A pick is not a warning and not a result — it is the
+   app having done the obvious thing so the reader does not have to, and the
+   styling says that by using the accent rail rather than a status wash. */
+.note.picked { border-left: 3px solid var(--tr-accent, var(--accent));
+               background: var(--tr-surface-sunk); }
+.picked-line { margin: 0 0 var(--tr-s-2); font-size: var(--tr-t-read);
+               line-height: var(--tr-lh-snug); }
+.picked-line code { font-size: var(--tr-t-small); }
+.note.picked .row { margin-top: var(--tr-s-3); }
+
+/* The full table's disclosure. Deliberately quiet — it is always available and
+   it is not the thing a reader does first. */
+#all-contrasts > summary { cursor: pointer; color: var(--tr-ink-2);
+                           padding: var(--tr-s-2) 0;
+                           font-size: var(--tr-t-small); }
+#all-contrasts > summary:hover { color: var(--tr-ink); }
+#all-contrasts > .reveal { padding-top: var(--tr-s-3); }
