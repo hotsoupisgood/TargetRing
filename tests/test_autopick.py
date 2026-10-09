@@ -317,3 +317,26 @@ class TestTheModelChooser:
         one level upstream, and is the thing a reader starts sorting by."""
         from targetring.chooser_llm import ContrastChoice
         assert set(ContrastChoice.model_fields) == {"key", "reason"}
+
+    def test_an_empty_key_reads_as_the_model_declining_not_inventing(self) -> None:
+        """The prompt invites an empty key when nothing suits. That is a
+        different fact from naming a row that is not on the list, and reporting
+        the first as the second would hide a judgement worth reading."""
+        from targetring.chooser_llm import ChoiceOutcome, ModelChooser
+        ch = ModelChooser(client=FakeClient(ChoiceOutcome(
+            ok=True, key="", reason="all three are whole blood", model="m")))
+        p = autopick.pick(self.two_rows(), ch)
+        assert p.chooser == "largest-smaller-side"
+        assert "found none" in p.fell_back_from
+        assert "whole blood" in p.fell_back_from
+
+    def test_the_token_budget_has_room_for_the_sentence_it_asks_for(self) -> None:
+        """Found live on 2026-10-09: at max_tokens=400 the model ran past the
+        budget mid-sentence on MONDO_0005301, the JSON was cut off and
+        `messages.parse` raised "EOF while parsing a string". It fell back
+        correctly, but the call was paid for and produced nothing."""
+        from targetring.chooser_llm import ModelChooser, SYSTEM_PROMPT
+        assert ModelChooser(client=None).max_tokens >= 700
+        # and the prompt bounds the sentence, so budget and ask agree
+        assert "35 words" in SYSTEM_PROMPT
+        assert "truncated" in SYSTEM_PROMPT

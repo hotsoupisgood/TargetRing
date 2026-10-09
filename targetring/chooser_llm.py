@@ -75,8 +75,9 @@ adjacent-to-lesion tissue, and whether the group sizes support a differential \
 estimate at all.
 
 Return the `key` of exactly one row from the list, copied verbatim, and one \
-sentence saying what decided it. Name the tissue or the control in that \
-sentence where it mattered.
+sentence of at most 35 words saying what decided it. Name the tissue or the \
+control in that sentence where it mattered. Keep it to one sentence: a longer \
+answer is truncated and then nothing is returned at all.
 
 Do not rank the rows. Do not score them. Do not return a row that is not in \
 the list. If no row is a reasonable case/control comparison for this disease, \
@@ -182,7 +183,13 @@ class ModelChooser:
 
     client: ContrastLLMClient
     ledger: Any = None
-    max_tokens: int = 400
+    #: Raised from 400 after a live failure on 2026-10-09: the model ran past
+    #: 400 tokens mid-sentence on MONDO_0005301, the JSON was cut off, and
+    #: `messages.parse` raised a ValidationError reading "EOF while parsing a
+    #: string". It fell back correctly and said so, but the call was wasted. The
+    #: prompt now bounds the sentence AND the budget has room for it — a cap
+    #: that truncates is a cap that spends without producing anything.
+    max_tokens: int = 900
     name: str = "model"
     stated_rule: str = (
         "a model chose among the contrasts this app can draw that compare "
@@ -218,6 +225,14 @@ class ModelChooser:
             return None, f"the chooser did not run — {out.error}"
 
         by_key = {c.key: c for c in cands}
+        if not out.key:
+            # The prompt invites this: "if no row is a reasonable case/control
+            # comparison, return an empty key and say why." A model declining
+            # the list is a different fact from a model naming something that
+            # is not on it, and reporting the first as the second would hide a
+            # judgement worth reading.
+            return None, (f"the chooser found none of the {len(cands)} "
+                          f"contrasts suitable: {out.reason or 'no reason given'}")
         if out.key not in by_key:
             # Not an exception: a model naming something outside its list is a
             # foreseeable output, and the deterministic chooser is right there.
