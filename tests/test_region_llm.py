@@ -159,3 +159,69 @@ class TestWhatReachesTheModel:
 
     def test_it_returns_one_tissue_and_no_scores(self) -> None:
         assert set(region_llm.RegionChoice.model_fields) == {"tissue", "reason"}
+
+
+class TestTheFigureSaysTheRegionWasInferred:
+    """A reader holding a screenshot cannot see that a dropdown was filled in
+    for them. "Enriched in ileum" and "enriched in whole blood" are different
+    statements about a gene."""
+
+    @staticmethod
+    async def _run(tmp, **kw):
+        from targetring.cache import Cache
+        from targetring.run import run_analysis
+        return await run_analysis(
+            table="gene,logFC,padj\nBRAF,2.41,0.0003\nEGFR,-1.8,0.002\n",
+            region=kw.pop("region", "Lung"), run_regression=False,
+            runs_dir=tmp / "runs", cache=Cache(root=tmp / "c"), **kw)
+
+    @pytest.mark.asyncio
+    async def test_an_inferred_region_is_a_run_condition(self, tmp_path) -> None:
+        r = await self._run(tmp_path, region_inferred=True,
+                            region_reason="the terminal ileum is the site.")
+        conds = [c["condition"] for c in r.manifest.run_conditions]
+        assert any("was inferred from the disease" in c for c in conds), conds
+
+    @pytest.mark.asyncio
+    async def test_it_says_what_it_affects_and_how_to_change_it(self, tmp_path
+                                                                 ) -> None:
+        r = await self._run(tmp_path, region_inferred=True, region_reason="x")
+        affects = " ".join(c["affects"] for c in r.manifest.run_conditions
+                           if "inferred" in c["condition"])
+        assert "regional-specificity ring only" in affects
+        assert "every other ring is unaffected" in affects
+        assert "Change the region" in affects
+
+    @pytest.mark.asyncio
+    async def test_it_reaches_the_figure_not_only_the_screen(self, tmp_path
+                                                             ) -> None:
+        from targetring.invariants import svg_text_normalised
+        r = await self._run(tmp_path, region_inferred=True, region_reason="x")
+        assert "was inferred from the disease" in svg_text_normalised(r.svg_path)
+
+    @pytest.mark.asyncio
+    async def test_a_region_chosen_by_hand_claims_nothing(self, tmp_path) -> None:
+        """The flag must be able to be absent or it says nothing when present."""
+        r = await self._run(tmp_path)
+        conds = [c["condition"] for c in r.manifest.run_conditions]
+        assert not any("inferred" in c for c in conds), conds
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("region", [
+        "Small_Intestine_Terminal_Ileum", "Brain_Anterior_cingulate_cortex_BA24"])
+    async def test_a_long_tissue_name_does_not_abort_the_run(self, tmp_path,
+                                                              region) -> None:
+        """GTEx names run to 36 characters and the legend's counts line ran
+        under the block to its right, failing `assert_text_does_not_overprint_text`
+        and aborting the whole run. Latent while the region was a dropdown
+        nobody scrolled; routine once the chooser began picking the long
+        anatomical names by design."""
+        r = await self._run(tmp_path, region=region)
+        assert r.manifest.region == region
+
+    def test_the_client_sends_the_flag_and_the_reason(self) -> None:
+        from pathlib import Path
+        js = (Path(__file__).resolve().parent.parent / "targetring" / "static"
+              / "app.js").read_text()
+        assert js.count('fd.append("region_inferred"') == 2, "both paths"
+        assert js.count('fd.append("region_reason"') == 2

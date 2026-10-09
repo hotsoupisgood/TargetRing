@@ -480,6 +480,11 @@ async def analyse(
     # means nobody is listening and `_progress_sink` returns None, so the run is
     # byte-for-byte what it was before this existed.
     progress_token: str = Form(""),
+    # Whether `#region` was filled in by `region_llm` rather than chosen. Sent
+    # by the page because the page is the only thing that knows; the figure
+    # states it so a screenshot does too.
+    region_inferred: str = Form(""),
+    region_reason: str = Form(""),
     file: UploadFile | None = None,
 ) -> JSONResponse:
     import json as json_mod
@@ -555,12 +560,15 @@ async def analyse(
                 parsed_input=parsed_input, region=region, ordering=ordering,
                 filters=filters, panel_px=panel_px, viewport_px=viewport_px,
                 contrast=contrast_for_run,
-                selection_accounting=selection_accounting, on_progress=sink)
+                selection_accounting=selection_accounting, on_progress=sink,
+                region_inferred=region_inferred == "1", region_reason=region_reason)
         else:
             result = await run_analysis(table=raw, region=region,
                                         ordering=ordering, filters=filters,
                                         panel_px=panel_px, viewport_px=viewport_px,
-                                        on_progress=sink)
+                                        on_progress=sink,
+                                        region_inferred=region_inferred == "1",
+                                        region_reason=region_reason)
     except FilterRejected as e:
         # The filter settings themselves are unusable — a ring that does not
         # exist, a threshold that is not a number. Nothing was fetched and

@@ -208,6 +208,12 @@ async def run_analysis(
     *,
     table: bytes | str = b"",
     region: str = DEFAULT_REGION,
+    # Set when this region was INFERRED from the disease rather than chosen
+    # (`region_llm`). The figure must say so: "enriched in ileum" and "enriched
+    # in whole blood" are different statements about a gene, and a reader
+    # holding a screenshot cannot see that a dropdown was filled in for them.
+    region_inferred: bool = False,
+    region_reason: str = "",
     run_id: str | None = None,
     cache: Cache | None = None,
     runs_dir: Path | None = None,
@@ -541,6 +547,16 @@ async def run_analysis(
     # UX A1. These render amber and below the rings, never as the red
     # DO-NOT-TRUST banner. See `figure._draw_conditions`.
     conditions: list[tuple[str, str]] = []
+    # FIRST, beside the small-n caveat, and for the same reason: this one says
+    # the reader did not choose an input that one ring is entirely computed
+    # against. `_draw_conditions` draws `conditions[:6]`, so it must not be
+    # pushed off the block by a source outage.
+    if region_inferred:
+        conditions.append((
+            f"region {region} was inferred from the disease, not chosen",
+            (f"the regional-specificity ring only — every other ring is "
+             f"unaffected. {region_reason} Change the region in the form and "
+             f"re-run if this is the wrong tissue.").strip()))
     # Panel S1, the half of it that was still open. `heatmap.py`'s own
     # docstring stated the scope -- "a mandatory string on the heatmap ... and
     # it becomes a `run_condition` on the circos and in the manifest" -- and

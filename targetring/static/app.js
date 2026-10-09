@@ -320,6 +320,10 @@ let REGION_WAS_INFERRED = false;
 //: quick succession leave two requests outstanding, and without this the slower
 //: one wins — setting the first disease's tissue over the second's.
 let REGION_ASKED_FOR = "";
+//: The model's sentence for the inferred region, sent with the run so the
+//: FIGURE says the tissue was inferred and can be changed — a screenshot
+//: cannot show that a dropdown was filled in for the reader.
+let REGION_REASON = "";
 
 // Which GTEx tissue to read the specificity ring against, inferred from the
 // disease and cached server-side (`region_llm`). Best-effort and never
@@ -360,6 +364,7 @@ async function inferRegion(label) {
   }
   sel.value = r.tissue;
   REGION_WAS_INFERRED = true;
+  REGION_REASON = r.reason || "";
   box.hidden = false;
   box.innerHTML =
     `<b>Region set to <code>${esc(r.tissue)}</code> for this disease.</b><br>
@@ -380,6 +385,7 @@ function clearInferredRegion() {
     if (sel) sel.value = DEFAULT_REGION;
   }
   REGION_WAS_INFERRED = false;
+  REGION_REASON = "";
 }
 
 async function loadContrasts(d, _ix) {
@@ -945,6 +951,8 @@ async function makeSpokes() {
 
   const fd = new FormData();
   fd.append("progress_token", prog.token);
+  fd.append("region_inferred", REGION_WAS_INFERRED ? "1" : "");
+  fd.append("region_reason", REGION_REASON);
   fd.append("source", "atlas");
   fd.append("accession", t.contrast.accession);
   fd.append("contrast_id", t.contrast.contrast_id);
@@ -1165,6 +1173,8 @@ async function analyse() {
 
   const fd = new FormData();
   fd.append("progress_token", prog.token);
+  fd.append("region_inferred", REGION_WAS_INFERRED ? "1" : "");
+  fd.append("region_reason", REGION_REASON);
   fd.append("table", $("#table").value);
   fd.append("region", $("#region").value);
   fd.append("ordering", $("#ordering").value);

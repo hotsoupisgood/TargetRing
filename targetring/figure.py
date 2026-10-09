@@ -3224,6 +3224,25 @@ def _draw_caveat_columns(fig, notes: Sequence[str],
     return out
 
 
+def _fit_text_before(fig, text, *, limit_frac: float, floor_pt: float) -> None:
+    """Shrink `text` until its right edge is left of `limit_frac` of the figure.
+
+    Measured against the real renderer rather than estimated from character
+    counts: the strings here are tissue names and run ids, both variable, and a
+    character-count guess is what lets one of them through on the day it is
+    three characters longer.
+    """
+    r = fig.canvas.get_renderer()
+    limit_px = limit_frac * fig.get_window_extent(renderer=r).width
+    for _ in range(12):
+        if text.get_window_extent(renderer=r).x1 <= limit_px:
+            return
+        size = text.get_fontsize() * 0.92
+        if size < floor_pt:
+            return
+        text.set_fontsize(size)
+
+
 def render_legend(
     *,
     cells_by_ring: dict[str, dict[str, Cell]],
@@ -3279,9 +3298,26 @@ def render_legend(
     # bottom in three columns of their own.
     blocks.append(fig.text(0.025, 0.994, f"{FIGURE_TITLE} — legend", fontsize=21,
                            weight="bold", va="top", ha="left", color="#111111"))
-    blocks.append(fig.text(0.025, 0.947, f"{region} · {input_count} genes in, "
-                                         f"{rendered_count} rendered",
-                           fontsize=13, va="top", ha="left", color="#333333"))
+    # Shrunk to fit, because the region name is not a constant and the block to
+    # its right starts at x=0.300.
+    #
+    # GTEx tissue names run to 36 characters ("Brain_Anterior_cingulate_cortex_BA24")
+    # and at 13 pt this line ran straight under "This legend is true only of the
+    # run named above", failing `assert_text_does_not_overprint_text` and
+    # aborting the whole run. Latent while the region was a dropdown nobody
+    # scrolled; routine once `region_llm` began inferring the tissue, which
+    # picks the long anatomical names by design.
+    #
+    # Shrink rather than truncate: a clipped tissue name on a legend that claims
+    # to describe one run is the ambiguity this assertion exists to catch, and
+    # the floor is 9 pt — below that it is unreadable and the run should fail
+    # rather than ship a legend nobody can read.
+    region_line = fig.text(0.025, 0.947,
+                           f"{region} · {input_count} genes in, "
+                           f"{rendered_count} rendered",
+                           fontsize=13, va="top", ha="left", color="#333333")
+    _fit_text_before(fig, region_line, limit_frac=0.295, floor_pt=9.0)
+    blocks.append(region_line)
     # The run id keeps its place as the third thing on the artefact and gets
     # bigger, not smaller: the pairing is the one risk a detachable legend
     # introduces, and nine of the twelve ranges move with the submitted set.
