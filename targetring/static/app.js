@@ -330,9 +330,19 @@ function renderContrasts(b) {
       ${f.invalid_id} with an id that is not <code>{reference}_{test}</code>,
       ${f.unannotated} with assays missing from the condensed SDRF.
       Every one of those rows is still in the table below.</p>
+    ${/* What the rows COMPARE, which is the question a reader arrives with and
+          had to re-derive from two label strings on every row. Counts, not a
+          pick — `picker_payload` refuses to name a default and still does. */""}
+    <p class="hint">Compares: ${
+      Object.entries(b.comparison_counts || {})
+        .filter(([, v]) => v.total)
+        .map(([k, v]) => `<b>${v.total}</b> ${esc(b.comparison_labels[k])}${
+          v.drawable === v.total ? "" : ` (${v.drawable} drawable)`}`)
+        .join(" · ")}.
+      Classified from the disease ids on each side, not from the labels.</p>
     <div class="scroll-x"><table class="picker"><thead><tr>
       <th>accession</th><th>contrast</th><th>test (n)</th><th>reference (n)</th>
-      <th>tissue</th><th>platform</th><th>drawable?</th><th>flags</th>
+      <th>tissue</th><th>platform</th><th>compares</th><th>drawable?</th><th>flags</th>
     </tr></thead><tbody>${b.rows.map((r, i) => contrastRowHtml(r, i)).join("")}
     </tbody></table></div>
     <div id="contrast-detail"></div>`;
@@ -361,6 +371,15 @@ function contrastRowHtml(r, i) {
     <td>${esc(r.ref_label || "—")} <b>(${r.n_ref})</b></td>
     <td>${tissue}</td>
     <td>${r.is_rnaseq ? "RNA-seq" : `<code>${esc(r.platform)}</code>`}</td>
+    ${/* Neutral styling on purpose. A within-disease contrast is not a worse
+          contrast, it is a different question — drawing it as a warning would
+          say this app disapproves of inflamed-vs-adjacent-normal, which it does
+          not. The pill states what the row compares and stops there. */""}
+    <td><span class="pill ${r.comparison === "case_vs_unaffected" ? "ok" : "grey"}">${
+      esc(r.comparison === "case_vs_unaffected" ? "case / control"
+          : r.comparison === "within_one_disease" ? "within disease"
+          : r.comparison === "disease_vs_disease" ? "disease / disease"
+          : "unannotated")}</span></td>
     <td>${drawable}</td>
     <td>${r.flags.map((x) =>
       `<span class="flag ${esc(x.key)}">${esc(x.label)}</span>`).join(" ")}</td>
@@ -547,7 +566,19 @@ async function loadGeneTable(r) {
     return;
   }
   GENE_TABLE = body;
-  SELECTED = new Set();
+  // Everything the server already selected, preselected.
+  //
+  // Not a recommendation and not a pick among alternatives: the selection
+  // happened server-side in `contrast.top_n_by_padj`, whose own docstring calls
+  // it "Rule 1 as a sort, rule 7's one permitted rank-based selection". Taking
+  // the whole of that set is the opposite of curating it — ticking a subset is
+  // the judgement, and that stays exactly where it was.
+  //
+  // Starting empty meant re-entering by hand a decision the server had just
+  // made, up to 60 checkboxes at a time, with a "select none" button and no
+  // "select all". The runs on disk show what that produced in practice: 12
+  // ticked of 12 shown, then 14 of 14.
+  SELECTED = new Set((body.rows || []).map((r) => r.ensembl_id).filter(Boolean));
   renderGeneTable();
   syncPasteSection();
 }
@@ -600,7 +631,9 @@ function renderGeneTable() {
     </tr></thead><tbody>${sorted.map((row) => geneRowHtml(row)).join("")}
     </tbody></table></div>
     <p class="hint">${esc(acc.n_top)} shown ·
-      <span id="sel-count">${SELECTED.size}</span> selected ·
+      <span id="sel-count">${SELECTED.size}</span> selected —
+      all of them, by this contrast's own adjusted p; untick to narrow ·
+      <button class="ghost" id="select-all">select all</button>
       <button class="ghost" id="select-none">select none</button></p>
     <div class="row">
       <button id="continue-heatmap" class="primary">
@@ -609,6 +642,14 @@ function renderGeneTable() {
 
   $("#terse-toggle").onchange = (e) => { TERSE_TABLE = e.target.checked; renderGeneTable(); };
   $("#select-none").onclick = () => { SELECTED = new Set(); renderGeneTable(); syncHeatmapCount(); };
+  // The counterpart to "select none", and the way back after narrowing. Over
+  // the shown rows only — it can never add an id outside the top-N the server
+  // selected, which is what `/api/analyse` checks on arrival anyway
+  // (`selection_outside_top_n`).
+  $("#select-all").onclick = () => {
+    SELECTED = new Set((GENE_TABLE.rows || []).map((r) => r.ensembl_id).filter(Boolean));
+    renderGeneTable(); syncHeatmapCount();
+  };
   panel.querySelectorAll("th.sortable").forEach((th) => {
     th.onclick = () => { renderGeneTable.sortKey = th.dataset.sort; renderGeneTable(); };
   });

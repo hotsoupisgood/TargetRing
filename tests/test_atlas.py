@@ -1264,3 +1264,107 @@ class TestTheNewSourcesAreRegistered:
                   "atlas.configuration", "atlas.condensed_sdrf", "atlas.index"):
             assert s in config.SCHEMA_VERSIONS
             Cache(enabled=False)._path(s, "k")
+
+
+class TestWhatTheContrastCompares:
+    """The question a reader arrives with — "is this the disease against people
+    who do not have it?" — answered from annotation already in the index.
+
+    It was answerable all along and was not being answered: `ref_disease_ids`
+    sat on `IndexedContrast` and never reached the payload, so a reader ruled
+    out 102 within-disease rows by reading two free-text labels each. Measured
+    on the live Crohn's index: 36 diseased-vs-not (17 drawable) against 102
+    within-disease (0 drawable).
+
+    A CLASSIFICATION, never a selection. `picker_payload`'s refusal stands and
+    is asserted below: no `selected`, no `recommended`, no default pick.
+    """
+
+    @staticmethod
+    def contrast(ref_ids=(), test_ids=(), **kw) -> "idx.IndexedContrast":
+        base = dict(accession="E-TEST-1", contrast_id="g2_g1", ref_group="g2",
+                    test_group="g1", ref_label="ref", test_label="test",
+                    n_ref=10, n_test=10, name="n", platform=RNASEQ)
+        base.update(kw)
+        return idx.IndexedContrast(ref_disease_ids=tuple(ref_ids),
+                                   test_disease_ids=tuple(test_ids), **base)
+
+    def test_a_healthy_control_is_an_annotated_id_not_an_absent_one(self) -> None:
+        """The thing that makes a naive implementation wrong. Atlas annotates
+        the control side, so "no id" is not the healthy signal — and 75 Crohn's
+        ref sides whose label reads normal/control carry the DISEASE id,
+        because adjacent-normal tissue comes from a diseased person."""
+        assert "PATO_0000461" in idx.NOT_DISEASED_IDS
+        assert "EFO_0001461" in idx.NOT_DISEASED_IDS
+        assert "EFO_0000384" not in idx.NOT_DISEASED_IDS
+
+    @pytest.mark.parametrize("ref_ids,test_ids,expected", [
+        ((), ("EFO_0000384",), "case_vs_unaffected"),
+        (("PATO_0000461",), ("EFO_0000384",), "case_vs_unaffected"),
+        (("EFO_0001461",), ("EFO_0000384",), "case_vs_unaffected"),
+        # sides reversed: still diseased-vs-not; the sign sentence says which way
+        (("EFO_0000384",), (), "case_vs_unaffected"),
+        (("EFO_0000384",), ("EFO_0000384",), "within_one_disease"),
+        (("EFO_0000384",), ("EFO_0003767",), "disease_vs_disease"),
+        ((), (), "undetermined"),
+        (("PATO_0000461",), ("PATO_0000461",), "undetermined"),
+    ])
+    def test_the_classification(self, ref_ids, test_ids, expected) -> None:
+        assert idx.comparison_kind(self.contrast(ref_ids, test_ids)) == expected
+
+    def test_adjacent_normal_is_within_disease_not_a_control(self) -> None:
+        """The case the labels get wrong and the ids get right: "normal tissue
+        adjacent to inflammation" reads like a control and is tissue from a
+        diseased person."""
+        c = self.contrast(("EFO_0003767",), ("EFO_0003767",),
+                          ref_label="normal tissue adjacent to inflammation",
+                          test_label="inflammation")
+        assert idx.comparison_kind(c) == "within_one_disease"
+
+    def test_the_row_carries_the_classification_and_its_evidence(self) -> None:
+        """Checkable from the payload rather than taken on trust."""
+        row = idx.picker_row(self.contrast(("PATO_0000461",), ("EFO_0000384",)),
+                             "2026-09-29T00:00:00+00:00")
+        assert row["comparison"] == "case_vs_unaffected"
+        assert row["comparison_label"] == idx.COMPARISON_LABELS["case_vs_unaffected"]
+        assert row["ref_disease_ids"] == ["PATO_0000461"]
+        assert row["test_disease_ids"] == ["EFO_0000384"]
+
+    def test_every_kind_has_a_label(self) -> None:
+        for kind in ("case_vs_unaffected", "within_one_disease",
+                     "disease_vs_disease", "undetermined"):
+            assert idx.COMPARISON_LABELS[kind]
+
+    def test_the_classification_removes_no_row(self) -> None:
+        """`_flags`' rule, applied here: the picker's job is to make a contrast
+        legible, not to hide one. A filter that dropped the within-disease rows
+        would leave a reader believing Atlas has only the case/control ones."""
+        index = AtlasIndex.load(CROHNS_INDEX)
+        ref = DiseaseRef(label="Crohn disease", current_id="MONDO_0005011",
+                         atlas_ids=("MONDO_0005011", "EFO_0000384"))
+        payload = idx.picker_payload(index, ref)
+        assert sum(v["total"] for v in payload["comparison_counts"].values()) \
+            == len(payload["rows"])
+
+    def test_the_counts_are_split_by_drawable(self, ) -> None:
+        index = AtlasIndex.load(CROHNS_INDEX)
+        ref = DiseaseRef(label="Crohn disease", current_id="MONDO_0005011",
+                         atlas_ids=("MONDO_0005011", "EFO_0000384"))
+        payload = idx.picker_payload(index, ref)
+        for k, v in payload["comparison_counts"].items():
+            assert v["drawable"] <= v["total"], k
+        assert sum(v["drawable"] for v in payload["comparison_counts"].values()) \
+            == payload["n_drawable_now"]
+
+    def test_there_is_still_no_default_pick(self) -> None:
+        """The refusal this work must not erode. `picker_payload`: "There is no
+        `selected` or `recommended` field and there will not be one ... a
+        default pick in a payload is a recommendation whatever the UI calls
+        it." Classifying rows is not choosing one."""
+        index = AtlasIndex.load(CROHNS_INDEX)
+        ref = DiseaseRef(label="Crohn disease", current_id="MONDO_0005011",
+                         atlas_ids=("MONDO_0005011", "EFO_0000384"))
+        payload = idx.picker_payload(index, ref)
+        for banned in ("selected", "recommended", "default", "best", "suggested"):
+            assert banned not in payload, banned
+            assert banned not in payload["rows"][0], banned

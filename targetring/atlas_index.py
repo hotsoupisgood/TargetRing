@@ -456,6 +456,54 @@ class AtlasIndex:
 SMALL_N = contrast_mod.SMALL_N
 VERY_SMALL_N = contrast_mod.VERY_SMALL_N
 
+#: Ontology ids that mean "this side is not diseased". A healthy control is not
+#: an ABSENT id — Atlas annotates it, so a control side usually carries one of
+#: these rather than nothing. Measured on the Crohn's index: ref sides whose
+#: label reads normal/healthy/control carry PATO_0000461 (28), EFO_0001461 (12)
+#: or no id (12) — while 75 carry EFO_0000384 (Crohn's disease), because
+#: "normal tissue adjacent to inflammation" is tissue from a diseased person.
+#: Treating an absent id as the only healthy signal gets that last group exactly
+#: backwards.
+NOT_DISEASED_IDS: frozenset[str] = frozenset({
+    "PATO_0000461",   # phenotypically normal
+    "EFO_0001461",    # control
+})
+
+#: What each side's disease annotation makes this contrast a comparison OF.
+#: Stated; never used to remove a row or to choose one (`picker_payload`).
+COMPARISON_LABELS: dict[str, str] = {
+    "case_vs_unaffected": "diseased vs not diseased",
+    "within_one_disease": "within one disease — both sides diseased",
+    "disease_vs_disease": "one disease vs a different disease",
+    "undetermined": "not determinable from the annotation",
+}
+
+
+def comparison_kind(c: IndexedContrast) -> str:
+    """Which kind of comparison this contrast is, from the SDRF disease ids.
+
+    This is the question a reader actually arrives with — "is this the disease
+    against people who do not have it?" — and it is answerable from annotation
+    already in the index, so it is answered rather than left to be re-derived
+    from two free-text labels on every row.
+
+    A CLASSIFICATION, not a selection. 109 of the 166 contrasts on the Crohn's
+    fixture index are within-disease (inflamed vs adjacent-normal, treated vs
+    untreated, timepoint vs timepoint), and a reader scanning for case/control
+    currently rules each of those out by reading two label strings. Saying which
+    is which removes that work without removing a row or picking one — `_flags`'
+    rule, and `picker_payload`'s.
+    """
+    ref = set(c.ref_disease_ids) - NOT_DISEASED_IDS
+    test = set(c.test_disease_ids) - NOT_DISEASED_IDS
+    if not test and not ref:
+        return "undetermined"
+    if bool(test) != bool(ref):
+        # One side diseased, the other not — in either direction. Which way it
+        # runs is the sign sentence's job, not this function's.
+        return "case_vs_unaffected"
+    return "within_one_disease" if ref == test else "disease_vs_disease"
+
 
 def _flags(c: IndexedContrast) -> list[dict[str, str]]:
     """Every reason a reader should look twice at this row, all of them visible.
@@ -524,6 +572,12 @@ def picker_row(c: IndexedContrast, built_utc: str) -> dict[str, Any]:
         "tissue": list(c.test_organism_parts),
         "ref_tissue": list(c.ref_organism_parts),
         "test_disease_ids": list(c.test_disease_ids),
+        # Carried so the classification below is checkable from the payload
+        # rather than taken on trust. It was already on `IndexedContrast` and
+        # simply never surfaced.
+        "ref_disease_ids": list(c.ref_disease_ids),
+        "comparison": comparison_kind(c),
+        "comparison_label": COMPARISON_LABELS[comparison_kind(c)],
         "flags": flags,
         "flag_keys": sorted(keys),
         # Drawable means: RNA-seq, and an id whose direction is established.
@@ -621,6 +675,17 @@ def picker_payload(index: "AtlasIndex", ref: DiseaseRef, sort: str = "") -> dict
         "counts": summary.as_dict(),
         "flag_counts": flag_counts,
         "n_drawable_now": sum(1 for r in rows if r["drawable"]),
+        # How the rows split by what they COMPARE, and how many of each are
+        # drawable. Counts, not a pick: the reader still chooses, and the
+        # refusal in this function's docstring is untouched. This is the number
+        # that says a 138-row list holds a handful of case/control comparisons.
+        "comparison_counts": {
+            k: {"total": sum(1 for r in rows if r["comparison"] == k),
+                "drawable": sum(1 for r in rows
+                                if r["comparison"] == k and r["drawable"])}
+            for k in COMPARISON_LABELS
+        },
+        "comparison_labels": dict(COMPARISON_LABELS),
         "dominance": ({"accession": dominant[0], "n": dominant[1],
                        "of": len(rows),
                        "text": (f"{dominant[1]} of {len(rows)} contrasts here are "

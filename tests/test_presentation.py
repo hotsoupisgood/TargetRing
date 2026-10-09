@@ -2737,3 +2737,51 @@ class TestThePasteSectionDoesNotSurviveTheAtlasPath:
         block = html[html.index('id="paste-section"'):html.index('id="paste-superseded"')]
         for still_needed in ("2. Region", "3. Gene order", "4. Threshold filters"):
             assert still_needed not in block, still_needed
+
+
+class TestTheGeneTablePreselectsWhatTheServerSelected:
+    """`SELECTED` started empty, so the Atlas path asked the user to re-enter by
+    hand a decision the server had just made — up to 60 checkboxes, with a
+    "select none" button and no "select all". The runs on disk show what that
+    produced in practice: 12 ticked of 12 shown, then 14 of 14.
+
+    Preselecting the whole shown set is not a recommendation and not a pick
+    among alternatives: the selection happened in `contrast.top_n_by_padj`,
+    whose own docstring calls it "Rule 1 as a sort, rule 7's one permitted
+    rank-based selection". Ticking a SUBSET is the judgement, and it stays.
+    """
+
+    def test_the_gene_table_preselects_every_shown_row(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        block = js[js.index("GENE_TABLE = body;"):]
+        block = block[:block.index("renderGeneTable();")]
+        assert "SELECTED = new Set(" in block
+        assert "body.rows" in block
+        assert "ensembl_id" in block
+
+    def test_a_row_with_no_ensembl_id_is_not_preselected(self) -> None:
+        """`/api/analyse` checks every id against the shown top-N on arrival
+        (`selection_outside_top_n`); sending a blank would be refused there."""
+        js = (STATIC / "app.js").read_text()
+        block = js[js.index("GENE_TABLE = body;"):]
+        block = block[:block.index("renderGeneTable();")]
+        assert ".filter(Boolean)" in block
+
+    def test_select_all_exists_as_the_counterpart_to_select_none(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        assert 'id="select-all"' in js
+        assert '$("#select-all").onclick' in js
+
+    def test_select_all_cannot_add_an_id_outside_the_shown_rows(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index('$("#select-all").onclick'):]
+        fn = fn[:fn.index("};") + 2]
+        assert "GENE_TABLE.rows" in fn
+        assert ".filter(Boolean)" in fn
+
+    def test_the_count_line_says_the_selection_is_the_whole_shown_set(self) -> None:
+        """So a reader knows it was preselected rather than remembered from a
+        previous contrast."""
+        js = (STATIC / "app.js").read_text()
+        assert "all of them, by this contrast's own adjusted p" in js
+        assert "untick to narrow" in js
