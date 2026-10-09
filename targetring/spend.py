@@ -1,7 +1,9 @@
-"""Two named LLM accounts, two caps, one append-only ledger.
+"""Four named LLM accounts, four caps, one append-only ledger.
 
-`AGENTS.md` rule 8, as amended 2026-09-29: *"Two paid calls, two separate $5
-caps with their own counters ... Neither borrows from the other."* Before this
+`AGENTS.md` rule 8, amended twice on 2026-10-09 to four paid calls with four
+separate caps -- *"None borrows from another"* -- and to state that a cap is an
+approval gate rather than a ceiling: it stops, names the numbers, records the
+refusal, and raising it is Puck's. Before this
 module the caps were constants with nothing behind them and `manifest.llm` was
 the literal `{"attempted": False, "spend_usd": 0.0}`. A cap with no counter is a
 number in a file, and a manifest that reports a hard-coded zero is the
@@ -10,7 +12,7 @@ accounting version of a plausible wrong figure: it reads like a measurement.
 Five decisions here are load-bearing, and each is the one that stops a spend
 figure from being plausible and wrong.
 
-1. **Two accounts, resolved by name, and an unknown name raises.** The caps are
+1. **Accounts resolved by name, and an unknown name raises.** The caps are
    read from `config` at call time rather than captured at import, so a test can
    move one cap and the other is provably untouched. There is no "default
    account": a call that does not say which budget it spends has no business
@@ -57,17 +59,19 @@ from . import config
 TRIAGE = "triage"
 PHENOTYPE = "phenotype"
 CHOOSER = "chooser"
+REGION = "region"
 
-#: The only three account names there are. The value is the `config` attribute
+#: The only four account names there are. The value is the `config` attribute
 #: holding that account's cap, looked up when asked rather than copied here, so
 #: the cap has exactly one definition.
 ACCOUNT_CAP_ATTR: dict[str, str] = {
     TRIAGE: "LLM_SPEND_CAP_USD",
     PHENOTYPE: "PHENOTYPE_LLM_SPEND_CAP_USD",
     CHOOSER: "CHOOSER_LLM_SPEND_CAP_USD",
+    REGION: "REGION_LLM_SPEND_CAP_USD",
 }
 
-ACCOUNTS: tuple[str, ...] = (TRIAGE, PHENOTYPE, CHOOSER)
+ACCOUNTS: tuple[str, ...] = (TRIAGE, PHENOTYPE, CHOOSER, REGION)
 
 #: What an account is for, printed beside its line in the manifest and the UI so
 #: two identical `$0.00 of $5.00` rows are distinguishable.
@@ -78,6 +82,8 @@ ACCOUNT_PURPOSE: dict[str, str] = {
                 "only the table it sits above"),
     CHOOSER: ("the contrast chooser, one call per disease, choosing only among "
               "contrasts the index already offered it"),
+    REGION: ("the region chooser, one call per disease and then cached, "
+             "choosing only among the GTEx tissues this build can read"),
 }
 
 #: Terminal statuses. A line carrying one of these is the last word on its
@@ -99,7 +105,7 @@ class SpendError(RuntimeError):
 
 
 class UnknownAccount(SpendError):
-    """A name that is not one of the two accounts."""
+    """A name that is not one of the accounts."""
 
 
 class UnpricedModel(SpendError):

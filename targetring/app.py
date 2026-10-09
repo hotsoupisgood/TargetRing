@@ -22,6 +22,7 @@ from .adapters.opentargets import OpenTargetsAdapter
 from . import atlas_index
 from . import autopick as autopick_mod
 from . import chooser_llm
+from . import region_llm
 from .cache import Cache
 from . import contrast as contrast_mod
 from . import dim as dim_mod
@@ -1027,6 +1028,38 @@ async def autopick(disease: str = "") -> JSONResponse:
         return JSONResponse({**body, "error": "no_eligible_contrast"},
                             status_code=422)
     return JSONResponse(body)
+
+
+@app.get("/api/region-for")
+async def region_for(disease: str = "") -> JSONResponse:
+    """Which GTEx tissue to read the specificity ring against, for one disease.
+
+    A 200 with an empty `tissue` is the normal no-answer: the caller keeps its
+    own default region and says so. This never substitutes one silently, which
+    is why the empty case is not an error status — there is nothing wrong, the
+    app simply did not infer a tissue and the figure will name the default it
+    used instead.
+    """
+    want = (disease or "").strip()
+    if not want:
+        raise HTTPException(400, "region-for requires a disease label")
+    cache = Cache()
+    try:
+        regions = await available_regions(cache)
+    except Exception as e:  # noqa: BLE001 -- GTEx unreachable
+        return JSONResponse({"tissue": "", "reason": f"the GTEx tissue panel "
+                                                     f"is unavailable: {e}",
+                             "cached": False, "error": "panel"})
+    chooser: Any = None
+    try:
+        chooser = region_llm.AnthropicRegionClient()
+    except Exception:  # noqa: BLE001 -- no `anthropic` installed
+        chooser = None
+    result = region_llm.RegionChooser(
+        client=chooser, cache=cache,
+        ledger=spend_mod.default_ledger()).choose(want, regions)
+    return JSONResponse({**result.as_dict(), "n_regions": len(regions),
+                         "default_region": DEFAULT_REGION})
 
 
 @app.get("/api/run/{run_id}/evidence")

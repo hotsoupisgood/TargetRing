@@ -68,6 +68,12 @@ GTEX_DATASET = "gtex_v8"
 # Bumped by hand when a query or a parse changes shape. Part of every cache key
 # (QA N4: gene+source alone serves stale values across a schema change).
 SCHEMA_VERSIONS = {
+    # The region chooser's answers, keyed on disease + prompt hash + a hash of
+    # the GTEx panel (see `region_llm.cache_key`). Those three already
+    # invalidate on the things that change the right answer; this version is
+    # for changes to the STORED SHAPE — add a field, bump it, or a new reader
+    # gets an old record missing the field it now needs.
+    "region_llm": "1",
     "opentargets.resolve": "1",
     # v2: the pinned TARGET_QUERY now asks for `clinicalReports.diseases`, so the
     # phase ring can report a stage *for the attributed indication* rather than
@@ -173,6 +179,16 @@ PHENOTYPE_LLM_SPEND_CAP_USD = 5.00
 # raising it is Puck's. One chooser call per disease is cheap, so a small cap
 # asks early rather than after the money is gone.
 CHOOSER_LLM_SPEND_CAP_USD = 2.00
+
+# AGENTS.md rule 8 as amended 2026-10-09 (second amendment that day): a fourth
+# paid call, the region chooser -- which GTEx tissue the `regional_specificity`
+# ring should be read against, inferred from where the disease acts. Its own cap
+# and counter, like every other.
+#
+# Lower than the contrast chooser's because the answer is CACHED per disease:
+# the second run for the same disease costs nothing, so steady-state spend here
+# is a function of how many distinct diseases are looked at, not how many runs.
+REGION_LLM_SPEND_CAP_USD = 1.00
 
 # Stage 7. One call per gene, one distinct PMID at a time from Europe PMC.
 # Capped and the cap printed on the page (plan §3 stage 7a) -- a heavily
