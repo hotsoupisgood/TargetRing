@@ -95,6 +95,18 @@ def prompt_hash() -> str:
     return hashlib.sha256(SYSTEM_PROMPT.encode()).hexdigest()[:16]
 
 
+def cache_key(disease: str, cands: list[Candidate]) -> str:
+    """Disease + prompt + the exact candidate set.
+
+    The candidate set belongs in the key because the index is rebuilt: a
+    contrast appearing or disappearing can change the right answer, and a cache
+    that ignored it would serve an answer to a list that no longer exists.
+    """
+    keys = hashlib.sha256("\n".join(sorted(c.key for c in cands))
+                          .encode()).hexdigest()[:12]
+    return f"{disease}:{prompt_hash()}:{keys}"
+
+
 def user_content(cands: list[Candidate]) -> str:
     """Rule 10: public Atlas metadata, and only that."""
     return json.dumps([
@@ -183,6 +195,15 @@ class ModelChooser:
 
     client: ContrastLLMClient
     ledger: Any = None
+    #: Answers are remembered per disease and candidate set. Without it the
+    #: picker made a paid call on every disease interaction and could return a
+    #: different contrast for two identical requests — a "Chosen for you" that
+    #: moves on its own is not a choice a reader can check.
+    cache: Any = None
+    #: The disease this call is for, so its ledger line is attributable. Keyed
+    #: on the candidate count alone, chooser spend could not be traced back to
+    #: what it was spent on — `region_llm` keys on the disease and so does this.
+    disease: str = ""
     #: Raised from 400 after a live failure on 2026-10-09: the model ran past
     #: 400 tokens mid-sentence on MONDO_0005301, the JSON was cut off, and
     #: `messages.parse` raised a ValidationError reading "EOF while parsing a
@@ -202,6 +223,17 @@ class ModelChooser:
             return None, ("no contrast for this disease is both drawable and a "
                           "comparison of affected against unaffected")
 
+        if self.cache is not None:
+            hit = self.cache.get("chooser_llm", cache_key(self.disease, cands))
+            if hit:
+                by_key = {c.key: c for c in cands}
+                chosen = by_key.get(hit.get("key", ""))
+                if chosen is not None:
+                    # Said, not passed off as fresh — the same rule
+                    # `region_llm` follows and `citations._drift` sets.
+                    return chosen, (f"{hit.get('reason', '')} (remembered from "
+                                    f"an earlier run)")
+
         reservation = None
         if self.ledger is not None:
             from . import spend as spend_mod
@@ -210,7 +242,8 @@ class ModelChooser:
                     account=spend_mod.CHOOSER, model=self.client.model,
                     input_tokens=_estimate_tokens(cands),
                     max_tokens=self.max_tokens,
-                    key=f"chooser:{len(cands)}", prompt_hash=prompt_hash())
+                    key=f"chooser:{self.disease or '?'}:{len(cands)}",
+                    prompt_hash=prompt_hash())
             except Exception as e:  # noqa: BLE001 -- CapExceeded and friends
                 # Rule 8 as amended: a cap is an approval gate. Say the number
                 # rather than failing mute, so the next step is obvious.
@@ -219,8 +252,20 @@ class ModelChooser:
         out = self.client.complete(cands, max_tokens=self.max_tokens)
 
         if self.ledger is not None and reservation is not None:
+            # `status` and `cache_read_tokens` are the caller's to supply, and
+            # `phenotype.py` is the pattern. Committing with the defaults logged
+            # every failure as `ok` and billed no cache reads — a ledger that
+            # reports a failed call as a success is the accounting version of a
+            # plausible wrong figure.
+            from . import spend as spend_mod
+            status = (spend_mod.STATUS_OK if out.ok
+                      else spend_mod.STATUS_REFUSED_VALIDATION
+                      if out.stop_reason == "refusal"
+                      else spend_mod.STATUS_API_ERROR)
             self.ledger.commit(reservation, input_tokens=out.input_tokens,
-                               output_tokens=out.output_tokens)
+                               output_tokens=out.output_tokens,
+                               cache_read_tokens=out.cache_read_tokens,
+                               status=status, note=out.error or "")
         if not out.ok:
             return None, f"the chooser did not run — {out.error}"
 
@@ -238,6 +283,10 @@ class ModelChooser:
             # foreseeable output, and the deterministic chooser is right there.
             return None, (f"the chooser returned {out.key!r}, which is not one "
                           f"of the {len(cands)} contrasts it was given")
+        if self.cache is not None:
+            self.cache.put("chooser_llm", cache_key(self.disease, cands),
+                           {"key": out.key, "reason": out.reason,
+                            "model": out.model, "disease": self.disease})
         return by_key[out.key], out.reason
 
 

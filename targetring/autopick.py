@@ -253,11 +253,24 @@ class RuleChooser:
         if not cands:
             return None, ("no contrast for this disease is both drawable and a "
                           "comparison of affected against unaffected")
-        best = max(cands, key=lambda c: (c.min_n, c.accession, c.contrast_id))
+        # Ties broken by the LOWEST accession then contrast id, which is what
+        # "ties broken by accession then contrast id" means in the stated rule.
+        # `max` over a tuple took the highest, i.e. reverse-alphabetical, so the
+        # rule said one thing and did another.
+        best = min(cands, key=lambda c: (-c.min_n, c.accession, c.contrast_id))
         others = [c for c in cands if c.key != best.key]
-        runner = max(others, key=lambda c: c.min_n).min_n if others else None
-        tail = (f"; the next best has {runner} on its smaller side"
-                if runner is not None else "; it was the only candidate")
+        # The next best is the best of the REST, which on a tie is the same
+        # number — "the most of 3; the next best has 12" is what happens when
+        # this reads the whole list instead.
+        runner = max((c.min_n for c in others), default=None)
+        if runner is None:
+            tail = "; it was the only candidate"
+        elif runner == best.min_n:
+            tied = len([c for c in cands if c.min_n == best.min_n])
+            tail = (f"; {tied} candidates tie at {best.min_n} and this is the "
+                    f"first by accession")
+        else:
+            tail = f"; the next best has {runner} on its smaller side"
         return best, (f"{best.min_n} samples on its smaller side "
                       f"(n={best.n_ref} vs {best.n_test}), the most of "
                       f"{len(cands)} candidate(s){tail}")

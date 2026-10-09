@@ -207,6 +207,19 @@ class TestTheRoute:
             assert banned not in body["rows"][0], banned
 
 
+class FakeCache:
+    """The `Cache` surface the choosers use: get/put on (source, key)."""
+
+    def __init__(self):
+        self.store = {}
+
+    def get(self, source, key):
+        return self.store.get((source, key))
+
+    def put(self, source, key, body):
+        self.store[(source, key)] = body
+
+
 class FakeClient:
     """A chooser client with canned outcomes. Never spends, never calls out."""
 
@@ -215,9 +228,11 @@ class FakeClient:
     def __init__(self, outcome):
         self.outcome = outcome
         self.seen = None
+        self.calls = 0
 
     def complete(self, cands, *, max_tokens):
         self.seen = list(cands)
+        self.calls += 1
         return self.outcome
 
 
@@ -340,3 +355,120 @@ class TestTheModelChooser:
         # and the prompt bounds the sentence, so budget and ask agree
         assert "35 words" in SYSTEM_PROMPT
         assert "truncated" in SYSTEM_PROMPT
+
+
+class TestTheLedgerRecordsWhatActuallyHappened:
+    """`phenotype.py` is the pattern: an explicit `status` and the cache-read
+    tokens. Committing with the defaults logged every failed call as `ok` and
+    billed no cache reads — a ledger that reports a failure as a success is the
+    accounting version of a plausible wrong figure."""
+
+    def test_a_failed_call_is_not_recorded_as_ok(self, tmp_path, monkeypatch) -> None:
+        from targetring import config as cfg, spend as spend_mod
+        from targetring.chooser_llm import ChoiceOutcome, ModelChooser
+        monkeypatch.setattr(cfg, "SPEND_LEDGER_PATH", tmp_path / "s.jsonl")
+        led = spend_mod.SpendLedger(tmp_path / "s.jsonl")
+        ch = ModelChooser(client=FakeClient(
+            ChoiceOutcome(ok=False, error="boom", model="claude-opus-5")),
+            ledger=led, disease="x")
+        autopick.pick(self.two_rows(), ch)
+        statuses = [l["status"] for l in led.lines()
+                    if l["status"] in spend_mod.TERMINAL_STATUSES]
+        assert spend_mod.STATUS_API_ERROR in statuses, statuses
+        assert spend_mod.STATUS_OK not in statuses
+
+    def test_a_provider_refusal_is_recorded_as_a_validation_refusal(
+            self, tmp_path, monkeypatch) -> None:
+        from targetring import config as cfg, spend as spend_mod
+        from targetring.chooser_llm import ChoiceOutcome, ModelChooser
+        monkeypatch.setattr(cfg, "SPEND_LEDGER_PATH", tmp_path / "s.jsonl")
+        led = spend_mod.SpendLedger(tmp_path / "s.jsonl")
+        ch = ModelChooser(client=FakeClient(ChoiceOutcome(
+            ok=False, stop_reason="refusal", error="refused",
+            model="claude-opus-5")), ledger=led, disease="x")
+        autopick.pick(self.two_rows(), ch)
+        assert spend_mod.STATUS_REFUSED_VALIDATION in [
+            l["status"] for l in led.lines()]
+
+    def test_the_ledger_key_names_the_disease(self) -> None:
+        """Keyed on the candidate count alone, chooser spend could not be traced
+        back to what it was spent on."""
+        from targetring.chooser_llm import ModelChooser
+        import inspect
+        src = inspect.getsource(ModelChooser.choose)
+        assert "self.disease" in src
+
+    @staticmethod
+    def two_rows():
+        return [row(contrast_id="g2_g1", min_n=13),
+                row(contrast_id="g3_g1", min_n=43)]
+
+
+class TestTheChooserIsCached:
+    """Without it the picker made a paid, non-deterministic call on EVERY
+    disease interaction: ~36 of them exhaust the $2 cap, and "Chosen for you"
+    could differ between two identical requests."""
+
+    @staticmethod
+    def two_rows():
+        return [row(contrast_id="g2_g1", min_n=13),
+                row(contrast_id="g3_g1", min_n=43)]
+
+    def ok(self, key):
+        from targetring.chooser_llm import ChoiceOutcome
+        return ChoiceOutcome(ok=True, key=key, reason="because",
+                             model="claude-opus-5")
+
+    def test_the_second_ask_does_not_call_the_model(self) -> None:
+        from targetring.chooser_llm import ModelChooser
+        client = FakeClient(self.ok("E-TEST-1 g2_g1"))
+        ch = ModelChooser(client=client, cache=FakeCache(), disease="Crohn")
+        autopick.pick(self.two_rows(), ch)
+        autopick.pick(self.two_rows(), ch)
+        assert client.calls == 1
+
+    def test_a_cached_answer_says_it_is_remembered(self) -> None:
+        from targetring.chooser_llm import ModelChooser
+        ch = ModelChooser(client=FakeClient(self.ok("E-TEST-1 g2_g1")),
+                          cache=FakeCache(), disease="Crohn")
+        autopick.pick(self.two_rows(), ch)
+        again = autopick.pick(self.two_rows(), ch)
+        assert "remembered from an earlier run" in again.reason
+
+    def test_a_changed_candidate_set_invalidates(self) -> None:
+        """The index is rebuilt; a contrast appearing or disappearing can change
+        the right answer."""
+        from targetring import chooser_llm
+        cands = autopick.candidates_from_rows(self.two_rows())[0]
+        more = autopick.candidates_from_rows(
+            self.two_rows() + [row(contrast_id="g9_g1", min_n=5)])[0]
+        assert chooser_llm.cache_key("x", cands) != chooser_llm.cache_key("x", more)
+
+    def test_the_cache_source_has_a_schema_version(self) -> None:
+        from targetring import config
+        assert config.SCHEMA_VERSIONS["chooser_llm"]
+
+
+class TestTheTieBreakMatchesItsStatedRule:
+
+    @staticmethod
+    def rows3():
+        return [row(accession="E-C", min_n=12), row(accession="E-A", min_n=12),
+                row(accession="E-B", min_n=12)]
+
+    def test_a_tie_goes_to_the_first_accession_not_the_last(self) -> None:
+        """The rule says "ties broken by accession then contrast id"; `max` over
+        a tuple took the highest, i.e. reverse-alphabetical."""
+        assert autopick.pick(self.rows3()).chosen.accession == "E-A"
+
+    def test_a_tie_does_not_claim_a_better_runner_up(self) -> None:
+        """It read "the most of 3 candidate(s); the next best has 12" — the
+        next best WAS 12, because it was reading the whole list."""
+        p = autopick.pick(self.rows3())
+        assert "the next best has" not in p.reason
+        assert "3 candidates tie at 12" in p.reason
+
+    def test_a_genuine_runner_up_is_still_named(self) -> None:
+        p = autopick.pick([row(accession="E-C", min_n=43),
+                           row(accession="E-A", min_n=12)])
+        assert "the next best has 12" in p.reason

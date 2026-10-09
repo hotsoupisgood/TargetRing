@@ -316,6 +316,10 @@ function leaveLanding() {
 // another disease's organ.
 let DEFAULT_REGION = "";
 let REGION_WAS_INFERRED = false;
+//: The disease the in-flight region request is for. Two diseases chosen in
+//: quick succession leave two requests outstanding, and without this the slower
+//: one wins — setting the first disease's tissue over the second's.
+let REGION_ASKED_FOR = "";
 
 // Which GTEx tissue to read the specificity ring against, inferred from the
 // disease and cached server-side (`region_llm`). Best-effort and never
@@ -328,6 +332,7 @@ async function inferRegion(label) {
   const box = $("#region-inferred");
   const sel = $("#region");
   if (!box || !sel || !label) return;
+  REGION_ASKED_FOR = label;
   let r;
   try {
     r = await fetch("/api/region-for?disease=" + encodeURIComponent(label))
@@ -339,6 +344,13 @@ async function inferRegion(label) {
     clearInferredRegion();
     return;
   }
+  // A region the user chose by hand is theirs. `loadContrasts` runs again on a
+  // sort change and on stepping back, and re-setting the select each time
+  // silently reverted their choice.
+  if (sel.value !== DEFAULT_REGION && !REGION_WAS_INFERRED) return;
+  // Two diseases picked quickly leave two requests in flight; the slower one
+  // must not land on top of the newer disease's region.
+  if (label !== REGION_ASKED_FOR) return;
   const match = [...sel.options].find((o) => o.value === r.tissue);
   if (!match) {
     // The panel the select was built from and the panel the chooser was given
@@ -1642,10 +1654,16 @@ function llmAccountsHtml(llm) {
       <td class="reason">${esc(a.purpose)}</td></tr>`).join("");
   const prices = Object.entries(llm.price_table || {}).map(([m, p]) =>
     `<code>${esc(m)}</code> $${p.input}/$${p.output} per MTok in/out`).join("; ");
-  return `<h4>Paid calls — two caps, two counters</h4>
+  // Counted from the payload, not written down: this said "two caps, two
+  // counters" above a four-row table after rule 8 was amended twice on
+  // 2026-10-09. A hardcoded count beside a rendered list is a caption that
+  // goes stale the moment the list grows.
+  const nAcc = Object.keys(llm.accounts || {}).length;
+  return `<h4>Paid calls — ${nAcc} cap${nAcc === 1 ? "" : "s"}, ${nAcc} counter${
+    nAcc === 1 ? "" : "s"}</h4>
     <table><thead><tr><th>account</th><th>spent</th><th>calls</th>
       <th>what it pays for</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="hint">Neither account borrows from the other and both are separate
+    <p class="hint">No account borrows from another and all are separate
     from any other budget on this machine. Spend is folded from
     <code>${esc(llm.ledger_path || "runs/spend-ledger.jsonl")}</code>, which is
     append-only and lives outside <code>cache/</code> so a cache reset cannot zero
@@ -1959,9 +1977,10 @@ function drawerHtml(d) {
 // Lazy-loaded from `/api/run/<id>/gene/<gene>/phenotypes`, separate from the
 // main drawer fetch, so a drawer that is opened but whose phenotype panel is
 // never clicked makes neither the Open Targets/Europe PMC calls nor — the
-// part that actually costs money — the LLM call. Two spend accounts exist
-// (rule 8) and this panel only ever shows the `phenotype` one; the `triage`
-// line lives in the "Paid calls" section above and this code never touches it.
+// part that actually costs money — the LLM call. Four spend accounts exist
+// (rule 8, amended twice on 2026-10-09) and this panel only ever shows the
+// `phenotype` one; the others live in the "Paid calls" section above and this
+// code never touches them.
 
 async function loadPhenotypes(gene) {
   const panel = document.querySelector('#phenotype-panel[data-gene="' +

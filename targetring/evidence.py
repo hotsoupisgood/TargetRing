@@ -80,6 +80,34 @@ PROBE_PRESENT = 1.0
 MOUSE_NO_ABNORMAL = 0.0
 
 
+#: The domain each ring's value must sit in for a rule to mean anything, from
+#: the `RingSpec`s in `figure.py`. A value outside it is a value on a DIFFERENT
+#: SCALE, and a rule applied across scales is arithmetic about two things.
+#:
+#: Not hypothetical: 23 of the 261 runs under `runs/` were drawn before V9
+#: reduced the rodent ring to three states and carry raw phenotype COUNTS, up
+#: to 249. On those runs `rodent == 0` means "no phenotype records found",
+#: while this build's `rodent == 0` means "phenotyped, and nothing abnormal" —
+#: opposite readings of the same number, and `mouse_phenotyped_and_normal`
+#: would have asserted the second over the first.
+RING_DOMAINS: dict[str, tuple[float, float]] = {
+    "clinical_phase": (0.0, 5.0),
+    "tdl": (0.0, 3.0),
+    "rodent": (0.0, 1.0),
+    "chemical_probe": (0.0, 1.0),
+    "safety": (-1.0, 1.0),
+    "clinical_activity": (-1.0, 1.0),
+}
+
+
+def out_of_domain(ring: str, cell: Cell) -> bool:
+    """Whether this cell's value is outside the scale the rules assume."""
+    lo_hi = RING_DOMAINS.get(ring)
+    if lo_hi is None or cell.state != "value" or cell.value is None:
+        return False
+    return not (lo_hi[0] <= cell.value <= lo_hi[1])
+
+
 @dataclass(frozen=True)
 class Rule:
     """One named reading over two or three rings.
@@ -148,10 +176,27 @@ def _reached_a_phase_then_stopped_for_cause(c: dict[str, Cell]) -> str:
     return ""
 
 
-def _safety_flags_present(c: dict[str, Cell]) -> str:
-    if _v(c, "safety") > 0.0:
-        return (f"safety flags and constraint sit on the amber arm "
-                f"({_v(c, 'safety'):+.2f} of a possible +1.00)")
+def _safety_liabilities_recorded(c: dict[str, Cell]) -> str:
+    """NEGATIVE is the liability arm. Measured, not assumed.
+
+    `adapters/opentargets.SPARSE_KEY_ABSENT_VALUE`'s census over 24 targets:
+    `hasSafetyEvent` is observed only as -1, `isCancerDriverGene` only as -1,
+    `geneEssentiality` as -1 or 0. `palette.py`'s own legend for this family is
+    "red = liability / constraint · blue = clean on these four keys", and red
+    is the low arm.
+
+    This read `> 0.0` until 2026-10-09 and was therefore exactly inverted: it
+    fired on olfactory receptors with no safety record at all (OR51E2 +0.33,
+    PCSK9 +0.23) and stayed silent on MYC (-1.00), KRAS (-0.97), BRAF (-0.73)
+    and TP53 (-0.69). 679 firings across the runs on disk, every one of them
+    backwards — the cardinal rule's defect in a finding that reads as evidence.
+    """
+    v = _v(c, "safety")
+    if v < 0.0:
+        return (f"Open Targets records safety liabilities or constraint here "
+                f"({v:+.2f}, where -1.00 is the most constrained): a safety "
+                f"event, essentiality, genetic constraint, or cancer-driver "
+                f"status")
     return ""
 
 
@@ -198,14 +243,19 @@ RULES: tuple[Rule, ...] = (
               "on 'dormant' and never here. This cell is the remainder that "
               "Open Targets categorised Negative or Safety_Sideeffects."),
          test=_reached_a_phase_then_stopped_for_cause),
-    Rule("safety_flags_present", FLAG,
+    Rule("safety_liabilities_recorded", FLAG,
          ("safety",),
-         why=("The ring's own label is 'NOT evidence of safety'. A positive "
-              "value means flags were found; it does not quantify risk. The "
-              "converse matters more and is why this is a flag rather than a "
-              "score: a negative or absent value is NOT evidence that this "
-              "target is safe."),
-         test=_safety_flags_present),
+         why=("The ring's own label is 'NOT evidence of safety'. NEGATIVE is "
+              "the liability arm -- `hasSafetyEvent` and `isCancerDriverGene` "
+              "are observed only as -1, and palette.py's legend for this "
+              "family is 'red = liability / constraint, blue = clean on these "
+              "four keys'. A negative value means Open Targets holds one of "
+              "those records; it does not quantify risk. The converse matters "
+              "more and is why this is a flag rather than a score: a value at "
+              "or above zero means Open Targets holds no such record, which is "
+              "a fact about Open Targets and NOT evidence that this target is "
+              "safe."),
+         test=_safety_liabilities_recorded),
     Rule("mouse_phenotyped_and_normal", FLAG,
          ("rodent",),
          why=("AGENTS.md rule 6: the rodent result is a lead, not a verdict. "
@@ -237,16 +287,25 @@ def evaluate_gene(cells: dict[str, Cell]) -> list[dict[str, Any]]:
         absent = [r for r in rule.rings if r not in cells]
         missing = [r for r in rule.rings
                    if r in cells and cells[r].state != "value"]
-        if absent or missing:
+        # A value on another scale is not a value this rule can read. Reported
+        # as unevaluable rather than guessed at — the same answer rule 1 gives
+        # for a cell with no measurement, and for the same reason.
+        off_scale = [r for r in rule.rings
+                     if r in cells and out_of_domain(r, cells[r])]
+        if absent or missing or off_scale:
             out.append({
                 "rule": rule.key, "kind": rule.kind, "outcome": UNEVALUABLE,
                 "rings": list(rule.rings), "why": rule.why,
                 "headline": "",
                 # Named, so the UI can say WHICH ring has to be filled in
                 # before this reading means anything.
-                "missing_rings": missing + absent,
+                "missing_rings": missing + absent + off_scale,
                 "missing_states": {r: cells[r].state for r in missing},
                 "not_drawn": absent,
+                # Named separately: "this run drew it on another scale" is a
+                # different fact from "nobody measured it", and a reader
+                # chasing the second would never find the first.
+                "off_scale": {r: cells[r].value for r in off_scale},
             })
             continue
         headline = rule.test(cells)
@@ -256,6 +315,7 @@ def evaluate_gene(cells: dict[str, Cell]) -> list[dict[str, Any]]:
             "rings": list(rule.rings), "why": rule.why,
             "headline": headline,
             "missing_rings": [], "missing_states": {}, "not_drawn": [],
+            "off_scale": {},
         })
     return out
 

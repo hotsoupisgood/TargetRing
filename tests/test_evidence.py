@@ -87,7 +87,7 @@ FIRING_ROWS: dict[str, dict[str, Cell]] = {
         "chemical_probe": value(1.0), "tdl": value(0.0)},
     "reached_a_phase_then_stopped_for_cause": {
         "clinical_phase": value(3.0), "clinical_activity": value(-1.0)},
-    "safety_flags_present": {"safety": value(0.4)},
+    "safety_liabilities_recorded": {"safety": value(-0.69)},
     "mouse_phenotyped_and_normal": {"rodent": value(0.0)},
 }
 
@@ -100,7 +100,7 @@ CLEARING_ROWS: dict[str, dict[str, Cell]] = {
         "chemical_probe": value(1.0), "tdl": value(2.0)},
     "reached_a_phase_then_stopped_for_cause": {
         "clinical_phase": value(3.0), "clinical_activity": value(1.0)},
-    "safety_flags_present": {"safety": value(-0.3)},
+    "safety_liabilities_recorded": {"safety": value(0.33)},
     "mouse_phenotyped_and_normal": {"rodent": value(1.0)},
 }
 
@@ -396,3 +396,41 @@ class TestTheRoute:
         assert client.get(f"/api/run/{run_id}/evidence").status_code == 200
         assert client.get(f"/api/run/{run_id}/manifest.json").status_code == 200
         assert client.get(f"/api/run/{run_id}/values").status_code == 200
+
+
+class TestTheSafetyRingsSignIsNotGuessedAt:
+    """It was inverted from the day it was written until 2026-10-09.
+
+    `adapters/opentargets`' measured census: `hasSafetyEvent` observed only as
+    -1, `isCancerDriverGene` only as -1, `geneEssentiality` as -1 or 0.
+    `palette.py`: "red = liability / constraint, blue = clean on these four
+    keys". Negative IS the liability arm, and the rule read `> 0.0` — firing on
+    olfactory receptors and silent on MYC.
+    """
+
+    @pytest.mark.parametrize("gene,v", [
+        ("MYC", -1.00), ("KRAS", -0.97), ("BRAF", -0.73), ("TP53", -0.69)])
+    def test_a_target_with_known_liabilities_fires(self, gene, v) -> None:
+        got = outcome("safety_liabilities_recorded", {"safety": value(v)})
+        assert got["outcome"] == ev.FIRES, (gene, v, got)
+
+    @pytest.mark.parametrize("gene,v", [
+        ("OR51E2", 0.33), ("PCSK9", 0.23), ("clean", 0.0)])
+    def test_a_target_with_no_safety_record_does_not_fire(self, gene, v) -> None:
+        """At or above zero means Open Targets holds no such record. That is a
+        fact about Open Targets, and the `why` says so rather than letting it
+        read as a clean bill of health."""
+        got = outcome("safety_liabilities_recorded", {"safety": value(v)})
+        assert got["outcome"] == ev.CLEAR, (gene, v, got)
+
+    def test_the_headline_never_calls_a_negative_value_positive(self) -> None:
+        got = outcome("safety_liabilities_recorded", {"safety": value(-0.69)})
+        assert "-0.69" in got["headline"]
+        assert "+" not in got["headline"].split("(")[1].split(")")[0]
+
+    def test_the_stated_reason_names_the_sign_convention(self) -> None:
+        """So the next reader does not have to re-derive it from the adapter."""
+        rule = next(r for r in ev.RULES
+                    if r.key == "safety_liabilities_recorded")
+        assert "NEGATIVE is the liability arm" in rule.why
+        assert "NOT evidence that this target is safe" in rule.why

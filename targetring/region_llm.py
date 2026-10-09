@@ -228,8 +228,15 @@ class RegionChooser:
 
         out = self.client.complete(disease, regions, max_tokens=self.max_tokens)
         if self.ledger is not None and reservation is not None:
-            self.ledger.commit(reservation, input_tokens=out.input_tokens,
-                               output_tokens=out.output_tokens)
+            # Explicit status and cache-read tokens, like `phenotype.py`. The
+            # defaults logged a failed call as `ok` and billed no cache reads.
+            from . import spend as spend_mod
+            self.ledger.commit(
+                reservation, input_tokens=out.input_tokens,
+                output_tokens=out.output_tokens,
+                cache_read_tokens=out.cache_read_tokens,
+                status=spend_mod.STATUS_OK if out.ok else spend_mod.STATUS_API_ERROR,
+                note=out.error or "")
 
         if not out.ok:
             return RegionResult("", f"the region chooser did not run — "

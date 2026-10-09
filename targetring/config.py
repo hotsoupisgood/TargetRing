@@ -74,6 +74,12 @@ SCHEMA_VERSIONS = {
     # for changes to the STORED SHAPE — add a field, bump it, or a new reader
     # gets an old record missing the field it now needs.
     "region_llm": "1",
+    # The contrast chooser's answers, keyed on disease + prompt hash + a hash of
+    # the candidate set (`chooser_llm.cache_key`). Without this the picker made
+    # a paid, non-deterministic call on EVERY disease interaction: ~36 of them
+    # exhaust the $2 cap, and "Chosen for you" could differ between two
+    # identical requests.
+    "chooser_llm": "1",
     "opentargets.resolve": "1",
     # v2: the pinned TARGET_QUERY now asks for `clinicalReports.diseases`, so the
     # phase ring can report a stage *for the attributed indication* rather than

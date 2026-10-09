@@ -129,6 +129,7 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
                   record_url: str = "",
                   drawer_note: str = "",
                   artefact_links: list[dict[str, str]] | None = None,
+                  _table: Any = None,
                   ) -> dict[str, Any]:
     """One run's cells as a wide grid.
 
@@ -138,7 +139,12 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
     approximation: an order or a bound this run cannot honour must never be printed
     as active over a grid that did not use it.
     """
-    t = table_mod.load(run_id)
+    # `_table` lets a caller that has already loaded this run hand it over.
+    # `evidence_payload` is the one that does: it needs the same `RunTable` for
+    # its per-gene readings, and loading it twice would parse `values.csv`
+    # twice per request for no gain. It is a shared READ, not a second builder
+    # — this function is still the only thing that turns a run into a grid.
+    t = _table if _table is not None else table_mod.load(run_id)
     cells_by_ring = t.cells_by_ring()
     keys = parse_sort_keys(sort, cells_by_ring)
     dimmable = dimmable_rings(t.rings)
@@ -347,10 +353,10 @@ def evidence_payload(run_id: str, *, in_memory: bool = False,
 
     Raises exactly what `table_payload` raises, for the same reasons.
     """
+    t = table_mod.load(run_id)
     base = table_payload(run_id, "", "", in_memory=in_memory,
                          record_url=record_url, drawer_note=drawer_note,
-                         artefact_links=artefact_links)
-    t = table_mod.load(run_id)
+                         artefact_links=artefact_links, _table=t)
     cells_by_ring = t.cells_by_ring()
     ring_keys = [r["key"] for r in t.rings]
     # THE NINE EXTERNAL RINGS, and nothing else — the same set `k` counts.

@@ -1015,7 +1015,8 @@ async def autopick(disease: str = "") -> JSONResponse:
     chooser: Any = None
     try:
         chooser = chooser_llm.ModelChooser(
-            client=chooser_llm.AnthropicContrastClient(),
+            client=chooser_llm.AnthropicContrastClient(), disease=ref.label or want,
+            cache=Cache(),
             ledger=spend_mod.default_ledger())
     except Exception:  # noqa: BLE001 -- no `anthropic` installed at all
         chooser = None

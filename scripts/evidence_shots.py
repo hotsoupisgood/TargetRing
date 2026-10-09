@@ -73,6 +73,7 @@ def a_run_with_a_contradiction(port: int) -> str:
     with urllib.request.urlopen(f"{base}/api/runs?limit=200") as r:
         runs = [x["run_id"] for x in json.load(r)["runs"]]
     fallback = ""
+    flagged = ""
     for rid in runs:
         try:
             with urllib.request.urlopen(f"{base}/api/run/{rid}/evidence") as r:
@@ -82,7 +83,13 @@ def a_run_with_a_contradiction(port: int) -> str:
         fallback = fallback or rid
         if d["finding_counts"]["with_contradiction"]:
             return rid
-    return fallback
+        if d["finding_counts"]["with_flag"] and not flagged:
+            flagged = rid
+    # The documented order: a contradiction if one exists, else a run that at
+    # least carries a flag, else anything loadable. The middle rung was in the
+    # docstring and not in the code, so a disease with flags but no
+    # contradiction shot whatever happened to be newest.
+    return flagged or fallback
 
 
 def main() -> int:
