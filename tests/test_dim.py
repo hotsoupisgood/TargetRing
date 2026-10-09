@@ -36,6 +36,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from targetring import de_input
 from targetring import dim as dim_mod
 from targetring import table as table_mod
 from targetring.app import app
@@ -153,18 +154,55 @@ class TestDimmingRemovesNothing:
 
     def test_no_dimmed_gene_reaches_the_drop_ledger(self, client, run_id, loaded) -> None:
         """The ledger is for genes that are genuinely not on the figure. Putting
-        view state in it would break what a reader reads it for."""
+        view state in it would break what a reader reads it for.
+
+        The DROP ledger, specifically. `de_input.dropped_entries`' docstring is
+        the rule: "The ledger carries two kinds of entry, and conflating them
+        breaks the accounting in both directions. `renamed` and
+        `possible_mouse` genes are rendered *and* listed, because the user
+        needs to see that SEPT9 became SEPTIN9 on a figure that shows SEPTIN9."
+
+        This test used to union every entry's `input` and `resolved_symbol` and
+        call the result the drop ledger, so on any run carrying a rename it
+        asserted that a gene which is on the figure by design is not on the
+        figure. It failed on `MARCHF1` (from `MARCH1 -> MARCHF1`) while dimming
+        was working exactly as specified: counts unchanged, `identity_holds`
+        true, 15 input = 14 rendered + 1 dropped, and the one real drop (`ALB`,
+        ambiguous) never rendered at all.
+        """
         key, thr = a_column_with_both(loaded)
         plain = client.get(f"/api/run/{run_id}/values").json()
         d = client.get(f"/api/run/{run_id}/values",
                        params={"dim": f"{key} >= {thr}"}).json()
         assert d["ledger"] == plain["ledger"]
-        ledgered = {e.get("input") for e in d["ledger"]} | {
-            e.get("resolved_symbol") for e in d["ledger"]}
+        # `RENDERED_STATUSES` rather than a literal pair, so this cannot drift
+        # from the definition `run.py` and the ledger pane already share.
+        dropped = [e for e in d["ledger"]
+                   if e.get("status") not in de_input.RENDERED_STATUSES]
+        ledgered = {e.get("input") for e in dropped} | {
+            e.get("resolved_symbol") for e in dropped}
         for g in d["genes"]:
             if g["dim_state"] != MATCH:
                 assert g["gene"] not in ledgered, g["gene"]
         assert not any("dim" in str(e.get("status", "")).lower() for e in d["ledger"])
+
+    def test_a_renamed_gene_is_rendered_and_listed_and_is_not_a_drop(
+            self, client, run_id) -> None:
+        """The distinction the test above got wrong, asserted directly so it
+        cannot be lost again: a `renamed` entry names a gene that IS on the
+        figure, and it is not counted among the dropped."""
+        d = client.get(f"/api/run/{run_id}/values").json()
+        rendered = {g["gene"] for g in d["genes"]}
+        renamed = [e for e in d["ledger"] if e.get("status") == "renamed"]
+        if not renamed:
+            pytest.skip("this run carries no rename")
+        for e in renamed:
+            assert e["resolved_symbol"] in rendered, e
+            assert e["input"] not in rendered, e
+        dropped = [e for e in d["ledger"]
+                   if e.get("status") not in de_input.RENDERED_STATUSES]
+        assert d["counts"]["dropped"] == len(dropped)
+        assert d["counts"]["input"] == d["counts"]["rendered"] + len(dropped)
 
     def test_no_artefact_is_written_or_changed(self, client, run_id, loaded) -> None:
         """Nothing is recomputed, so nothing on disk moves. Checked by mtime and
