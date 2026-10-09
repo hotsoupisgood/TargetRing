@@ -45,12 +45,20 @@ def _reserve(led, account, *, input_tokens=1000, max_tokens=1200, key="k",
 # --------------------------------------------------------------------------
 
 class TestAccounts:
-    def test_the_two_accounts_are_the_two_rule_8_names(self) -> None:
-        assert spend.ACCOUNTS == ("triage", "phenotype")
+    def test_the_accounts_are_the_rule_8_names(self) -> None:
+        """Three since the 2026-10-09 amendment added the contrast chooser."""
+        assert spend.ACCOUNTS == ("triage", "phenotype", "chooser")
 
     def test_each_account_reads_its_own_config_cap(self) -> None:
         assert spend.cap_for("triage") == config.LLM_SPEND_CAP_USD
         assert spend.cap_for("phenotype") == config.PHENOTYPE_LLM_SPEND_CAP_USD
+        assert spend.cap_for("chooser") == config.CHOOSER_LLM_SPEND_CAP_USD
+
+    def test_no_account_shares_a_cap_with_another(self) -> None:
+        """Rule 8's standing requirement: none borrows from another, so a new
+        feature cannot move an existing feature's ceiling."""
+        attrs = [spend.ACCOUNT_CAP_ATTR[a] for a in spend.ACCOUNTS]
+        assert len(set(attrs)) == len(attrs), attrs
 
     def test_an_unknown_account_name_raises(self, ledger) -> None:
         with pytest.raises(spend.UnknownAccount):
@@ -120,9 +128,13 @@ class TestCapsAreIndependent:
         r = _reserve(ledger, "phenotype", input_tokens=6000, max_tokens=1200)
         ledger.commit(r, input_tokens=6000, output_tokens=600)
         states = ledger.states()
-        assert set(states) == {"triage", "phenotype"}
+        assert set(states) == set(spend.ACCOUNTS)
         assert states["triage"].line.startswith("triage: $0.00 of $5.00")
         assert "phenotype: $0.0" in states["phenotype"].line
+        # Spending on one account moves no other — rule 8's standing rule, and
+        # why each has its own counter rather than a share of one.
+        assert states["chooser"].spent_usd == 0.0
+        assert states["triage"].spent_usd == 0.0
 
 
 # --------------------------------------------------------------------------
@@ -342,7 +354,7 @@ class TestManifestShowsBothAccounts:
         r = _reserve(ledger, "phenotype", input_tokens=6000, max_tokens=1200)
         ledger.commit(r, input_tokens=6000, output_tokens=600)
         block = ledger.manifest_block(model=OPUS, prompt_hash="ph0")
-        assert set(block["accounts"]) == {"triage", "phenotype"}
+        assert set(block["accounts"]) == {"triage", "phenotype", "chooser"}
         assert block["accounts"]["triage"] == {
             "cap": 5.0, "spent": 0.0, "calls": 0, "remaining": 5.0,
             "purpose": spend.ACCOUNT_PURPOSE["triage"]}
@@ -356,7 +368,8 @@ class TestManifestShowsBothAccounts:
     def test_both_lines_are_present_even_when_nothing_was_spent(self, ledger) -> None:
         block = ledger.manifest_block()
         assert block["lines"] == ["triage: $0.00 of $5.00 spent over 0 calls",
-                                 "phenotype: $0.00 of $5.00 spent over 0 calls"]
+                                 "phenotype: $0.00 of $5.00 spent over 0 calls",
+                                 "chooser: $0.00 of $2.00 spent over 0 calls"]
 
     def test_a_built_manifest_carries_the_two_lines(self, monkeypatch, tmp_path) -> None:
         """The end the artefact is read from: `manifest.build` through to the JSON

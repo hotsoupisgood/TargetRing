@@ -348,6 +348,13 @@ function pickedContrastHtml(picked) {
     </div>
     <details class="ev-why"><summary>how this was chosen</summary>
       <p class="reason">${esc(picked.stated_rule)}.</p>
+      ${/* Who ACTUALLY chose. A fallback is honest only if the reader is told
+            it happened: showing a model's name over a rule's choice would be a
+            wrong claim about the figure's own provenance, which is the defect
+            this build spends most of its effort on. */""}
+      ${picked.fell_back_from
+        ? `<p class="hint"><b>This fell back to the rule above.</b>
+           Asked first — ${esc(picked.fell_back_from)}</p>` : ""}
       <p class="hint">${n} contrast(s) were eligible;
         ${picked.excluded.length} were not —
         ${esc([...new Set(picked.excluded.map((e) => e.excluded_reason))].join(" "))}</p>

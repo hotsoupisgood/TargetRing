@@ -56,16 +56,18 @@ from . import config
 
 TRIAGE = "triage"
 PHENOTYPE = "phenotype"
+CHOOSER = "chooser"
 
-#: The only two account names there are. The value is the `config` attribute
+#: The only three account names there are. The value is the `config` attribute
 #: holding that account's cap, looked up when asked rather than copied here, so
 #: the cap has exactly one definition.
 ACCOUNT_CAP_ATTR: dict[str, str] = {
     TRIAGE: "LLM_SPEND_CAP_USD",
     PHENOTYPE: "PHENOTYPE_LLM_SPEND_CAP_USD",
+    CHOOSER: "CHOOSER_LLM_SPEND_CAP_USD",
 }
 
-ACCOUNTS: tuple[str, ...] = (TRIAGE, PHENOTYPE)
+ACCOUNTS: tuple[str, ...] = (TRIAGE, PHENOTYPE, CHOOSER)
 
 #: What an account is for, printed beside its line in the manifest and the UI so
 #: two identical `$0.00 of $5.00` rows are distinguishable.
@@ -74,6 +76,8 @@ ACCOUNT_PURPOSE: dict[str, str] = {
              f"nothing has ever been spent on it)"),
     PHENOTYPE: ("the phenotype-page summary, one call per gene, summarising "
                 "only the table it sits above"),
+    CHOOSER: ("the contrast chooser, one call per disease, choosing only among "
+              "contrasts the index already offered it"),
 }
 
 #: Terminal statuses. A line carrying one of these is the last word on its

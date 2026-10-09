@@ -205,3 +205,115 @@ class TestTheRoute:
         for banned in ("selected", "recommended", "default", "best", "chosen"):
             assert banned not in body, banned
             assert banned not in body["rows"][0], banned
+
+
+class FakeClient:
+    """A chooser client with canned outcomes. Never spends, never calls out."""
+
+    model = "claude-opus-5"
+
+    def __init__(self, outcome):
+        self.outcome = outcome
+        self.seen = None
+
+    def complete(self, cands, *, max_tokens):
+        self.seen = list(cands)
+        return self.outcome
+
+
+class TestTheModelChooser:
+    """Rule 8's third paid call, permitted 2026-10-09. The guards are about
+    what it may return and what happens when it does not return it."""
+
+    @staticmethod
+    def two_rows():
+        return [row(contrast_id="g2_g1", min_n=13, n_ref=13, n_test=61),
+                row(contrast_id="g3_g1", min_n=43, n_ref=61, n_test=43)]
+
+    def ok(self, key, reason="because"):
+        from targetring.chooser_llm import ChoiceOutcome
+        return ChoiceOutcome(ok=True, key=key, reason=reason,
+                             model="claude-opus-5", input_tokens=100,
+                             output_tokens=20)
+
+    def test_it_can_choose_a_contrast_the_rule_would_not(self) -> None:
+        """The whole point of paying: the rule takes the largest smaller side;
+        a model may weigh tissue or what the control actually is."""
+        from targetring.chooser_llm import ModelChooser
+        ch = ModelChooser(client=FakeClient(self.ok("E-TEST-1 g2_g1")))
+        p = autopick.pick(self.two_rows(), ch)
+        assert p.chosen.contrast_id == "g2_g1"
+        assert p.chooser == "model"
+        assert autopick.pick(self.two_rows()).chosen.contrast_id == "g3_g1"
+
+    def test_it_is_only_shown_public_atlas_metadata(self) -> None:
+        """Rule 10. Accessions, labels, assay counts and tissue — nothing Puck
+        typed, no run id, no region, no gene."""
+        from targetring import chooser_llm
+        content = chooser_llm.user_content(
+            autopick.candidates_from_rows(self.two_rows())[0])
+        import json as _json
+        for item in _json.loads(content):
+            assert set(item) == {"key", "test", "n_test", "control",
+                                 "n_control", "tissue"}
+
+    def test_a_key_outside_the_list_falls_back_and_says_so(self) -> None:
+        """A model naming something it was not offered is foreseeable, so it is
+        handled rather than raised — but never silently."""
+        from targetring.chooser_llm import ModelChooser
+        ch = ModelChooser(client=FakeClient(self.ok("E-INVENTED-9 g9_g9")))
+        p = autopick.pick(self.two_rows(), ch)
+        assert p.chosen is not None
+        assert p.chooser == "largest-smaller-side"
+        assert "not one of" in p.fell_back_from
+
+    def test_a_failed_call_falls_back_and_names_the_error(self) -> None:
+        from targetring.chooser_llm import ChoiceOutcome, ModelChooser
+        ch = ModelChooser(client=FakeClient(
+            ChoiceOutcome(ok=False, error="no credentials")))
+        p = autopick.pick(self.two_rows(), ch)
+        assert p.chooser == "largest-smaller-side"
+        assert "no credentials" in p.fell_back_from
+
+    def test_the_fallback_never_claims_the_model_chose(self) -> None:
+        """The attribution that makes a fallback permissible at all. Telling a
+        reader a model chose when the rule did is a wrong claim about the
+        figure's own provenance."""
+        from targetring.chooser_llm import ChoiceOutcome, ModelChooser
+        ch = ModelChooser(client=FakeClient(ChoiceOutcome(ok=False, error="x")))
+        p = autopick.pick(self.two_rows(), ch)
+        assert p.chooser != "model"
+        assert "model" in p.fell_back_from
+        assert p.stated_rule == autopick.RuleChooser().stated_rule
+
+    def test_an_empty_candidate_set_is_not_retried(self) -> None:
+        """A genuine refusal has nothing to fall back to, and inventing one is
+        the failure the whole module guards against."""
+        from targetring.chooser_llm import ModelChooser
+        ch = ModelChooser(client=FakeClient(self.ok("anything")))
+        p = autopick.pick([row(drawable=False)], ch)
+        assert p.chosen is None
+        assert p.fell_back_from == ""
+
+    def test_the_cap_refuses_before_the_call_is_made(self, tmp_path,
+                                                     monkeypatch) -> None:
+        """Rule 8 as amended: a cap is an approval gate. It stops, names the
+        number, and the page still works."""
+        from targetring import config as cfg
+        from targetring import spend as spend_mod
+        from targetring.chooser_llm import ModelChooser
+        monkeypatch.setattr(cfg, "SPEND_LEDGER_PATH", tmp_path / "s.jsonl")
+        monkeypatch.setattr(cfg, "CHOOSER_LLM_SPEND_CAP_USD", 0.0)
+        client = FakeClient(self.ok("E-TEST-1 g2_g1"))
+        ch = ModelChooser(client=client,
+                          ledger=spend_mod.SpendLedger(tmp_path / "s.jsonl"))
+        p = autopick.pick(self.two_rows(), ch)
+        assert client.seen is None, "no call may be made once the cap refuses"
+        assert p.chooser == "largest-smaller-side"
+        assert "$" in p.fell_back_from
+
+    def test_it_returns_one_choice_and_no_scores(self) -> None:
+        """A scored list of contrasts is the machinery rule 7 removed, rebuilt
+        one level upstream, and is the thing a reader starts sorting by."""
+        from targetring.chooser_llm import ContrastChoice
+        assert set(ContrastChoice.model_fields) == {"key", "reason"}

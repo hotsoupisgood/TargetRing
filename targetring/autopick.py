@@ -36,10 +36,15 @@ winner, and why `stated_rule` is a sentence rather than a function name.
 THE CHOOSER IS PLUGGABLE, AND THE FIRST ONE IS FREE
 ---------------------------------------------------
 `Chooser` is a protocol over an already-filtered candidate list. `RuleChooser`
-is deterministic, costs nothing and is what runs today. A model-backed chooser
-is the same interface — but it is a THIRD paid call, and AGENTS.md rule 8
-permits exactly two with two separate $5 caps. It cannot be built until that
-rule is amended, which is Puck's to do and is written up in the decision doc.
+is deterministic, costs nothing, and is both the default and the fallback.
+`chooser_llm.ModelChooser` is the same interface backed by a model — rule 8's
+third paid call, permitted by Puck on 2026-10-09 and metered against the
+`chooser` account's own cap.
+
+When a chooser declines — over its cap, a transport error, a key outside the
+list — `pick()` falls back to `RuleChooser` and records **the rule chooser** as
+`chooser`, with the original named in `fell_back_from`. The attribution is what
+makes the fallback honest: the surface prints who actually chose.
 
 Whatever chooses, the result is verified the same way: the chosen id must be one
 of the candidates it was given (`Pick.__post_init__`). That is the same guard
@@ -112,6 +117,11 @@ class Pick:
     reason: str
     considered: tuple[Candidate, ...]
     excluded: tuple[tuple[Candidate, str], ...] = ()
+    #: Set when a chooser declined and `RuleChooser` stood in for it. Carried,
+    #: not swallowed: `chooser` above names who ACTUALLY chose, and this says
+    #: who was asked first and why they did not. A reader must never be told a
+    #: model chose when the rule did.
+    fell_back_from: str = ""
     #: Set when the control side is annotated but is not a healthy one. Carried
     #: because it changes what every log2FC on the figure means, and because it
     #: is the single thing a reader is most likely to assume rather than check.
@@ -136,6 +146,7 @@ class Pick:
             "chosen": self.chosen.as_dict() if self.chosen else None,
             "reason": self.reason,
             "control_caveat": self.control_caveat,
+            "fell_back_from": self.fell_back_from,
             "n_considered": len(self.considered),
             "considered": [c.as_dict() for c in self.considered],
             "excluded": [{**c.as_dict(), "excluded_because": why,
@@ -253,13 +264,35 @@ class RuleChooser:
 
 
 def pick(rows: list[dict[str, Any]], chooser: Chooser | None = None) -> Pick:
-    """Choose one contrast from a `picker_payload`'s rows, auditably."""
+    """Choose one contrast from a `picker_payload`'s rows, auditably.
+
+    With a `chooser` that fails — a model over its cap, a transport error, a
+    key outside the candidate list — this falls back to `RuleChooser` and
+    records **the rule chooser** as `chooser`, with the fallback stated in
+    `fell_back_from`.
+
+    That attribution is the whole reason a fallback is permissible here. The
+    surface prints `chooser` and `stated_rule`, so a reader is never told a
+    model chose when the rule did. Falling back silently under the model's name
+    would be a plausible wrong claim about the figure's own provenance, which
+    is the defect this build spends most of its effort on.
+    """
     ch = chooser or RuleChooser()
     cands, excluded = candidates_from_rows(rows)
     chosen, reason = ch.choose(cands)
+
+    fell_back = ""
+    if chosen is None and cands and not isinstance(ch, RuleChooser):
+        # Candidates existed and this chooser declined them. A genuinely empty
+        # candidate set is a refusal and is NOT retried — there is nothing to
+        # fall back to and inventing one is the failure this guards against.
+        fell_back = f"{ch.name}: {reason}"
+        ch = RuleChooser()
+        chosen, reason = ch.choose(cands)
+
     return Pick(chooser=ch.name, stated_rule=ch.stated_rule, chosen=chosen,
                 reason=reason, considered=tuple(cands),
-                excluded=tuple(excluded),
+                excluded=tuple(excluded), fell_back_from=fell_back,
                 control_caveat=control_caveat(chosen) if chosen else "")
 
 

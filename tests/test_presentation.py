@@ -2856,3 +2856,13 @@ class TestTheContrastIsChosenOnFirstView:
         stale — refuse rather than proceed."""
         js = (STATIC / "app.js").read_text()
         assert "the chosen contrast is not in this listing" in js
+
+    def test_the_pick_says_when_it_fell_back(self) -> None:
+        """A fallback is honest only if the reader is told it happened. Showing
+        a model's name over a rule's choice would be a wrong claim about the
+        figure's own provenance."""
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function pickedContrastHtml"):]
+        fn = fn[:fn.index("\nfunction ")]
+        assert "fell_back_from" in fn
+        assert "fell back" in fn.lower()

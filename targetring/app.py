@@ -21,6 +21,7 @@ from .adapters.ols import OLSAdapter
 from .adapters.opentargets import OpenTargetsAdapter
 from . import atlas_index
 from . import autopick as autopick_mod
+from . import chooser_llm
 from .cache import Cache
 from . import contrast as contrast_mod
 from . import dim as dim_mod
@@ -1005,7 +1006,19 @@ async def autopick(disease: str = "") -> JSONResponse:
             {"error": "disease_not_resolvable", "message": str(e)},
             status_code=422)
     rows = atlas_index.picker_payload(index, ref)["rows"]
-    result = autopick_mod.pick(rows)
+    # The model chooser when one can be constructed, the deterministic rule
+    # otherwise — and `autopick.pick` falls back to the rule on any failure,
+    # recording who actually chose. Constructing the client needs the
+    # `anthropic` package; with no key it constructs fine and fails on the
+    # call, which is the path `ModelChooser` is written for.
+    chooser: Any = None
+    try:
+        chooser = chooser_llm.ModelChooser(
+            client=chooser_llm.AnthropicContrastClient(),
+            ledger=spend_mod.default_ledger())
+    except Exception:  # noqa: BLE001 -- no `anthropic` installed at all
+        chooser = None
+    result = autopick_mod.pick(rows, chooser)
     body = {"disease": {"label": ref.label, "current_id": ref.current_id},
             "index": index.provenance(), **result.as_dict()}
     if result.chosen is None:

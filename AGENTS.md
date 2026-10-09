@@ -57,13 +57,21 @@ produce a clean-looking chart.
    **decided, stated on the figure and checked in the artefact**, and the
    default is the order of the submitted table. Threshold filters may remove
    genes from the plot, and then the figure says so.
-8. **Money.** Two paid calls, two separate $5 caps with their own counters:
+8. **Money.** Three paid calls, three separate caps with their own counters:
    LLM triage (`LLM_SPEND_CAP_USD`, top 10 genes or on click, never a whole
-   200-gene list) and the phenotype summary (`PHENOTYPE_LLM_SPEND_CAP_USD`,
-   one call per gene, summarises only the table it sits above). Neither
-   borrows from the other. Both separate from ytpt's ledger.
-   *Amended 2026-09-29, Puck on WhatsApp; previously "the LLM triage is the
-   only paid call".*
+   200-gene list), the phenotype summary (`PHENOTYPE_LLM_SPEND_CAP_USD`, one
+   call per gene, summarises only the table it sits above) and the contrast
+   chooser (`CHOOSER_LLM_SPEND_CAP_USD`, one call per disease, choosing only
+   among contrasts the index already offered it). None borrows from another.
+   All separate from ytpt's ledger.
+
+   **A cap is an approval gate, not a ceiling.** It stops the call, names the
+   numbers and records the refusal; raising it is Puck's to do and he expects
+   to be asked. So: never spend past a cap, and never treat a cap as a reason
+   the work cannot happen — report the number and ask.
+   *Amended 2026-10-09, Puck: "there is no cap. i just want to ok increases",
+   and a third paid call for the chooser. Amended 2026-09-29, Puck on WhatsApp;
+   previously "the LLM triage is the only paid call".*
 9. **Rate limits are unmeasured.** Cap concurrency at 4 per host. Treat any 429
    as a hard run failure — never a retry loop.
 10. **Nothing public.** Local only. No deploys, no public URLs, no data pushed

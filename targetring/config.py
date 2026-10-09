@@ -163,6 +163,17 @@ TRIAGE_TOP_N = 10
 # able to move the first feature's ceiling.
 PHENOTYPE_LLM_SPEND_CAP_USD = 5.00
 
+# AGENTS.md rule 8 as amended 2026-10-09: a third paid call, the contrast
+# chooser, with its own cap and counter. The other two are deliberately
+# UNCHANGED for the standing reason -- a new feature must not be able to move an
+# existing feature's ceiling.
+#
+# Set low on purpose. Rule 8 as amended says a cap is an approval gate rather
+# than a ceiling: it stops, names the numbers and records the refusal, and
+# raising it is Puck's. One chooser call per disease is cheap, so a small cap
+# asks early rather than after the money is gone.
+CHOOSER_LLM_SPEND_CAP_USD = 2.00
+
 # Stage 7. One call per gene, one distinct PMID at a time from Europe PMC.
 # Capped and the cap printed on the page (plan §3 stage 7a) -- a heavily
 # phenotyped gene can carry far more than 40 PMIDs across its mousePhenotypes
