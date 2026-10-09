@@ -561,14 +561,16 @@ async def analyse(
                 filters=filters, panel_px=panel_px, viewport_px=viewport_px,
                 contrast=contrast_for_run,
                 selection_accounting=selection_accounting, on_progress=sink,
-                region_inferred=region_inferred == "1", region_reason=region_reason)
+                region_inferred=region_inferred == "1", region_reason=region_reason,
+                defer_exports=True)
         else:
             result = await run_analysis(table=raw, region=region,
                                         ordering=ordering, filters=filters,
                                         panel_px=panel_px, viewport_px=viewport_px,
                                         on_progress=sink,
                                         region_inferred=region_inferred == "1",
-                                        region_reason=region_reason)
+                                        region_reason=region_reason,
+                                        defer_exports=True)
     except FilterRejected as e:
         # The filter settings themselves are unusable — a ring that does not
         # exist, a threshold that is not a number. Nothing was fetched and
@@ -597,6 +599,12 @@ async def analyse(
              "traceback": traceback.format_exc()[-2000:]}, status_code=500)
 
     _runs[result.run_id] = result
+    # The deferred artefacts, after the response rather than before it. A
+    # thread because the work is matplotlib, not I/O, and the event loop still
+    # has a progress stream and the next request to serve.
+    if result.finish_exports is not None:
+        _export_tasks[result.run_id] = asyncio.create_task(
+            asyncio.to_thread(result.finish_exports))
     return JSONResponse(_summarise(result))
 
 
@@ -1004,6 +1012,72 @@ async def run_values(run_id: str, sort: str = "", dim: str = "") -> JSONResponse
 # not a rewrite of the first.
 _progress: dict[str, "asyncio.Queue[dict[str, Any]]"] = {}
 
+# --- deferred download artefacts -------------------------------------------
+#
+# `run_analysis(defer_exports=True)` returns the slide, the legend and the
+# caption as a callable instead of rendering them inline, worth ~4.5s of a
+# ~19s run. The task runs AFTER the response; the download routes wait on it.
+#
+# In-process only, and deliberately: `runs/<id>/exports.json` is the durable
+# record, because a task dict cannot survive the restart it is supposed to
+# describe.
+_export_tasks: dict[str, "asyncio.Task[None]"] = {}
+
+
+def _exports_state(run_id: str) -> dict[str, Any]:
+    """How the deferral went, from disk, with `running` resolved against the pid.
+
+    A process killed mid-render cannot write its own epitaph, so "died" is a
+    `running` marker whose pid is gone. Checked against the pid rather than a
+    timeout: a timeout would call a slow render dead, which is a guess.
+    """
+    import os
+    path = RUNS_DIR / run_id / "exports.json"
+    if not path.exists():
+        return {"state": "absent"}
+    try:
+        rec = json_mod.loads(path.read_text())
+    except Exception:  # noqa: BLE001
+        return {"state": "unreadable"}
+    if rec.get("state") != "running":
+        return rec
+    pid = rec.get("pid")
+    try:
+        os.kill(int(pid), 0)
+    except (OSError, TypeError, ValueError):
+        return {**rec, "state": "died"}
+    return rec
+
+
+async def _await_deferred(run_id: str, filename: str) -> None:
+    """Block until `filename` is written, or explain why it never will be."""
+    task = _export_tasks.get(run_id)
+    if task is not None and not task.done():
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=120)
+        except asyncio.TimeoutError:
+            raise HTTPException(503, f"{filename} is still rendering")
+        except Exception:  # noqa: BLE001 -- the state file carries the reason
+            pass
+    if (RUNS_DIR / run_id / filename).exists():
+        return
+    rec = _exports_state(run_id)
+    state = rec.get("state")
+    if state == "failed":
+        # The figure and the manifest were validated and served before this
+        # ran. Saying so is the point: a 404 would read as "this run never had
+        # a slide", which is a different and wrong fact.
+        raise HTTPException(
+            500, f"{filename} was not written: {rec.get('error', 'unknown')}. "
+                 f"The figure and its manifest are unaffected and were checked "
+                 f"before this ran.")
+    if state == "died":
+        raise HTTPException(
+            503, f"{filename} was not written: the process rendering it exited "
+                 f"first. Re-run the analysis to produce it; the existing "
+                 f"figure and manifest are unaffected.")
+    raise HTTPException(404, f"{filename} not found for run {run_id}")
+
 #: Measured shares of a warm 26.9s run, used ONLY to weight the bar's width.
 #: The stage names and their order are facts; these numbers are a historical
 #: average and the UI says so rather than presenting them as this run's.
@@ -1198,7 +1272,13 @@ async def artefact(run_id: str, filename: str) -> FileResponse:
         raise HTTPException(404, "unknown run")
     path = RUNS_DIR / run_id / filename
     if not path.exists():
-        raise HTTPException(404, f"{filename} not found for run {run_id}")
+        # One of the five the run deferred? Wait for it, or say why it is not
+        # coming. A plain 404 would read as "this run never had a slide", which
+        # is a different fact from "it is three seconds away".
+        if filename in run_mod.DEFERRED_ARTEFACTS:
+            await _await_deferred(run_id, filename)
+        else:
+            raise HTTPException(404, f"{filename} not found for run {run_id}")
     # The run id is in the DOWNLOADED name, not only inside the file. Puck's
     # condition on a detachable legend is that a figure and its legend must be
     # impossible to mismatch, and the first place they get separated is a

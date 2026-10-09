@@ -19,6 +19,7 @@ import csv
 import io
 import time
 import uuid
+from datetime import datetime, timezone
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
@@ -811,6 +812,23 @@ async def run_analysis(
     web_result, web_layout = draw_the_app_render(panel_px, viewport_px)
     _say("web_render", "Rendered the figure for the page")
 
+    def _mark(state: str, **extra: Any) -> None:
+        """Write `exports.json`, the only record of how the deferral went.
+
+        Written BEFORE the work starts, not after: a process killed mid-render
+        cannot write its own epitaph, so "died" has to be inferred from a
+        `running` marker whose pid is gone. The pid is recorded for exactly
+        that — a timeout would call a slow run dead, which is a guess, and this
+        is a fact.
+        """
+        import json as _json
+        import os as _os
+        (runs_dir / "exports.json").write_text(_json.dumps({
+            "state": state, "pid": _os.getpid(),
+            "artefacts": list(DEFERRED_ARTEFACTS),
+            "utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            **extra}, indent=2) + "\n")
+
     def finish_exports() -> None:
         """The five download-only artefacts, and the check that covers them.
 
@@ -852,6 +870,23 @@ async def run_analysis(
         figure.assert_artefacts_are_their_own_layout(runs_dir, web=web_layout)
         # v2.7: the caption is the SLIDE's caption, not the audit's.
         (runs_dir / "caption.txt").write_text(slide.caption + "\n")
+
+    def finish_exports_tracked() -> None:
+        """`finish_exports` with its state on disk either way.
+
+        A failure here is NOT re-raised past the marker: the figure and the
+        manifest were validated and served before this started, and crashing a
+        background task after the fact changes nothing the reader can see. What
+        it must do is leave a record, so the download route can say why a file
+        is absent instead of 404ing as though it never existed.
+        """
+        _mark("running")
+        try:
+            finish_exports()
+        except Exception as e:  # noqa: BLE001
+            _mark("failed", error=f"{type(e).__name__}: {e}")
+            raise
+        _mark("done")
 
     if not defer_exports:
         finish_exports()
@@ -1013,7 +1048,7 @@ async def run_analysis(
     manifest_path = man.write(runs_dir / "manifest.json")
 
     return RunResult(
-        finish_exports=finish_exports if defer_exports else None,
+        finish_exports=finish_exports_tracked if defer_exports else None,
         deferred_artefacts=(DEFERRED_ARTEFACTS if defer_exports else ()),
         run_id=run_id, region=region, svg_path=svg_path, csv_path=csv_path,
         manifest_path=manifest_path, manifest=man, invariants=invariants,
