@@ -93,6 +93,16 @@
         <b>The table, the region, the gene order and the filters</b>
         — 4 sections</summary>
       <div class="reveal">
+    <!-- Wrapped so it can be hidden as a unit on the Atlas path, where it is
+         the one section of the four that does NOT apply: `makeSpokes` reads
+         the region, the gene order and the filters from the sections below,
+         and takes its genes from the contrast instead of from this box.
+
+         Hidden rather than filled in with the contrast's own logFC/padj. A
+         populated textarea reads as editable, and an edited value would draw a
+         figure whose provenance says Expression Atlas over numbers that were
+         typed — the same lie `sources.DESource` was built to stop. -->
+    <div id="paste-section">
     <h2>1. Differential expression table</h2>
     <p class="hint">Columns: gene symbol, logFC, adjusted p. CSV or TSV.
       Every row is either rendered or named in the drop ledger.<br>
@@ -110,6 +120,11 @@
       <button id="load-broken" class="ghost">load a deliberately broken table</button>
       <input type="file" id="file" accept=".csv,.tsv,.txt">
     </div>
+    </div>
+    <!-- What stands in its place while a contrast is driving the run. Says
+         where the genes are coming from rather than leaving a gap, because a
+         section that silently vanishes reads as a bug. -->
+    <div id="paste-superseded" class="note" hidden></div>
     <h2>2. Region</h2>
     <!-- UX B11: nothing said what this changed. -->
     <p class="hint">Affects exactly one ring — <b>regional specificity</b>, the region's

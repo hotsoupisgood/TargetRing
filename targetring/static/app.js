@@ -441,6 +441,49 @@ let SELECTED = new Set();  // ensembl ids checked in step 4
 // (clears the gene table and the heatmap/selection); the gene-table step
 // itself clears SELECTED without needing this (a new table is a new set of
 // valid ids).
+// §1 applies to the paste path and to nothing else, so it is shown on the paste
+// path and nowhere else.
+//
+// THE DEFECT THIS CLOSES. The page had two "go" buttons. `makeSpokes` (step 4)
+// posts `source=atlas` with the contrast's own gene ids; `#go` posts
+// `source=paste` with whatever is in the textarea. They sit a few hundred
+// pixels apart, and §1 stayed open and inviting through the whole Atlas flow —
+// so after picking a Crohn's contrast and selecting genes, clicking "Draw the
+// figure" discarded the contrast and drew the textarea instead. With the
+// example still loaded from `load example` that returns 200 and produces a
+// complete, internally consistent figure of BRAF/EGFR/TP53 while the reader
+// believes they are looking at their contrast. `AGENTS.md:17`, from a button.
+//
+// Hidden rather than disabled: a disabled control still says "this is part of
+// your route". Hidden rather than populated with the contrast's own logFC and
+// padj, because a filled textarea reads as editable and an edited value would
+// draw a figure whose provenance says Expression Atlas over numbers that were
+// typed — the lie `sources.DESource` exists to stop.
+//
+// Sections 2-4 stay: `makeSpokes` genuinely reads the region, the gene order
+// and the filters from them.
+function syncPasteSection() {
+  const t = GENE_TABLE;
+  const driving = !!(t && t.contrast);
+  const sec = $("#paste-section");
+  const note = $("#paste-superseded");
+  const go = $("#go");
+  if (sec) sec.hidden = driving;
+  if (go) go.hidden = driving;
+  if (!note) return;
+  note.hidden = !driving;
+  if (!driving) { note.innerHTML = ""; return; }
+  // Says where the genes ARE coming from and which control draws them. A
+  // section that silently vanishes reads as a bug; one that says why it is
+  // gone reads as the app knowing what route you are on.
+  note.innerHTML =
+    `<b>1. Differential expression table — not used on this path.</b><br>
+     Your genes come from <code>${esc(t.contrast.accession)} ${
+       esc(t.contrast.contrast_id)}</code>, selected in step 3 above, and the
+     figure is drawn with <b>Make spokes</b> in step 4. The region, the gene
+     order and the filters below still apply.`;
+}
+
 function invalidateFromStep(n) {
   if (n <= 3) {
     GENE_TABLE = null;
@@ -450,6 +493,7 @@ function invalidateFromStep(n) {
   }
   const p4 = $("#heatmap-panel");
   if (p4) { p4.hidden = true; p4.innerHTML = ""; }
+  syncPasteSection();
 }
 
 function collapsedContrastLine(r) {
@@ -464,6 +508,7 @@ function selectContrast(r) {
   SELECTED = new Set();
   $("#heatmap-panel").hidden = true;
   $("#heatmap-panel").innerHTML = "";
+  syncPasteSection();
 
   // Step 2 collapses to one line, generated from the same `ContrastRef` the
   // gene table and the figure will use.
@@ -475,6 +520,7 @@ function selectContrast(r) {
     SELECTED = new Set();
     $("#gene-table-panel").hidden = true;
     $("#heatmap-panel").hidden = true;
+    syncPasteSection();
     loadContrasts(PICKER.disease);
   };
   loadGeneTable(r);
@@ -503,6 +549,7 @@ async function loadGeneTable(r) {
   GENE_TABLE = body;
   SELECTED = new Set();
   renderGeneTable();
+  syncPasteSection();
 }
 
 // PLAN §10: stays in every mode vs goes in terse mode. Nothing here combines

@@ -2666,3 +2666,74 @@ class TestV35TheEmptyWedgeExplainsItselfBesideTheFigure:
                          if not line.lstrip().startswith("//"))
         assert "26°" not in code and "12 o'clock" not in code, (
             "the page has started writing the sentence itself")
+
+
+class TestThePasteSectionDoesNotSurviveTheAtlasPath:
+    """Two "go" buttons on one page, and one of them drew the wrong figure.
+
+    `makeSpokes` (step 4) posts `source=atlas` with the contrast's own gene ids.
+    `#go` posts `source=paste` with whatever is in the textarea. §1 stayed open
+    and inviting through the entire Atlas flow, so after picking a contrast and
+    selecting genes, clicking "Draw the figure" discarded the contrast and drew
+    the textarea. With the example still loaded from `load example` that returns
+    200 and produces a complete, internally consistent figure of BRAF/EGFR/TP53
+    while the reader believes they are looking at their contrast — `AGENTS.md:17`
+    reached by pressing a button that was offered.
+
+    §1 is now hidden while a contrast is driving the run, and so is `#go`.
+    Sections 2-4 stay, because `makeSpokes` genuinely reads the region, the gene
+    order and the filters from them.
+    """
+
+    def test_section_one_is_wrapped_so_it_can_be_hidden_as_a_unit(self) -> None:
+        html = (STATIC / "index.html").read_text()
+        assert 'id="paste-section"' in html
+        i = html.index('id="paste-section"')
+        j = html.index('id="paste-superseded"')
+        block = html[i:j]
+        # the whole of §1 is inside the wrapper, not just its heading
+        assert "1. Differential expression table" in block
+        assert 'id="table"' in block
+        assert 'id="load-example"' in block
+        assert 'id="file"' in block
+
+    def test_the_replacement_note_exists_and_starts_hidden(self) -> None:
+        html = (STATIC / "index.html").read_text()
+        assert re.search(r'id="paste-superseded"[^>]*\bhidden\b', html)
+
+    def test_the_toggle_hides_both_the_section_and_the_draw_button(self) -> None:
+        """Hiding §1 alone would leave the button that drew the wrong figure."""
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function syncPasteSection()"):]
+        fn = fn[:fn.index("\nfunction ")]
+        assert '$("#paste-section")' in fn
+        assert '$("#go")' in fn
+        assert "sec.hidden = driving" in fn
+        assert "go.hidden = driving" in fn
+
+    def test_the_note_names_the_contrast_and_the_control_that_draws(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function syncPasteSection()"):]
+        fn = fn[:fn.index("\nfunction ")]
+        assert "t.contrast.accession" in fn and "t.contrast.contrast_id" in fn
+        assert "Make spokes" in fn, "it must point at the control that does work"
+
+    def test_it_is_driven_by_the_gene_table_not_by_a_separate_flag(self) -> None:
+        """One source of truth for "an Atlas contrast is driving this run"."""
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function syncPasteSection()"):]
+        fn = fn[:fn.index("\nfunction ")]
+        assert "GENE_TABLE" in fn
+
+    def test_every_transition_that_changes_the_gene_table_resyncs(self) -> None:
+        """Set and all three clear paths, or §1 comes back on one route and not
+        another."""
+        js = (STATIC / "app.js").read_text()
+        assert js.count("syncPasteSection()") >= 5, js.count("syncPasteSection()")
+
+    def test_sections_two_to_four_are_outside_the_wrapper(self) -> None:
+        """They are read by `makeSpokes` and must not be hidden with §1."""
+        html = (STATIC / "index.html").read_text()
+        block = html[html.index('id="paste-section"'):html.index('id="paste-superseded"')]
+        for still_needed in ("2. Region", "3. Gene order", "4. Threshold filters"):
+            assert still_needed not in block, still_needed
