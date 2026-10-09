@@ -79,6 +79,14 @@ from .states import Cell, no_data, value
 
 DEFAULT_REGION = "Lung"
 
+#: The artefacts `run_analysis(defer_exports=True)` leaves for the caller to
+#: render after responding. Download-only, every one of them: the page inlines
+#: `figure-web.svg` and the manifest attests `figure.svg`, and neither is here.
+DEFERRED_ARTEFACTS: tuple[str, ...] = (
+    "figure-slide.svg", "figure-slide.png", "legend.svg", "legend.png",
+    "caption.txt",
+)
+
 # Sources whose values reach the drawer and never a ring or a rank.
 #
 # v2.2 item 3: both are now fetched on gene click instead of on the render path,
@@ -179,6 +187,13 @@ class RunResult:
     # own spoke angles, and a second implementation of it could describe a
     # geometry the figure does not have (COUNCIL V5).
     web_caveats: list[str] = field(default_factory=list)
+    #: Set only when `defer_exports=True`. The caller runs it AFTER responding;
+    #: until it has, the five download-only artefacts do not exist. `None` on
+    #: the eager path, where they were written before this object was built.
+    finish_exports: Any = None
+    #: The files `finish_exports` is responsible for, so a route can tell a
+    #: deferred artefact from one that was never going to exist.
+    deferred_artefacts: tuple[str, ...] = ()
     # v3.5. The canvas the app render was actually drawn on, which is a function
     # of the window that asked for it rather than one constant, and therefore not
     # something the page or a later check may assume. It also carries the answer
@@ -214,6 +229,16 @@ async def run_analysis(
     # holding a screenshot cannot see that a dropdown was filled in for them.
     region_inferred: bool = False,
     region_reason: str = "",
+    # Return the slide, the legend and the caption as a callable for the caller
+    # to run AFTER it has responded, instead of rendering them inline.
+    #
+    # Measured: the figure the page shows and everything the manifest attests
+    # are done ~8s in; the remaining ~19s is four image files and a caption
+    # nobody has asked for yet. Deferring moves WHEN that work happens and
+    # nothing else -- every file is still rendered, still checked by
+    # `assert_artefacts_are_their_own_layout`, and the manifest is still
+    # written once with everything it attests already validated.
+    defer_exports: bool = False,
     run_id: str | None = None,
     cache: Cache | None = None,
     runs_dir: Path | None = None,
@@ -786,32 +811,50 @@ async def run_analysis(
     web_result, web_layout = draw_the_app_render(panel_px, viewport_px)
     _say("web_render", "Rendered the figure for the page")
 
-    # UX A4: the slide render. Same data, 16:9, type that survives projection,
-    # with the ring key and the caveats moved into the caption beside it. The
-    # audit render above keeps every stamp and stays the morning artefact.
-    slide_result = do_render(banner, conds, layout="slide",
-                             svg=runs_dir / "figure-slide.svg",
-                             png=runs_dir / "figure-slide.png",
-                             invariant_summary=inv_summary)
-    _say("slide", "Rendered the 16:9 slide")
+    def finish_exports() -> None:
+        """The five download-only artefacts, and the check that covers them.
 
-    # v3.0, Puck: "we could have the download download legend as a separate
-    # image" -- circle on one slide, legend on another. The run id is on both,
-    # large, because a legend paired with the wrong run misreads every cell on
-    # the nine rings whose range moves with the submitted set.
-    figure.render_legend(
-        cells_by_ring=cells_by_ring, region=region,
-        out_svg=runs_dir / "legend.svg", out_png=runs_dir / "legend.png",
-        run_id=f"run {run_id}",
-        provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
-        ordering_note=ordering_note, filter_notes=filter_notes,
-        input_count=parsed.input_row_count, rendered_count=rendered_count,
-        gene_flags=severe_liability_flags, de_source=de_source)
-    _say("legend", "Rendered the legend")
+        Kept together because they travel together: the slide render produces
+        the caption, and `assert_artefacts_are_their_own_layout` cannot pass
+        judgement on a directory that is still missing half its files. It runs
+        HERE rather than on the critical path so that it still sees everything
+        it was written to see -- the bug it earned (one render writing over
+        another's PNG, both SVGs fine, nothing noticing) is exactly the kind a
+        partial check would miss.
+        """
+        # UX A4: the slide render. Same data, 16:9, type that survives
+        # projection, with the ring key and the caveats moved into the caption
+        # beside it. The audit render above keeps every stamp and stays the
+        # morning artefact.
+        slide = do_render(banner, conds, layout="slide",
+                          svg=runs_dir / "figure-slide.svg",
+                          png=runs_dir / "figure-slide.png",
+                          invariant_summary=inv_summary)
+        _say("slide", "Rendered the 16:9 slide")
 
-    # Seven files, four layouts, one data set. This says each file is the render
-    # its name promises -- see the function for the bug that earned it.
-    figure.assert_artefacts_are_their_own_layout(runs_dir, web=web_layout)
+        # v3.0, Puck: "we could have the download download legend as a separate
+        # image" -- circle on one slide, legend on another. The run id is on
+        # both, large, because a legend paired with the wrong run misreads every
+        # cell on the nine rings whose range moves with the submitted set.
+        figure.render_legend(
+            cells_by_ring=cells_by_ring, region=region,
+            out_svg=runs_dir / "legend.svg", out_png=runs_dir / "legend.png",
+            run_id=f"run {run_id}",
+            provenance=f"run {run_id} · {manifest_mod.git_sha()[:12]}",
+            ordering_note=ordering_note, filter_notes=filter_notes,
+            input_count=parsed.input_row_count, rendered_count=rendered_count,
+            gene_flags=severe_liability_flags, de_source=de_source)
+        _say("legend", "Rendered the legend")
+
+        # Seven files, four layouts, one data set. This says each file is the
+        # render its name promises -- see the function for the bug that earned
+        # it.
+        figure.assert_artefacts_are_their_own_layout(runs_dir, web=web_layout)
+        # v2.7: the caption is the SLIDE's caption, not the audit's.
+        (runs_dir / "caption.txt").write_text(slide.caption + "\n")
+
+    if not defer_exports:
+        finish_exports()
     # v3.0 renders four layouts where v2.9 rendered two, and `render_s` above
     # only ever measured the first pass. Timed separately rather than folded in,
     # so the cost of the new artefacts is visible in every manifest instead of
@@ -826,7 +869,7 @@ async def run_analysis(
     # and each render's caption states its own geometry. The audit's sentence
     # pasted under the slide is COUNCIL V5 in the one file that exists to be
     # read beside the figure.
-    (runs_dir / "caption.txt").write_text(slide_result.caption + "\n")
+    # (caption.txt is written by `finish_exports`, with the slide it comes from)
 
     _write_csv(csv_path, fig_result.csv_rows, ledger, parsed,
                ordering_note, active_filters, outcome.kept_unevaluated)
@@ -970,6 +1013,8 @@ async def run_analysis(
     manifest_path = man.write(runs_dir / "manifest.json")
 
     return RunResult(
+        finish_exports=finish_exports if defer_exports else None,
+        deferred_artefacts=(DEFERRED_ARTEFACTS if defer_exports else ()),
         run_id=run_id, region=region, svg_path=svg_path, csv_path=csv_path,
         manifest_path=manifest_path, manifest=man, invariants=invariants,
         gene_order=gene_order, drawers=drawers, ledger=ledger, warnings=warnings,
