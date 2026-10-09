@@ -3019,3 +3019,60 @@ class TestTheRegionFollowsTheDisease:
         blk = js[js.index("const asked = d.current_id;"):]
         blk = blk[:blk.index("} catch")]
         assert "PICKER.disease.current_id === asked" in blk
+
+
+class TestTheRunProgressPanel:
+    """A run is ~18-27s behind what used to be one grey sentence. These are the
+    properties that keep the panel honest rather than decorative."""
+
+    def test_the_stages_are_server_events_not_a_timer(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        assert "EventSource(`/api/analyse/progress/" in js
+        assert "fd.append(\"progress_token\"" in js
+
+    def test_every_client_stage_is_one_the_server_emits(self) -> None:
+        """A stage the server never sends would spin forever."""
+        js = (STATIC / "app.js").read_text()
+        py = (STATIC.parent / "run.py").read_text()
+        import re
+        client = set(re.findall(r'\["(\w+)",\s*"[^"]+"\]', js[js.index("const RUN_STAGES"):js.index("let PROGRESS_ES")]))
+        server = set(re.findall(r'_say\("(\w+)"', py))
+        assert client <= server, client - server
+
+    def test_the_bar_is_labelled_an_estimate(self) -> None:
+        """The stages are facts; the width is a historical average. Saying so is
+        the difference between a progress bar and a progress bar that lies."""
+        js = (STATIC / "app.js").read_text()
+        assert "<b>estimate</b>" in js
+        assert "real event" in js
+
+    def test_it_never_claims_to_be_finished(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        assert "Math.min(99," in js
+
+    def test_it_eases_within_a_stage_rather_than_freezing(self) -> None:
+        """Measured: one stage is 14.8s of an 18.8s run, so a bar that only
+        moved on boundaries sat dead for 79% of the wait."""
+        js = (STATIC / "app.js").read_text()
+        assert "Math.exp(-stageElapsed" in js
+
+    def test_the_creep_cannot_reach_the_next_stage(self) -> None:
+        """It approaches the current stage's own end and stops; claiming the
+        next stage had started would be the lie the easing exists to avoid."""
+        js = (STATIC / "app.js").read_text()
+        blk = js[js.index("const creep ="):]
+        assert "* share" in blk[:160] and "0.92" in blk[:160]
+
+    def test_a_progress_failure_cannot_fail_the_run(self) -> None:
+        """A channel that can break the analysis it reports on is worse than no
+        channel."""
+        py = (STATIC.parent / "run.py").read_text()
+        blk = py[py.index("def _say("):]
+        blk = blk[:blk.index("_say(\"start\"")]
+        assert "except Exception" in blk
+        assert "if on_progress is None" in blk
+
+    def test_no_listener_means_the_run_is_unchanged(self) -> None:
+        app = (STATIC.parent / "app.py").read_text()
+        blk = app[app.index("def _progress_sink"):]
+        assert "return None" in blk[:400]

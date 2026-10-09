@@ -941,9 +941,10 @@ async function makeSpokes() {
   const t = GENE_TABLE;
   const btn = $("#make-spokes");
   btn.disabled = true;
-  $("#make-spokes-status").textContent = "building the figure…";
+  const prog = await startProgress("#make-spokes-status");
 
   const fd = new FormData();
+  fd.append("progress_token", prog.token);
   fd.append("source", "atlas");
   fd.append("accession", t.contrast.accession);
   fd.append("contrast_id", t.contrast.contrast_id);
@@ -963,10 +964,12 @@ async function makeSpokes() {
     res = await fetch("/api/analyse", { method: "POST", body: fd });
     body = await res.json();
   } catch (e) {
+    prog.stop();
     $("#make-spokes-status").textContent = "request failed: " + e;
     btn.disabled = false;
     return;
   }
+  prog.stop();
   btn.disabled = false;
   if (!res.ok) {
     $("#make-spokes-status").textContent = (body.message || "failed");
@@ -1017,6 +1020,130 @@ function showTab(name) {
 
 let TICKER = null;
 
+// The staged progress panel.
+//
+// `/api/analyse` is one POST that returns when everything is done, and on a
+// warm cache that is 27 seconds behind a single grey sentence. The stages here
+// are REAL EVENTS from `run_analysis` over SSE, not a timer: each one appears
+// when the work before it actually finished.
+//
+// The BAR is weighted by measured history (`app.PROGRESS_WEIGHTS`, from a warm
+// 26.9s run: exports 68%, render 16%, everything touching a source 3%) and the
+// panel says so. An evenly-paced bar would sit at 50% through the two cheapest
+// stages and then stall for 19 seconds, which is the exact thing that makes a
+// progress bar feel like a lie.
+const RUN_STAGES = [
+  ["contracts",    "Checking the source contracts"],
+  ["resolve",      "Resolving gene identifiers"],
+  ["adapters",     "Gathering the evidence rings"],
+  ["regression",   "Running the regression check"],
+  ["render",       "Drawing the circle"],
+  ["checking",     "Checking the invariants"],
+  ["audit_render", "Rendering the audit figure"],
+  ["web_render",   "Rendering the figure for this window"],
+  ["slide",        "Rendering the 16:9 slide"],
+  ["legend",       "Rendering the legend"],
+  ["exports",      "Writing the downloads"],
+];
+
+let PROGRESS_ES = null;
+
+function newToken() {
+  return (crypto.randomUUID ? crypto.randomUUID()
+                            : String(Math.random()).slice(2)) + "";
+}
+
+function renderProgress(doneKeys, currentKey, weights, elapsed, stageElapsed) {
+  const total = RUN_STAGES.reduce((a, [k]) => a + (weights[k] || 0), 0) || 1;
+  const got = RUN_STAGES.reduce(
+    (a, [k]) => a + (doneKeys.has(k) ? (weights[k] || 0) : 0), 0);
+
+  // Ease ACROSS the current stage rather than freezing at its start.
+  //
+  // Measured: one stage is 14.8s of an 18.8s run, so a bar that only moves on
+  // stage boundaries sits dead for 79% of the wait — which reads as hung, the
+  // exact thing the stage list was added to fix. This advances within the
+  // current stage's own share, asymptotically, so it approaches that stage's
+  // end and can never claim the next one has started. The curve is 1-e^-t,
+  // which is honest about having no idea when it will finish: it slows down
+  // the longer it takes rather than promising a deadline it cannot keep.
+  const share = weights[currentKey] || 0;
+  const creep = currentKey ? (1 - Math.exp(-stageElapsed / 9)) * share * 0.92 : 0;
+  const pct = Math.min(99, Math.round(((got + creep) / total) * 100));
+
+  const rows = RUN_STAGES.map(([k, label]) => {
+    const state = doneKeys.has(k) ? "done" : (k === currentKey ? "now" : "todo");
+    const mark = state === "done" ? "✓" : "";
+    // Seconds on the live stage only: a number that is still moving is the
+    // cheapest possible proof that the thing has not hung.
+    const secs = state === "now" && stageElapsed >= 3
+      ? ` <span class="pg-secs">${stageElapsed}s</span>` : "";
+    return `<li class="pg-${state}">${
+      state === "now" ? `<span class="pg-spin" aria-hidden="true"></span>` : ""
+      }<span class="pg-mark">${mark}</span>${esc(label)}${secs}</li>`;
+  }).join("");
+  return `<div class="pg">
+    <div class="pg-bar"><div class="pg-fill" style="width:${pct}%"></div></div>
+    <p class="pg-head"><b>${pct}%</b> · ${elapsed}s elapsed</p>
+    <ul class="pg-list">${rows}</ul>
+    <p class="hint">Each stage above is a real event — it appears when that work
+      finished. The bar is an <b>estimate</b>, weighted by how long each stage
+      took on past runs, so it moves unevenly and slows down inside a long
+      stage. Which stage dominates depends on the run: drawing the circle on a
+      small gene set, writing the downloads on a large one.</p>
+  </div>`;
+}
+
+// Opens the stream and returns the token to POST with. Resolves as soon as the
+// server has the queue, so no stage event can land in the gap before the POST.
+function startProgress(slot) {
+  const token = newToken();
+  const done = new Set();
+  let current = "contracts";
+  let weights = {};
+  const t0 = Date.now();
+  let stageStart = Date.now();
+  const paint = () => {
+    const el = $(slot);
+    if (el) el.innerHTML = renderProgress(
+      done, current, weights, Math.round((Date.now() - t0) / 1000),
+      Math.round((Date.now() - stageStart) / 1000));
+  };
+  paint();
+  // 400ms: fast enough that the eased bar reads as motion rather than
+  // as a jump, cheap enough to be invisible next to the work.
+  const timer = setInterval(paint, 400);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const es = new EventSource(`/api/analyse/progress/${encodeURIComponent(token)}`);
+    PROGRESS_ES = es;
+    es.onmessage = (ev) => {
+      let d;
+      try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d.stage === "open") {
+        weights = d.weights || {};
+        if (!settled) { settled = true; resolve({ token, stop }); }
+        return;
+      }
+      if (d.stage === "done") { done.add("exports"); paint(); return; }
+      done.add(d.stage);
+      const next = RUN_STAGES.find(([k]) => !done.has(k));
+      current = next ? next[0] : "";
+      stageStart = Date.now();
+      paint();
+    };
+    es.onerror = () => { if (!settled) { settled = true; resolve({ token, stop }); } };
+    function stop() {
+      clearInterval(timer);
+      try { es.close(); } catch (e) {}
+      PROGRESS_ES = null;
+    }
+    // A server that never opens the stream must not block the run.
+    setTimeout(() => { if (!settled) { settled = true; resolve({ token, stop }); } }, 2000);
+  });
+}
+
 async function analyse() {
   const btn = $("#go");
   btn.disabled = true;
@@ -1029,18 +1156,15 @@ async function analyse() {
   $("#result").hidden = true;
   RUN = null;
 
-  // UX B2. One static grey sentence for four minutes reads as "it has hung".
-  const t0 = Date.now();
-  const stage = "Checking source contracts, resolving identifiers, fetching rings…";
-  const tick = () => {
-    const s = Math.round((Date.now() - t0) / 1000);
-    $("#status").textContent = `${stage}  ·  ${s}s elapsed`;
-  };
-  tick();
+  // UX B2's successor. One static grey sentence read as "it has hung"; the
+  // one-line ticker that replaced it read as "still going" without ever saying
+  // what it was doing. This is the stage list, driven by real events.
   clearInterval(TICKER);
-  TICKER = setInterval(tick, 1000);
+  $("#status").textContent = "";
+  const prog = await startProgress("#run-progress");
 
   const fd = new FormData();
+  fd.append("progress_token", prog.token);
   fd.append("table", $("#table").value);
   fd.append("region", $("#region").value);
   fd.append("ordering", $("#ordering").value);
@@ -1067,11 +1191,13 @@ async function analyse() {
     body = await res.json();
   } catch (e) {
     clearInterval(TICKER);
+    prog.stop();
     fail("Request failed: " + e);
     btn.disabled = false;
     return;
   }
   clearInterval(TICKER);
+  prog.stop();
   btn.disabled = false;
 
   if (!res.ok) {

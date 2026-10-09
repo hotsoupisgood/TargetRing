@@ -1469,3 +1469,49 @@ body.landing #landing-lede .hint { display: block; font-weight: 400;
    there is exactly one set of styles for the working page — the landing is a
    state of it, not a variant of it. */
 body:not(.landing) .landing-only { display: none; }
+
+/* --- 14. The staged progress panel.
+   ---------------------------------
+   A run is ~27s warm and the stages are wildly uneven — measured, exports is
+   68% of it and everything touching a source is 3%. So the bar is weighted by
+   those measured shares rather than by stage count: an evenly-paced bar would
+   sit at 50% through the two cheapest stages and then stall for 19 seconds,
+   which is exactly what makes a progress bar feel like a lie.
+
+   The stage list is the honest part — each line appears when that work really
+   finished — and the panel says which of the two is which. */
+
+.pg { margin: var(--tr-s-3) 0; max-width: var(--tr-measure); }
+.pg-bar { height: 6px; border-radius: 999px; background: var(--tr-surface-sunk);
+          overflow: hidden; }
+.pg-fill { height: 100%; background: var(--tr-accent, var(--accent));
+           border-radius: 999px; transition: width .45s ease; }
+.pg-head { margin: var(--tr-s-2) 0 var(--tr-s-3); font-size: var(--tr-t-small);
+           color: var(--tr-ink-2); font-variant-numeric: tabular-nums; }
+
+.pg-list { list-style: none; margin: 0; padding: 0;
+           font-size: var(--tr-t-small); }
+.pg-list li { display: flex; align-items: center; gap: var(--tr-s-2);
+              padding: 2px 0; color: var(--tr-ink-3); }
+.pg-mark { width: 1em; display: inline-block; }
+/* Done is stated, not celebrated; the current stage is the only emphasis. */
+.pg-done { color: var(--tr-ink-3); }
+.pg-done .pg-mark { color: var(--tr-status-good); }
+.pg-now { color: var(--tr-ink); font-weight: 600; }
+.pg-todo { color: var(--tr-ink-4); }
+
+.pg-spin { width: 11px; height: 11px; border-radius: 50%;
+           border: 2px solid var(--tr-rule-strong);
+           border-top-color: var(--tr-accent, var(--accent));
+           animation: pg-rot .7s linear infinite; flex: 0 0 auto; }
+@keyframes pg-rot { to { transform: rotate(360deg); } }
+
+/* Honour a reader who has asked the OS for less motion: the spinner becomes a
+   static ring and the bar jumps rather than slides. The stage list carries the
+   information either way, so nothing is lost. */
+@media (prefers-reduced-motion: reduce) {
+  .pg-spin { animation: none; }
+  .pg-fill { transition: none; }
+}
+.pg-secs { color: var(--tr-ink-4); font-variant-numeric: tabular-nums;
+           font-weight: 400; }

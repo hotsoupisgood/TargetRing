@@ -213,6 +213,15 @@ async def run_analysis(
     runs_dir: Path | None = None,
     run_regression: bool = True,
     with_triage: bool = False,
+    # Called at each stage boundary with (key, human label). Optional and a
+    # no-op by default, so every existing caller is unchanged.
+    #
+    # The STAGES ARE REAL EVENTS, not a timer: each fires when the work before
+    # it finished. That matters because the shares are wildly uneven — measured
+    # on a warm 26.9s run, exports is 19.3s (72%) and everything that touches a
+    # source is 0.8s — so an evenly-paced bar would be a lie about where the
+    # time goes, and this build does not ship those.
+    on_progress: "Any | None" = None,
     ordering: str | None = None,
     filters: Any = None,
     # v3.5. The window the figure is going to be read in, measured by the browser
@@ -244,10 +253,24 @@ async def run_analysis(
     # run is not a kindness.
     active_filters: list[Filter] = parse_filters(filters, FILTERABLE_RINGS)
 
+    def _say(key: str, label: str) -> None:
+        """Announce a finished stage. Never allowed to break the run: a
+        progress channel that can fail the analysis it is reporting on is worse
+        than no progress channel."""
+        if on_progress is None:
+            return
+        try:
+            on_progress(key, label)
+        except Exception:  # noqa: BLE001
+            pass
+
+    _say("start", "Starting")
+
     async with Http() as http:
         t = time.time()
         contracts = await check_contracts(http)
         timings["contracts_s"] = round(time.time() - t, 2)
+        _say("contracts", "Checked the source contracts")
         contract_failures = [c for c in contracts if not c["ok"]]
         for c in contract_failures:
             warnings.append(f"source contract FAILED — {c['check']}: {c['detail'][:200]}")
@@ -257,6 +280,7 @@ async def run_analysis(
         resolver = Resolver(http, cache)
         resolutions = await resolver.resolve_all([r.symbol for r in parsed.rows])
         timings["resolve_s"] = round(time.time() - t, 2)
+        _say("resolve", "Resolved the gene identifiers")
 
         ledger: list[LedgerEntry] = list(parsed.ledger)
         resolved_key: dict[int, str | None] = {}
@@ -354,6 +378,7 @@ async def run_analysis(
             timed("europepmc_probe", epmc.integrity_probe(live[0][0])),
         )
         timings["adapters_s"] = round(time.time() - t, 2)
+        _say("adapters", "Fetched every ring from its source")
 
         # --- the five-ID regression test, against the same live API -------
         regression = None
@@ -361,6 +386,7 @@ async def run_analysis(
             t = time.time()
             regression = await five_id_regression(http, cache)
             timings["regression_s"] = round(time.time() - t, 2)
+            _say("regression", "Ran the regression check")
 
     # --- assemble cells --------------------------------------------------
     genes = [d for d, _, _ in live]
@@ -663,7 +689,9 @@ async def run_analysis(
 
     fig_result = do_render([])
     timings["render_s"] = round(time.time() - t, 2)
+    _say("render", "Drew the circle")
 
+    _say("checking", "Checking the invariants")
     invariants = check_all(
         svg_path=svg_path,
         csv_rows=fig_result.csv_rows,
@@ -738,7 +766,9 @@ async def run_analysis(
         figure.assert_renders_agree(svg_path, web_svg)
         return result, lay
 
+    _say("audit_render", "Rendered the audit figure")
     web_result, web_layout = draw_the_app_render(panel_px, viewport_px)
+    _say("web_render", "Rendered the figure for the page")
 
     # UX A4: the slide render. Same data, 16:9, type that survives projection,
     # with the ring key and the caveats moved into the caption beside it. The
@@ -747,6 +777,7 @@ async def run_analysis(
                              svg=runs_dir / "figure-slide.svg",
                              png=runs_dir / "figure-slide.png",
                              invariant_summary=inv_summary)
+    _say("slide", "Rendered the 16:9 slide")
 
     # v3.0, Puck: "we could have the download download legend as a separate
     # image" -- circle on one slide, legend on another. The run id is on both,
@@ -760,6 +791,7 @@ async def run_analysis(
         ordering_note=ordering_note, filter_notes=filter_notes,
         input_count=parsed.input_row_count, rendered_count=rendered_count,
         gene_flags=severe_liability_flags, de_source=de_source)
+    _say("legend", "Rendered the legend")
 
     # Seven files, four layouts, one data set. This says each file is the render
     # its name promises -- see the function for the bug that earned it.
@@ -769,6 +801,7 @@ async def run_analysis(
     # so the cost of the new artefacts is visible in every manifest instead of
     # being discovered later as "the run got slower".
     timings["exports_s"] = round(time.time() - t_exports, 2)
+    _say("exports", "Wrote the downloads")
     # v2.7: the caption is the SLIDE's caption, not the audit's. It always was
     # the slide's artefact -- "everything the slide render drops, as text to
     # paste underneath" -- and until now the two were word for word identical,
@@ -877,6 +910,7 @@ async def run_analysis(
             "Nothing on the current figure depends on it."
         )
 
+    _say("done", "Done")
     timings["total_s"] = round(time.time() - t0, 2)
 
     man = manifest_mod.build(

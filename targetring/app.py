@@ -7,12 +7,14 @@ pipeline and its literature; download the SVG and the CSV.
 from __future__ import annotations
 
 import asyncio
+import json as json_mod
 import traceback
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
+                               StreamingResponse)
 
 from .adapters.atlas import AtlasAdapter
 from .adapters.chembl import ChEMBLAdapter, mechanism_summary
@@ -474,6 +476,10 @@ async def analyse(
     n: int = Form(MAX_GENES),
     direction: str = Form("both"),
     ensembl_ids: str = Form(""),
+    # A token the client coined and already opened a progress stream for. Empty
+    # means nobody is listening and `_progress_sink` returns None, so the run is
+    # byte-for-byte what it was before this existed.
+    progress_token: str = Form(""),
     file: UploadFile | None = None,
 ) -> JSONResponse:
     import json as json_mod
@@ -542,16 +548,19 @@ async def analyse(
         else:
             raise HTTPException(400, "Provide a DE table, pasted or uploaded.")
 
+    sink = _progress_sink(progress_token)
     try:
         if source == "atlas":
             result = await run_analysis(
                 parsed_input=parsed_input, region=region, ordering=ordering,
                 filters=filters, panel_px=panel_px, viewport_px=viewport_px,
-                contrast=contrast_for_run, selection_accounting=selection_accounting)
+                contrast=contrast_for_run,
+                selection_accounting=selection_accounting, on_progress=sink)
         else:
             result = await run_analysis(table=raw, region=region,
                                         ordering=ordering, filters=filters,
-                                        panel_px=panel_px, viewport_px=viewport_px)
+                                        panel_px=panel_px, viewport_px=viewport_px,
+                                        on_progress=sink)
     except FilterRejected as e:
         # The filter settings themselves are unusable — a ring that does not
         # exist, a threshold that is not a number. Nothing was fetched and
@@ -970,6 +979,78 @@ async def run_values(run_id: str, sort: str = "", dim: str = "") -> JSONResponse
         return JSONResponse({"error": "sort_rejected", "message": str(e)},
                             status_code=422)
     return JSONResponse(body)
+
+
+# --- the progress channel ---------------------------------------------------
+#
+# `/api/analyse` is one POST that returns when the whole run is done, and on a
+# warm cache that is 27 seconds. The measured split (manifest `timings`) is
+# wildly uneven -- exports 19.3s, render 4.3s, everything touching a source
+# 0.8s -- so a client-side timer pretending to be progress would be a bar that
+# lies about where the time goes. This build does not ship those.
+#
+# So the stages are REAL EVENTS. The client makes up a token, opens this stream
+# first, then POSTs with the same token; `run_analysis`'s `on_progress` pushes
+# each finished stage into the queue and the stream relays it. Nothing about
+# `/api/analyse`'s own logic changes, which is why this is a second route and
+# not a rewrite of the first.
+_progress: dict[str, "asyncio.Queue[dict[str, Any]]"] = {}
+
+#: Measured shares of a warm 26.9s run, used ONLY to weight the bar's width.
+#: The stage names and their order are facts; these numbers are a historical
+#: average and the UI says so rather than presenting them as this run's.
+#: Measured over a warm run. The split is wildly uneven and moves with the gene
+#: count -- on a 3-gene paste run the first render was 14.5s and the exports
+#: near-instant; on a 60-gene contrast run exports was 19.3s. Weights are a
+#: rough historical average and the UI says so; the STAGE NAMES are the facts.
+PROGRESS_WEIGHTS: dict[str, int] = {
+    "start": 0, "contracts": 4, "resolve": 1, "adapters": 3, "regression": 3,
+    "render": 45, "checking": 2, "audit_render": 10, "web_render": 10,
+    "slide": 10, "legend": 5, "exports": 5, "done": 2,
+}
+
+
+def _progress_sink(token: str):
+    """An `on_progress` for `run_analysis`, or `None` when nobody is listening."""
+    if not token or token not in _progress:
+        return None
+    q = _progress[token]
+
+    def sink(key: str, label: str) -> None:
+        q.put_nowait({"stage": key, "label": label,
+                      "weight": PROGRESS_WEIGHTS.get(key, 0)})
+    return sink
+
+
+@app.get("/api/analyse/progress/{token}")
+async def analyse_progress(token: str) -> StreamingResponse:
+    """Server-sent stage events for one analyse, by a token the client coined.
+
+    Opened BEFORE the POST, so no event can be missed in the gap. The queue is
+    created here and dropped when the stream ends; a token nobody posts against
+    simply times out, which is why the generator has an idle deadline rather
+    than waiting forever on a client that went away.
+    """
+    q: "asyncio.Queue[dict[str, Any]]" = asyncio.Queue()
+    _progress[token] = q
+
+    async def events():
+        try:
+            yield (f"data: {json_mod.dumps({'stage': 'open', 'label': 'Connected', 'weight': 0, 'weights': PROGRESS_WEIGHTS})}\n\n")
+            while True:
+                try:
+                    item = await asyncio.wait_for(q.get(), timeout=180)
+                except asyncio.TimeoutError:
+                    break
+                yield f"data: {json_mod.dumps(item)}\n\n"
+                if item.get("stage") == "done":
+                    break
+        finally:
+            _progress.pop(token, None)
+
+    return StreamingResponse(events(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-store",
+                                      "X-Accel-Buffering": "no"})
 
 
 @app.get("/api/autopick")
