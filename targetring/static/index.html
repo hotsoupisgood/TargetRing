@@ -153,6 +153,12 @@
       1 TPM in the region are drawn <b>no data</b> rather than given a ratio: a ratio
       without a level is not a specificity statement.</p>
     <select id="region"></select>
+    <!-- Set for you when a disease is chosen, and said rather than done
+         silently: "enriched in ileum" and "enriched in whole blood" are
+         different statements about a gene, and a reader who did not pick the
+         tissue will not notice it was picked unless it is here. The select
+         stays exactly as editable as it was. -->
+    <div id="region-inferred" class="note" hidden></div>
 
     <h2>3. Gene order around the circle</h2>
     <!-- v2.5 item 1. The order carries meaning and is printed on the figure. -->

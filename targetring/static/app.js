@@ -46,6 +46,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
 async function init() {
   const r = await fetch("/api/regions").then((x) => x.json());
   const sel = $("#region");
+  DEFAULT_REGION = r.default || "";
   sel.innerHTML = r.regions.map((t) =>
     `<option ${t === r.default ? "selected" : ""}>${esc(t)}</option>`).join("");
   if (r.error) $("#status").textContent = "GTEx region list unavailable: " + r.error;
@@ -309,9 +310,70 @@ function leaveLanding() {
   document.body.classList.remove("landing");
 }
 
+// The region the app falls back to, captured at init so a disease with no
+// inference can be reset to it rather than silently keeping the PREVIOUS
+// disease's tissue — which would draw one disease's specificity ring against
+// another disease's organ.
+let DEFAULT_REGION = "";
+let REGION_WAS_INFERRED = false;
+
+// Which GTEx tissue to read the specificity ring against, inferred from the
+// disease and cached server-side (`region_llm`). Best-effort and never
+// blocking: the select keeps whatever it had if this fails, and the figure
+// names the region it used either way.
+//
+// It SETS the control rather than bypassing it, so there is one region in the
+// app and the user can override it with the same dropdown they always had.
+async function inferRegion(label) {
+  const box = $("#region-inferred");
+  const sel = $("#region");
+  if (!box || !sel || !label) return;
+  let r;
+  try {
+    r = await fetch("/api/region-for?disease=" + encodeURIComponent(label))
+      .then((x) => x.json());
+  } catch (e) { return; }
+  if (!r || !r.tissue) {
+    // No inference is not an error — the default stands and the figure says
+    // which region it used. Nothing is claimed here.
+    clearInferredRegion();
+    return;
+  }
+  const match = [...sel.options].find((o) => o.value === r.tissue);
+  if (!match) {
+    // The panel the select was built from and the panel the chooser was given
+    // disagree. Refuse rather than force a value the dropdown does not have.
+    clearInferredRegion();
+    return;
+  }
+  sel.value = r.tissue;
+  REGION_WAS_INFERRED = true;
+  box.hidden = false;
+  box.innerHTML =
+    `<b>Region set to <code>${esc(r.tissue)}</code> for this disease.</b><br>
+     <span class="hint">${esc(r.reason)}${
+       r.cached ? " (remembered from an earlier run on "
+                  + esc((r.chosen_utc || "").slice(0, 10)) + ")" : ""}
+     — change it above if that is the wrong tissue.</span>`;
+}
+
+// Drop an inference made for a PREVIOUS disease. Only resets the select if we
+// were the ones who set it: a region the user chose by hand is theirs, and
+// clobbering it would be this function deciding it knows better.
+function clearInferredRegion() {
+  const box = $("#region-inferred");
+  if (box) box.hidden = true;
+  if (REGION_WAS_INFERRED && DEFAULT_REGION) {
+    const sel = $("#region");
+    if (sel) sel.value = DEFAULT_REGION;
+  }
+  REGION_WAS_INFERRED = false;
+}
+
 async function loadContrasts(d, _ix) {
   leaveLanding();
   PICKER.disease = d;
+  inferRegion(d.label || d.current_id);
   const panel = $("#contrast-panel");
   panel.hidden = false;
   panel.innerHTML = `<p class="hint">loading contrasts for ${esc(d.current_id)}…</p>`;

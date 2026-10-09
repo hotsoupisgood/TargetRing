@@ -2927,3 +2927,64 @@ class TestTheLandingState:
         lede = lede[:lede.index("</p>")]
         assert "picks a comparison" in lede
         assert "can be changed" in lede
+
+
+class TestTheRegionFollowsTheDisease:
+    """`/api/region-for` existed and nothing read it — the inference worked and
+    the Region dropdown never moved.
+
+    It SETS the control rather than bypassing it, so there is one region in the
+    app and the same dropdown still overrides it.
+    """
+
+    def test_choosing_a_disease_asks_for_a_region(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        assert "/api/region-for?disease=" in js
+        blk = js[js.index("async function loadContrasts"):]
+        assert "inferRegion(" in blk[:400]
+
+    def test_it_sets_the_dropdown_rather_than_bypassing_it(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("async function inferRegion"):]
+        fn = fn[:fn.index("\n// Drop an inference")]
+        assert 'sel.value = r.tissue' in fn
+
+    def test_a_tissue_the_dropdown_does_not_have_is_refused(self) -> None:
+        """The panel the select was built from and the panel the chooser was
+        given can disagree; forcing a value the dropdown lacks would send
+        `specificity_cell` after a key that is not there."""
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("async function inferRegion"):]
+        fn = fn[:fn.index("\n// Drop an inference")]
+        assert "sel.options" in fn and "clearInferredRegion()" in fn
+
+    def test_an_inferred_region_is_stated_not_done_silently(self) -> None:
+        """"Enriched in ileum" and "enriched in whole blood" are different
+        claims about a gene, and a reader who did not pick the tissue will not
+        notice it was picked unless it is said."""
+        html = (STATIC / "index.html").read_text()
+        js = (STATIC / "app.js").read_text()
+        assert 'id="region-inferred"' in html
+        assert "Region set to" in js
+        assert "change it above" in js
+
+    def test_a_remembered_answer_says_it_is_remembered(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        assert "remembered from an earlier run" in js
+
+    def test_a_previous_diseases_region_is_not_carried_over(self) -> None:
+        """Pick a disease that infers, then one that does not: leaving the first
+        tissue selected would draw one disease's specificity ring against
+        another disease's organ."""
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function clearInferredRegion()"):]
+        fn = fn[:fn.index("\nasync function loadContrasts")]
+        assert "DEFAULT_REGION" in fn
+        assert "REGION_WAS_INFERRED" in fn
+
+    def test_a_region_the_user_chose_by_hand_is_left_alone(self) -> None:
+        """Only an inference we made is reset. A hand-picked region is theirs."""
+        js = (STATIC / "app.js").read_text()
+        fn = js[js.index("function clearInferredRegion()"):]
+        fn = fn[:fn.index("\nasync function loadContrasts")]
+        assert "if (REGION_WAS_INFERRED" in fn
