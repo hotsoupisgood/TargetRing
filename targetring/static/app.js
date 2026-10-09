@@ -103,8 +103,19 @@ async function init() {
   // `?run=<id>` opens that run's table directly. There is no figure in memory
   // for it, so the figure pane says so and points at the run's own artefacts
   // rather than showing the previous run's circle (UX A2's finding).
+  // Pasting is the other way in, and the landing hides that panel. This leaves
+  // the landing without choosing a disease, so the paste path is reachable in
+  // one click rather than not at all.
+  const paste = $("#go-paste");
+  if (paste) paste.onclick = () => {
+    leaveLanding();
+    $("#table").focus();
+  };
+
   const wanted = new URLSearchParams(location.search).get("run");
   if (wanted) {
+    // A deep link lands on a result, so it was never a landing.
+    leaveLanding();
     $("#result").hidden = false;
     $("#banner").hidden = true;
     $("#counts").innerHTML = "";
@@ -290,7 +301,16 @@ function chooseDisease(d, ix) {
 
 let PICKER = { disease: null, sort: "" };
 
+// Leaving the landing state. Called the moment a disease is chosen — that is
+// the point the page stops being a search box and becomes the working surface.
+// One-way within a page load: going back to one box with a contrast picked
+// below it would be a landing page that is not landing on anything.
+function leaveLanding() {
+  document.body.classList.remove("landing");
+}
+
 async function loadContrasts(d, _ix) {
+  leaveLanding();
   PICKER.disease = d;
   const panel = $("#contrast-panel");
   panel.hidden = false;

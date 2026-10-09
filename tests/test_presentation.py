@@ -2866,3 +2866,64 @@ class TestTheContrastIsChosenOnFirstView:
         fn = fn[:fn.index("\nfunction ")]
         assert "fell_back_from" in fn
         assert "fell back" in fn.lower()
+
+
+class TestTheLandingState:
+    """Puck: "something more like a google home page. with a address bar for the
+    disease." One box, centred, and nothing else until a disease is chosen.
+
+    A class on <body> rather than a second page, because a second page would be
+    a second copy of the search, the autocomplete and the contrast flow — and
+    the moment there are two, they drift.
+    """
+
+    def test_the_page_starts_in_the_landing_state(self) -> None:
+        html = (STATIC / "index.html").read_text()
+        assert '<body class="landing">' in html
+
+    def test_choosing_a_disease_leaves_it(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        assert "function leaveLanding()" in js
+        block = js[js.index("async function loadContrasts"):]
+        assert "leaveLanding();" in block[:300]
+
+    def test_a_deep_link_was_never_a_landing(self) -> None:
+        """`?run=` opens straight onto a result."""
+        js = (STATIC / "app.js").read_text()
+        blk = js[js.index('const wanted = new URLSearchParams'):]
+        assert "leaveLanding();" in blk[:400]
+
+    def test_the_paste_path_is_still_reachable(self) -> None:
+        """The landing hides `#input-panel`, and pasting a table is a way in
+        that predates the disease search. Hiding it with no way back would have
+        removed a working entry point."""
+        html = (STATIC / "index.html").read_text()
+        js = (STATIC / "app.js").read_text()
+        assert 'id="go-paste"' in html
+        assert '$("#go-paste")' in js
+        blk = js[js.index('const paste = $("#go-paste");'):]
+        assert "leaveLanding();" in blk[:300]
+
+    def test_the_search_box_itself_is_never_hidden(self) -> None:
+        """The chrome around it goes; the box stays. Hiding `#find-panel`
+        outright would hide the one control the landing exists for."""
+        css = (STATIC / "app.css").read_text()
+        block = css[css.index("--- 13. The landing state."):]
+        hidden = block[block.index("display: none"):block.index("display: none") + 2]
+        assert "body.landing #find-panel,\nbody.landing #find," in block
+        assert "body.landing #disease" in block, "the box is styled, not hidden"
+
+    def test_the_landing_only_elements_vanish_afterwards(self) -> None:
+        """One set of styles for the working page — the landing is a state of
+        it, not a variant of it."""
+        css = (STATIC / "app.css").read_text()
+        assert "body:not(.landing) .landing-only { display: none; }" in css
+
+    def test_the_landing_says_what_the_app_will_do(self) -> None:
+        """Including that it chooses, and that the choice can be changed —
+        `docs/DECISION-AUTOPICK-2026-10-09.md`'s philosophy stated up front."""
+        html = (STATIC / "index.html").read_text()
+        lede = html[html.index('id="landing-lede"'):]
+        lede = lede[:lede.index("</p>")]
+        assert "picks a comparison" in lede
+        assert "can be changed" in lede

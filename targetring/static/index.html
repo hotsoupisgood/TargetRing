@@ -11,7 +11,14 @@
   <link rel="stylesheet" href="/app.css">
   <link rel="stylesheet" href="/header-wash.css">
 </head>
-<body>
+<!-- `landing` is the first-view state: one search box, centred, and nothing
+     else. `app.js` drops the class the first time a disease is chosen, and
+     from then on the page is the working surface it always was.
+
+     A class on <body> rather than a separate landing page, because a second
+     page would be a second copy of the search, the autocomplete and the
+     contrast flow — and the moment there are two, they drift. -->
+<body class="landing">
 <header>
   <h1>targetring <span class="ver">v2</span></h1>
   <p class="sub">
@@ -35,6 +42,12 @@
        * every count carries the date its index was built. A contrast count is a
          measurement from a crawl, and a month-old number rendered like a live one
          is a small plausible wrong figure. -->
+  <p id="landing-lede" class="landing-only">Type a disease.<br>
+    <span class="hint">targetring finds a public expression study for it,
+      picks a comparison of affected against unaffected people, and draws what
+      is known about each gene that differs. Everything it chose is shown and
+      can be changed.</span></p>
+
   <section id="find-panel">
     <details id="find" open>
       <summary><span class="chev" aria-hidden="true">▾</span>
@@ -68,6 +81,14 @@
       </div>
     </details>
   </section>
+
+  <!-- The landing hides the paste panel, and pasting your own table is a way
+       in that predates the disease search. This is how you get back to it
+       without picking a disease first — one line, quiet, and it leaves the
+       landing exactly as choosing a disease does. -->
+  <p id="landing-paste" class="landing-only">
+    <button id="go-paste" class="linkish">or paste a differential expression
+      table you already have</button></p>
 
   <section id="input-panel">
     <!-- v3.2 / UX v3 round 2 B7. This form is 1,053 px tall — 42% of a 2,487 px

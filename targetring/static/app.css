@@ -1417,3 +1417,55 @@ td.cell-no-data, .grid td.no-data {
                            font-size: var(--tr-t-small); }
 #all-contrasts > summary:hover { color: var(--tr-ink); }
 #all-contrasts > .reveal { padding-top: var(--tr-s-3); }
+
+/* --- 13. The landing state.
+   -------------------------
+   Puck: "something more like a google home page. with a address bar for the
+   disease." One box, centred, and nothing else until a disease is chosen.
+
+   A `landing` class on <body> rather than a second page, because a second page
+   would be a second copy of the search, the autocomplete and the contrast flow,
+   and the moment there are two they drift.
+
+   What stays visible in the landing state is deliberately short: the masthead,
+   one line saying what to type, the box, and whatever the box returns. Every
+   `.landing-only` element is the inverse — present only here. */
+
+body.landing #input-panel,
+body.landing #result,
+body.landing #find > summary,
+body.landing #find .reveal > p.hint:first-of-type,
+body.landing #index-note,
+body.landing #find-sources { display: none; }
+
+/* Not `display:none` on the panel itself — the disease box lives inside it and
+   must keep working. The chrome around it goes; the box stays. */
+body.landing #find-panel,
+body.landing #find,
+body.landing #find > .reveal { border: 0; padding: 0; background: none;
+                               box-shadow: none; }
+
+body.landing main { display: flex; flex-direction: column;
+                    align-items: center; justify-content: flex-start;
+                    min-height: 62vh; padding-top: 12vh; }
+body.landing #find-panel { width: min(42rem, 92vw); }
+
+/* The box itself: the one thing on the page, so it is sized like it. */
+body.landing #disease { width: 100%; font-size: var(--tr-t-lede);
+                        padding: var(--tr-s-3) var(--tr-s-4);
+                        border-radius: 999px; }
+body.landing #find .row { display: block; }
+
+#landing-lede { display: none; }
+body.landing #landing-lede { display: block; text-align: center;
+                             font-size: var(--tr-t-h3); font-weight: 600;
+                             margin: 0 0 var(--tr-s-4);
+                             max-width: min(40rem, 92vw); }
+body.landing #landing-lede .hint { display: block; font-weight: 400;
+                                   font-size: var(--tr-t-small);
+                                   margin-top: var(--tr-s-2); }
+
+/* Once a disease is chosen the class is dropped and nothing below applies, so
+   there is exactly one set of styles for the working page — the landing is a
+   state of it, not a variant of it. */
+body:not(.landing) .landing-only { display: none; }
