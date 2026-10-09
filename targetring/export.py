@@ -413,7 +413,9 @@ def _provenance_html(blob: dict[str, Any], t: table_mod.RunTable) -> str:
             — {passes} of {len(p['invariants'])} PASS, listed in full below.
             <b>NOT_EVALUATED is not a pass.</b></dd>
         <dt>spoke order the circle used</dt>
-          <dd>{_esc(p['ordering_note'] or p['ordering'])}</dd>
+          <dd>{_esc(p['ordering_note'] or p['ordering'])}{
+            f"<br><small>{_esc(p['ordering_note_drift'])}</small>"
+            if p.get('ordering_note_drift') else ''}</dd>
         <dt>rings drawn</dt><dd>{len(p['rings'])}, in the figure's radial order —
           column 1 is the outermost band</dd>
         <dt>exported (UTC)</dt><dd>{_esc(blob['exported_at_utc'])}</dd>

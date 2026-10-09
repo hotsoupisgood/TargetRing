@@ -114,19 +114,86 @@ class TestTheDefectIsFrozenOnDisk:
                 f"was rewritten after c24c8ec, drop it from this class")
 
     @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
-    def test_the_frozen_ordering_note_is_displayed_verbatim_today(
-            self, run_id) -> None:
-        """Not only frozen — `view.table_payload` returns `ordering_note`
-        straight out of the manifest, so the Table tab prints this sentence on
-        screen RIGHT NOW for these three runs. That is the one piece of the
-        defect still visible in the running app, and it is the reason this is a
-        test rather than a comment."""
-        note = (view_mod.table_payload(run_id)["ordering_note"] or "").lower()
+    def test_the_frozen_ordering_note_still_says_submitted(self, run_id) -> None:
+        """The stored sentence, which is what a reader of `manifest.json` alone
+        is told. It is no longer what the app prints — see
+        `TestTheOrderingNoteIsResolvedNotReadBack` — but the bytes are still
+        there and the surface is required to account for them."""
+        note = (_manifest(run_id).get("ordering_note") or "").lower()
         if not note:
             pytest.skip(f"{run_id} records no ordering note")
         assert "submitted" in note, note
-        # and the run it is describing is demonstrably not a submitted table
+        # and the run it describes is demonstrably not a submitted table
         assert _manifest(run_id)["contrast"]["accession"]
+
+
+class TestTheOrderingNoteIsResolvedNotReadBack:
+    """`table_payload` used to return `ordering_note` straight out of the
+    manifest, so the Table tab printed "spoke order: the order of your submitted
+    DE table" for genes nobody submitted -- the last piece of this defect still
+    visible in the running app. It is re-resolved from the run's own `contrast`
+    block now.
+
+    Why this string and not a ring label: a label is a record of the text
+    painted on that figure (PANEL P1), and replacing it would make the strip
+    disagree with the artefact. This is a **claim about where the genes came
+    from**, which the same manifest contains the evidence to settle two keys
+    away. See `view._ordering_note`.
+    """
+
+    @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
+    def test_the_note_names_the_contrast_and_not_your_table(self, run_id
+                                                             ) -> None:
+        p = view_mod.table_payload(run_id)
+        if not p["ordering_note"]:
+            pytest.skip(f"{run_id} records no ordering")
+        c = _manifest(run_id)["contrast"]
+        assert "submitted DE table" not in p["ordering_note"]
+        assert c["accession"] in p["ordering_note"]
+        assert c["contrast_id"] in p["ordering_note"]
+
+    @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
+    def test_the_stored_sentence_is_carried_and_the_drift_is_stated(
+            self, run_id) -> None:
+        """`citations._drift`'s rule -- said, not resolved silently. A reader
+        with this run's manifest.json open must be told why the two disagree
+        rather than finding it."""
+        p = view_mod.table_payload(run_id)
+        if not p["ordering_note_recorded"]:
+            pytest.skip(f"{run_id} records no ordering note")
+        assert p["ordering_note_recorded"] != p["ordering_note"]
+        assert p["ordering_note_recorded"] in p["ordering_note_drift"]
+        assert "manifest recorded" in p["ordering_note_drift"]
+
+    def test_a_paste_run_is_untouched_and_claims_no_drift(self) -> None:
+        """The blast radius. Measured across every run on disk: 3 change, 162
+        resolve to the identical sentence, 91 have none either way."""
+        changed = []
+        for d in sorted(p for p in RUNS.iterdir() if p.is_dir()):
+            if not (d / "manifest.json").exists():
+                continue
+            m = json.loads((d / "manifest.json").read_text())
+            if (m.get("contrast") or {}).get("accession"):
+                continue
+            try:
+                p = view_mod.table_payload(d.name)
+            except Exception:  # noqa: BLE001 -- unloadable runs are not this test's
+                continue
+            stored = (m.get("ordering_note") or "").strip()
+            if p["ordering_note"] != stored:
+                changed.append((d.name, stored, p["ordering_note"]))
+            assert not p["ordering_note_drift"], d.name
+        assert not changed, changed[:3]
+
+    def test_a_run_that_records_no_ordering_keeps_its_stored_sentence(self
+                                                                      ) -> None:
+        """Nothing to resolve from, so nothing is invented: the stored string is
+        returned rather than replaced by a guess."""
+        out = view_mod._ordering_note(
+            {"ordering_note": "spoke order: something a later build forgot"},
+            {}, S.DESource.pasted())
+        assert out["ordering_note"] == "spoke order: something a later build forgot"
+        assert out["ordering_note_drift"] == ""
 
 
 class TestEverySurfaceResolvesFromTheRun:

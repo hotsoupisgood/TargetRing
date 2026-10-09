@@ -37,7 +37,8 @@ from . import evidence as evidence_mod
 from . import table as table_mod
 from . import sources as SOURCES
 from .figure import RING_SPECS, STATE_STYLE, ring_specs_for
-from .order import missing_on, order_by_keys, parse_sort_keys, sort_label
+from .order import (is_ring_ordering, missing_on, order_by_keys,
+                    ordering_label, parse_sort_keys, sort_label)
 from .run import FILTERABLE_RINGS
 
 # What the app says beside a grid whose run IS in memory, and what it says when it
@@ -67,6 +68,57 @@ def dimmable_rings(rings: list[dict[str, str]]) -> list[str]:
     gene, and opacity instead of removal does not change what that is.
     """
     return [r["key"] for r in rings if r["key"] in FILTERABLE_RINGS]
+
+
+def _ordering_note(m: dict[str, Any], specs: dict[str, Any],
+                   de: "SOURCES.DESource") -> dict[str, str]:
+    """The spoke-order sentence, resolved from the run rather than read back.
+
+    `ordering_note` was returned straight out of `manifest.json`, and on the
+    three Atlas contrast runs under `runs/` that string says *"spoke order: the
+    order of your submitted DE table (unchanged)"* about genes nobody submitted.
+    They were drawn on 2026-10-03, four days before `c24c8ec` taught
+    `order.ordering_label` to take the run's `table_phrase`, so the frozen
+    sentence predates the fix — and `table_payload` was handing it to the Table
+    tab verbatim, which made it the last piece of that defect still on screen.
+
+    WHY THIS ONE IS RE-RESOLVED WHEN A RING LABEL IS NOT. `citation_rows` prints
+    the run's own ring labels on purpose (PANEL P1, `column_label`'s docstring):
+    a label is a record of the text that was painted on that figure, and
+    replacing it would make the strip disagree with the artefact it describes.
+    This is a different kind of string. "the order of your submitted DE table"
+    is not a description of the figure's appearance; it is a **claim about where
+    this run's genes came from**, and it is a claim the same manifest already
+    contains the evidence to settle, two keys away in `contrast.accession`.
+    Printing a falsifiable provenance claim that the artefact itself falsifies
+    is `AGENTS.md:17`'s plausible wrong output in a sentence.
+
+    SAID, NOT RESOLVED SILENTLY — `citations._drift`'s rule, applied here. When
+    the stored sentence and the resolved one differ, both are returned and the
+    surface can say which it is showing. A reader comparing this screen against
+    a `manifest.json` they have open must not find them quietly disagreeing.
+    """
+    ordering = m.get("ordering", "")
+    recorded = (m.get("ordering_note") or "").strip()
+    if not ordering:
+        # Nothing to resolve from: a run too old to record what it ordered by.
+        # The stored sentence is all there is, and it is returned unchanged
+        # rather than replaced by a guess.
+        return {"ordering_note": recorded, "ordering_note_recorded": recorded,
+                "ordering_note_drift": ""}
+
+    ring_key = is_ring_ordering(ordering)
+    ring_label = specs[ring_key].label if ring_key in specs else None
+    note = ordering_label(ordering, ring_label, de.table_phrase)
+
+    drift = ""
+    if recorded and recorded != note:
+        drift = (f"this run's manifest recorded “{recorded}”. It was "
+                 f"written before this build could name the table a contrast "
+                 f"run's genes came from, so the sentence above is resolved "
+                 f"from the run's own `contrast` block instead.")
+    return {"ordering_note": note, "ordering_note_recorded": recorded,
+            "ordering_note_drift": drift}
 
 
 def table_payload(run_id: str, sort: str = "", dim: str = "", *,
@@ -217,7 +269,10 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
         # What the CIRCLE was drawn with, which is a different fact from how the
         # table is currently sorted, and both are on screen.
         "ordering": m.get("ordering", ""),
-        "ordering_note": m.get("ordering_note", ""),
+        # RE-RESOLVED, not read back. See `_ordering_note` — the stored string
+        # is a provenance claim this build can now check, and on three runs on
+        # disk it is false.
+        **_ordering_note(m, specs, de),
         "filters": m.get("filters", []),
         "filter_counts": m.get("filter_counts", {}),
         # v3.8, and the naming is load-bearing: `filters` above are PLAN §3.2's,

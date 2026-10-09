@@ -1350,7 +1350,8 @@ function renderEvidence(d) {
        ${esc(d.timestamp_utc || "")}
        <p class="hint">Order: ${esc(d.ordering_note || d.ordering || "")}
        — the order this run drew its spokes in. This surface does not reorder
-       it.</p>
+       it.${d.ordering_note_drift
+          ? ` <span class="src">${esc(d.ordering_note_drift)}</span>` : ""}</p>
      </div>
      ${counts}
      <h4>What was checked</h4>
@@ -1916,6 +1917,12 @@ function renderTable(d) {
     `<p class="hint">The circle for this run was drawn with —
        <b>${esc(d.ordering_note || d.ordering)}</b>. Columns are the rings in the
        figure's own radial order: <b>column 1 is the outermost band</b>.
+       ${/* Said, not resolved silently (`citations._drift`'s rule). The
+             sentence above is re-resolved from the run's own contrast block,
+             so a reader with this run's manifest.json open must be told why
+             the two disagree rather than finding it. */
+         d.ordering_note_drift
+          ? `<br><span class="src">${esc(d.ordering_note_drift)}</span>` : ""}
        ${d.submitted_order_source === "drawn"
         ? `This run predates <code>submitted_order</code> in the manifest, so the
            tie-break and the no-value block use the order it was drawn in.` : ""}
