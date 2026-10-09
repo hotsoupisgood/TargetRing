@@ -397,22 +397,29 @@ async function loadContrasts(d, _ix) {
       ${esc(b.message || "")}<br><span class="hint">${esc(b.note || "")}</span></div>`;
     return;
   }
-  // The pick, fetched alongside the listing. `docs/DECISION-AUTOPICK-2026-10-09.md`
-  // is why: a 138-row table presented cold is not neutral, it is unusable, and a
-  // reader resolves it by taking the first drawable row rather than reading 138.
+  // Render the listing NOW, and let the pick arrive when it arrives.
+  //
+  // Measured 2026-10-09: `/api/contrasts` answers in 0.01s and `/api/autopick`
+  // takes 7.5s on a disease it has not seen (0.01s cached, but a first visit is
+  // the one that matters). Awaiting the pick before rendering meant 7.5 seconds
+  // of blank panel with the whole table already in hand — the distinct slowness
+  // of a page that waits on a model for something it does not need yet.
   //
   // A SEPARATE request, not a field on the listing. `picker_payload` stays
   // neutral and its test still asserts no `selected` key exists — the listing
-  // describes, it does not bless. A failure here is not fatal: the table is the
-  // thing that always works, so the pick is best-effort over it.
-  let picked = null;
+  // describes, it does not bless. A failure is not fatal either: the table is
+  // the thing that always works, so the pick is best-effort over it.
+  renderContrasts(b, null);
+  const asked = d.current_id;
   try {
-    const pr = await fetch("/api/autopick?disease=" +
-                           encodeURIComponent(d.current_id));
+    const pr = await fetch("/api/autopick?disease=" + encodeURIComponent(asked));
     const pb = await pr.json();
-    if (pr.ok) picked = pb;
-  } catch (e) { picked = null; }
-  renderContrasts(b, picked);
+    // Two diseases picked quickly leave two picks in flight; the slower one
+    // must not land on the newer disease's listing.
+    if (pr.ok && PICKER.disease && PICKER.disease.current_id === asked) {
+      renderContrasts(b, pb);
+    }
+  } catch (e) { /* the listing stands on its own */ }
 }
 
 // The chosen contrast, as the first thing on the panel.
@@ -460,11 +467,17 @@ function renderContrasts(b, picked) {
   const c = b.counts;
   // With a pick on screen the full table is collapsed; without one it is the
   // only way forward and stays open.
+  // Open while the pick is pending (`null`) or absent, closed once one lands.
+  // Collapsing the table before the pick arrives would leave a reader with
+  // neither for as long as the call takes.
   const open = picked && picked.chosen ? "" : " open";
   $("#contrast-panel").innerHTML = `
     <h2>Contrasts</h2>
     <p class="picker-head"><b>${esc(c.count_text)}</b> · ${esc(c.built_text)}</p>
-    ${pickedContrastHtml(picked)}
+    ${picked === null
+      ? `<p class="hint" id="pick-pending">Choosing a contrast for you…
+         the full list is below and works now.</p>`
+      : pickedContrastHtml(picked)}
     <details id="all-contrasts"${open}>
     <summary><b>All ${b.rows.length} contrasts</b> — choose a different one,
       or check how the choice above was made</summary>

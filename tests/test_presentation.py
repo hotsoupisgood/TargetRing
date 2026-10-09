@@ -2804,12 +2804,17 @@ class TestTheContrastIsChosenOnFirstView:
 
     def test_a_failed_pick_still_leaves_a_usable_page(self) -> None:
         """The table is the thing that always works, so the pick is best-effort
-        over it — never a blocker."""
+        over it — never a blocker.
+
+        Guaranteed more strongly since the progressive render: the listing is
+        already on screen before the pick is even requested, so a failure leaves
+        the page exactly as it was rather than needing a fallback value.
+        """
         js = (STATIC / "app.js").read_text()
-        block = js[js.index("/api/autopick?disease="):]
-        block = block[:block.index("renderContrasts(")]
-        assert "catch" in block
-        assert "picked = null" in block
+        blk = js[js.index("renderContrasts(b, null);"):]
+        blk = blk[:blk.index("} catch") + 90]
+        assert "catch" in blk
+        assert "the listing stands on its own" in blk
 
     def test_the_full_table_is_collapsed_only_when_there_is_a_pick(self) -> None:
         """With no pick it is the only way forward and must stay open."""
@@ -2988,3 +2993,29 @@ class TestTheRegionFollowsTheDisease:
         fn = js[js.index("function clearInferredRegion()"):]
         fn = fn[:fn.index("\nasync function loadContrasts")]
         assert "if (REGION_WAS_INFERRED" in fn
+
+    def test_the_listing_renders_before_the_pick_arrives(self) -> None:
+        """Measured 2026-10-09: `/api/contrasts` answers in 0.01s and
+        `/api/autopick` takes 7.5s on a disease it has not seen. Awaiting the
+        pick meant 7.5s of blank panel with the whole table already in hand.
+        Rendering first took time-to-table from ~7,500ms to 520ms."""
+        js = (STATIC / "app.js").read_text()
+        blk = js[js.index("async function loadContrasts"):]
+        blk = blk[:blk.index("\nfunction ")] if "\nfunction " in blk else blk
+        first = blk.index("renderContrasts(b, null)")
+        awaited = blk.index('fetch("/api/autopick')
+        assert first < awaited, "the listing must render before the pick is awaited"
+
+    def test_a_pending_pick_says_so_and_leaves_the_table_open(self) -> None:
+        """Collapsing the table before the pick lands would leave a reader with
+        neither for as long as the call takes."""
+        js = (STATIC / "app.js").read_text()
+        assert 'id="pick-pending"' in js
+        assert "the full list is below and works now" in js
+        assert 'const open = picked && picked.chosen ? "" : " open";' in js
+
+    def test_a_stale_pick_does_not_land_on_a_newer_disease(self) -> None:
+        js = (STATIC / "app.js").read_text()
+        blk = js[js.index("const asked = d.current_id;"):]
+        blk = blk[:blk.index("} catch")]
+        assert "PICKER.disease.current_id === asked" in blk
