@@ -41,6 +41,16 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// The server reports a refusal two ways and the page must read both. The
+// hand-built `JSONResponse` paths — 422 no_selection, 502 source_failure —
+// carry `message`. Every `raise HTTPException` instead serialises as FastAPI's
+// `{"detail": ...}`, which this page did not read: for the whole of the build
+// a 400, 404, 409 or 503 arrived with a real sentence attached and was shown
+// as the bare word "failed". Caught 2026-10-09 when "Provide a DE table,
+// pasted or uploaded." — which names the fix — reached the user as "failed".
+const errText = (body, fallback) =>
+  (body && (body.message || body.detail)) || fallback;
+
 // ---------- setup ----------
 
 async function init() {
@@ -193,7 +203,7 @@ async function searchDiseases(q) {
     $("#disease-status").textContent = "";
     $("#disease-hits").innerHTML =
       `<div class="note bad"><b>${esc(b.error || "failed")}</b><br>
-       ${esc(b.message || "")}<br><span class="hint">${esc(b.note || "")}</span></div>`;
+       ${esc(errText(b, ""))}<br><span class="hint">${esc(b.note || "")}</span></div>`;
     return;
   }
   $("#disease-status").textContent = `${b.diseases.length} hit(s), in OLS4's own order`;
@@ -400,7 +410,7 @@ async function loadContrasts(d, _ix) {
   const b = await r.json();
   if (!r.ok) {
     panel.innerHTML = `<div class="note bad"><b>${esc(b.error || "failed")}</b><br>
-      ${esc(b.message || "")}<br><span class="hint">${esc(b.note || "")}</span></div>`;
+      ${esc(errText(b, ""))}<br><span class="hint">${esc(b.note || "")}</span></div>`;
     return;
   }
   // Render the listing NOW, and let the pick arrive when it arrives.
@@ -758,7 +768,7 @@ async function loadGeneTable(r) {
     body = await res.json();
     if (!res.ok) {
       panel.innerHTML = `<div class="note bad"><b>${esc(body.error || "failed")}</b><br>
-        ${esc(body.message || "")}</div>`;
+        ${esc(errText(body, ""))}</div>`;
       return;
     }
   } catch (e) {
@@ -980,7 +990,7 @@ async function makeSpokes() {
   prog.stop();
   btn.disabled = false;
   if (!res.ok) {
-    $("#make-spokes-status").textContent = (body.message || "failed");
+    $("#make-spokes-status").textContent = errText(body, "failed");
     return;
   }
   // Step 4 collapses too, once the figure exists — the same numbers, read
@@ -1142,10 +1152,21 @@ function startProgress(slot) {
       paint();
     };
     es.onerror = () => { if (!settled) { settled = true; resolve({ token, stop }); } };
+    // Clearing the slot is not tidying, it is the point. `stop()` used to end
+    // the repaint timer and close the stream and leave the LAST PAINTED FRAME
+    // on the page: a part-filled bar with a live-looking spinner on whichever
+    // stage was current. Seen live 2026-10-09 on a run that 400'd in under a
+    // second — the page sat on "0% · Checking the source contracts" with the
+    // real error up in #status, out of view. A progress bar that keeps
+    // spinning after the work has stopped is a plausible wrong state of
+    // exactly the kind the cardinal rule is about: it asserts, falsely, that
+    // something is still happening. Nothing is. Say nothing instead.
     function stop() {
       clearInterval(timer);
       try { es.close(); } catch (e) {}
       PROGRESS_ES = null;
+      const el = $(slot);
+      if (el) el.innerHTML = "";
     }
     // A server that never opens the stream must not block the run.
     setTimeout(() => { if (!settled) { settled = true; resolve({ token, stop }); } }, 2000);
@@ -1169,6 +1190,32 @@ async function analyse() {
   // what it was doing. This is the stage list, driven by real events.
   clearInterval(TICKER);
   $("#status").textContent = "";
+
+  // Refuse here, before the progress bar exists.
+  //
+  // This button draws the PASTED table. On the disease path the genes come
+  // from the picked contrast instead and `syncPasteSection` hides this button
+  // — but only once the gene table has loaded, and the gene table only loads
+  // when the reader clicks "Use this contrast". Between the pick landing and
+  // that click, this button is visible, enabled, and posts an empty table.
+  // Observed 2026-10-09: the reader scrolled past the chosen contrast, pressed
+  // the button they could see, and got a 400 and a spinner.
+  //
+  // Naming the button that does work is the whole content of the message. A
+  // bare "give me a table" would be true and useless: there is no table to
+  // give, the app already has the genes, and the reader is one click away.
+  if (!$("#table").value.trim() && !$("#file").files[0]) {
+    const picked = $("#use-picked");
+    fail(picked
+      ? "This button draws a table you pasted, and there isn't one. Your "
+        + "genes are coming from the contrast chosen above — press "
+        + "“Use this contrast” there to load them."
+      : "Paste a differential expression table, or upload one, first.");
+    if (picked) picked.scrollIntoView({ behavior: "smooth", block: "center" });
+    btn.disabled = false;
+    return;
+  }
+
   const prog = await startProgress("#run-progress");
 
   const fd = new FormData();
@@ -1211,7 +1258,7 @@ async function analyse() {
   btn.disabled = false;
 
   if (!res.ok) {
-    fail((body.message || "failed") + (body.note ? "\n\n" + body.note : ""));
+    fail(errText(body, "failed") + (body.note ? "\n\n" + body.note : ""));
     return;
   }
   RUN = body;
@@ -1406,7 +1453,7 @@ async function redrawForThisWindow() {
   }
   if (!res.ok) {
     $("#status").className = "err";
-    $("#status").textContent = (body.message || "the figure could not be redrawn")
+    $("#status").textContent = errText(body, "the figure could not be redrawn")
       + (body.note ? "\n\n" + body.note : "");
     return;
   }
@@ -1640,7 +1687,7 @@ async function loadEvidence(runId) {
     // than being replaced by an empty one that looks like "nothing to report".
     $("#evidence-status").className = "err";
     $("#evidence-status").textContent =
-      d.message || "the evidence surface could not be loaded";
+      errText(d, "the evidence surface could not be loaded");
     return;
   }
   EVIDENCE.run_id = d.run_id;
@@ -2295,7 +2342,7 @@ async function loadTable(runId) {
     // stays on screen rather than being redrawn in an order the strip does not
     // name. Same rule as `normalise_ordering` on the figure.
     $("#table-status").className = "err";
-    $("#table-status").textContent = d.message || "the table could not be loaded";
+    $("#table-status").textContent = errText(d, "the table could not be loaded");
     if (d.error === "sort_rejected") TABLE.sort = [];
     // Same rule for a dim filter this run cannot evaluate: dropped rather than
     // approximated, so the count line can never name a bound the grid did not use.

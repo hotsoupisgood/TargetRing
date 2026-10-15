@@ -380,6 +380,24 @@ select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; b
          min-width: 280px; font-size: 13px; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
 
+/* `hidden` must actually hide. The browser's own `[hidden] { display: none }`
+   comes from the user-agent sheet, so ANY author rule that sets `display` on
+   the same element beats it — including `button { display: inline-block }`
+   immediately below. The effect: `el.hidden = true` set the attribute, the
+   element stayed on screen, and the code downstream was written believing it
+   had gone.
+
+   Found 2026-10-09. `syncPasteSection()` hides `#go` — the paste path's "Draw
+   the figure" — once the genes come from a contrast instead. It never did. A
+   reader on the disease path saw a button the app considered hidden, pressed
+   it, and posted an empty table. Every other `hidden` toggle on a styled
+   element had the same latent hole; this closes all of them at once.
+
+   `!important` is right here rather than lazy: `hidden` is not a style choice
+   that a later rule might legitimately want to override, it is the element
+   saying it is not there. */
+[hidden] { display: none !important; }
+
 button, .btn {
   font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--accent);
   background: var(--accent); color: #fff; cursor: pointer; text-decoration: none;
