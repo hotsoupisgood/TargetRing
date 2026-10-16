@@ -127,6 +127,35 @@ figure records *who actually chose*.
 thing they forbid — one reads the chooser's method body to assert it combines
 nothing into a score.
 
+## Run it
+
+Python 3.13. No API key needed.
+
+```sh
+git clone <this repo> targetring && cd targetring
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m uvicorn targetring.app:app --host 127.0.0.1 --port 8900
+```
+
+Open http://127.0.0.1:8900. Type a disease, or paste a DE table — there is
+one at `fixtures/de_realistic.csv` (15 genes, liver). A first run on it takes
+about 20 s cold against the live sources; artefacts land in `runs/<id>/` and
+upstream payloads are cached in `cache/` so the second run is faster.
+
+The disease picker works out of the box: a copy of the Expression Atlas
+contrast index (369 experiments, 1,126 contrasts, built 2026-09-29) is checked
+in under `fixtures/atlas-index/`. It carries its build date and the picker
+marks it stale after 30 days; rebuild with
+`.venv/bin/python scripts/build_atlas_index.py` (~740 requests, a few minutes).
+
+Without `ANTHROPIC_API_KEY` the four model calls fall back to their rule-based
+paths and the figure says so. To enable them, copy `.env.example` to `.env`,
+fill the key, and `set -a; . ./.env; set +a` before starting. Each call has its
+own spend cap in `targetring/config.py`.
+
+Tests: `.venv/bin/python -m pytest` — 1,418 tests, about nine minutes, no
+network.
+
 ## Stack
 
 Python 3.13 · FastAPI + uvicorn · httpx · matplotlib + pyCirclize · pydantic

@@ -1127,6 +1127,11 @@ class TestDiseasesRoute:
         from targetring import app as app_mod
         monkeypatch.setattr(app_mod.atlas_index, "index_path",
                             lambda *a, **k: tmp_path / "nope.json")
+        # Both copies gone: the cache AND the checked-in fallback. With only
+        # the cache path patched, `read_index_path` would serve the shipped
+        # index and this would test the fallback, not the refusal.
+        monkeypatch.setattr(app_mod.atlas_index, "SHIPPED_INDEX",
+                            tmp_path / "shipped-nope.json")
         monkeypatch.setattr(app_mod, "_index_cache", None)
         r = client.get("/api/diseases", params={"q": "Crohn"})
         assert r.status_code == 503
@@ -1201,6 +1206,9 @@ class TestContrastsRoute:
         from targetring import app as app_mod
         monkeypatch.setattr(app_mod.atlas_index, "index_path",
                             lambda *a, **k: tmp_path / "nope.json")
+        # Both copies gone -- see the same test on the diseases route.
+        monkeypatch.setattr(app_mod.atlas_index, "SHIPPED_INDEX",
+                            tmp_path / "shipped-nope.json")
         monkeypatch.setattr(app_mod, "_index_cache", None)
         r = client.get("/api/contrasts", params={"disease": "MONDO_0005011"})
         assert r.status_code == 503

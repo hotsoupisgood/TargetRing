@@ -158,7 +158,9 @@ def _atlas_index() -> atlas_index.AtlasIndex:
     label, which is this repo's one rule in a cache.
     """
     global _index_cache
-    p = atlas_index.index_path()
+    # `read_index_path`, not `index_path`: a fresh clone has no cache, and the
+    # checked-in copy under fixtures/ is what it reads until a build exists.
+    p = atlas_index.read_index_path()
     stamp = p.stat().st_mtime_ns if p.exists() else None
     if _index_cache is None or _index_cache[0] != stamp:
         _index_cache = (stamp, atlas_index.AtlasIndex.load(p))

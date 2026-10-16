@@ -1,5 +1,23 @@
-# No requirements.txt existed in this repo before stage 7. `anthropic` is the
-# first pinned dependency added for a paid call — see AGENTS.md rule 8 and
-# targetring/llm.py. Every other package currently in .venv was installed by
-# hand; this file is not (yet) a full lock of the environment.
+# Pinned to the versions this build was developed and tested against
+# (Python 3.13, 2026-10-15). `pip install -r requirements.txt` in a fresh
+# virtualenv is the whole install; see README "Run it".
+#
+# Runtime
+fastapi==0.141.1
+uvicorn==0.53.0
+python-multipart==0.0.32
+httpx==0.28.1
+pydantic==2.13.5
+pyCirclize==1.10.1
+matplotlib==3.11.2
+numpy==2.5.3
+pandas==3.0.6
+pillow==12.3.0
+# The only paid dependency: four LLM calls, each behind its own spend cap
+# (AGENTS.md rule 8). Without ANTHROPIC_API_KEY every one of them falls back
+# to its rule-based path and the figure records who actually chose.
 anthropic==1.9.0
+#
+# Tests
+pytest==9.1.1
+pytest-asyncio==1.4.0

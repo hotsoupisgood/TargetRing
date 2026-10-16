@@ -69,8 +69,26 @@ ORGANISM_PART_FACTOR = "organism part"
 
 
 def index_path(root: Path | None = None) -> Path:
+    """Where a build WRITES the index. Always under the cache."""
     return (Path(root or config.CACHE_DIR) / "atlas.index"
             / f"v{INDEX_SCHEMA_VERSION}" / "index.json")
+
+
+#: A copy of the index as built on 2026-09-29, checked in so a fresh clone has
+#: the disease path on first start. 828 KB, 369 experiments, 1,126 contrasts.
+#: It carries its own `built_utc`, so the picker shows the real date and marks
+#: it stale after 30 days rather than presenting an old crawl as today's.
+SHIPPED_INDEX = (Path(__file__).resolve().parent.parent / "fixtures"
+                 / "atlas-index" / f"v{INDEX_SCHEMA_VERSION}" / "index.json")
+
+
+def read_index_path(root: Path | None = None) -> Path:
+    """Where a READ looks: the cache if a build has written one, otherwise the
+    shipped copy. Never the other way round -- a rebuild must win over the
+    checked-in file the moment it exists, or `scripts/build_atlas_index.py`
+    would appear to do nothing."""
+    p = index_path(root)
+    return p if p.exists() else SHIPPED_INDEX
 
 
 @dataclass(frozen=True)
@@ -290,7 +308,7 @@ class AtlasIndex:
 
     @classmethod
     def load(cls, path: Path | None = None) -> "AtlasIndex":
-        p = Path(path or index_path())
+        p = Path(path or read_index_path())
         if not p.exists():
             raise IndexMissing(
                 f"no Atlas contrast index at {p}. Build it once with "
