@@ -78,11 +78,14 @@ produce a clean-looking chart.
    previously "the LLM triage is the only paid call".*
 9. **Rate limits are unmeasured.** Cap concurrency at 4 per host. Treat any 429
    as a hard run failure — never a retry loop.
-10. **Nothing public — except the source.** Local only: no deploys, no public
-    URLs, no run data, cache, ledger or `.env` pushed anywhere. *Amended
-    2026-10-15, Puck: "I would like to post a repo" — the code and docs may be
-    published to a public repository as a portfolio piece. The app itself
-    still runs only on this machine.*
+10. **Nothing public — except the source, and a read-only demo.** Analyses
+    run only on this machine. No cache, ledger or `.env` goes anywhere.
+    *Amended 2026-10-15, Puck, twice: "I would like to post a repo" — the code
+    and docs may be published as a portfolio piece; then "or run in a demo
+    mode" — a box may serve the finished artefacts of the runs in
+    `config.DEMO_RUNS` under `TARGETRING_DEMO=1`, which refuses every route
+    that fetches, analyses, renders or calls a model (`app._demo_gate`,
+    `tests/test_demo.py`). A demo box never holds an API key.*
 
 ## Every run writes a manifest
 

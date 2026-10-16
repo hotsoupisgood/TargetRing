@@ -1449,6 +1449,19 @@ td.cell-no-data, .grid td.no-data {
    one line saying what to type, the box, and whatever the box returns. Every
    `.landing-only` element is the inverse — present only here. */
 
+/* Demo mode. `body.demo` is set from /api/health before anything renders. The
+   landing's two ways in -- disease search and paste -- are hidden, because
+   both lead to routes the server refuses in this mode (`app._demo_gate`), and
+   a button that leads to a refusal is a worse landing than no button. */
+body.demo #find-panel, body.demo #landing-paste, body.demo #landing-lede,
+body.demo #input-panel { display: none !important; }
+body.demo #demo-panel { display: block !important; }
+.demo-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+             margin: 10px 0; background: var(--card); }
+.demo-card .row { margin: 6px 0 0; }
+.demo-card img { max-width: 100%; height: auto; display: block; margin-top: 8px;
+                 border-radius: 4px; }
+
 body.landing #input-panel,
 body.landing #result,
 body.landing #find > summary,

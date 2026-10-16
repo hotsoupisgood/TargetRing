@@ -70,6 +70,44 @@ async function init() {
   $("#filterable").innerHTML = "Filterable rings: " +
     o.filterable_rings.map((f) => `<code>${esc(f.ring)}</code>`).join(", ");
 
+  // Demo mode. Asked of the server, never assumed: the same page is served on
+  // this machine and on a demo box, and the only thing that differs is what the
+  // server will do. `?run=` deep links still work -- they read artefacts -- so
+  // every card is one.
+  try {
+    const h = await fetch("/api/health").then((x) => x.json());
+    if (h.demo) {
+      document.body.classList.add("demo");
+      // The masthead's "nothing leaves this machine" is a claim about the
+      // reader's machine, and on a demo box it is somebody else's. Say what
+      // this box actually is.
+      const note = $("#local-note");
+      if (note) note.textContent =
+        "Read-only demo — finished runs, served as files; nothing is computed here.";
+      const r = await fetch("/api/runs").then((x) => x.json());
+      $("#demo-runs").innerHTML = (r.runs || []).map((x) => {
+        const src = x.contrast
+          ? `genes from Expression Atlas <code>${esc(x.contrast)}</code>${
+              x.contrast_name ? " — " + esc(x.contrast_name) : ""}`
+          : "genes from a pasted differential-expression table";
+        return `<div class="demo-card">
+          <p><b>${esc(x.region || "")}</b> · ${esc(x.n_genes ?? "")} genes ·
+            ${src}${x.filtered ? " · <b>filtered</b>, and the figure says so" : ""}
+            ${x.any_invariant_failed ? " · <b>an invariant failed</b>" : ""}</p>
+          <div class="row">
+            <a class="btn" href="?run=${encodeURIComponent(x.run_id)}">Open the run</a>
+            <a class="btn ghost" href="/api/run/${encodeURIComponent(x.run_id)}/figure.png"
+               target="_blank" rel="noopener">figure.png</a>
+            <a class="btn ghost" href="/api/run/${encodeURIComponent(x.run_id)}/manifest.json"
+               target="_blank" rel="noopener">manifest.json</a>
+          </div>
+          <img src="/api/run/${encodeURIComponent(x.run_id)}/figure.png"
+               alt="targetring figure, run ${esc(x.run_id)}" loading="lazy">
+        </div>`;
+      }).join("") || `<p class="hint">No demo runs are configured on this server.</p>`;
+    }
+  } catch (e) { /* not a demo, or health unreachable: the normal landing stands */ }
+
   $("#load-example").onclick = async () => {
     $("#table").value = (await fetch("/api/example").then((x) => x.json())).realistic;
   };

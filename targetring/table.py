@@ -39,6 +39,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from collections.abc import Iterable
 from typing import Any
 
 from .config import RUNS_DIR
@@ -483,8 +484,14 @@ def load(run_id: str) -> RunTable:
     )
 
 
-def recent_runs(limit: int = 40) -> list[dict[str, Any]]:
+def recent_runs(limit: int = 40,
+                only: Iterable[str] | None = None) -> list[dict[str, Any]]:
     """The runs on disk, newest first.
+
+    `only`: restrict to these ids BEFORE the newest-`limit` cut. Demo mode
+    found out why on 2026-10-15: filtering the newest 40 of 273 runs down to an
+    allowlist of three returned one, because the other two were older than the
+    40th. A list that is the allowlist must start from the allowlist.
 
     Ordered by directory mtime rather than by name. Most run ids are
     `YYYYMMDDTHHMMSSZ-<hex>` and sort chronologically, but `runs/` also holds
@@ -495,8 +502,10 @@ def recent_runs(limit: int = 40) -> list[dict[str, Any]]:
     """
     if not RUNS_DIR.is_dir():
         return []
+    keep = None if only is None else set(only)
     dirs = [p for p in RUNS_DIR.iterdir()
-            if p.is_dir() and valid_run_id(p.name) and (p / "values.csv").exists()]
+            if p.is_dir() and valid_run_id(p.name) and (p / "values.csv").exists()
+            and (keep is None or p.name in keep)]
     ids = [p.name for p in sorted(dirs, key=lambda p: (p.stat().st_mtime, p.name),
                                   reverse=True)]
     out: list[dict[str, Any]] = []
@@ -510,12 +519,20 @@ def recent_runs(limit: int = 40) -> list[dict[str, Any]]:
             entry["note"] = "manifest unreadable"
             out.append(entry)
             continue
+        c = m.get("contrast") or {}
         entry.update({
             "timestamp_utc": m.get("timestamp_utc", ""),
             "region": m.get("region", ""),
             "n_genes": len(m.get("gene_order") or []),
             "ordering": m.get("ordering", ""),
             "any_invariant_failed": bool(m.get("any_invariant_failed")),
+            # Where the genes came from, so a list of runs can say "Crohn's
+            # disease, E-GEOD-101794 g2_g1" rather than only a region and a
+            # count. Empty strings on a paste run; the page says "pasted table".
+            "contrast": (f"{c.get('accession', '')} {c.get('contrast_id', '')}".strip()
+                         if c else ""),
+            "contrast_name": (c.get("name") or "") if c else "",
+            "filtered": bool(m.get("filters")),
         })
         out.append(entry)
     return out

@@ -24,7 +24,7 @@
   <p class="sub">
     A gene set, rings of evidence, and a drawer per gene.
     <strong>Nothing here is ranked or scored.</strong>
-    Local only — nothing leaves this machine.
+    <span id="local-note">Local only — nothing leaves this machine.</span>
   </p>
 </header>
 
@@ -47,6 +47,20 @@
       picks a comparison of affected against unaffected people, and draws what
       is known about each gene that differs. Everything it chose is shown and
       can be changed.</span></p>
+
+  <!-- Demo mode (config.DEMO_MODE). The server tells the page via /api/health
+       and the page adds `demo` to <body>; CSS hides the disease search, the
+       paste link and the form, and shows this. Nothing on this box runs an
+       analysis: every card is a finished run read from its artefacts, and the
+       figure shown is the PNG the run exported. -->
+  <section id="demo-panel" hidden>
+    <p class="landing-only"><b>Read-only demo.</b>
+      <span class="hint">These are finished runs, served from their artefacts.
+        Nothing here fetches, analyses or calls a model — clone the
+        repository to draw your own. Open a run for its table, its evidence
+        surface, its drop ledger and every download.</span></p>
+    <div id="demo-runs"></div>
+  </section>
 
   <section id="find-panel">
     <details id="find" open>

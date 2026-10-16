@@ -12,7 +12,7 @@ import traceback
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Form, HTTPException, UploadFile
+from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
                                StreamingResponse)
 
@@ -23,7 +23,10 @@ from .adapters.ols import OLSAdapter
 from .adapters.opentargets import OpenTargetsAdapter
 from . import atlas_index
 from . import autopick as autopick_mod
+import re
+
 from . import chooser_llm
+from . import config
 from . import region_llm
 from .cache import Cache
 from . import contrast as contrast_mod
@@ -135,6 +138,55 @@ async def headerwashpng() -> FileResponse:
 @app.get("/header-wash-dark.png")
 async def headerwashdarkpng() -> FileResponse:
     return _wash("header-wash-dark.png")
+
+
+# --- demo mode -----------------------------------------------------------------
+# `config.DEMO_MODE`. One middleware rather than a check in each route, because
+# the failure mode of a per-route flag is the route somebody adds next month
+# without one. Two lists, both closed:
+#
+# * paths that DO something -- fetch from Atlas, call a model, run an analyse,
+#   re-render -- are refused with 403 and a sentence. `/api/diseases` and
+#   `/api/contrasts` are cheap and read-only, and refused anyway: they are the
+#   first two steps of a flow whose third step is refused, and a landing that
+#   starts what it cannot finish is worse than one that says so.
+# * `/api/run/{id}/...` is answered only for ids in `config.DEMO_RUNS`. Anything
+#   else is 404 "unknown run" -- the same answer as for an id that never
+#   existed, so the list of other runs on the box cannot be enumerated.
+_DEMO_FORBIDDEN_EXACT = frozenset({
+    "/api/analyse", "/api/autopick", "/api/region-for",
+    "/api/diseases", "/api/contrasts",
+})
+_DEMO_FORBIDDEN_PREFIX = ("/api/contrast/", "/api/analyse/progress/")
+_DEMO_FORBIDDEN_SUFFIX = ("/phenotypes", "/web-figure")
+_DEMO_RUN_PATH = re.compile(r"^/api/run/([^/]+)/")
+DEMO_REFUSAL = ("This is a read-only demo: it serves finished runs and makes no "
+                "requests and no model calls. Clone the repo to run analyses.")
+
+
+def demo_forbids(path: str) -> bool:
+    return (path in _DEMO_FORBIDDEN_EXACT
+            or path.startswith(_DEMO_FORBIDDEN_PREFIX)
+            or path.endswith(_DEMO_FORBIDDEN_SUFFIX))
+
+
+def demo_run_allowed(path: str) -> bool:
+    """True unless the path names a run that is not on the demo list."""
+    m = _DEMO_RUN_PATH.match(path)
+    return m is None or m.group(1) in config.DEMO_RUNS
+
+
+@app.middleware("http")
+async def _demo_gate(request: Request, call_next):  # type: ignore[no-untyped-def]
+    if config.DEMO_MODE:
+        path = request.url.path
+        if demo_forbids(path):
+            return JSONResponse({"error": "demo_mode", "message": DEMO_REFUSAL},
+                                status_code=403)
+        if not demo_run_allowed(path):
+            return JSONResponse({"error": "unknown_run", "message": "unknown run"},
+                                status_code=404)
+    return await call_next(request)
 
 
 @app.get("/api/regions")
@@ -944,7 +996,11 @@ async def runs(limit: int = 40) -> dict[str, Any]:
     were only reachable as files. The table reads from artefacts, so it does not
     need the run in memory, and this is the list it offers.
     """
-    return {"runs": table_mod.recent_runs(max(1, min(int(limit), 200)))}
+    # In demo the list IS the allowlist, restricted before the newest-N cut
+    # (see `recent_runs`) and enforced per-path in `_demo_gate`, so the picker
+    # and the gate cannot disagree about which runs exist.
+    only = config.DEMO_RUNS if config.DEMO_MODE else None
+    return {"runs": table_mod.recent_runs(max(1, min(int(limit), 200)), only=only)}
 
 
 @app.get("/api/run/{run_id}/values")
@@ -1297,5 +1353,9 @@ async def artefact(run_id: str, filename: str) -> FileResponse:
 
 
 @app.get("/api/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "note": "local only; nothing is published anywhere"}
+async def health() -> dict[str, Any]:
+    if config.DEMO_MODE:
+        return {"status": "ok", "demo": True, "demo_runs": list(config.DEMO_RUNS),
+                "note": DEMO_REFUSAL}
+    return {"status": "ok", "demo": False,
+            "note": "local only; nothing is published anywhere"}

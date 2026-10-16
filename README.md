@@ -156,6 +156,16 @@ own spend cap in `targetring/config.py`.
 Tests: `.venv/bin/python -m pytest` — 1,418 tests, about nine minutes, no
 network.
 
+### Demo mode
+
+`TARGETRING_DEMO=1` turns the server read-only: it lists the runs named in
+`TARGETRING_DEMO_RUNS` (or the three defaults in `targetring/config.py`),
+serves their artefacts — table, evidence surface, drop ledger, every download —
+and refuses every route that fetches, analyses, renders or calls a model, with
+a sentence saying so. Run ids outside the list are "unknown run", same as an
+id that never existed. One middleware, `app._demo_gate`; `tests/test_demo.py`
+enumerates what it refuses. A demo box needs no API key and must not have one.
+
 ## Stack
 
 Python 3.13 · FastAPI + uvicorn · httpx · matplotlib + pyCirclize · pydantic

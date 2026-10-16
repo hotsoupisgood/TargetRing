@@ -13,6 +13,23 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path(os.environ.get("TARGETRING_CACHE", REPO_ROOT / "cache"))
 RUNS_DIR = Path(os.environ.get("TARGETRING_RUNS", REPO_ROOT / "runs"))
 
+# --- demo mode -----------------------------------------------------------------
+# Puck, 2026-10-15: "or run in a demo mode". `docs/TABLED-PUBLIC-DEMO-2026-10-09.md`
+# is the design; this is the switch. With TARGETRING_DEMO=1 the app serves the
+# finished artefacts of the runs named below and nothing else: no analysis, no
+# Atlas fetch, no model call, no run outside the list. Enforced in one place,
+# `app._demo_gate`, as a middleware -- a per-route flag would be one forgotten
+# route away from a public box doing a 385 MB analyse for a stranger.
+DEMO_MODE = os.environ.get("TARGETRING_DEMO", "") == "1"
+#: The runs a demo serves. Overridable as a comma-separated list; the default is
+#: the three the README shows -- a disease-path run and two paste runs, one of
+#: them filtered. Every id here must exist under RUNS_DIR with its artefacts.
+DEMO_RUNS: tuple[str, ...] = tuple(
+    s.strip() for s in os.environ.get(
+        "TARGETRING_DEMO_RUNS",
+        "20261009T160226Z-805ee9,20260926T001101Z-9a2192,20260926T001147Z-054913",
+    ).split(",") if s.strip())
+
 USER_AGENT = "targetring/1.0 (local research prototype; contact: repo owner)"
 
 # --- endpoints, all verified live 2026-09-23/24 -----------------------------
