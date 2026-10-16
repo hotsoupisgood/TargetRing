@@ -78,8 +78,11 @@ produce a clean-looking chart.
    previously "the LLM triage is the only paid call".*
 9. **Rate limits are unmeasured.** Cap concurrency at 4 per host. Treat any 429
    as a hard run failure — never a retry loop.
-10. **Nothing public.** Local only. No deploys, no public URLs, no data pushed
-    anywhere.
+10. **Nothing public — except the source.** Local only: no deploys, no public
+    URLs, no run data, cache, ledger or `.env` pushed anywhere. *Amended
+    2026-10-15, Puck: "I would like to post a repo" — the code and docs may be
+    published to a public repository as a portfolio piece. The app itself
+    still runs only on this machine.*
 
 ## Every run writes a manifest
 

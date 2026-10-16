@@ -61,7 +61,7 @@ Taken on this Mac, 2026-10-09:
 | 60-gene full analyse | 385 MB | 69.3 s |
 | read-only serving existing runs | 133 MB | 1–2 ms per view |
 
-The droplet is `45.55.123.140`, 1 vCPU / 961 MB / Ubuntu 24.04, up ~2 years.
+The existing droplet is 1 vCPU / 961 MB / Ubuntu 24.04, up ~2 years.
 
 **Read-only fits the existing $6 box with room to spare.** 133 MB against
 961 MB, and a view is a file read.
