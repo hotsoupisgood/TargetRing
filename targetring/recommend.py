@@ -613,6 +613,54 @@ def _phenotype(f: Facts, t: Thresholds) -> dict[str, Any]:
                       bare="not phenotyped")
 
 
+def criteria_spec(t: Thresholds | None = None) -> list[dict[str, Any]]:
+    """The three criteria and their bounds, with no gene in front of them.
+
+    v4.2, Puck 2026-10-19: "on the top of the table page the main part should
+    say there are 3 go no go criteria, and a numbered list. and the bounds we
+    are looking for in them."
+
+    The `met_when` strings are built from the same `Thresholds` the per-gene
+    criterion functions above build theirs from, so the list at the top of the
+    Table tab and the line inside a drawer can never state two different
+    bounds. Moving `RECOMMEND_MIN_TPM` moves both.
+    """
+    t = t or current_thresholds()
+    return [
+        {"n": 1, "key": "expressed", "name": "Expressed",
+         "met_when": (f"GTEx median TPM >= {t.min_tpm:g} in the run's region "
+                      f"(fallback: tissue-distribution ring > 0 if GTEx is absent)"),
+         "source": "GTEx median TPM, Open Targets prioritisation"},
+        {"n": 2, "key": "dysregulated", "name": "Dysregulated in this study",
+         "met_when": f"|logFC| >= {t.min_abs_logfc:g} and adjusted p <= {t.max_q:g}",
+         "source": "the submitted DE table"},
+        {"n": 3, "key": "phenotype", "name": "Phenotype in a model",
+         "met_when": (f"mouse-KO ring > 0, or >= {t.min_phenotypes:d} abnormal "
+                      f"mouse phenotype term(s)"),
+         "source": "Open Targets mousePhenotypes"},
+    ]
+
+
+def criteria_block(t: Thresholds | None = None) -> dict[str, Any]:
+    """`criteria_spec` plus the sentences that frame it: how the verdict
+    follows from the three, and the one thing that never changes it."""
+    t = t or current_thresholds()
+    return {
+        "heading": "GO / NO-GO: three criteria, all must hold",
+        "criteria": criteria_spec(t),
+        "go": "GO when all three are met.",
+        "no_go": "NO-GO when any one is not met.",
+        "insufficient": "INSUFFICIENT DATA when none is not met but any is no data.",
+        # Puck, 2026-10-18: "no toxicity data or low druggability does not
+        # exclude". Said at the top of the table because a reader looking at a
+        # safety ring beside a GO has to know it was not weighed.
+        "never_a_criterion": "Druggability, safety and pipeline never change "
+                             "the verdict.",
+        "rule_version": rule_version(t),
+        "thresholds": t.as_dict(),
+    }
+
+
 def recommend(f: Facts, t: Thresholds | None = None) -> dict[str, Any]:
     """The verdict and the three criteria, as the drawer prints them."""
     t = t or current_thresholds()

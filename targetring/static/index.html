@@ -416,6 +416,15 @@
          runs already under `runs/` are viewable and a reload does not lose the
          one on screen. `?run=<id>` opens straight to it. -->
     <div class="tabpane" id="pane-table">
+      <!-- v4.2, Puck 2026-10-19: "on the top of the table page the main part
+           should say there are 3 go no go criteria, and a numbered list. and
+           the bounds we are looking for in them. the other stuff is less
+           important. and say a note like full descriptions are at the bottom."
+           Filled by `renderCriteria` from `/api/criteria`, which is
+           `recommend.criteria_block()` — every bound in the list is read from
+           `recommend.current_thresholds()` at call time, so the list and the
+           verdicts in the drawers cannot state different numbers. -->
+      <div id="table-criteria"></div>
       <div class="row table-pick">
         <label for="table-run">Run</label>
         <input id="table-run" list="table-runs" spellcheck="false"
@@ -459,6 +468,14 @@
            its sources on screen. `#scales`, in `#pane-figure`, is populated from
            `/api/run/{id}/scales`, which reads the in-process `_runs` dict and so
            404s for all ~250 runs under `runs/`. -->
+      <!-- v4.2. "Full descriptions are at the bottom of this page" points
+           here. It holds the rule in full — each criterion with its bound and
+           its source, and how the three combine into GO / NO-GO /
+           INSUFFICIENT DATA — directly above the per-column source strip,
+           which is this tab's copy of the ring scales (full ring label, units
+           and a source link per column). Written by `renderCriteria` from the
+           same payload the short list at the top is. -->
+      <div id="full-descriptions"></div>
       <div id="table-sources"></div>
       <div id="table-ledger"></div>
     </div>

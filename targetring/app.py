@@ -508,6 +508,29 @@ async def contrast_heatmap(accession: str, contrast_id: str,
     return FileResponse(out_svg, media_type="image/svg+xml", headers=_NO_STORE)
 
 
+@app.get("/api/criteria")
+async def criteria() -> dict[str, Any]:
+    """The GO / NO-GO rule's three criteria and their bounds.
+
+    v4.2, Puck 2026-10-19: the Table tab opens with "there are 3 go no go
+    criteria, and a numbered list. and the bounds we are looking for in them".
+
+    A route rather than a literal in `app.js`, for the reason every other
+    threshold on this page is a route: `recommend.criteria_block` reads
+    `current_thresholds()` at call time, so the bounds a reader sees are the
+    bounds the verdicts in the drawers were computed against. A copy in the
+    page would be a number that stops being true when `config.RECOMMEND_*`
+    moves — a plausible wrong figure made out of HTML.
+
+    Read-only and computed from constants: it fetches nothing and spends
+    nothing, so it is not in `_demo_gate`'s lists and the static export carries
+    its answer as a file.
+    """
+    from . import recommend as recommend_mod
+
+    return recommend_mod.criteria_block()
+
+
 @app.get("/api/orderings")
 async def orderings() -> dict[str, Any]:
     """The spoke orders this build offers, and the rings a filter can be set on.

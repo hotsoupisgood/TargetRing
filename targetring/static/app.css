@@ -502,6 +502,13 @@ label.check input { margin-right: 6px; }
    what the ledger is"). */
 .pane-h { margin: 0 0 4px; }
 .pane-lede { margin: 0 0 12px; max-width: 70ch; color: var(--tr-ink-3, inherit); }
+/* v4.2. The three GO / NO-GO criteria at the top of the Table tab: a numbered
+   list, each line one criterion and its bound, because that is the question a
+   reader opens this tab with. */
+ol.criteria { margin: 0 0 10px; padding-left: 22px; max-width: 80ch; }
+ol.criteria li { margin: 0 0 3px; }
+ol.criteria .bound { color: var(--tr-ink-3, inherit); }
+#full-descriptions { margin: 18px 0 0; }
 
 #figure svg { width: 100%; height: auto; background: #fff; border: 1px solid var(--line);
               border-radius: 6px; }

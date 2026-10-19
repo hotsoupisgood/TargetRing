@@ -303,7 +303,7 @@ function draw(D) {
   // -------------------------------------------------------------------------
   const NODES = [
     {
-      id: "disease", kind: "source", title: "1. Disease name",
+      id: "disease", kind: "source", title: "1. Enter a disease",
       stat: () => `“${D.disease}”`,
       detail: () => `
         <p>You type a disease. It is resolved against EFO/MONDO through OLS4,
@@ -316,7 +316,7 @@ function draw(D) {
         <p>Nothing is preselected and nothing is fetched from Atlas yet.</p>`,
     },
     {
-      id: "atlas", kind: "source", title: "2. Gene expression",
+      id: "atlas", kind: "source", title: "2. Search Expression Atlas",
       stat: () => `Expression Atlas ${n(c.accession)} · built ${n(c.index_built_utc)}`,
       detail: () => `
         <p><b>Differential expression</b> — which public study, and which
@@ -335,7 +335,7 @@ function draw(D) {
         is.</p>`,
     },
     {
-      id: "contrast", kind: "decision", title: "3. Differential expression",
+      id: "contrast", kind: "decision", title: "3. Pick the comparison",
       stat: () => `contrast ${n(c.id)} · n=${n(c.n_test)} vs ${n(c.n_ref)} · ${
         platformWord(c.platform) || n(c.platform)}`,
       detail: () => `
@@ -363,7 +363,7 @@ function draw(D) {
         printed in the middle of the figure.</p>`,
     },
     {
-      id: "region", kind: "decision", title: "4. Body region",
+      id: "region", kind: "decision", title: "4. Choose the body region",
       stat: () => (D.region || "").replace(/_/g, " "),
       detail: () => `
         <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
@@ -379,7 +379,7 @@ function draw(D) {
         picked, so the figure says so itself — not just the form.</p>`,
     },
     {
-      id: "de", kind: "source", title: "5. Differential expression table",
+      id: "de", kind: "source", title: "5. Load differential expression",
       stat: () => `${n(sel.n_total)} rows · ${n(sel.n_with_statistic)} with a statistic`,
       detail: () => `
         <p><b>Gene expression</b> — the numbers themselves.</p>
@@ -400,7 +400,7 @@ function draw(D) {
         all.</p>`,
     },
     {
-      id: "top", kind: "decision", title: "6. Top by adjusted p",
+      id: "top", kind: "decision", title: `6. Keep the top ${n(sel.n_top)} genes`,
       stat: () => `${n(sel.n_top)} of ${n(sel.n_with_statistic)} · ${n(sel.n_selected)} drawn`,
       detail: () => `
         <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
@@ -419,8 +419,8 @@ function draw(D) {
         <b>every excluded gene is named in the drop ledger</b>.</p>`,
     },
     {
-      id: "join", kind: "source", title: "7. Identifier join",
-      stat: () => `${(D.sources || []).length} sources · by id, never by position`,
+      id: "join", kind: "source", title: "7. Join sources",
+      stat: () => `${(D.sources || []).length} sources · identifier join, never by position`,
       detail: () => `
         <p><b>Join by identifier, never by index.</b> Open Targets'
         <code>targets()</code> drops ids it cannot find and answers HTTP 200
@@ -440,8 +440,8 @@ function draw(D) {
         </tbody></table>`,
     },
     {
-      id: "states", kind: "derived", title: "8. Four cell states",
-      stat: () => `${n((D.rings || {}).total)} rings · ${n((D.rings || {}).external)} external`,
+      id: "states", kind: "derived", title: "8. Mark each cell",
+      stat: () => `${n((D.rings || {}).total)} rings · ${n((D.rings || {}).external)} external · four cell states`,
       detail: () => `
         <p><b>Missing is not low.</b> Every cell in every ring is exactly one
         of four states:</p>
@@ -463,8 +463,8 @@ function draw(D) {
         next to its name on the rim, with the chromosome it sits on.</p>`,
     },
     {
-      id: "invariants", kind: "check", title: "9. Invariant checks",
-      stat: () => `${(D.invariants || []).length} checks · ${
+      id: "invariants", kind: "check", title: "9. Check the figure",
+      stat: () => `${(D.invariants || []).length} invariant checks · ${
         (D.invariants || []).filter((i) => i.outcome === "PASS").length} passed`,
       detail: () => `
         <p>Run on <b>every</b> render. A failure puts a banner on the figure
@@ -485,7 +485,7 @@ function draw(D) {
             ${esc(e.status)}. ${esc(e.reason)}</li>`).join("")}</ul>` : ""}`,
     },
     {
-      id: "figure", kind: "out", title: "10. The figure",
+      id: "figure", kind: "out", title: "10. Draw the figure",
       stat: () => `${n(acct.rendered)} spokes · ${n((D.rings || {}).total)} rings`,
       detail: () => `
         <p>A Circos figure: the circle is the submitted gene set in a stated
@@ -501,7 +501,7 @@ function draw(D) {
         <p><a href="../demo/">Open this figure in the tool →</a></p>`,
     },
     {
-      id: "verdict", kind: "decision", title: "11. GO / NO-GO rule",
+      id: "verdict", kind: "decision", title: "11. Decide GO / NO-GO",
       stat: () => Object.entries(rule.counts || {})
         .map(([k, v]) => `${v} ${k.replace(" DATA", "")}`).join(" · ") || "3 criteria",
       detail: () => `
@@ -523,7 +523,7 @@ function draw(D) {
         <p><b>What never affects the verdict.</b> ${esc(rule.never_a_criterion)}</p>`,
     },
     {
-      id: "summaries", kind: "spend", title: "12. Baked summaries",
+      id: "summaries", kind: "spend", title: "12. Bake summaries",
       stat: () => `${money(sp.total)} total · measured ${n(sp.measured)}`,
       detail: () => `
         <p>The per-gene evidence summary and the mouse-phenotype flag are the

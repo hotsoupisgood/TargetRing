@@ -356,6 +356,13 @@ async function init() {
     RESIZE_TIMER = setTimeout(redrawForThisWindow, RESIZE_SETTLE_MS);
   });
 
+  // v4.2. The three GO / NO-GO criteria and their bounds, at the top of the
+  // Table tab. Fetched once at boot: it is the build's rule, not the run's, and
+  // it does not change while the page is open.
+  fetch("/api/criteria").then((x) => (x.ok ? x.json() : null))
+    .then((c) => { if (c) renderCriteria(c); })
+    .catch(() => { /* an older server has no such route; the tab is unchanged */ });
+
   // After every control is wired, so the disabling is not undone by a later
   // assignment.
   disableServerOnlyControls();
@@ -363,6 +370,57 @@ async function init() {
   // Last, so the hash is read after every control above is wired and can be
   // painted into. It replaces rather than pushes; the comment on it says why.
   startHistory();
+}
+
+// v4.2, Puck 2026-10-19: "on the top of the table page the main part should say
+// there are 3 go no go criteria, and a numbered list. and the bounds we are
+// looking for in them. the other stuff is less important. and say a note like
+// full descriptions are at the bottom."
+//
+// Two renderings of one payload: the numbered list with the bounds at the top of
+// the Table tab, and the rule in full at the bottom, under the anchor the note
+// links to. Both come from `/api/criteria`, i.e. `recommend.criteria_block()`,
+// which reads `current_thresholds()` — so neither can state a bound the drawers
+// were not computed against.
+function renderCriteria(c) {
+  const top = $("#table-criteria");
+  const bottom = $("#full-descriptions");
+  if (!c || !(c.criteria || []).length) return;
+  if (top) {
+    top.innerHTML =
+      `<h3 class="pane-h">${esc(c.heading)}</h3>
+       <ol class="criteria">` +
+      c.criteria.map((x) => `<li><b>${esc(x.name)}</b> —
+         <span class="bound">${esc(x.met_when)}</span></li>`).join("") +
+      `</ol>
+       <p class="pane-lede">${esc(c.never_a_criterion)}</p>
+       <p class="pane-lede"><a href="#full-descriptions" id="to-full-descriptions">Full
+         descriptions are at the bottom of this page</a>.</p>`;
+    // An in-page anchor, scrolled rather than navigated: the hash is the tab
+    // router's (`#<tab>` / `#<tab>/<gene>`), and writing `#full-descriptions`
+    // into it would send the router to its unknown-tab fallback.
+    const link = $("#to-full-descriptions");
+    if (link) link.onclick = (ev) => {
+      ev.preventDefault();
+      bottom.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+  }
+  if (bottom) {
+    bottom.innerHTML =
+      `<h3 class="pane-h">The GO / NO-GO rule in full</h3>
+       <table><thead><tr><th>#</th><th>Criterion</th><th>Met when</th>
+         <th>Source</th></tr></thead><tbody>` +
+      c.criteria.map((x) => `<tr><td>${esc(x.n)}</td><td>${esc(x.name)}</td>
+        <td class="reason">${esc(x.met_when)}</td>
+        <td class="reason">${esc(x.source)}</td></tr>`).join("") +
+      `</tbody></table>
+       <p class="pane-lede">${esc(c.go)} ${esc(c.no_go)} ${esc(c.insufficient)}
+         ${esc(c.never_a_criterion)}
+         <span class="hint">Rule version <code>${esc(c.rule_version)}</code>.</span></p>
+       <p class="pane-lede">Each column's full name, its units and its source
+         are in the strip below; the colour each value was drawn as is on the
+         Circos tab, scale by scale.</p>`;
+  }
 }
 
 // v4.2. True when this copy of the page has no analysis server behind it —

@@ -38,6 +38,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 from targetring import config  # noqa: E402
+from targetring import recommend  # noqa: E402
 
 OUT = REPO / "docs" / "flow" / "flow.json"
 
@@ -193,21 +194,11 @@ def build(run_id: str) -> dict[str, Any]:
         "sources": SOURCES,
         "invariants": invariants,
         "verdict_rule": {
-            "criteria": [
-                {"n": 1, "name": "expressed",
-                 "met_when": f"GTEx region median TPM ≥ {config.RECOMMEND_MIN_TPM}; "
-                             f"if GTEx is absent, the tissue-distribution ring > 0",
-                 "source": "GTEx, Open Targets prioritisation"},
-                {"n": 2, "name": "dysregulated in the study",
-                 "met_when": f"|logFC| ≥ {config.RECOMMEND_MIN_ABS_LOGFC} and "
-                             f"adjusted p ≤ {config.RECOMMEND_MAX_Q}",
-                 "source": "the submitted DE table"},
-                {"n": 3, "name": "phenotype in a model",
-                 "met_when": f"the mouse-KO ring > 0, or ≥ "
-                             f"{config.RECOMMEND_MIN_PHENOTYPES} mousePhenotypes "
-                             f"term(s)",
-                 "source": "Open Targets"},
-            ],
+            # v4.2: `recommend.criteria_spec()` — the same three criteria
+            # and the same bounds the tool's Table tab opens with, read from
+            # `recommend.current_thresholds()`. A second copy of them here
+            # is exactly the claim that silently stops being true.
+            "criteria": recommend.criteria_spec(),
             "go": "all three met",
             "no_go": "any one not met",
             "insufficient": "none not met, but any no data",

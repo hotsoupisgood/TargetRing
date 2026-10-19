@@ -50,8 +50,10 @@ PAGE_FILES = ("app.js", "app.css", "header-wash.css",
               "header-wash.png", "header-wash-dark.png")
 
 # The flat JSON routes `init()` and the demo panel read.
+# v4.2 adds `/api/criteria` — the three GO / NO-GO criteria and their bounds,
+# read from `recommend.current_thresholds()`, which the Table tab opens with.
 FLAT_JSON = ("/api/health", "/api/regions", "/api/orderings",
-             "/api/example", "/api/runs")
+             "/api/example", "/api/runs", "/api/criteria")
 
 # Per-run artefacts the WEB UI loads or links to. `figure-slide.svg` and
 # `figure-slide.png` are deliberately absent: they are the deck export, nothing

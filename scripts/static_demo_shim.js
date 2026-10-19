@@ -118,7 +118,7 @@
     if (sc) return "api/run/" + sc[1] + "/scales.json";
 
     // The flat payloads.
-    if (/^\/api\/(runs|regions|orderings|example|health)$/.test(path)) {
+    if (/^\/api\/(runs|regions|orderings|example|health|criteria)$/.test(path)) {
       return "api" + path.slice(4) + ".json";
     }
 
