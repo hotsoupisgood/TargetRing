@@ -1,0 +1,8 @@
+{
+ "regions": [
+  "Small_Intestine_Terminal_Ileum"
+ ],
+ "default": "Small_Intestine_Terminal_Ileum",
+ "demo": true,
+ "note": "the regions the demo's runs were drawn against, from their manifests; the GTEx panel is not fetched here"
+}

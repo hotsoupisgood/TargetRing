@@ -1,0 +1,669 @@
+{
+ "gene": "CXCL2",
+ "input_symbol": "CXCL2",
+ "ensembl_id": "ENSG00000081041",
+ "uniprot": "P19875",
+ "gencode_id": "ENSG00000081041.8",
+ "resolution_status": "ok",
+ "resolution_note": "",
+ "logfc": 2.3,
+ "padj": 8.68396e-15,
+ "k": 7,
+ "k_max": 9,
+ "k_note": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+ "unfiltered_rings": [],
+ "pipeline_summary": "0 agents \u2014 target record exists, genuinely undrugged",
+ "severe_liabilities": [],
+ "attribution_error": null,
+ "drugs": [],
+ "safety_liabilities": [],
+ "trials": {
+  "source": "Open Targets clinicalReports",
+  "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this target are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
+  "sources_seen": {},
+  "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 0 drug-trial PAIRS; the same trials are 0 DISTINCT studies, because a trial testing two of this target's drugs appears in both rows. Live: 0 pairs = 0 distinct. Stopped early: 0 pairs = 0 distinct, of which 0 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
+  "n_pairs": 0,
+  "n_pairs_live": 0,
+  "n_pairs_stopped": 0,
+  "n_pairs_for_cause": 0,
+  "n_distinct_trials": 0,
+  "n_distinct_live": 0,
+  "n_distinct_stopped": 0,
+  "n_live_and_stopped": 0,
+  "n_rows_without_an_nct_id": 0,
+  "distinct_is_a_floor": false,
+  "stop_categories": {},
+  "lead_sponsors": [],
+  "n_lead_sponsors": 0,
+  "drugs": []
+ },
+ "tdl": {
+  "state": "value",
+  "value": 1.0,
+  "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+  "raw": {
+   "tdl": "Tbio",
+   "ordinal": 1,
+   "family": null,
+   "novelty": 0.00201175,
+   "source": "Pharos TDL",
+   "matched_on": "sym (cached)",
+   "pharos_symbol": "CXCL2"
+  }
+ },
+ "literature": {
+  "pubtator_count": 25840,
+  "pubtator_query": "@GENE_CXCL2",
+  "years": {
+   "2022": 3108,
+   "2023": 2780,
+   "2021": 2762,
+   "2024": 1976,
+   "2020": 1954,
+   "2025": 1901,
+   "2019": 1299,
+   "2018": 1097,
+   "2017": 1027,
+   "2015": 876,
+   "2016": 856,
+   "2014": 756,
+   "2013": 690,
+   "2012": 639,
+   "2011": 514,
+   "2026": 506,
+   "2010": 446,
+   "2009": 387,
+   "2008": 318,
+   "2007": 285,
+   "2005": 253,
+   "2006": 250,
+   "2004": 197,
+   "2003": 168,
+   "2002": 164,
+   "2001": 154,
+   "2000": 124,
+   "1999": 117,
+   "1998": 68,
+   "1997": 53,
+   "1995": 35,
+   "1996": 33,
+   "1994": 14,
+   "1993": 13,
+   "1992": 11,
+   "1990": 4,
+   "1991": 3,
+   "1963": 1,
+   "1989": 1
+  },
+  "error": null,
+  "europepmc": "fetched",
+  "europepmc_note": "fetched on gene click (v2.2 item 3)",
+  "europepmc_query": "\"CXCL2\"",
+  "europepmc_count": 30424,
+  "europepmc_error": null,
+  "europepmc_echo_live": false,
+  "europepmc_echo_ok": true
+ },
+ "chembl": {
+  "state": "undrugged",
+  "note": "ChEMBL target record exists with 0 mechanisms \u2014 genuinely undrugged",
+  "target_chembl_id": "CHEMBL3286076",
+  "n_mechanisms": 0,
+  "n_direct": 0,
+  "n_direct_efficacy": 0,
+  "rows": [],
+  "untrusted": true,
+  "untrusted_reason": "UniProt/ChEMBL resolution is unprobed at scale (QA B6). This panel is evidence, not a ring, and does not affect any rank."
+ },
+ "chembl_note": "fetched on gene click (v2.2 item 3)",
+ "mouse_phenotypes": [
+  "abnormal lymph node morphology",
+  "increased monocyte cell number",
+  "decreased bone mineral content",
+  "decreased bone mineral density",
+  "enlarged lymph nodes",
+  "abnormal eye morphology"
+ ],
+ "cells": {
+  "logfc": {
+   "state": "value",
+   "value": 2.3,
+   "detail": "logFC 2.3 (submitted)"
+  },
+  "neg_log10_padj": {
+   "state": "value",
+   "value": 14.06128193899464,
+   "detail": "adjusted p 8.68396e-15 (submitted)"
+  },
+  "tractable": {
+   "state": "value",
+   "value": 0.0,
+   "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00"
+  },
+  "chemical_probe": {
+   "state": "no_data",
+   "value": null,
+   "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+  },
+  "safety": {
+   "state": "value",
+   "value": 0.2207477403451109,
+   "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.88, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence."
+  },
+  "regional_specificity": {
+   "state": "value",
+   "value": 1.052676731413012,
+   "detail": "7.338 TPM in Small_Intestine_Terminal_Ileum / 6.971 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
+  },
+  "clinical_phase": {
+   "state": "value",
+   "value": 0.0,
+   "detail": "target record exists, 0 drug or clinical candidates"
+  },
+  "clinical_activity": {
+   "state": "not_applicable",
+   "value": null,
+   "detail": "no drugs, so there is no activity to report"
+  },
+  "tdl": {
+   "state": "value",
+   "value": 1.0,
+   "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+  },
+  "rodent": {
+   "state": "value",
+   "value": 1.0,
+   "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+  },
+  "literature": {
+   "state": "value",
+   "value": 4.412309316059834,
+   "detail": "25840 PubTator3 records for '@GENE_CXCL2' (log10(1+n) = 4.41); gene id-resolved, region is free text"
+  },
+  "completeness": {
+   "state": "value",
+   "value": 7.0,
+   "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+  }
+ },
+ "triage": null,
+ "expression": {
+  "region": "Small_Intestine_Terminal_Ileum",
+  "region_tpm": 7.338,
+  "region_tpm_source": "GTEx median TPM, as printed in the regional_specificity cell",
+  "panel_median_tpm": 6.971,
+  "n_tissues": 54,
+  "tissue_distribution": 0.01851851851851849,
+  "region_is_disease_tissue": true,
+  "region_is_disease_tissue_source": "manifest run_conditions: 'region ... was inferred from the disease' = True; region == the form's silent default and not inferred = False; chosen by hand = null (no claim)",
+  "whole_blood_tpm": 0.6054039999999999,
+  "spleen_tpm": 7.69232,
+  "immune_hint_tissues": {
+   "whole_blood_tpm": "Whole_Blood",
+   "spleen_tpm": "Spleen"
+  }
+ },
+ "contrast_text": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification' A1a Paris classification; Crohn's disease",
+ "recommendation": {
+  "verdict": "GO",
+  "criteria": [
+   {
+    "key": "expressed",
+    "label": "expressed",
+    "status": "met",
+    "value": 7.338,
+    "shown": "7.338 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+    "bare": "7.338 TPM",
+    "threshold": "GTEx TPM >= 1 in the run's region",
+    "source": "GTEx median TPM"
+   },
+   {
+    "key": "dysregulated",
+    "label": "dysregulated in the study",
+    "status": "met",
+    "value": {
+     "logfc": 2.3,
+     "padj": 8.68396e-15
+    },
+    "shown": "logFC 2.3, adjusted p 8.68e-15",
+    "bare": "logFC +2.3, p 8.7e-15",
+    "threshold": "|logFC| >= 1 and adjusted p <= 0.05",
+    "source": "submitted DE table"
+   },
+   {
+    "key": "phenotype",
+    "label": "phenotype in a study",
+    "status": "met",
+    "value": {
+     "ring": 1.0,
+     "n_abnormal": 6
+    },
+    "shown": "phenotyped, 6 abnormal term(s) on record",
+    "bare": "6 abnormal terms",
+    "threshold": "mouse phenotype ring > 0, or >= 1 abnormal mouse term(s)",
+    "source": "Open Targets mousePhenotypes",
+    "disease_area": {
+     "disease_area": "inflammatory bowel disease",
+     "mapping_version": "5ca634159f74",
+     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+     "n_met_terms": 6,
+     "matched": true,
+     "matching_terms": [
+      {
+       "term": "abnormal lymph node morphology",
+       "area": "immune system"
+      },
+      {
+       "term": "increased monocyte cell number",
+       "area": "immune system"
+      },
+      {
+       "term": "enlarged lymph nodes",
+       "area": "immune system"
+      }
+     ],
+     "areas": [
+      "digestive/alimentary system",
+      "immune system",
+      "inflammation"
+     ],
+     "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal lymph node morphology [immune system]; increased monocyte cell number [immune system]; enlarged lymph nodes [immune system]",
+     "short": "disease-area terms: 3",
+     "tooltip": "inflammatory bowel disease: abnormal lymph node morphology [immune system]; increased monocyte cell number [immune system]; enlarged lymph nodes [immune system]. Display aid, not a criterion."
+    }
+   }
+  ],
+  "caveats": [],
+  "modality": null,
+  "expression": {
+   "region": "Small_Intestine_Terminal_Ileum",
+   "region_tpm": 7.338,
+   "panel_median_tpm": 6.971,
+   "n_tissues": 54,
+   "ratio": 1.052646679099125,
+   "region_is_disease_tissue": true,
+   "specific": false,
+   "specific_ratio_threshold": 5.0,
+   "blood_or_spleen_at_or_above_region": true,
+   "shown": "7.338 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 6.971 TPM",
+   "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+  },
+  "region_tag": {
+   "region": "Small_Intestine_Terminal_Ileum",
+   "short": "ileum",
+   "origin": "inferred",
+   "shown": "region: ileum, inferred",
+   "tooltip": "Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+  },
+  "disease_area": {
+   "disease_area": "inflammatory bowel disease",
+   "mapping_version": "5ca634159f74",
+   "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+   "n_met_terms": 6,
+   "matched": true,
+   "matching_terms": [
+    {
+     "term": "abnormal lymph node morphology",
+     "area": "immune system"
+    },
+    {
+     "term": "increased monocyte cell number",
+     "area": "immune system"
+    },
+    {
+     "term": "enlarged lymph nodes",
+     "area": "immune system"
+    }
+   ],
+   "areas": [
+    "digestive/alimentary system",
+    "immune system",
+    "inflammation"
+   ],
+   "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal lymph node morphology [immune system]; increased monocyte cell number [immune system]; enlarged lymph nodes [immune system]",
+   "short": "disease-area terms: 3",
+   "tooltip": "inflammatory bowel disease: abnormal lymph node morphology [immune system]; increased monocyte cell number [immune system]; enlarged lymph nodes [immune system]. Display aid, not a criterion."
+  },
+  "thresholds": {
+   "min_tpm": 1.0,
+   "min_abs_logfc": 1.0,
+   "max_q": 0.05,
+   "min_phenotypes": 1,
+   "specific_ratio": 5.0
+  },
+  "rule_short": "rule: expressed AND dysregulated AND phenotype \u2014 not used to order or filter the figure",
+  "rule_tooltip": "Thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
+  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+  "rule_version": "bdc70c8fc230",
+  "mode": "rule",
+  "note": "not used to order or filter the figure",
+  "basis": "Puck's explicit rule (2026-10-18), separate from the evidence rings"
+ },
+ "baked": {
+  "at_utc": "2026-10-18T19:07:55Z",
+  "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
+  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count -- fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
+  "run_id": "20261018T190549Z-81475c",
+  "sources": [
+   "opentargets.target",
+   "pharos.target",
+   "pubtator.count",
+   "chembl.target",
+   "chembl.mechanism",
+   "europepmc.search"
+  ]
+ },
+ "summary": {
+  "text": "GO: expressed (7.338 TPM in Small_Intestine_Terminal_Ileum, a disease tissue for this contrast), dysregulated in the study (logFC 2.3, adjusted p 8.68e-15), and a phenotype on record (phenotyped, 6 abnormal terms). Hypothesis: inhibition, because the gene is up-regulated in Crohn's disease versus non-inflammatory bowel disease control, logFC 2.3, adjusted p 8.68e-15. Mouse knockouts show abnormal lymph node morphology, increased monocyte cell number, enlarged lymph nodes, decreased bone mineral content, decreased bone mineral density and abnormal eye morphology; expression is 7.338 TPM in Small_Intestine_Terminal_Ileum against a median of 6.971 TPM across 54 tissues. The pipeline is empty (0 agents, no drug or clinical candidates, 0 ChEMBL mechanisms), development level: biology known, no chemistry, with 25,840 PubTator3 records. The change may reflect infiltrating immune cells rather than regulation in the tissue, as spleen is 7.692 TPM against 7.338 TPM in the region. No data: chemical probe; current clinical activity is not applicable with no drugs.",
+  "model": "claude-opus-5",
+  "prompt_version": "2ab6ea127fbd28e5",
+  "effort": "low",
+  "generated_at": "2026-10-19T01:58:59Z",
+  "inputs": {
+   "gene": "CXCL2",
+   "input_symbol": "CXCL2",
+   "ensembl_id": "ENSG00000081041",
+   "study": {
+    "source": "Expression Atlas E-GEOD-101794 g2_g1",
+    "contrast_name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
+    "sign_sentence": "positive log2FC = up in A1a Paris classification; Crohn's disease (n=61) vs A1a Paris classification; non inflammatory bowel disease control (n=13)",
+    "test_group": "A1a Paris classification; Crohn's disease",
+    "reference_group": "A1a Paris classification; non inflammatory bowel disease control",
+    "n_test": 61,
+    "n_ref": 13,
+    "log2_fold_change": 2.3,
+    "adjusted_p": 8.68396e-15,
+    "direction": "up in the test group"
+   },
+   "region": "Small_Intestine_Terminal_Ileum",
+   "expression": {
+    "region": "Small_Intestine_Terminal_Ileum",
+    "region_tpm": 7.338,
+    "panel_median_tpm": 6.971,
+    "n_tissues": 54,
+    "ratio": 1.052646679099125,
+    "region_is_disease_tissue": true,
+    "specific": false,
+    "specific_ratio_threshold": 5.0,
+    "blood_or_spleen_at_or_above_region": true,
+    "shown": "7.338 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 6.971 TPM",
+    "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+   },
+   "immune_origin_hint": {
+    "suggested": true,
+    "reasons": [
+     "spleen 7.692 TPM >= Small_Intestine_Terminal_Ileum 7.338 TPM"
+    ],
+    "rule": "GTEx whole-blood or spleen median TPM >= 1 and >= the region's TPM",
+    "inflamed_tissue_contrast": true
+   },
+   "rings": [
+    {
+     "ring": "logfc",
+     "state": "value",
+     "value": 2.3,
+     "detail": "logFC 2.3 (submitted)"
+    },
+    {
+     "ring": "neg_log10_padj",
+     "state": "value",
+     "value": 14.06128193899464,
+     "detail": "adjusted p 8.68396e-15 (submitted)"
+    },
+    {
+     "ring": "tractable",
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00"
+    },
+    {
+     "ring": "chemical_probe",
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+    },
+    {
+     "ring": "safety",
+     "state": "value",
+     "value": 0.2207477403451109,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.88, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence."
+    },
+    {
+     "ring": "regional_specificity",
+     "state": "value",
+     "value": 1.052676731413012,
+     "detail": "7.338 TPM in Small_Intestine_Terminal_Ileum / 6.971 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
+    },
+    {
+     "ring": "clinical_phase",
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates"
+    },
+    {
+     "ring": "clinical_activity",
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report"
+    },
+    {
+     "ring": "tdl",
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+    },
+    {
+     "ring": "rodent",
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+    },
+    {
+     "ring": "literature",
+     "state": "value",
+     "value": 4.412309316059834,
+     "detail": "25840 PubTator3 records for '@GENE_CXCL2' (log10(1+n) = 4.41); gene id-resolved, region is free text"
+    },
+    {
+     "ring": "completeness",
+     "state": "value",
+     "value": 7.0,
+     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+    }
+   ],
+   "rings_without_a_value": [
+    "chemical_probe",
+    "clinical_activity"
+   ],
+   "k": 7,
+   "k_max": 9,
+   "mouse_phenotypes": [
+    "abnormal lymph node morphology",
+    "increased monocyte cell number",
+    "decreased bone mineral content",
+    "decreased bone mineral density",
+    "enlarged lymph nodes",
+    "abnormal eye morphology"
+   ],
+   "pipeline": {
+    "n_drugs": 0,
+    "stages_reached": [],
+    "furthest_agent": null,
+    "summary_line": "0 agents \u2014 target record exists, genuinely undrugged",
+    "n_distinct_trials": 0,
+    "n_live_trials": 0,
+    "n_stopped_trials": 0,
+    "n_stopped_for_cause": 0,
+    "severe_safety_liabilities": [],
+    "n_safety_liability_rows": 0
+   },
+   "chembl": {
+    "state": "undrugged",
+    "n_mechanisms": 0,
+    "n_direct_interaction": 0,
+    "n_direct_with_disease_efficacy": 0
+   },
+   "tdl": {
+    "state": "value",
+    "label": "Tbio",
+    "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+   },
+   "literature": {
+    "pubtator_records": 25840,
+    "europepmc_records": 30424
+   },
+   "ledger_status": "rendered; not in the drop ledger (submitted as drawn)",
+   "recommendation": {
+    "verdict": "GO",
+    "criteria": [
+     {
+      "criterion": "expressed",
+      "status": "met",
+      "shown": "7.338 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+     },
+     {
+      "criterion": "dysregulated in the study",
+      "status": "met",
+      "shown": "logFC 2.3, adjusted p 8.68e-15"
+     },
+     {
+      "criterion": "phenotype in a study",
+      "status": "met",
+      "shown": "phenotyped, 6 abnormal term(s) on record"
+     }
+    ],
+    "caveats": [],
+    "modality": null,
+    "disease_area": {
+     "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal lymph node morphology [immune system]; increased monocyte cell number [immune system]; enlarged lymph nodes [immune system]",
+     "matched": true,
+     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)"
+    },
+    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+    "rule_version": "bdc70c8fc230"
+   }
+  },
+  "facts_key": "1cc37c664e81f397",
+  "usage": {
+   "input_tokens": 6295,
+   "output_tokens": 443,
+   "cache_read_tokens": 0,
+   "usd": 0.04255
+  },
+  "stop_reason": "end_turn",
+  "note": "LLM-generated from the values in this drawer and nothing else, when the summary was baked, not when you opened it. It reads the figure; it is not a literature review. Its first sentence restates the GO / NO-GO verdict computed by the owner's rule (recommend.py), which it was given and did not decide. The exact facts it was given are stored beside it."
+ },
+ "phenotype_llm": {
+  "flag": 1,
+  "reason": "Immune-related terms are on record, including \"abnormal lymph node morphology\", \"enlarged lymph nodes\" and \"increased monocyte cell number\", which touch the inflammatory biology of this disease area.",
+  "model": "claude-opus-5",
+  "prompt_version": "dce98a0009c9c277",
+  "effort": "low",
+  "generated_at": "2026-10-19T01:57:20Z",
+  "inputs": {
+   "gene": "CXCL2",
+   "disease_area": "inflammatory bowel disease",
+   "contrast_text": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification' A1a Paris classification; Crohn's disease",
+   "mouse_phenotype_terms": [
+    "abnormal lymph node morphology",
+    "increased monocyte cell number",
+    "decreased bone mineral content",
+    "decreased bone mineral density",
+    "enlarged lymph nodes",
+    "abnormal eye morphology"
+   ],
+   "n_terms": 6,
+   "knockout_ring": {
+    "state": "value",
+    "value": 1.0,
+    "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+   },
+   "question": "Is there a model-organism phenotype that a biologist would read as evidence this gene matters for this disease area? Answer 1 or 0 and one plain sentence naming the term(s)."
+  },
+  "facts_key": "00ad70e5f5ccdc25",
+  "usage": {
+   "input_tokens": 1269,
+   "output_tokens": 87,
+   "cache_read_tokens": 0,
+   "usd": 0.00852
+  },
+  "stop_reason": "end_turn",
+  "is_criterion": false,
+  "note": "A 0/1 read of this gene's mouse phenotype terms against the contrast's disease area, written by the model named beside it from those terms and nothing else, when the drawer was baked. It sits BESIDE the owner's deterministic phenotype criterion and is never the criterion: it never changes the GO / NO-GO verdict and orders nothing on the figure."
+ },
+ "phenotype_terms": [
+  {
+   "label": "abnormal lymph node morphology",
+   "mp_id": "MP:0002339",
+   "models": [
+    {
+     "id": "MGI:6277055",
+     "allelic_composition": "Cxcl1<em1(IMPC)Mbp> hom early",
+     "genetic_background": "C57BL/6NCrl",
+     "pmids": []
+    }
+   ]
+  },
+  {
+   "label": "increased monocyte cell number",
+   "mp_id": "MP:0000220",
+   "models": [
+    {
+     "id": "MGI:6277055",
+     "allelic_composition": "Cxcl1<em1(IMPC)Mbp> hom early",
+     "genetic_background": "C57BL/6NCrl",
+     "pmids": []
+    }
+   ]
+  },
+  {
+   "label": "decreased bone mineral content",
+   "mp_id": "MP:0010124",
+   "models": [
+    {
+     "id": "MGI:6277055",
+     "allelic_composition": "Cxcl1<em1(IMPC)Mbp> hom early",
+     "genetic_background": "C57BL/6NCrl",
+     "pmids": []
+    }
+   ]
+  },
+  {
+   "label": "decreased bone mineral density",
+   "mp_id": "MP:0000063",
+   "models": [
+    {
+     "id": "MGI:6277055",
+     "allelic_composition": "Cxcl1<em1(IMPC)Mbp> hom early",
+     "genetic_background": "C57BL/6NCrl",
+     "pmids": []
+    }
+   ]
+  },
+  {
+   "label": "enlarged lymph nodes",
+   "mp_id": "MP:0000702",
+   "models": [
+    {
+     "id": "MGI:6277055",
+     "allelic_composition": "Cxcl1<em1(IMPC)Mbp> hom early",
+     "genetic_background": "C57BL/6NCrl",
+     "pmids": []
+    }
+   ]
+  },
+  {
+   "label": "abnormal eye morphology",
+   "mp_id": "MP:0002092",
+   "models": [
+    {
+     "id": "MGI:6277055",
+     "allelic_composition": "Cxcl1<em1(IMPC)Mbp> hom early",
+     "genetic_background": "C57BL/6NCrl",
+     "pmids": []
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1645 @@
+/* ===========================================================================
+   v3.8 — DESIGN TOKENS. Computed, then validated; nothing here picked by eye.
+   ===========================================================================
+
+   Derivation: OKLCh at a target WCAG relative luminance, using the same
+   bisection `targetring/palette.py` uses for the figure's own ramps — so the
+   page and the figure are one system rather than two that resemble each other.
+   Gate: the data-viz skill's validator, run under `node`, for `--mode light`
+   AND `--mode dark`. Every token's job, its numbers and the validator's
+   verbatim output are in `docs/design/palette.md`.
+
+   Four colour jobs, and a colour does exactly one of them:
+     SEQUENTIAL  magnitude (how much)       one hue, 7 steps, light to dark
+     DIVERGING   polarity (which side of 0) two hues, NEUTRAL grey midpoint
+     STATUS      state (good to critical)   reserved, never a data series
+     CATEGORICAL identity (which thing)     3 slots, fixed order, never cycled
+
+   Plus the four ring states, which are not a colour job at all but a
+   rendering contract — see the STATES block and AGENTS.md rule 1.
+
+   Dark mode is its own set of steps from the same hues, derived against the
+   dark surface; it is not an inversion. The sequential anchor flips (low
+   recedes toward the surface in both modes, which means light-at-low on
+   paper and dark-at-low on a dark panel) and the diverging midpoint moves
+   with it. The dark values are declared twice on purpose: the media query
+   covers the OS setting, the data-theme scope covers an explicit choice, and
+   an explicit light choice has to beat OS-dark.
+
+   This file is inlined verbatim into the standalone export
+   (`test_export.py:534`), which is why the tokens live here rather than in a
+   second stylesheet that nothing would load. */
+:root {
+  color-scheme: light;
+
+  /* surfaces and ink. Warm off-white paper, cool near-black ink.
+     `--tr-surface` is pure #ffffff because the figure's own canvas is
+     #ffffff and a card one shade off it draws a seam around every render. */
+  --tr-paper: #faf9f7;
+  --tr-surface: #ffffff;
+  --tr-surface-sunk: #f2f1ee;
+  --tr-ink: #16181d;
+  --tr-ink-2: #3f434b;
+  --tr-ink-3: #5d636e;
+  --tr-ink-4: #767d89;
+  --tr-rule: #e4e5e8;
+  --tr-rule-strong: #c7cad1;
+
+  /* SEQUENTIAL: magnitude. One hue (OKLCh 243.1deg), luminance
+     0.600 down to 0.075, chroma 0.045 up to 0.138. The low end keeps chroma
+     on purpose: a neutral pale cell beside a neutral pale `no_data` cell is
+     the one confusion this app may not make. Step 100's luminance ceiling is
+     0.600 and not palette.py's 0.740 for exactly that reason — see
+     docs/design/palette.md, "the 0.740 finding". */
+  --tr-seq-100: #b3cfe7;
+  --tr-seq-200: #94bad9;
+  --tr-seq-300: #75a4ca;
+  --tr-seq-400: #558fbc;
+  --tr-seq-500: #327aae;
+  --tr-seq-600: #00669e;
+  --tr-seq-700: #005180;
+
+  /* DIVERGING: polarity (logFC). Blue down, ember up — the convention every
+     reader of an expression heatmap already has, and the same two hues
+     palette.py gives the logFC ring. The midpoint is a NEUTRAL grey
+     (C 0.008, far below the 0.10 identity floor, so it reads as "nothing"):
+     never a hue, never a rainbow stop. */
+  --tr-div-dn-4: #30479a;
+  --tr-div-dn-3: #5169b2;
+  --tr-div-dn-2: #758cc9;
+  --tr-div-dn-1: #9cafe0;
+  --tr-div-mid: #c1c6ca;
+  --tr-div-up-1: #dda191;
+  --tr-div-up-2: #c37b66;
+  --tr-div-up-3: #a9543d;
+  --tr-div-up-4: #8d2c0d;
+
+  /* STATUS: state. Reserved; never reused as a data series. Validated as a
+     4-slot categorical set in scale order: worst adjacent CVD dE 15.0, worst
+     adjacent normal-vision dE 18.0. Always shipped with an icon AND a word —
+     `warning` sits at 2.14:1 on the surface by design, and a colour alone
+     never carries a state here. */
+  --tr-status-good: #256a3d;
+  --tr-status-warning: #c9b04f;
+  --tr-status-serious: #bc6c52;
+  --tr-status-critical: #912946;
+  --tr-status-good-wash: #e9f1ec;
+  --tr-status-good-ink: #1b5331;
+  --tr-status-warning-wash: #f6f0dd;
+  --tr-status-warning-ink: #6e5a12;
+  --tr-status-serious-wash: #f7eae6;
+  --tr-status-serious-ink: #8a4027;
+  --tr-status-critical-wash: #f8e8ec;
+  --tr-status-critical-ink: #7a1636;
+
+  /* CATEGORICAL: identity. THREE slots, fixed order, and three is the cap.
+     The order is the CVD-safety mechanism, not a mood: this one clears every
+     hard gate in both modes on the adjacent pairlist AND on `--pairs all`,
+     so it is safe in scatter and small multiples too. A fourth identity
+     colour is not available — fold to "other" or facet. */
+  --tr-cat-1: #2f72a1;
+  --tr-cat-2: #a54f37;
+  --tr-cat-3: #86954b;
+
+  /* STATES — the four ring states (AGENTS.md rule 1). These mirror
+     `figure.STATE_STYLE` exactly, because an HTML legend chip and the SVG
+     cell it explains disagreeing is the same class of defect as a wrong
+     value. Colour is the SECOND channel here; texture is the first.
+
+     `no_data` is never filled, averaged, zeroed or imputed, and it must not
+     read as a low value. Three independent channels keep it off
+     `--tr-seq-100`, each measured in docs/design/palette.md:
+       TEXTURE    it is the only hatched fill in the system; a value cell is
+                  always flat. Survives greyscale and total colour blindness.
+       COLOUR     min dE 8.50 from --tr-seq-100 across normal, protanopic,
+                  deuteranopic and tritanopic vision — over the skill's 8.0.
+       LUMINANCE  0.0688 of WCAG relative luminance, above
+                  figure.GREYSCALE_MIN_DELTA (0.05), so the gap survives a
+                  greyscale print. */
+  --tr-state-nodata-fill: #e8e8e8;
+  --tr-state-nodata-ink: #4d4d4d;
+  --tr-state-na-fill: #ffffff;
+  --tr-state-na-ink: #808080;
+  --tr-state-failed-fill: #000000;
+  --tr-state-failed-ink: #ff0000;
+
+  /* Hatch geometry, so HTML and SVG draw the same texture. 45deg and its
+     135deg mirror only. */
+  --tr-hatch-angle: 45deg;
+  --tr-hatch-pitch: 5px;
+  --tr-hatch-stroke: 1.25px;
+
+  /* TYPE SCALE. A ~1.18 ratio off a 13px body step, snapped to halves and
+     FLOORED AT 12.0px. There is no step below the floor and no exemption:
+     the review that set it refused one for half a pixel, and
+     `test_no_stylesheet_rule_sets_type_under_the_floor` reads every rule in
+     this file, which is the point. */
+  --tr-t-micro: 12px;
+  --tr-t-small: 12.5px;
+  --tr-t-body: 13px;
+  --tr-t-read: 15px;
+  --tr-t-h4: 13px;
+  --tr-t-h3: 17px;
+  --tr-t-h2: 20px;
+  --tr-t-h1: 26px;
+  --tr-t-lede: 17px;
+  --tr-t-figure: 30px;
+  --tr-lh-tight: 1.2;
+  --tr-lh-snug: 1.35;
+  --tr-lh-body: 1.5;
+  --tr-lh-read: 1.62;
+  --tr-tracking-caps: .07em;
+  --tr-tracking-tight: -0.012em;
+  --tr-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --tr-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* SPACING: one 4px grid, used everywhere. */
+  --tr-s-1: 4px;
+  --tr-s-2: 8px;
+  --tr-s-3: 12px;
+  --tr-s-4: 16px;
+  --tr-s-5: 24px;
+  --tr-s-6: 32px;
+  --tr-s-7: 48px;
+  --tr-s-8: 64px;
+
+  /* MEASURE: line length for text a human reads in order, about 70
+     characters at --tr-t-read. `--prose` below is a different constraint and
+     stays — it caps the panels so the figure row can have the whole window.
+     This one caps PARAGRAPHS. */
+  --tr-measure: 34rem;
+  --tr-measure-wide: 46rem;
+  --tr-radius: 6px;
+  --tr-radius-sm: 4px;
+
+  /* The header wash. Generated, never hand-drawn, by
+     `scripts/make_header_wash.py` from the tokens above; the seed is in
+     docs/design/header-wash.md and in the PNG's own metadata, so the header
+     is reproducible from the manifest like everything else here. This token
+     only reserves the band — the image itself is mounted from
+     `static/header-wash.css`, for the reason given at the `header` rule. */
+  --tr-wash-height: 128px;
+
+  /* The v2 names, kept so every existing selector in this file and every
+     reference in app.js keeps working, and re-pointed at the tokens above so
+     there is one system and not two. `--warn` stays at its v2 hex: two tests
+     read its value straight out of this block (test_dim.py:473, and the
+     rail-luminance assertion above it). */
+  --ink: #16181d;
+  --muted: #5d636e;
+  --line: #e4e5e8;
+  --bg: #faf9f7;
+  --accent: #1f5f8b;
+  --bad: #912946;
+  --warn: #8a4b00;
+  --ok: #256a3d;
+}
+
+/* DARK — its own steps, derived against #15171b, not an inversion. In light
+   mode `no_data` sits 0.0688 of luminance ABOVE the value band; in dark mode
+   it sits 0.0664 BELOW it. Both directions mean "bare surface", and in both
+   modes the hatch is what actually carries it. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --tr-paper: #0e1013;
+    --tr-surface: #15171b;
+    --tr-surface-sunk: #1c1f24;
+    --tr-ink: #f2f3f5;
+    --tr-ink-2: #c3c7ce;
+    --tr-ink-3: #9aa0aa;
+    --tr-ink-4: #7b818c;
+    --tr-rule: #272a30;
+    --tr-rule-strong: #3a3e46;
+    --tr-seq-100: #3b5a73;
+    --tr-seq-200: #456e8d;
+    --tr-seq-300: #5082a8;
+    --tr-seq-400: #5b96c4;
+    --tr-seq-500: #66abe0;
+    --tr-seq-600: #71c1fe;
+    --tr-seq-700: #a0d5ff;
+    --tr-div-dn-4: #bbceff;
+    --tr-div-dn-3: #95b0fa;
+    --tr-div-dn-2: #7e94d0;
+    --tr-div-dn-1: #6879a8;
+    --tr-div-mid: #60666a;
+    --tr-div-up-1: #a46d5d;
+    --tr-div-up-2: #cb846f;
+    --tr-div-up-3: #f39b82;
+    --tr-div-up-4: #ffc0ae;
+    --tr-status-good: #2e7b48;
+    --tr-status-warning: #b09300;
+    --tr-status-serious: #b96558;
+    --tr-status-critical: #ad004d;
+    --tr-status-good-wash: #18241c;
+    --tr-status-good-ink: #79c694;
+    --tr-status-warning-wash: #241f0f;
+    --tr-status-warning-ink: #d6bb4a;
+    --tr-status-serious-wash: #241a17;
+    --tr-status-serious-ink: #e39d8c;
+    --tr-status-critical-wash: #24141b;
+    --tr-status-critical-ink: #f08aa6;
+    --tr-cat-1: #3f81b1;
+    --tr-cat-2: #cd7359;
+    --tr-cat-3: #5e6b1f;
+    --tr-state-nodata-fill: #2f2f2f;
+    --tr-state-nodata-ink: #adadad;
+    --tr-state-na-fill: #15171b;
+    --tr-state-na-ink: #6b7280;
+    --tr-state-failed-fill: #000000;
+    --tr-state-failed-ink: #ff5a5a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --tr-paper: #0e1013;
+  --tr-surface: #15171b;
+  --tr-surface-sunk: #1c1f24;
+  --tr-ink: #f2f3f5;
+  --tr-ink-2: #c3c7ce;
+  --tr-ink-3: #9aa0aa;
+  --tr-ink-4: #7b818c;
+  --tr-rule: #272a30;
+  --tr-rule-strong: #3a3e46;
+  --tr-seq-100: #3b5a73;
+  --tr-seq-200: #456e8d;
+  --tr-seq-300: #5082a8;
+  --tr-seq-400: #5b96c4;
+  --tr-seq-500: #66abe0;
+  --tr-seq-600: #71c1fe;
+  --tr-seq-700: #a0d5ff;
+  --tr-div-dn-4: #bbceff;
+  --tr-div-dn-3: #95b0fa;
+  --tr-div-dn-2: #7e94d0;
+  --tr-div-dn-1: #6879a8;
+  --tr-div-mid: #60666a;
+  --tr-div-up-1: #a46d5d;
+  --tr-div-up-2: #cb846f;
+  --tr-div-up-3: #f39b82;
+  --tr-div-up-4: #ffc0ae;
+  --tr-status-good: #2e7b48;
+  --tr-status-warning: #b09300;
+  --tr-status-serious: #b96558;
+  --tr-status-critical: #ad004d;
+  --tr-status-good-wash: #18241c;
+  --tr-status-good-ink: #79c694;
+  --tr-status-warning-wash: #241f0f;
+  --tr-status-warning-ink: #d6bb4a;
+  --tr-status-serious-wash: #241a17;
+  --tr-status-serious-ink: #e39d8c;
+  --tr-status-critical-wash: #24141b;
+  --tr-status-critical-ink: #f08aa6;
+  --tr-cat-1: #3f81b1;
+  --tr-cat-2: #cd7359;
+  --tr-cat-3: #5e6b1f;
+  --tr-state-nodata-fill: #2f2f2f;
+  --tr-state-nodata-ink: #adadad;
+  --tr-state-na-fill: #15171b;
+  --tr-state-na-ink: #6b7280;
+  --tr-state-failed-fill: #000000;
+  --tr-state-failed-ink: #ff5a5a;
+}
+/* forced-colors. Colour is gone here, so texture is all that is left —
+   which is why texture is channel one for the states and not decoration. */
+@media (forced-colors: active) {
+  :root {
+    --tr-state-nodata-ink: CanvasText;
+    --tr-state-na-ink: GrayText;
+    --tr-state-failed-ink: LinkText;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+/* v3.8 — the masthead.
+
+   The watercolour wash is NOT referenced from this file, and that is a
+   constraint rather than an omission.
+   `test_export.py::test_the_stylesheet_is_inlined_and_imports_nothing`
+   inlines this stylesheet verbatim into the standalone export and then
+   asserts that no CSS url function appears anywhere in the inlined text —
+   its message is "a CSS url is a request", and the check is on the literal
+   string, so this comment may not spell the function either. That rule is
+   right: a file:// artefact that quietly fetches a sibling is the
+   presentational form of AGENTS.md rule 10, and it holds for a `data:` URI
+   too, since a literal-text check cannot tell the two apart.
+
+   So the accent lives in `static/header-wash.css`, which carries the one
+   rule that mounts `static/header-wash.png` and is meant to be linked
+   beside this file. The asset and its generator are documented in
+   `docs/design/header-wash.md`. What stays here is the masthead's geometry
+   and type, which the wash only sits behind: `--tr-wash-height` reserves its
+   band, so linking the second stylesheet moves no layout. */
+header {
+  padding: var(--tr-s-5) 26px var(--tr-s-3);
+  min-height: var(--tr-wash-height);
+  border-bottom: 1px solid var(--tr-rule-strong);
+  background-color: var(--tr-surface);
+}
+h1 { margin: 0; font-size: var(--tr-t-h1); line-height: var(--tr-lh-tight);
+     letter-spacing: var(--tr-tracking-tight); font-weight: 600; }
+h1 .ver { color: var(--muted); font-weight: 400; font-size: var(--tr-t-lede);
+          letter-spacing: 0; }
+/* The section eyebrow. Caps and tracking carry the hierarchy, not size: a
+   13 px label and a 13 px row are told apart by weight, colour and letter
+   spacing, which is what keeps every string on the floor. */
+h2 { font-size: var(--tr-t-h4); text-transform: uppercase;
+     letter-spacing: var(--tr-tracking-caps); color: var(--muted);
+     font-weight: 600; margin: var(--tr-s-5) 0 var(--tr-s-2); }
+.sub { margin: var(--tr-s-2) 0 0; color: var(--tr-ink-2);
+       font-size: var(--tr-t-lede); line-height: var(--tr-lh-snug);
+       max-width: var(--tr-measure-wide); font-weight: 400; }
+/* v3.5. `main` was `max-width: 1500px`, which capped the figure panel at 1100 px
+   however large the window was — so on a 27 in monitor the circle stopped growing
+   400 px before the window did, and the 26° gap could never be big enough to hold
+   the ring names honestly (`assert_wedge_labels_fit` wants a circle of 930 CSS px;
+   a 1100 px panel tops out at 772). The cap was there for the PROSE, which is
+   what it keeps doing: 1500 px is about 95 characters of the 14 px body text, and
+   a help paragraph 2,500 px wide is unreadable in a different way.
+
+   So the measure moves off `main` and onto the blocks that are text. The figure
+   row is the one block that is not text, and it gets the window. */
+:root { --prose: 1500px; }
+main { padding: 20px 26px 60px; }
+#input-panel, #banner, #conditions, .counts, .tabs,
+#pane-ledger, #pane-invariants, #pane-caveats { max-width: var(--prose); }
+/* Not the figure row, and not the download row above it, which sits in the same
+   column as the circle and would otherwise float away from it. */
+.dl-row { max-width: var(--prose); }
+.hint { color: var(--muted); font-size: 12.5px; margin: 4px 0; }
+
+textarea {
+  width: 100%; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fff;
+  resize: vertical;
+}
+select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff;
+         min-width: 280px; font-size: 13px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+
+/* `hidden` must actually hide. The browser's own `[hidden] { display: none }`
+   comes from the user-agent sheet, so ANY author rule that sets `display` on
+   the same element beats it — including `button { display: inline-block }`
+   immediately below. The effect: `el.hidden = true` set the attribute, the
+   element stayed on screen, and the code downstream was written believing it
+   had gone.
+
+   Found 2026-10-09. `syncPasteSection()` hides `#go` — the paste path's "Draw
+   the figure" — once the genes come from a contrast instead. It never did. A
+   reader on the disease path saw a button the app considered hidden, pressed
+   it, and posted an empty table. Every other `hidden` toggle on a styled
+   element had the same latent hole; this closes all of them at once.
+
+   `!important` is right here rather than lazy: `hidden` is not a style choice
+   that a later rule might legitimately want to override, it is the element
+   saying it is not there. */
+[hidden] { display: none !important; }
+
+button, .btn {
+  font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--accent);
+  background: var(--accent); color: #fff; cursor: pointer; text-decoration: none;
+  display: inline-block;
+}
+button.ghost, .btn.ghost { background: #fff; color: var(--accent); }
+button:disabled { opacity: .5; cursor: progress; }
+#go { margin-top: 12px; font-weight: 600; }
+button.primary { font-weight: 600; }
+
+/* Stage 3/4, PLAN §9: a finished step's one collapsed line. Same visual
+   weight as a table row, not a heading — it is a summary, not new content. */
+.step-line { font-size: 13px; margin: 6px 0; padding: 6px 10px; background: #f4f6f8;
+             border-radius: 6px; }
+table.gene-table th.sortable { cursor: pointer; }
+table.gene-table th.sortable:hover { color: var(--ink); }
+.heatmap-img { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; }
+
+/* v2.5 item 2. The drop-no-data opt-out sits under the filter box, unticked,
+   and reads as the exception it is rather than as another routine control. */
+label.check { display: block; margin: 8px 0 4px; font-size: 13px; color: var(--ink); }
+label.check input { margin-right: 6px; }
+#filterable { margin-top: 4px; }
+
+#status { margin-top: 10px; font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+#status.err { color: var(--bad); font-weight: 600; }
+
+.counts { margin: 14px 0; font-size: 14px; }
+.counts b { font-size: 17px; }
+.counts .drop { color: var(--warn); }
+
+#banner {
+  background: var(--bad); color: #fff; padding: 12px 16px; border-radius: 6px;
+  margin: 12px 0; font-weight: 600; white-space: pre-wrap;
+}
+
+/* UX A1. Deliberately unlike #banner in every channel a reader uses: amber not
+   red, normal weight not bold, an outline not a fill. A source being down is
+   not an invariant being violated. */
+#conditions {
+  background: #fff6e0; color: #4a3000; border: 1px solid #c98a00;
+  padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-weight: 400;
+}
+#conditions ul { margin: 6px 0 0; padding-left: 20px; }
+#conditions li { margin: 2px 0; }
+
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-top: 16px; }
+.tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted);
+       border-radius: 0; padding: 8px 14px; }
+.tab.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.tabpane { padding-top: 14px; }
+
+#figure svg { width: 100%; height: auto; background: #fff; border: 1px solid var(--line);
+              border-radius: 6px; }
+#figure [id^="cell|"], #figure text { cursor: pointer; }
+#figure [id^="cell|"]:hover path { stroke: #d1006f !important; stroke-width: 2.2 !important; }
+
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; background: #fff; }
+/* v3.8 / panel A8, and it fixes A1 and the grid's height with it.
+   `overflow-x: auto` with `overflow-y: visible` COMPUTES to `overflow-y: auto`,
+   so this wrapper was already a scroll container — just one exactly as tall as
+   its own table, scrolling with the page. `th { position: sticky; top: 0 }`
+   therefore pinned the header to a 8,545 px scrollport that moves, which is
+   indistinguishable from not being sticky: the panel measured the picker's
+   header at -39 px of viewport top at scrollY 1000, and the ring grid's at
+   -390 px at scrollY 2004.
+
+   The panel tested five candidates live in the DOM. `overflow-y: visible` and
+   `overflow-y: clip` both still measured -390 px (the first computes straight
+   back to `auto`); `overflow: visible` fixed the header and destroyed the
+   horizontal scroller the wrapper exists for. The one option that keeps both
+   is a BOUNDED HEIGHT, which makes this element the scrollport the header
+   sticks inside — measured at 0 px from the wrapper top, horizontal scroll
+   intact.
+
+   It is not only the sticky fix. 70vh also caps the contrast picker's
+   8,545 px (138 rows, of which the first 101 are the dead `E-GEOD-100833`
+   wall — panel A1) and the ring grid's 2,849 px at the 60-gene maximum, at
+   one viewport each, so neither table can bury the page under itself again.
+
+   `th` needs a background for this to read, and it already has one (#f2f3f5);
+   the `z-index` is new and is what stops a tall first cell painting over the
+   header it is scrolling under. */
+.scroll-x {
+  overflow: auto;
+  max-width: 100%;
+  max-height: 70vh;
+  overscroll-behavior: contain;
+}
+.scroll-x th { z-index: 2; }
+#drawer table { font-size: 12px; }
+#drawer td, #drawer th { padding: 5px 7px; }
+th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line);
+         vertical-align: top; }
+/* v3.3 / UX v3 round 3 B12. 11.5px -> 12px on both of these, and it is 61
+   strings: round 2's B9 counted 25 in the Invariants and Drop ledger tabs, and
+   the drawer holds 36 more that B9 did not see because nobody had opened it
+   with an instrument.
+
+   The floor's own justification cites "11.5 px table headers" as this build's
+   smallest existing thing, which is how they were grandfathered through two
+   rounds. Half a pixel is not a trade-off, and the drop ledger is "the best
+   thing in this app" per UX-v1-mvp.md -- it should not be the part of it set
+   below the floor the same document's review established. */
+th { background: #f2f3f5; font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+     color: var(--muted); position: sticky; top: 0; }
+td.reason { color: var(--muted); }
+
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
+        font-weight: 600; }
+.pill.ok { background: #e3f3e9; color: var(--ok); }
+.pill.bad { background: #fdE7ea; color: var(--bad); }
+.pill.warn { background: #fdf1e0; color: var(--warn); }
+.pill.grey { background: #eceef1; color: var(--muted); }
+
+#scrim { position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 40; }
+#drawer {
+  position: fixed; top: 0; right: 0; width: min(980px, 97vw); height: 100vh; overflow-y: auto;
+  background: #fff; border-left: 1px solid var(--line); box-shadow: -6px 0 24px rgba(0,0,0,.12);
+  padding: 22px 26px 60px; z-index: 50;
+}
+/* v3.3 / round 3 A8: 28 x 39 px, measured, against a 44 px target. It is a
+   desktop-only app so this was round 1's B5 and genuinely minor, but it is the
+   one control on a 5,621 px surface and it cost two CSS declarations. */
+#drawer-close { position: absolute; top: 10px; right: 12px; background: none; border: none;
+                color: var(--muted); font-size: 26px; padding: 0;
+                width: 44px; height: 44px; line-height: 44px; border-radius: 6px; }
+#drawer-close:hover { background: #f4f6f8; }
+#drawer h3 { margin: 0 0 2px; font-size: 20px; }
+#drawer h4 { margin: 22px 0 6px; font-size: 12px; text-transform: uppercase;
+             letter-spacing: .06em; color: var(--muted); }
+
+/* v3.3 / UX v3 round 3 A8. The drawer was 5,621 px of flat scroll -- 6.25
+   viewports at 900 px, nine headings, four tables, zero collapsibles. A reader
+   opens it to answer one question and is given all eight sections in a fixed
+   order with no contents and nothing that closes.
+
+   Same contract as `#scales` and `#controls`: every summary names its section
+   and says how much is behind it, so no closed state is a dead end. The three
+   the drawer exists for -- PLAN §1's "its drug pipeline and its literature",
+   plus the reader's own measurement -- start open.
+
+   `.caveat` in the summary is not decoration. A `mouse phenotype lead` collapsed
+   to a bare heading would put COUNCIL M4's "a lead, not a verdict" one click
+   away from the number it qualifies, and AGENTS.md rule 6 is not a thing to
+   hide. The caveat is outside the collapse; the rows are inside it. */
+#drawer .sect { border-top: 1px solid var(--line); }
+#drawer .sect > summary { list-style: none; cursor: pointer; padding: 11px 4px;
+                          font-size: 13px; user-select: none; }
+#drawer .sect > summary::-webkit-details-marker { display: none; }
+#drawer .sect > summary:hover { background: #f4f6f8; }
+#drawer .sect > summary:focus-visible { outline: 2px solid var(--accent);
+                                        outline-offset: -2px; }
+#drawer .sect:not([open]) .chev { transform: rotate(-90deg); }
+#drawer .sect[open] .reveal { animation: reveal .22s ease-out; }
+#drawer .sect > summary .caveat { color: var(--warn); font-weight: 600; }
+#drawer .sect > summary .count { color: var(--muted); font-size: 12px; }
+#drawer .sect > div.reveal { padding: 0 4px 14px; }
+#drawer .sect h4 { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  #drawer .sect[open] .reveal { animation: none; }
+}
+/* 2026-10-18. The evidence summary box: shown on gene highlight, below the
+   drawer's z-order and above the grid, anchored bottom-right so it never covers
+   the row that raised it. Dismissible (button, Escape); the label line is part
+   of the box, not a tooltip, because "LLM-generated" is a claim the reader must
+   see before the text, every time. */
+#summary-box {
+  position: fixed; right: 18px; bottom: 18px; width: min(560px, 92vw); max-height: 60vh;
+  overflow-y: auto; background: var(--tr-surface, #fff); color: var(--tr-ink, #16181d);
+  border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  box-shadow: 0 8px 28px rgba(0,0,0,.16); border-radius: 8px; padding: 14px 44px 12px 16px;
+  z-index: 45; font-size: 13.5px; line-height: 1.45;
+}
+#summary-box h3 { margin: 0 0 6px; font-size: 15px; }
+#summary-box h3 .hint { font-weight: 400; font-size: 12px; margin-left: 6px; }
+#summary-box .summary-text { margin: 0 0 8px; }
+#summary-box .summary-label { margin: 0 0 6px; font-size: 12px; color: var(--muted);
+                              border-top: 1px solid var(--line); padding-top: 6px; }
+#summary-box .summary-prov { margin: 0; font-size: 12px; color: var(--muted); }
+#summary-close { position: absolute; top: 6px; right: 8px; background: none; border: none;
+                 color: var(--muted); font-size: 22px; width: 32px; height: 32px;
+                 line-height: 32px; border-radius: 6px; cursor: pointer; }
+#summary-close:hover { background: #f4f6f8; }
+
+/* 2026-10-18. The GO / NO-GO verdict block (`recommendationHtml`), at the top of
+   the highlight box and of the drawer. Colour carries the verdict and nothing
+   else: GO green, NO-GO grey, INSUFFICIENT DATA amber -- grey for NO-GO on
+   purpose, because a failed rule is a plain statement, not an alarm. The rule
+   text and "not used to order or filter the figure" are part of the block. */
+.verdict { border: 1px solid var(--line); border-left: 5px solid var(--muted); border-radius: 6px;
+           padding: 8px 12px; margin: 6px 0 10px; background: #f7f8fa; }
+.verdict.go { border-left-color: var(--ok); background: #eef7f1; }
+.verdict.nogo { border-left-color: #8a8f99; background: #f1f2f4; }
+.verdict.nodata { border-left-color: var(--warn); background: #fdf6e8; }
+.verdict .verdict-line { margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; }
+.verdict .verdict-word { font-weight: 700; font-size: 16px; letter-spacing: .02em;
+                         padding: 1px 10px; border-radius: 999px; color: #fff; background: var(--muted); }
+.verdict.go .verdict-word { background: var(--ok); }
+.verdict.nogo .verdict-word { background: #6b717c; }
+.verdict.nodata .verdict-word { background: var(--warn); }
+.verdict .crit-list { list-style: none; margin: 0 0 4px; padding: 0; }
+.verdict .crit { margin: 2px 0; font-size: 13px; }
+.verdict .crit .mark { display: inline-block; width: 16px; font-weight: 700; }
+.verdict .crit.met .mark { color: var(--ok); }
+.verdict .crit.not_met .mark { color: var(--bad); }
+.verdict .crit.no_data .mark { color: var(--warn); }
+.verdict .crit .word { color: var(--muted); }
+.verdict .crit .shown { color: var(--muted); }
+.verdict .verdict-caveat, .verdict .verdict-modality { margin: 2px 0; font-size: 12.5px; color: var(--warn); }
+/* 2026-10-18 18:42 trim (Puck: "make it much less wordy"). The disease-area
+   aid is a count on the criterion's own line rather than a sentence under it,
+   and the terms, the thresholds and the long expression sentence all moved
+   into title tooltips. The dotted underline is the only signal that there is
+   a tooltip to open. Nothing here goes under the 12.0 px floor. */
+.verdict .crit-aid { margin-left: 8px; font-size: 12px; color: var(--muted);
+                     border-bottom: 1px dotted var(--line); cursor: help; }
+.verdict .verdict-region { font-size: 12px; color: var(--muted);
+                           border-bottom: 1px dotted var(--line); cursor: help; }
+.verdict .crit .shown { cursor: help; }
+.verdict .verdict-rule { margin: 4px 0 0; font-size: 12px; color: var(--muted);
+                         cursor: help; }
+.verdict.compact .crit { font-size: 12.5px; }
+/* The Claude-coded phenotype flag: one row in the same list as the three
+   criteria and visibly not one of them -- no tick in the mark column, a rule
+   above it, and the word Claude on its face. It never moved the verdict. */
+.verdict .crit-flag { margin: 4px 0 0; padding: 3px 0 0 22px; font-size: 12.5px;
+                      border-top: 1px dotted var(--line); color: var(--ink);
+                      cursor: help; }
+.verdict .crit-flag .flag-num { font-weight: 700; }
+.verdict .crit-flag.flag-1 .flag-num { color: var(--ok); }
+.verdict .crit-flag.flag-0 .flag-num { color: var(--muted); }
+.verdict .crit-flag .flag-why { color: var(--muted); }
+/* "models: n" beside the flag sentence: how much mouse evidence sits under the
+   terms the flag was given. Not an input to it, so it is set apart and quiet. */
+.verdict .crit-flag .flag-models { color: var(--muted); font-size: 12px;
+                                   margin-left: 6px; white-space: nowrap;
+                                   cursor: help; }
+
+/* The drawer's phenotype terms, each with its MGI biological models underneath
+   in small type (Puck, 2026-10-18: "state which model each term came from").
+   The models are indented under the term so no one reads a model as a term. */
+ul.pheno-terms > li.pheno-term { margin: 6px 0; }
+ul.pheno-models { margin: 2px 0 4px; padding-left: 16px; list-style: none; }
+/* 12.0 px is the floor the presentation review's B12 set for this stylesheet
+   (tests/test_presentation.py) -- small type here means 12, not smaller. */
+li.pheno-model { font-size: 12px; color: var(--muted); margin: 1px 0;
+                 border-left: 2px solid var(--line); padding-left: 8px; }
+.pheno-pmids a { color: var(--muted); }
+
+.kv { display: grid; grid-template-columns: 175px 1fr; gap: 3px 12px; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.summary-line { font-size: 15px; font-weight: 600; margin: 8px 0 2px; }
+.note { background: #f4f6f8; border-left: 3px solid var(--line); padding: 8px 12px;
+        font-size: 12.5px; color: var(--muted); margin: 8px 0; }
+.note.warn { border-left-color: var(--warn); color: var(--warn); background: #fdf8f1; }
+/* Tokens, not a literal, and the colour is set rather than inherited. This read
+   `background: #f2f3f5` with no `color`: in dark mode `--tr-ink` IS #f2f3f5, so
+   every inline code span in the app rendered as a white box with white text —
+   the ring names on the evidence cards, the gene ids in the drop ledger, the
+   accession in the citation strip. Light mode was unaffected, which is why it
+   survived: the dark block at the top of this file is derived against #15171b
+   rather than inverted, and a hard-coded hex opts out of it silently. */
+code { font: 12px ui-monospace, Menlo, monospace;
+       background: var(--tr-surface-sunk); color: var(--tr-ink-2);
+       padding: 1px 4px; border-radius: 3px; }
+ul.tight { margin: 4px 0; padding-left: 20px; }
+ul.tight li { margin: 2px 0; }
+
+/* UX B3: "N not shown" was a <span> with cursor:auto and no handler. */
+.linkish {
+  background: none; border: none; padding: 0; font: inherit; color: var(--warn);
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.linkish:hover { color: var(--ink); }
+
+/* The exported canvas is 17.5in wide; scale it to the panel rather than
+   letting the colour bar run off the right edge on a laptop. */
+#figure svg { width: 100%; height: auto; display: block; }
+
+/* v3.0. The download row was six buttons and the new artefacts would have made
+   it nine, so it is three menus grouped by what you are walking away with: the
+   figure, the legend for the next slide, and the data to check it with.
+   `<details>` rather than a JS dropdown — it opens with the keyboard, closes on
+   Escape and needs no script, which is the same reasoning that put the SVG
+   tooltips and the source links in the file rather than in app.js. */
+.dl-row { align-items: flex-start; }
+.dl { position: relative; }
+.dl > summary { list-style: none; cursor: pointer; user-select: none; }
+.dl > summary::-webkit-details-marker { display: none; }
+.dl[open] > summary { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12) inset; }
+.dl-menu {
+  position: absolute; z-index: 20; min-width: 21rem; margin-top: 6px;
+  background: #fff; border: 1px solid #d4d4d4; border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13); padding: 6px;
+}
+.dl-menu a {
+  display: block; padding: 7px 10px; border-radius: 6px;
+  color: var(--accent); text-decoration: none; font-size: 13.5px;
+}
+.dl-menu a:hover, .dl-menu a:focus { background: #f1f4f9; text-decoration: underline; }
+.dl-menu .hint { padding: 2px 10px 6px; margin: 0; }
+
+/* v3.1 / UX v3 A2. The decode panel: the twelve per-ring scales and the four
+   cell states, drawn by the browser instead of by matplotlib.
+
+   The measurement that forced it: `figure-web.svg` was a 19.5 in canvas in a
+   1388 px panel, a scale factor of 0.9886, so 148 of its 149 strings were under
+   12 CSS px -- the scale column's ticks at 5.76, its ring titles at 6.47, the
+   four cell states at 8.90 and the comparability sentence at 6.14. The page
+   around them is 13 px. Since v3.0 the app render and the export may differ, so
+   the column left the app's SVG and the export kept every bit of it. */
+/* v3.2 / round 2 A6: the full-width `.comparability` band is gone. It said the
+   same 47 characters as the render's own banner 8 px below it, both amber, both
+   bold. The render's copy is 16.55 px, above the floor, and it is the one that
+   survives a screenshot. What the band had and the render does not is the
+   range-drift clause, which is `.drift` in the decode panel now, beside the
+   ranges it is about. */
+.drift { margin: 9px 0 0; padding-top: 8px; border-top: 1px solid var(--line);
+         font-size: 12.5px; color: #5a3b00; }
+.figure-row { display: flex; gap: 18px; align-items: flex-start; }
+#figure-col { flex: 1 1 auto; min-width: 0; }
+#figure { min-width: 0; }
+#decode { flex: 0 0 330px; }
+
+/* v3.2 / round 2 A4. The caveat clauses the app render stopped drawing under its
+   own circle, so that the circle is whole in a 1440 x 900 viewport: 894 px of
+   figure where round 1 left 1,148. They were 10 pt vector text — 15.05 CSS px,
+   above the floor and below the page — and they are 13 px of selectable HTML
+   now, in the same place on the screen, one clause per line so a reader can tell
+   four claims from one grey run-on (B3's defect).
+
+   No disclosure around it, and directly after `#figure` in document order: a
+   caveat behind a click is a caveat nobody read. The export keeps all of them at
+   full size — `figure.svg`, `figure-slide.svg` and `caption.txt` are untouched. */
+/* v3.3 / round 3 B14, which is round 2's own hand-off: five clauses of one
+   weight read as one grey block, and a safety caveat and a note about spoke
+   geometry are not the same kind of statement. They are two groups now, in the
+   order a reader needs them -- what this figure does not claim, then how it is
+   drawn -- and only the first group is amber. B3's finding, one surface along:
+   two sentences with different jobs must not read as one run-on. */
+.figure-caveats { margin: 10px 0 0; font-size: 13px; line-height: 1.5; }
+.figure-caveats span { display: block; }
+.figure-caveats span + span { margin-top: 3px; padding-top: 3px;
+                              border-top: 1px dotted var(--line); }
+.figure-caveats span.warn { color: #5a3b00; font-weight: 600; }
+.figure-caveats span.how { color: var(--muted); font-weight: 400; }
+
+/* v3.5 item 2. The sentence that explains the gap at 12 o'clock, at the top of
+   the decode panel: beside the figure, at the height of the circle's own top,
+   so the hole and the reason for it are in one viewport.
+
+   Styled as a note about the drawing and not as a caveat — same job as
+   `.figure-caveats span.how`, 13 px and grey — because amber is what this page
+   uses for "this could mislead you", and an empty wedge is a fact about the
+   geometry. It is the same 13 px it was under the circle: this item moved it,
+   it did not promote it. */
+.wedge-note {
+  margin: 0 0 12px; padding: 9px 12px; font-size: 13px; line-height: 1.5;
+  color: var(--muted); background: #fff;
+  border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: 6px;
+}
+
+/* Always open, no control, no state in which it is not on screen: it is one of
+   the two things the UX-v3 rule says an animation may never take away. */
+#cell-states { border: 1px solid var(--line); border-radius: 6px; background: #fff;
+               padding: 10px 12px; margin-bottom: 12px; }
+#cell-states h5 { margin: 0 0 7px; font-size: 12px; text-transform: uppercase;
+                  letter-spacing: .05em; color: var(--muted); }
+#cell-states .state { display: flex; gap: 9px; align-items: flex-start;
+                      font-size: 13px; margin: 5px 0; }
+#cell-states .sw { flex: 0 0 26px; height: 15px; border: 1px solid #555;
+                   border-radius: 2px; }
+#cell-states .grp { margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+#scales { border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+#scales > summary { list-style: none; cursor: pointer; padding: 9px 12px;
+                    font-size: 13px; color: var(--ink); user-select: none; }
+#scales > summary::-webkit-details-marker { display: none; }
+#scales > summary:hover { background: #f4f6f8; }
+#scales > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.chev { display: inline-block; color: var(--muted); transition: transform .18s ease; }
+#scales:not([open]) .chev { transform: rotate(-90deg); }
+
+/* The animation Puck asked for. `grid-template-rows: 0fr -> 1fr` is the one
+   way to transition to a height nobody has measured, so the twelve rows can be
+   as tall as they need to be and still slide rather than jump. `<details>`
+   keeps the keyboard and Escape behaviour for free, which is the same reason
+   v3.0 used it for the download menus. */
+#scales[open] .reveal { animation: reveal .22s ease-out; }
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #scales[open] .reveal { animation: none; }
+  #controls[open] .reveal { animation: none; }
+  .chev { transition: none; }
+}
+
+/* v3.2 / round 2 B7. The 1,053 px form, closed after the first render. Same
+   mechanism and the same summary contract as `#scales`: the control that
+   reopens it is visible, says what it opens and how much is behind it. */
+#controls[open] .reveal { animation: reveal .22s ease-out; }
+#controls > summary { list-style: none; cursor: pointer; padding: 9px 12px;
+                     margin: 0 0 10px; font-size: 13px; color: var(--ink);
+                     background: #fff; border: 1px solid var(--line);
+                     border-radius: 6px; user-select: none; }
+#controls > summary::-webkit-details-marker { display: none; }
+#controls > summary:hover { background: #f4f6f8; }
+#controls > summary:focus-visible { outline: 2px solid var(--accent);
+                                    outline-offset: -2px; }
+#controls:not([open]) .chev { transform: rotate(-90deg); }
+
+#scale-rows { padding: 0 12px 12px; max-height: 70vh; overflow-y: auto; }
+.scale { padding: 9px 0; border-top: 1px solid var(--line); }
+.scale:first-child { border-top: none; }
+.scale .nm { font-size: 13px; font-weight: 600; }
+.scale .bar { display: flex; height: 13px; margin: 5px 0 2px; border-radius: 2px;
+              overflow: hidden; }
+.scale .bar i { flex: 1 1 auto; }
+.scale .bar.stepped { gap: 2px; overflow: visible; }
+/* 12px, not 11.5. This panel exists because the same numbers were 5.76 CSS px
+   of vector text on a 1440 px laptop; shipping their replacement 0.5 px under
+   the review's own floor would be A2 surviving its own fix. Measured live at
+   1440x900, not read off this file. */
+.scale .ticks { position: relative; height: 15px; font-size: 12px; color: #333; }
+.scale .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.scale .ticks span.lo { transform: none; }
+.scale .ticks span.hi { transform: translateX(-100%); }
+.scale .un { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.scale a { font-size: 12px; color: var(--accent); }
+
+@media (max-width: 1100px) {
+  .figure-row { flex-direction: column; }
+  #decode { flex: 1 1 auto; width: 100%; }
+}
+
+/* ---------------------------------------------------------------------------
+   v3.6 — the table view.
+
+   A second rendering of a run the circle was already drawn from, so the rules it
+   is held to are the figure's rules, not a stylesheet's:
+
+   * The four cell states are four visibly different things, and the three that
+     are not measurements carry a WORD as well as a pattern. `no_data` is never
+     blank, never white, never 0 (AGENTS.md rule 1). The patterns are the
+     `figure.STATE_STYLE` hatches — `////`, `....`, `xxxx` — in CSS, so a cell
+     means the same thing on both renderings.
+   * A value cell is painted the colour `values.csv` recorded for it, which is
+     the colour the arc was painted. The table is not choosing a palette.
+   * Nothing here is below the 12 px floor UX v3 B12 established. The grid is
+     dense; it is not small.
+   * The grid is NOT capped at `--prose`: fourteen columns is not a paragraph.
+     The prose around it still is.
+--------------------------------------------------------------------------- */
+#table-meta, #table-sort, #table-ledger, .table-pick,
+.dimbar, #table-dim-counts { max-width: var(--prose); }
+
+.table-pick { align-items: center; gap: 8px; margin-bottom: 10px; }
+.table-pick label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+                    color: var(--muted); }
+.table-pick input { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+                    padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; }
+
+#table-status.err { color: var(--bad); font-weight: 600; font-size: 13px; }
+
+/* Same channel as `#banner`: a table that cannot be trusted must not be a
+   slightly different shade of a table that can. */
+.banner-bad {
+  background: var(--bad); color: #fff; padding: 12px 16px; border-radius: 6px;
+  margin: 12px 0; font-weight: 600;
+}
+
+.sortbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 2px; }
+.sortbar .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+                color: var(--muted); }
+/* Each key is on screen and reversible on its own — PLAN §3's lexicographic
+   sort, with nothing hidden behind a combined number. */
+.sortbar .key { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+                background: #eef3f7; border: 1px solid #c3d5e2; border-radius: 999px;
+                padding: 2px 4px 2px 10px; }
+.sortbar .key button { font-size: 12px; padding: 1px 8px; border-radius: 999px;
+                       border: none; background: #fff; color: var(--accent); }
+.sortbar .key button.rm { color: var(--bad); padding: 1px 7px; }
+
+.grid { font-size: 12.5px; }
+.grid th, .grid td { border: 1px solid var(--line); padding: 5px 8px; vertical-align: middle;
+                     white-space: nowrap; }
+.grid thead th { font-size: 12px; text-transform: none; letter-spacing: 0; vertical-align: bottom;
+                 max-width: 118px; white-space: normal; line-height: 1.25; }
+.grid th.sortable { cursor: pointer; }
+.grid th.sortable:hover { background: #e4e9ef; color: var(--ink); }
+.grid th.unsortable { color: #8a909b; }
+.grid .rn { display: inline-block; min-width: 15px; color: #8a909b; font-weight: 400; }
+/* Which key this column is, when there are several. */
+.grid .krank { display: inline-block; margin-left: 4px; background: var(--accent); color: #fff;
+               border-radius: 999px; padding: 0 6px; font-size: 12px; font-weight: 600; }
+
+/* Fourteen columns scroll sideways; the gene must not scroll away from its row. */
+.grid .gene-col { position: sticky; left: 0; background: #fff; z-index: 2; text-align: left;
+                  text-transform: none; letter-spacing: 0; color: var(--ink); }
+.grid thead .gene-col { z-index: 3; background: #f2f3f5; }
+/* A `<span>` when the run was read off disk and the drawer cannot open, a
+   `<button>` when it can — same size and weight either way, so the grid does
+   not reflow between the two. */
+.grid .gene-col .gene { font-size: 13px; font-weight: 600; padding: 0;
+                        display: inline-block; }
+.grid .gene-col button.gene { background: none; border: none; }
+.grid .ens { font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+
+/* k is drawn, and drawn plainly. It is a completeness gauge: it orders nothing
+   and selects nothing, so it gets no colour and no header of its own kind. */
+.grid .kcell { text-align: right; font-variant-numeric: tabular-nums; }
+.grid .kcell .of { color: var(--muted); }
+
+.grid td.st-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* The three non-measurements. Pattern AND word, so the distinction survives
+   greyscale, a screenshot and a reader who cannot separate the hatches. */
+.grid td.st-no_data, .grid td.st-not_applicable, .grid td.st-failed, .grid td.st-missing {
+  text-align: center; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+}
+.grid td.st-no_data {
+  color: #2b2b2b; outline: 1px solid #4d4d4d; outline-offset: -1px;
+  background: repeating-linear-gradient(45deg, #e8e8e8 0 4px, #cfcfcf 4px 8px);
+  text-shadow: 0 0 3px #e8e8e8, 0 0 3px #e8e8e8;
+}
+.grid td.st-not_applicable {
+  color: #5a5a5a; outline: 1px solid #808080; outline-offset: -1px;
+  background: radial-gradient(#b8b8b8 1.1px, #ffffff 1.2px) 0 0 / 6px 6px;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+}
+.grid td.st-failed, .grid td.st-missing {
+  color: #fff; outline: 2px solid #ff0000; outline-offset: -2px;
+  background: repeating-linear-gradient(45deg, #000 0 4px, #2a2a2a 4px 8px);
+}
+
+/* Missing is not low. The genes this key cannot place are below a divider that
+   says so, in both directions, rather than being a tail somebody has to notice. */
+.grid tr.missing-divider td {
+  background: #fdf1e0; color: var(--warn); font-size: 12.5px; white-space: normal;
+  border-top: 2px solid var(--warn); border-bottom: 2px solid var(--warn);
+}
+.grid tr.unplaced .gene-col { background: #fffaf2; }
+
+/* ---------------------------------------------------------------------------
+   v3.8 — the per-column DIM filter. The encoding is the whole difficulty.
+
+   Puck's words were "greys out genes that don't match". The intent is right and
+   the literal encoding cannot be used, because **grey is already taken**:
+   `st-no_data` above is hatched grey and `st-not_applicable` is dotted grey, both
+   mirroring `figure.STATE_STYLE`. If "excluded by your filter" also greyed, grey
+   would mean two incompatible things on one grid — *we have no value here* and
+   *we have a value and you excluded it* — and on a pasted screenshot nobody
+   could tell which. That is the plausible-wrong-output failure in a new place, so
+   the treatments are built out of three channels grey is not using:
+
+     * MATCHES — **no treatment at all.** No class, no rule, nothing. Clearing the
+       filter is removing a class name, which is why the grid comes back exactly.
+     * DIMMED (a real value on the filtered column, and it misses the bound) —
+       the row's DATA cells at 42% opacity, a slate rail on the gene column, and
+       the word `dimmed`. Row-level, not cell-level: every cell pattern underneath
+       is untouched, so a hatched cell in a dimmed row still reads as hatched.
+       The gene name itself stays at full strength — a reader must be able to read
+       which genes the filter excluded, that being the point of not removing them.
+     * CANNOT BE EVALUATED (no value on the filtered column, so the comparison
+       does not exist) — **full opacity**, because this row is unresolved rather
+       than de-emphasised, in the amber channel this grid already uses for
+       "missing is not low" (`missing-divider`, `tr.unplaced`), with an amber rail
+       and the words. Folding it in with the dimmed rows would make dimming
+       de-emphasis-by-missingness (PLAN §3.2 rule 1, COUNCIL M3).
+
+   Three separable channels — opacity, hue, and a word — so the distinction
+   survives greyscale (opacity and the amber tint separate in luminance) and an
+   exported PNG (the word survives everything). Measured rather than assumed:
+   `scripts/v38_dim_probe.py` reads the rendered PNG back, in colour and in
+   greyscale, and prints the luminances.
+
+   Nothing here is under the 12.0 px floor (`UX-v3-rounds.md` B12).
+--------------------------------------------------------------------------- */
+
+/* The rails are on the sticky gene column, so they do not scroll away from the
+   row they qualify — the same reason the gene column is sticky at all.
+
+   **The two rails are separated in LIGHTNESS, not only in hue**, and that is a
+   correction rather than a preference. The first pass used a slate `#4a5568`
+   against `--warn` `#8a4b00`: two obviously different colours whose Rec. 601
+   luminances are 84 and 85. `scripts/v38_dim_probe.py` measured them 5.5 units
+   apart in the greyscale PNG — indistinguishable, which is the encoding failing
+   the exact test it was designed for. The dark navy below is ~34 against the
+   amber's ~85, measured at 51 units apart. A hue pair that only a colour reader
+   can separate is not an encoding this grid is allowed to use.
+
+   An INSET SHADOW, not `border-left`. This table is `border-collapse: collapse`,
+   so a 5 px left border on the first cell of a row is drawn centred on the grid
+   line and half of it lands outside the table's box, where the scroll container
+   clips it: the probe measured the visible rail at about half its declared width
+   (a band that should have read one flat colour came back at sd 110, i.e. half
+   rail and half white cell). An inset shadow is painted inside the padding box and
+   collapsing cannot touch it. */
+.grid tr.dim-out .gene-col { box-shadow: inset 5px 0 0 #16233a; }
+/* Stronger than `missing-divider`'s `#fdf1e0`: that is a full-width band and this
+   is one narrow cell, so it needs more tint to read as the same amber channel. */
+.grid tr.dim-unevaluable .gene-col { box-shadow: inset 5px 0 0 var(--warn);
+                                     background: #fbe8c8; }
+
+/* Data cells only. `.gene-col` is excluded, and so is `.kcell`: k is how much
+   anybody has studied this gene and fading it would be fading the thing PLAN §2
+   refuses to filter on. */
+.grid tr.dim-out td:not(.kcell) { opacity: .42; }
+
+/* The word, in the gene cell under the symbol. A tag rather than a pill: the
+   pills on this page mean run-level statuses and this is a view state. */
+.grid .dimtag {
+  display: block; margin-top: 3px; font-size: 12px; font-weight: 600;
+  letter-spacing: .02em; text-transform: lowercase;
+}
+.grid tr.dim-out .dimtag { color: #16233a; }
+.grid tr.dim-unevaluable .dimtag { color: var(--warn); text-transform: none; }
+
+/* Which column did this. The header of every dimmed-on column is underscored in
+   the accent, so a screenshot shows the filter's target and not only its effect. */
+.grid thead th.dim-key { box-shadow: inset 0 -3px 0 var(--accent); }
+
+/* The control. Deliberately NOT §3.2's control: that one is a free-text
+   `ring >= n` textarea on the analyse form, it removes genes and it ledgers them.
+   This one lives over the grid, after the run, is three dropdowns and a number,
+   says "is at least" rather than ">=", and its own copy says it removes nothing.
+   Two mechanisms that look alike but do different things is its own hazard. */
+.dimbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+          margin: 12px 0 2px; padding: 8px 10px; border-radius: 6px;
+          background: #f7f4ef; border: 1px solid #e2dbd0; }
+.dimbar .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+               color: var(--warn); font-weight: 600; }
+.dimbar select, .dimbar input { font: 12.5px/1.4 inherit; padding: 4px 6px;
+                                border: 1px solid var(--line); border-radius: 5px;
+                                background: #fff; }
+.dimbar input.thr { width: 6.5em; font-family: ui-monospace, SFMono-Regular, Menlo,
+                    monospace; }
+.dimbar .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+                background: #fff; border: 1px solid #e2dbd0; border-radius: 999px;
+                padding: 2px 4px 2px 10px; }
+.dimbar .chip button { font-size: 12px; padding: 1px 7px; border-radius: 999px;
+                       border: none; background: #f7f4ef; color: var(--bad); }
+
+/* The count line. Item 4: a filtered grid that does not say it is filtered is a
+   misleading artefact, so this sits directly above the grid, at reading size, and
+   is never collapsed. The three swatches are the three treatments themselves, so
+   the legend is the encoding rather than a description of it. */
+#table-dim-counts { margin: 10px 0 4px; font-size: 13.5px; line-height: 1.5; }
+#table-dim-counts p { margin: 4px 0; }
+#table-dim-counts .tally b { font-size: 17px; }
+#table-dim-counts .three { display: flex; flex-wrap: wrap; gap: 14px; margin: 6px 0; }
+#table-dim-counts .swat { display: inline-flex; align-items: center; gap: 6px;
+                          font-size: 12.5px; }
+/* `<i>` is the gene column — the rail, at full strength, because the rail is not
+   what fades. `<em>` inside it is a data cell, and it carries the opacity. Built
+   the way the row is, so the legend cannot drift from the thing it labels. */
+#table-dim-counts .swat i { display: inline-flex; border: 1px solid var(--line);
+                            background: #fff; padding-left: 5px; }
+#table-dim-counts .swat em { display: inline-block; width: 26px; height: 16px;
+                             background: #cfe0ec; }
+/* The rail band is the same 5 px on all three, so the one with no rail reads as
+   "no treatment" rather than as a differently-shaped swatch. */
+#table-dim-counts .swat.is-dimmed i { box-shadow: inset 5px 0 0 #16233a; }
+#table-dim-counts .swat.is-dimmed em { opacity: .42; }
+#table-dim-counts .swat.is-unevaluable i { box-shadow: inset 5px 0 0 var(--warn);
+                                           background: #fbe8c8; }
+#table-dim-counts .note { margin-top: 6px; }
+
+/* v3.7 item 2. The source name as a third header line, in its own block so it
+   sits under the ring name rather than beside it. ~16 px of header height once,
+   0 px per row.
+
+   **12 px, not the 9 px item 2 specified.** `UX-v3-rounds.md` B12 set a 12.0 px
+   floor over this whole stylesheet and had its own reason for refusing an
+   exception: "the floor's own justification cites 11.5 px table headers as this
+   build's smallest existing thing… half a pixel is not a trade-off". 9 px is six
+   times that gap, and `test_no_stylesheet_rule_sets_type_under_the_floor` reads
+   every rule in this file. Taking the exception would have meant editing B12's
+   assertion to let this line through, which is reversing a settled decision to
+   suit a new line rather than arguing for it — so the line is at the floor and
+   "small and muted" is carried by weight and colour instead of by size: the ring
+   name above it is a bold `th`, this is normal-weight grey. Puck's call if he
+   wants the 9 px and the floor moved with it.
+
+   `cursor: inherit` and no colour of its own: it must not read as a link. It is
+   inside a click-to-sort `<th>`, and the review refused a hyperlink here for that
+   reason as much as for the 261 px `platform-docs.opentargets.org` needs at 12 px
+   in a 86-110 px column. The link is in `#table-sources`. */
+.grid thead th .src {
+  display: block; font-size: 12px; font-weight: 400; letter-spacing: .02em;
+  color: #6c7280; margin-top: 3px; cursor: inherit; text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* v3.7 item 1. The citation strip, outside `.scroll-x` so it does not scroll away
+   with column 12. Numbered with `<ol>` + `value="n"`, which is the browser's own
+   numbering rather than a second copy of the column numbers in the markup. */
+#table-sources { margin-top: 14px; max-width: var(--prose); }
+#table-sources summary { cursor: pointer; font-size: 13px; }
+#table-sources-details:not([open]) .chev { transform: rotate(-90deg); }
+#table-sources .reveal { padding-top: 8px; }
+.srclist { margin: 6px 0 0; padding-left: 2.1em; }
+.srclist li { margin-bottom: 9px; font-size: 12.5px; line-height: 1.45; }
+.srclist .lbl { font-weight: 600; }
+.srclist .lbl::after, .srclist .un::after { content: " — "; color: var(--muted);
+                                            font-weight: 400; }
+.srclist .un { color: var(--muted); }
+/* The anchor text is `name · domain`, never a bare underline: nothing in an
+   exported PNG is clickable and the domain is the only part a reader can type. */
+.srclist a { color: var(--accent); }
+.srclist .nolink { color: var(--muted); }
+.srclist .why { display: block; color: var(--muted); font-size: 12px; }
+.srclist .why.warnish { color: var(--warn); }
+/* A FAILED cell is not absence, so its row says the link above does not answer
+   it and points at the run's own record instead. Same red channel as the cell. */
+.srclist .failnote {
+  display: block; margin-top: 4px; padding: 5px 8px; font-size: 12px;
+  border-left: 3px solid var(--bad); background: #fdf0f0; color: #16181d;
+}
+
+#table-ledger { margin-top: 16px; }
+#table-ledger summary { cursor: pointer; font-size: 13px; }
+#table-ledger-details:not([open]) .chev { transform: rotate(-90deg); }
+#table-ledger .reveal { padding-top: 8px; }
+
+/* ------------------------------------------------------------------------ */
+/* Stage 1-2: find genes from a disease                                     */
+/* ------------------------------------------------------------------------ */
+/* Prose measure, like every other text block on the page: the contrast table
+   inside it is the one part allowed to be wider, and it scrolls sideways rather
+   than pushing the help text to 2,500 px. */
+#find-panel { max-width: var(--prose); }
+#find { border: 1px solid var(--line); border-radius: 6px; background: #fff;
+        margin-bottom: 16px; }
+#find > summary { list-style: none; cursor: pointer; padding: 9px 12px;
+                  font-size: 13px; color: var(--ink); user-select: none; }
+#find > summary::-webkit-details-marker { display: none; }
+#find > summary:hover { background: #f4f6f8; }
+#find > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#find:not([open]) .chev { transform: rotate(-90deg); }
+#find[open] .reveal { animation: reveal .22s ease-out; padding: 0 12px 14px; }
+@media (prefers-reduced-motion: reduce) { #find[open] .reveal { animation: none; } }
+#disease { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;
+           background: #fff; font-size: 13px; }
+
+/* The hit list. Buttons, not a `<datalist>`: a datalist can only carry a string
+   and every hit here carries two ids, a count and a build date. */
+ul.hits { list-style: none; margin: 8px 0; padding: 0; max-height: 40vh;
+          overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; }
+ul.hits li + li { border-top: 1px solid var(--line); }
+button.hit { display: block; width: 100%; text-align: left; background: #fff;
+             color: var(--ink); border: 0; border-radius: 0; padding: 8px 12px;
+             font-size: 13px; line-height: 1.45; }
+button.hit:hover { background: #f4f6f8; }
+button.hit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hit-count { color: var(--accent); font-weight: 600; margin-left: 6px; }
+/* Three states, three appearances, because they are three different answers and
+   the whole point of the line is that a reader can tell them apart at a glance.
+   The server decides which (`DiseaseContrastSummary.availability`); this only
+   colours it.
+
+   `some`            — the default above: drawable contrasts exist.
+   `none_in_atlas`   — nothing exists. A real answer, not an error, so the muted
+                       channel and not the red one.
+   `none_supported`  — contrasts EXIST and this app declines them (RNA-seq only,
+                       2026-10-02). Warn-coloured, not muted: this one is OUR
+                       doing, and styling it like `none_in_atlas` would hand the
+                       reader exactly the wrong conclusion -- "no data exists" --
+                       which is the silent absence this app is built to refuse.
+                       Not red either; nothing has gone wrong. */
+.hit-count.none_in_atlas { color: var(--muted); font-weight: 400; }
+.hit-count.none_supported { color: var(--warn); font-weight: 600; }
+.bad-text { color: var(--bad); }
+.note.bad { border-left-color: var(--bad); background: #fdf0f0; color: var(--ink); }
+
+details.src { margin-top: 10px; font-size: 12.5px; }
+details.src > summary { list-style: none; cursor: pointer; color: var(--muted); }
+details.src > summary::-webkit-details-marker { display: none; }
+details.src:not([open]) .chev { transform: rotate(-90deg); }
+details.src .reveal { padding-top: 6px; }
+
+/* Stage 2: the contrast table. The one block inside `#find-panel` allowed to be
+   wider than the prose measure, and it scrolls sideways at eight columns rather
+   than pushing the help text out with it. */
+#contrast-panel { margin-top: 14px; }
+.picker-head { font-size: 13px; margin: 6px 0; }
+table.picker { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+table.picker th { text-align: left; font-weight: 600; color: var(--muted);
+                  border-bottom: 1px solid var(--line); padding: 5px 8px;
+                  white-space: nowrap; }
+table.picker td { border-bottom: 1px solid #eef0f2; padding: 5px 8px;
+                  vertical-align: top; }
+table.picker tbody tr { cursor: pointer; }
+table.picker tbody tr:hover { background: #f4f6f8; }
+/* Greyed, and still there. 121 of the 138 Crohn's contrasts are microarray; a
+   filter that removed them would make this table look like Atlas has 17. Greyed
+   means "this app will not draw it", never "Atlas has nothing" -- the row's
+   `not_drawable_reason` says which, and says it is settled rather than pending. */
+table.picker tr.greyed td { color: var(--muted); background: #fafbfc; }
+table.picker tr.invalid td { background: #fdf4f4; }
+/* 12.0 px, not 11.5: `UX-v3-rounds.md` B12's floor is binding, and the flags
+   are the newest small type on this page rather than an exception to it. */
+.flag { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 3px;
+        background: #eceef1; color: var(--muted); white-space: nowrap; }
+.flag.microarray { background: #eceef1; }
+.flag.n_lt_8 { background: #fdf1e0; color: var(--warn); }
+.flag.n_lt_4 { background: #fbe6cc; color: var(--warn); font-weight: 600; }
+.flag.unannotated { background: #fdf1e0; color: var(--warn); }
+.flag.invalid_id { background: #fdE7ea; color: var(--bad); font-weight: 600; }
+/* The prose `<name>` from the XML, printed as the experiment wrote it. Never a
+   name built from the group tokens — that can be built the wrong way round. */
+.prose-name { font-size: 14px; margin: 4px 0 8px; }
+table.kvtable { border-collapse: collapse; font-size: 12.5px; margin: 8px 0; }
+table.kvtable td { border-bottom: 1px solid #eef0f2; padding: 3px 10px 3px 0;
+                   vertical-align: top; }
+table.kvtable td:first-child { white-space: nowrap; }
+/* The contrast heading is a paragraph, not an `h2`: `h2` is uppercased here and
+   `g2_g1` uppercased is `G2_G1`, which is not the id. */
+.detail-head { font-size: 15px; font-weight: 600; margin: 16px 0 2px; }
+
+/* ===========================================================================
+   v3.8 — THE EDITORIAL FOUNDATION
+   ===========================================================================
+
+   The house style of a newspaper graphics desk, which is a method and not a
+   look: a near-monochrome palette with one accent that earns its place,
+   hierarchy carried by weight / colour / tracking rather than by size (so
+   every string stays on the 12.0 px floor), a measure for anything a human
+   reads in order, hairline rules instead of boxes, and nothing decorative.
+
+   This block is LAST on purpose. Everything above it is the v1-v3.7 app, and
+   the foundation re-points its surfaces, its rules and its state chips at the
+   validated tokens without rewriting any of its selectors — later rules of
+   equal specificity win, and a redesign that had to touch 740 lines of
+   argued-for CSS to change a grey would not be a foundation. */
+
+/* --- 1. Surfaces ------------------------------------------------------- */
+body { background: var(--tr-paper); color: var(--tr-ink);
+       font-family: var(--tr-font-sans); }
+#input-panel, #find-panel, #contrast-panel, #drawer,
+table, table.picker, table.kvtable, textarea, select,
+#figure svg { background: var(--tr-surface); }
+#figure svg { background: #fff; }   /* the render's own canvas is white */
+.step-line, .scale, #cell-states { background: var(--tr-surface-sunk); }
+
+/* --- 2. Heading hierarchy ---------------------------------------------
+   Four levels and they are told apart four different ways. h1 is the only
+   large type on the page; h2 is an eyebrow (caps + tracking + colour); h3 is
+   the one that gets size again, inside a panel; h4 is a second eyebrow one
+   step quieter. None of them is under the floor. */
+h3 { font-size: var(--tr-t-h3); line-height: var(--tr-lh-tight);
+     letter-spacing: var(--tr-tracking-tight); font-weight: 600;
+     color: var(--tr-ink); margin: var(--tr-s-5) 0 var(--tr-s-2); }
+h4 { font-size: var(--tr-t-micro); text-transform: uppercase;
+     letter-spacing: var(--tr-tracking-caps); font-weight: 600;
+     color: var(--tr-ink-3); margin: var(--tr-s-4) 0 var(--tr-s-1); }
+#drawer h3 { font-size: var(--tr-t-h2); letter-spacing: var(--tr-tracking-tight); }
+#drawer h4 { font-size: var(--tr-t-micro);
+             letter-spacing: var(--tr-tracking-caps); }
+
+/* --- 3. Measure. Anything read in order gets a line length; anything
+   SCANNED (tables, the grid, the figure row) must not, because a capped
+   table is a horizontally scrolling table. `--prose` keeps doing its own job
+   one level up — it caps the panels so the figure row can have the window. */
+p, .hint, .figure-caveats, #pane-caveats p, .srclist li, .note {
+  max-width: var(--tr-measure-wide);
+}
+.readable { max-width: var(--tr-measure); font-size: var(--tr-t-read);
+            line-height: var(--tr-lh-read); color: var(--tr-ink-2); }
+.hint { color: var(--tr-ink-3); line-height: var(--tr-lh-body); }
+
+/* --- 4. Rules. One hairline weight, one strong weight, and no boxes: a
+   newspaper graphic separates with a rule and groups with whitespace. */
+hr, .rule { border: 0; border-top: 1px solid var(--tr-rule);
+            margin: var(--tr-s-5) 0; }
+.rule-strong { border-top: 1px solid var(--tr-rule-strong); }
+th, td { border-bottom-color: var(--tr-rule); }
+.tabs { border-bottom-color: var(--tr-rule-strong); }
+th { background: var(--tr-surface-sunk); color: var(--tr-ink-3);
+     letter-spacing: var(--tr-tracking-caps); }
+
+/* --- 5. Tabular figures. Columns that must align vertically get them;
+   a standalone number keeps proportional figures. */
+table, .kv, .scale .ticks, .grid, .counts b, #table-dim-counts .tally b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- 6. Status, re-pointed at the validated set. Icon + label is the
+   mitigation for the two sub-3:1 steps, so `.pill` carries a text label
+   already and this only recolours it. */
+.pill.ok { background: var(--tr-status-good-wash);
+           color: var(--tr-status-good-ink); }
+.pill.warn { background: var(--tr-status-warning-wash);
+             color: var(--tr-status-warning-ink); }
+.pill.bad { background: var(--tr-status-critical-wash);
+            color: var(--tr-status-critical-ink); }
+.pill.grey { background: var(--tr-surface-sunk); color: var(--tr-ink-3); }
+.pill.serious { background: var(--tr-status-serious-wash);
+                color: var(--tr-status-serious-ink); }
+
+/* --- 7. THE FOUR RING STATES, as HTML swatches.
+   The legend chip beside the figure has to be the same four things the SVG
+   cell is, in the same order of channels: texture first, colour second,
+   outline third. `repeating-linear-gradient` is the only hatch primitive
+   that scales with zoom and survives a print, which is why it is used
+   instead of an image.
+
+   AGENTS.md rule 1: `no_data` is never filled, averaged, zeroed or imputed.
+   A `.state-swatch.value` is deliberately the only one with no texture at
+   all — "this is a measurement" is itself an encoding. */
+.state-swatch {
+  display: inline-block; width: 15px; height: 15px; vertical-align: -3px;
+  border-radius: 2px; margin-right: var(--tr-s-1);
+}
+.state-swatch.value { background: var(--tr-seq-500); border: 0; }
+.state-swatch.no-data {
+  background-color: var(--tr-state-nodata-fill);
+  background-image: repeating-linear-gradient(var(--tr-hatch-angle),
+    var(--tr-state-nodata-ink) 0 var(--tr-hatch-stroke),
+    transparent var(--tr-hatch-stroke) var(--tr-hatch-pitch));
+  border: 1px solid var(--tr-state-nodata-ink);
+}
+.state-swatch.not-applicable {
+  background-color: var(--tr-state-na-fill);
+  background-image: radial-gradient(var(--tr-state-na-ink) 0.9px, transparent 1px);
+  background-size: 4px 4px;
+  border: 1px dotted var(--tr-state-na-ink);
+}
+.state-swatch.failed {
+  background-color: var(--tr-state-failed-fill);
+  background-image: repeating-linear-gradient(45deg,
+      var(--tr-state-failed-ink) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(135deg,
+      var(--tr-state-failed-ink) 0 1px, transparent 1px 5px);
+  border: 1px solid var(--tr-state-failed-ink);
+}
+/* A table cell carrying the state rather than a value takes the same
+   treatment, so the grid and the figure agree at a glance. */
+td.cell-no-data, .grid td.no-data {
+  background-color: var(--tr-state-nodata-fill);
+  background-image: repeating-linear-gradient(var(--tr-hatch-angle),
+    var(--tr-state-nodata-ink) 0 var(--tr-hatch-stroke),
+    transparent var(--tr-hatch-stroke) var(--tr-hatch-pitch));
+  box-shadow: inset 0 0 0 1px var(--tr-state-nodata-ink);
+  color: var(--tr-ink);
+}
+
+/* --- 8. The ramps, as usable swatch classes. A legend built by hand from
+   raw hex is a second palette; these are the first one. */
+.ramp-100 { background: var(--tr-seq-100); }
+.ramp-200 { background: var(--tr-seq-200); }
+.ramp-300 { background: var(--tr-seq-300); }
+.ramp-400 { background: var(--tr-seq-400); }
+.ramp-500 { background: var(--tr-seq-500); }
+.ramp-600 { background: var(--tr-seq-600); }
+.ramp-700 { background: var(--tr-seq-700); }
+.div-dn-4 { background: var(--tr-div-dn-4); }
+.div-dn-3 { background: var(--tr-div-dn-3); }
+.div-dn-2 { background: var(--tr-div-dn-2); }
+.div-dn-1 { background: var(--tr-div-dn-1); }
+.div-mid { background: var(--tr-div-mid); }
+.div-up-1 { background: var(--tr-div-up-1); }
+.div-up-2 { background: var(--tr-div-up-2); }
+.div-up-3 { background: var(--tr-div-up-3); }
+.div-up-4 { background: var(--tr-div-up-4); }
+.cat-1 { color: var(--tr-cat-1); }
+.cat-2 { color: var(--tr-cat-2); }
+.cat-3 { color: var(--tr-cat-3); }
+
+/* --- 9. Annotation-led. The text ON a chart carries the finding, so there
+   is a class for it and it is not 9 px: the smallest annotation this app may
+   draw is the floor, same as everything else. */
+.annot { font-size: var(--tr-t-micro); line-height: var(--tr-lh-snug);
+         color: var(--tr-ink-2); font-weight: 500; }
+.annot-lead { font-size: var(--tr-t-body); font-weight: 600;
+              color: var(--tr-ink); }
+.annot-rule { border-left: 1px solid var(--tr-ink-4);
+              padding-left: var(--tr-s-2); }
+
+/* --- 10. Print. The states must survive a greyscale print, which is the
+   second reason texture is channel one. */
+@media print {
+  body { background: #fff; }
+  header { background-image: none; }
+  .scroll-x { max-height: none; overflow: visible; }
+}
+
+/* --- 11. The evidence surface (the go/no-go tab).
+   ------------------------------------------------
+   Tokens only, no literal colour: dark mode is derived against #15171b rather
+   than inverted (see the dark block at the top of this file), so a token-only
+   section gets both modes right where a hex here would get one of them wrong.
+
+   The hierarchy IS the honesty, by the same argument as the figure's reserved
+   fills. Three severities, each with a BORDER as well as a wash:
+
+     sources disagree  -> critical. Only this one says the figure's own numbers
+                          may be wrong.
+     flag              -> serious. A history or a stated caveat, not a defect.
+     cannot be checked -> a full-strength neutral rule, deliberately NOT faded.
+                          This is the whole reason `evidence.py` has a third
+                          outcome: a reader scanning for trouble must not have
+                          to notice an ABSENCE of green. Quiet styling here would
+                          undo in CSS what that outcome exists to do.
+
+   MEASURED, 2026-10-07, and it does not all hold — see
+   `docs/design/PALETTE-VALIDATION-2026-10-07.md`. Critical separates from both
+   of the others in colour (worst dE 13.8 light / 11.9 dark, across normal,
+   protan and deutan) and in greyscale (dLum 0.12-0.14), so the one severity
+   that matters most is carried by colour, by border and by lightness.
+
+   `serious` and `ink-4` do NOT separate that way: worst dE 8.0 (protan) and
+   dLum 0.017, which is the same grey on a greyscale print. So the border is
+   not what tells a flag from an unevaluable reading. What does, in every
+   condition including monochrome, is the PILL TEXT -- the literal words "flag"
+   and "cannot be checked". That is why every finding carries a worded pill and
+   not a bare coloured rule, and why no severity here is encoded by colour
+   alone. */
+
+.ev-meta { margin: var(--tr-s-3) 0; color: var(--tr-ink-3);
+           font-size: var(--tr-t-small); }
+.ev-counts { margin: var(--tr-s-3) 0 var(--tr-s-5); }
+.ev-counts b { color: var(--tr-ink); font-variant-numeric: tabular-nums; }
+.ev-rules { margin-bottom: var(--tr-s-5); }
+
+.ev-cards { display: grid; gap: var(--tr-s-4); }
+
+.ev-card { border: 1px solid var(--tr-rule); border-radius: var(--tr-radius);
+           padding: var(--tr-s-4); background: var(--tr-surface); }
+
+/* The gene is the heading and `k` sits on the same line as a measured fact
+   rather than a badge: it orders nothing and selects nothing (its own
+   RingSpec), and a pill would make it look like a grade. */
+.ev-head { display: flex; align-items: baseline; gap: var(--tr-s-3);
+           flex-wrap: wrap; margin-bottom: var(--tr-s-3); }
+.ev-head h4 { margin: 0; font-size: var(--tr-t-h3); font-weight: 600;
+              letter-spacing: var(--tr-tracking-tight); }
+.ev-ens { color: var(--tr-ink-4); font-size: var(--tr-t-micro); }
+.ev-k { margin-left: auto; color: var(--tr-ink-3);
+        font-size: var(--tr-t-micro); font-variant-numeric: tabular-nums; }
+
+.ev-gaps { margin-bottom: var(--tr-s-3); }
+.ev-card h5 { margin: 0 0 var(--tr-s-2); font-size: var(--tr-t-h4);
+              text-transform: uppercase;
+              letter-spacing: var(--tr-tracking-caps);
+              color: var(--tr-ink-3); font-weight: 600; }
+
+.ev-findings { list-style: none; margin: 0; padding: 0;
+               display: grid; gap: var(--tr-s-2); }
+.ev-findings > li { border-left: 3px solid var(--tr-rule-strong);
+                    padding: var(--tr-s-2) var(--tr-s-3);
+                    border-radius: var(--tr-radius-sm);
+                    background: var(--tr-surface-sunk); }
+.ev-findings > li.ev-contradiction {
+  border-left-color: var(--tr-status-critical);
+  background: var(--tr-status-critical-wash); }
+.ev-findings > li.ev-flag {
+  border-left-color: var(--tr-status-serious);
+  background: var(--tr-status-serious-wash); }
+/* Unevaluable keeps the sunk surface and a full-strength rule. It is not an
+   error and must not be drawn as one; it is not a pass either. */
+.ev-findings > li.ev-unevaluable { border-left-color: var(--tr-ink-4); }
+
+.ev-headline { font-size: var(--tr-t-body); color: var(--tr-ink);
+               line-height: var(--tr-lh-snug); }
+.ev-fires .ev-headline { font-weight: 600; }
+
+/* The name of a check that could not be run. Muted and set apart from
+   `.ev-headline` on purpose: a rule name set like a finding reads as a finding,
+   and "approved but not tclin" is exactly the sentence an unevaluable reading
+   has NOT established. */
+.ev-rulename { font-size: var(--tr-t-micro); color: var(--tr-ink-3);
+               font-variant: small-caps; letter-spacing: 0.02em; }
+
+.ev-why { margin-top: var(--tr-s-2); font-size: var(--tr-t-micro); }
+.ev-why > summary { cursor: pointer; color: var(--tr-ink-3); }
+.ev-why > summary:hover { color: var(--tr-ink); }
+.ev-why .reason { margin: var(--tr-s-2) 0 0; color: var(--tr-ink-2);
+                  max-width: var(--tr-measure); }
+
+/* Cleared readings collapse. A green tick per card would let a gene with one
+   cleared rule and five unevaluable ones read as a pass — rule 1's defect
+   wearing a tick — so the count is the whole headline and it is not coloured. */
+.ev-clear { margin-top: var(--tr-s-3); font-size: var(--tr-t-micro); }
+.ev-clear > summary { cursor: pointer; color: var(--tr-ink-4); }
+.ev-clear > summary:hover { color: var(--tr-ink-2); }
+
+/* Two columns once there is room for two measures side by side. */
+@media (min-width: 72rem) {
+  .ev-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media print {
+  .ev-card { break-inside: avoid; }
+  .ev-why > summary, .ev-clear > summary { color: var(--tr-ink-2); }
+}
+
+/* --- 12. The chosen contrast.
+   ---------------------------
+   `docs/DECISION-AUTOPICK-2026-10-09.md`: the app chooses on first view and the
+   full 138-row table moves behind a disclosure. This block is the simple layer;
+   the disclosure under it is the layer that lets someone check the choice.
+
+   Accented, not alarmed. A pick is not a warning and not a result — it is the
+   app having done the obvious thing so the reader does not have to, and the
+   styling says that by using the accent rail rather than a status wash. */
+.note.picked { border-left: 3px solid var(--tr-accent, var(--accent));
+               background: var(--tr-surface-sunk); }
+.picked-line { margin: 0 0 var(--tr-s-2); font-size: var(--tr-t-read);
+               line-height: var(--tr-lh-snug); }
+.picked-line code { font-size: var(--tr-t-small); }
+.note.picked .row { margin-top: var(--tr-s-3); }
+
+/* The full table's disclosure. Deliberately quiet — it is always available and
+   it is not the thing a reader does first. */
+#all-contrasts > summary { cursor: pointer; color: var(--tr-ink-2);
+                           padding: var(--tr-s-2) 0;
+                           font-size: var(--tr-t-small); }
+#all-contrasts > summary:hover { color: var(--tr-ink); }
+#all-contrasts > .reveal { padding-top: var(--tr-s-3); }
+
+/* --- 13. The landing state.
+   -------------------------
+   Puck: "something more like a google home page. with a address bar for the
+   disease." One box, centred, and nothing else until a disease is chosen.
+
+   A `landing` class on <body> rather than a second page, because a second page
+   would be a second copy of the search, the autocomplete and the contrast flow,
+   and the moment there are two they drift.
+
+   What stays visible in the landing state is deliberately short: the masthead,
+   one line saying what to type, the box, and whatever the box returns. Every
+   `.landing-only` element is the inverse — present only here. */
+
+/* Demo mode. `body.demo` is set from /api/health before anything renders. The
+   landing's two ways in -- disease search and paste -- are hidden, because
+   both lead to routes the server refuses in this mode (`app._demo_gate`), and
+   a button that leads to a refusal is a worse landing than no button. */
+body.demo #find-panel, body.demo #landing-paste, body.demo #landing-lede,
+body.demo #input-panel { display: none !important; }
+body.demo #demo-panel { display: block !important; }
+/* One run's page (`?run=<id>`): the demo index of every run's card and figure
+   does not sit above this run's tabs. 2026-10-18 walkthrough item g. */
+body.viewing-run #demo-panel { display: none !important; }
+.disk-run-figure img { max-width: 100%; display: block; margin: 12px 0 6px; }
+.demo-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+             margin: 10px 0; background: var(--card); }
+.demo-card .row { margin: 6px 0 0; }
+.demo-card img { max-width: 100%; height: auto; display: block; margin-top: 8px;
+                 border-radius: 4px; }
+
+body.landing #input-panel,
+body.landing #result,
+body.landing #find > summary,
+body.landing #find .reveal > p.hint:first-of-type,
+body.landing #index-note,
+body.landing #find-sources { display: none; }
+
+/* Not `display:none` on the panel itself — the disease box lives inside it and
+   must keep working. The chrome around it goes; the box stays. */
+body.landing #find-panel,
+body.landing #find,
+body.landing #find > .reveal { border: 0; padding: 0; background: none;
+                               box-shadow: none; }
+
+body.landing main { display: flex; flex-direction: column;
+                    align-items: center; justify-content: flex-start;
+                    min-height: 62vh; padding-top: 12vh; }
+body.landing #find-panel { width: min(42rem, 92vw); }
+
+/* The box itself: the one thing on the page, so it is sized like it. */
+body.landing #disease { width: 100%; font-size: var(--tr-t-lede);
+                        padding: var(--tr-s-3) var(--tr-s-4);
+                        border-radius: 999px; }
+body.landing #find .row { display: block; }
+
+#landing-lede { display: none; }
+body.landing #landing-lede { display: block; text-align: center;
+                             font-size: var(--tr-t-h3); font-weight: 600;
+                             margin: 0 0 var(--tr-s-4);
+                             max-width: min(40rem, 92vw); }
+body.landing #landing-lede .hint { display: block; font-weight: 400;
+                                   font-size: var(--tr-t-small);
+                                   margin-top: var(--tr-s-2); }
+
+/* Once a disease is chosen the class is dropped and nothing below applies, so
+   there is exactly one set of styles for the working page — the landing is a
+   state of it, not a variant of it. */
+body:not(.landing) .landing-only { display: none; }
+
+/* --- 14. The staged progress panel.
+   ---------------------------------
+   A run is ~27s warm and the stages are wildly uneven — measured, exports is
+   68% of it and everything touching a source is 3%. So the bar is weighted by
+   those measured shares rather than by stage count: an evenly-paced bar would
+   sit at 50% through the two cheapest stages and then stall for 19 seconds,
+   which is exactly what makes a progress bar feel like a lie.
+
+   The stage list is the honest part — each line appears when that work really
+   finished — and the panel says which of the two is which. */
+
+.pg { margin: var(--tr-s-3) 0; max-width: var(--tr-measure); }
+.pg-bar { height: 6px; border-radius: 999px; background: var(--tr-surface-sunk);
+          overflow: hidden; }
+.pg-fill { height: 100%; background: var(--tr-accent, var(--accent));
+           border-radius: 999px; transition: width .45s ease; }
+.pg-head { margin: var(--tr-s-2) 0 var(--tr-s-3); font-size: var(--tr-t-small);
+           color: var(--tr-ink-2); font-variant-numeric: tabular-nums; }
+
+.pg-list { list-style: none; margin: 0; padding: 0;
+           font-size: var(--tr-t-small); }
+.pg-list li { display: flex; align-items: center; gap: var(--tr-s-2);
+              padding: 2px 0; color: var(--tr-ink-3); }
+.pg-mark { width: 1em; display: inline-block; }
+/* Done is stated, not celebrated; the current stage is the only emphasis. */
+.pg-done { color: var(--tr-ink-3); }
+.pg-done .pg-mark { color: var(--tr-status-good); }
+.pg-now { color: var(--tr-ink); font-weight: 600; }
+.pg-todo { color: var(--tr-ink-4); }
+
+.pg-spin { width: 11px; height: 11px; border-radius: 50%;
+           border: 2px solid var(--tr-rule-strong);
+           border-top-color: var(--tr-accent, var(--accent));
+           animation: pg-rot .7s linear infinite; flex: 0 0 auto; }
+@keyframes pg-rot { to { transform: rotate(360deg); } }
+
+/* Honour a reader who has asked the OS for less motion: the spinner becomes a
+   static ring and the bar jumps rather than slides. The stage list carries the
+   information either way, so nothing is lost. */
+@media (prefers-reduced-motion: reduce) {
+  .pg-spin { animation: none; }
+  .pg-fill { transition: none; }
+}
+.pg-secs { color: var(--tr-ink-4); font-variant-numeric: tabular-nums;
+           font-weight: 400; }
+
+/* The figure pane's "click a gene" sentence, when there is no figure in this
+   session to click. Greyed and italic rather than removed: a reader who looks
+   for the instruction finds out why it does not apply. Set by `loadTable`. */
+#figure-click-hint.unavailable { color: var(--tr-ink-4, var(--muted)); font-style: italic; }

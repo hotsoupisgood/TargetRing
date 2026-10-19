@@ -1,0 +1,103 @@
+{
+ "default": "submitted",
+ "orderings": [
+  {
+   "value": "submitted",
+   "label": "the order of your submitted DE table (default)"
+  },
+  {
+   "value": "alphabetical",
+   "label": "alphabetical by gene symbol"
+  },
+  {
+   "value": "ring:logfc",
+   "label": "by ring: logFC (yours)"
+  },
+  {
+   "value": "ring:neg_log10_padj",
+   "label": "by ring: -log10 padj (yours)"
+  },
+  {
+   "value": "ring:tractable",
+   "label": "by ring: Tractability (family suggests druggable)"
+  },
+  {
+   "value": "ring:chemical_probe",
+   "label": "by ring: Chemical probe available (prior tool-compound effort)"
+  },
+  {
+   "value": "ring:safety",
+   "label": "by ring: Safety flags & constraint \u2014 NOT evidence of safety"
+  },
+  {
+   "value": "ring:regional_specificity",
+   "label": "by ring: Regional specificity"
+  },
+  {
+   "value": "ring:clinical_phase",
+   "label": "by ring: Pipeline: furthest phase (attributable indications only)"
+  },
+  {
+   "value": "ring:clinical_activity",
+   "label": "by ring: Pipeline: current activity (Open Targets clinicalReports)"
+  },
+  {
+   "value": "ring:tdl",
+   "label": "by ring: Target development level (Pharos TDL \u2014 knowledge, not a pocket)"
+  },
+  {
+   "value": "ring:rodent",
+   "label": "by ring: Mouse phenotype lead (3 states)"
+  },
+  {
+   "value": "ring:literature",
+   "label": "by ring: Literature volume"
+  }
+ ],
+ "filterable_rings": [
+  {
+   "ring": "logfc",
+   "label": "logFC (yours)"
+  },
+  {
+   "ring": "neg_log10_padj",
+   "label": "-log10 padj (yours)"
+  },
+  {
+   "ring": "tractable",
+   "label": "Tractability (family suggests druggable)"
+  },
+  {
+   "ring": "chemical_probe",
+   "label": "Chemical probe available (prior tool-compound effort)"
+  },
+  {
+   "ring": "safety",
+   "label": "Safety flags & constraint \u2014 NOT evidence of safety"
+  },
+  {
+   "ring": "regional_specificity",
+   "label": "Regional specificity"
+  },
+  {
+   "ring": "clinical_phase",
+   "label": "Pipeline: furthest phase (attributable indications only)"
+  },
+  {
+   "ring": "clinical_activity",
+   "label": "Pipeline: current activity (Open Targets clinicalReports)"
+  },
+  {
+   "ring": "tdl",
+   "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)"
+  },
+  {
+   "ring": "rodent",
+   "label": "Mouse phenotype lead (3 states)"
+  },
+  {
+   "ring": "literature",
+   "label": "Literature volume"
+  }
+ ]
+}

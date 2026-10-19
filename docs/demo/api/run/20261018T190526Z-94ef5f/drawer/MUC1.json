@@ -1,0 +1,1303 @@
+{
+ "gene": "MUC1",
+ "input_symbol": "MUC1",
+ "ensembl_id": "ENSG00000185499",
+ "uniprot": "P15941",
+ "gencode_id": "ENSG00000185499.16",
+ "resolution_status": "ok",
+ "resolution_note": "",
+ "logfc": 3.1,
+ "padj": 2.19538e-22,
+ "k": 8,
+ "k_max": 9,
+ "k_note": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+ "unfiltered_rings": [],
+ "pipeline_summary": "12 agents \u00b7 0 with an active trial \u00b7 1 with \u22651 trial stopped for cause \u00b7 9 indicated for a disease attributable to this target",
+ "severe_liabilities": [],
+ "attribution_error": null,
+ "drugs": [
+  {
+   "drug": "TECEMOTIDE",
+   "drug_id": "CHEMBL3039544",
+   "modality": "Protein",
+   "max_stage": "PHASE_3",
+   "phase_ordinal": 4,
+   "status": "COMPLETED",
+   "n_trials": 14,
+   "n_with_status": 13,
+   "indications": [
+    "non-small cell lung carcinoma",
+    "breast cancer",
+    "plasma cell myeloma",
+    "colorectal liver metastases",
+    "colorectal carcinoma",
+    "prostate cancer"
+   ],
+   "latest_start": "2014-03-31",
+   "stop_reasons": {
+    "No_Context": 1,
+    "Business_Administrative": 3
+   },
+   "url": "https://clinicaltrials.gov/study/NCT00409188"
+  },
+  {
+   "drug": "CANTUZUMAB MERTANSINE",
+   "drug_id": "CHEMBL1742997",
+   "modality": "Antibody drug conjugate",
+   "max_stage": "PHASE_2",
+   "phase_ordinal": 3,
+   "status": null,
+   "n_trials": 1,
+   "n_with_status": 0,
+   "indications": [
+    "non-small cell lung carcinoma"
+   ],
+   "latest_start": null,
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D0N3JT"
+  },
+  {
+   "drug": "SONTUZUMAB",
+   "drug_id": "CHEMBL2108341",
+   "modality": "Antibody",
+   "max_stage": "PHASE_2",
+   "phase_ordinal": 3,
+   "status": null,
+   "n_trials": 1,
+   "n_with_status": 0,
+   "indications": [
+    "breast cancer"
+   ],
+   "latest_start": null,
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D04VOE"
+  },
+  {
+   "drug": "CANTUZUMAB RAVTANSINE",
+   "drug_id": "CHEMBL1742998",
+   "modality": "Antibody drug conjugate",
+   "max_stage": "PHASE_2",
+   "phase_ordinal": 3,
+   "status": "WITHDRAWN",
+   "n_trials": 1,
+   "n_with_status": 1,
+   "indications": [
+    "gastroesophageal junction cancer",
+    "gastric cancer"
+   ],
+   "latest_start": "2007-05-31",
+   "stop_reasons": {
+    "Insufficient_Enrollment": 1
+   },
+   "url": "https://clinicaltrials.gov/study/NCT00620607"
+  },
+  {
+   "drug": "HUHMFG1",
+   "drug_id": "CHEMBL2109637",
+   "modality": "Unknown",
+   "max_stage": "PHASE_2",
+   "phase_ordinal": 3,
+   "status": "TERMINATED",
+   "n_trials": 2,
+   "n_with_status": 1,
+   "indications": [
+    "breast cancer"
+   ],
+   "latest_start": "2008-09-30",
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D04VOE"
+  },
+  {
+   "drug": "SAR-566658",
+   "drug_id": "CHEMBL2109635",
+   "modality": "Unknown",
+   "max_stage": "PHASE_2",
+   "phase_ordinal": 3,
+   "status": "TERMINATED",
+   "n_trials": 5,
+   "n_with_status": 2,
+   "indications": [
+    "triple-negative breast carcinoma",
+    "solid tumour/cancer",
+    "breast cancer",
+    "solid tumors"
+   ],
+   "latest_start": "2017-03-23",
+   "stop_reasons": {
+    "Negative": 1
+   },
+   "url": "https://ttd.idrblab.cn/data/drug/details/D0G5YR"
+  },
+  {
+   "drug": "GATIPOTUZUMAB",
+   "drug_id": "CHEMBL4297560",
+   "modality": "Antibody",
+   "max_stage": "PHASE_2",
+   "phase_ordinal": 3,
+   "status": "COMPLETED",
+   "n_trials": 4,
+   "n_with_status": 3,
+   "indications": [
+    "solid tumour/cancer",
+    "epithelial ovarian carcinoma",
+    "primary peritoneal carcinoma",
+    "fallopian tube cancer",
+    "solid tumor",
+    "ovarian cancer"
+   ],
+   "latest_start": "2017-11-02",
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D0T1KL"
+  },
+  {
+   "drug": "AR-20.5",
+   "drug_id": "CHEMBL2109364",
+   "modality": "Unknown",
+   "max_stage": "PHASE_1_2",
+   "phase_ordinal": 2,
+   "status": null,
+   "n_trials": 1,
+   "n_with_status": 0,
+   "indications": [
+    "pancreatic neoplasm",
+    "malignant pancreatic neoplasm"
+   ],
+   "latest_start": null,
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D07PCZ"
+  },
+  {
+   "drug": "AS-1403",
+   "drug_id": "CHEMBL2109360",
+   "modality": "Unknown",
+   "max_stage": "PHASE_1",
+   "phase_ordinal": 2,
+   "status": null,
+   "n_trials": 1,
+   "n_with_status": 0,
+   "indications": [
+    "breast cancer"
+   ],
+   "latest_start": null,
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D03APL"
+  },
+  {
+   "drug": "M170",
+   "drug_id": "CHEMBL2109523",
+   "modality": "Unknown",
+   "max_stage": "PHASE_1",
+   "phase_ordinal": 2,
+   "status": "UNKNOWN",
+   "n_trials": 2,
+   "n_with_status": 2,
+   "indications": [
+    "metastatic prostate carcinoma",
+    "breast adenocarcinoma"
+   ],
+   "latest_start": "2001-03-31",
+   "stop_reasons": {},
+   "url": "https://clinicaltrials.gov/study/NCT00009750"
+  },
+  {
+   "drug": "NACOLOMAB TAFENATOX",
+   "drug_id": "CHEMBL2108151",
+   "modality": "Antibody drug conjugate",
+   "max_stage": "UNKNOWN",
+   "phase_ordinal": 0,
+   "status": null,
+   "n_trials": 1,
+   "n_with_status": 0,
+   "indications": [
+    "colorectal cancer"
+   ],
+   "latest_start": null,
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D02BHP"
+  },
+  {
+   "drug": "CMB-401",
+   "drug_id": "CHEMBL2109284",
+   "modality": "Unknown",
+   "max_stage": "UNKNOWN",
+   "phase_ordinal": 0,
+   "status": null,
+   "n_trials": 1,
+   "n_with_status": 0,
+   "indications": [
+    "breast cancer"
+   ],
+   "latest_start": null,
+   "stop_reasons": {},
+   "url": "https://ttd.idrblab.cn/data/drug/details/D07UAJ"
+  }
+ ],
+ "safety_liabilities": [],
+ "trials": {
+  "source": "Open Targets clinicalReports",
+  "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this target are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
+  "sources_seen": {
+   "ClinicalTrials.gov": 22,
+   "TTD": 12
+  },
+  "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 22 drug-trial PAIRS; the same trials are 22 DISTINCT studies, because a trial testing two of this target's drugs appears in both rows. Live: 0 pairs = 0 distinct. Stopped early: 7 pairs = 7 distinct, of which 1 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
+  "n_pairs": 22,
+  "n_pairs_live": 0,
+  "n_pairs_stopped": 7,
+  "n_pairs_for_cause": 1,
+  "n_distinct_trials": 22,
+  "n_distinct_live": 0,
+  "n_distinct_stopped": 7,
+  "n_live_and_stopped": 0,
+  "n_rows_without_an_nct_id": 0,
+  "distinct_is_a_floor": false,
+  "stop_categories": {
+   "Business_Administrative": 3,
+   "Insufficient_Enrollment": 1,
+   "Negative": 1,
+   "No_Context": 1
+  },
+  "lead_sponsors": [],
+  "n_lead_sponsors": 0,
+  "drugs": [
+   {
+    "drug": "TECEMOTIDE",
+    "n_trials": 13,
+    "n_live": 0,
+    "n_stopped": 4,
+    "n_for_cause": 0,
+    "n_distinct": 13,
+    "n_distinct_live": 0,
+    "n_distinct_stopped": 4,
+    "sponsors": [],
+    "live": [],
+    "stopped": [
+     {
+      "nct_id": "NCT00925548",
+      "status": "TERMINATED",
+      "sponsor": "EMD Serono",
+      "why_stopped": "See termination reason in the below Purpose statement",
+      "categories": [
+       "No_Context"
+      ],
+      "for_cause": false,
+      "conditions": [
+       "breast cancer"
+      ],
+      "url": "https://clinicaltrials.gov/study/NCT00925548"
+     },
+     {
+      "nct_id": "NCT01015443",
+      "status": "TERMINATED",
+      "sponsor": "Merck KGaA, Darmstadt, Germany",
+      "why_stopped": "The study is terminated prematurely as the sponsor decided to discontinue program with Tecemotide in NSCLC.",
+      "categories": [
+       "Business_Administrative"
+      ],
+      "for_cause": false,
+      "conditions": [
+       "non-small cell lung carcinoma"
+      ],
+      "url": "https://clinicaltrials.gov/study/NCT01015443"
+     },
+     {
+      "nct_id": "NCT02049151",
+      "status": "TERMINATED",
+      "sponsor": "EMD Serono",
+      "why_stopped": "The study is terminated prematurely as the sponsor decided to discontinue program with Tecemotide in NSCLC",
+      "categories": [
+       "Business_Administrative"
+      ],
+      "for_cause": false,
+      "conditions": [
+       "non-small cell lung carcinoma"
+      ],
+      "url": "https://clinicaltrials.gov/study/NCT02049151"
+     },
+     {
+      "nct_id": "NCT01423760",
+      "status": "TERMINATED",
+      "sponsor": "Merck KGaA, Darmstadt, Germany",
+      "why_stopped": "The study is terminated prematurely as the sponsor decided to discontinue program with Tecemotide in NSCLC.",
+      "categories": [
+       "Business_Administrative"
+      ],
+      "for_cause": false,
+      "conditions": [],
+      "url": "https://clinicaltrials.gov/study/NCT01423760"
+     }
+    ],
+    "error": null
+   },
+   {
+    "drug": "GATIPOTUZUMAB",
+    "n_trials": 3,
+    "n_live": 0,
+    "n_stopped": 0,
+    "n_for_cause": 0,
+    "n_distinct": 3,
+    "n_distinct_live": 0,
+    "n_distinct_stopped": 0,
+    "sponsors": [],
+    "live": [],
+    "stopped": [],
+    "error": null
+   },
+   {
+    "drug": "M170",
+    "n_trials": 2,
+    "n_live": 0,
+    "n_stopped": 0,
+    "n_for_cause": 0,
+    "n_distinct": 2,
+    "n_distinct_live": 0,
+    "n_distinct_stopped": 0,
+    "sponsors": [],
+    "live": [],
+    "stopped": [],
+    "error": null
+   },
+   {
+    "drug": "SAR-566658",
+    "n_trials": 2,
+    "n_live": 0,
+    "n_stopped": 1,
+    "n_for_cause": 1,
+    "n_distinct": 2,
+    "n_distinct_live": 0,
+    "n_distinct_stopped": 1,
+    "sponsors": [],
+    "live": [],
+    "stopped": [
+     {
+      "nct_id": "NCT02984683",
+      "status": "TERMINATED",
+      "sponsor": "Sanofi",
+      "why_stopped": "Study discontinued considering the limited clinical benefit combined with a higher than expected rate of known non-serious ophthalmological event.",
+      "categories": [
+       "Negative"
+      ],
+      "for_cause": true,
+      "conditions": [
+       "breast cancer"
+      ],
+      "url": "https://clinicaltrials.gov/study/NCT02984683"
+     }
+    ],
+    "error": null
+   },
+   {
+    "drug": "HUHMFG1",
+    "n_trials": 1,
+    "n_live": 0,
+    "n_stopped": 1,
+    "n_for_cause": 0,
+    "n_distinct": 1,
+    "n_distinct_live": 0,
+    "n_distinct_stopped": 1,
+    "sponsors": [],
+    "live": [],
+    "stopped": [
+     {
+      "nct_id": "NCT00770354",
+      "status": "TERMINATED",
+      "sponsor": "Antisoma Research",
+      "why_stopped": null,
+      "categories": [],
+      "for_cause": false,
+      "conditions": [
+       "breast cancer"
+      ],
+      "url": "https://clinicaltrials.gov/study/NCT00770354"
+     }
+    ],
+    "error": null
+   },
+   {
+    "drug": "CANTUZUMAB RAVTANSINE",
+    "n_trials": 1,
+    "n_live": 0,
+    "n_stopped": 1,
+    "n_for_cause": 0,
+    "n_distinct": 1,
+    "n_distinct_live": 0,
+    "n_distinct_stopped": 1,
+    "sponsors": [],
+    "live": [],
+    "stopped": [
+     {
+      "nct_id": "NCT00620607",
+      "status": "WITHDRAWN",
+      "sponsor": "ImmunoGen, Inc.",
+      "why_stopped": "Lack of accrual",
+      "categories": [
+       "Insufficient_Enrollment"
+      ],
+      "for_cause": false,
+      "conditions": [
+       "gastroesophageal junction cancer",
+       "gastric cancer"
+      ],
+      "url": "https://clinicaltrials.gov/study/NCT00620607"
+     }
+    ],
+    "error": null
+   }
+  ]
+ },
+ "tdl": {
+  "state": "value",
+  "value": 2.0,
+  "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+  "raw": {
+   "tdl": "Tchem",
+   "ordinal": 2,
+   "family": null,
+   "novelty": 0.00024203,
+   "source": "Pharos TDL",
+   "matched_on": "sym (cached)",
+   "pharos_symbol": "MUC1"
+  }
+ },
+ "literature": {
+  "pubtator_count": 40606,
+  "pubtator_query": "@GENE_MUC1",
+  "years": {
+   "2022": 4087,
+   "2023": 3879,
+   "2021": 3577,
+   "2025": 2989,
+   "2024": 2902,
+   "2020": 2778,
+   "2019": 2082,
+   "2018": 1777,
+   "2017": 1674,
+   "2016": 1465,
+   "2015": 1380,
+   "2014": 1336,
+   "2013": 1176,
+   "2012": 969,
+   "2026": 862,
+   "2011": 814,
+   "2010": 632,
+   "2009": 562,
+   "2008": 485,
+   "2007": 481,
+   "2006": 400,
+   "2005": 397,
+   "2003": 355,
+   "2004": 351,
+   "2001": 332,
+   "2000": 305,
+   "2002": 290,
+   "1999": 277,
+   "1998": 248,
+   "1997": 204,
+   "1995": 179,
+   "1994": 175,
+   "1996": 170,
+   "1992": 165,
+   "1993": 155,
+   "1990": 151,
+   "1991": 133,
+   "1989": 125,
+   "1988": 101,
+   "1987": 78,
+   "1986": 43,
+   "1984": 19,
+   "1985": 16,
+   "1983": 11,
+   "1981": 4,
+   "1980": 3,
+   "1982": 3,
+   "1979": 2,
+   "1953": 1,
+   "1964": 1,
+   "1966": 1,
+   "1973": 1,
+   "1976": 1,
+   "1977": 1,
+   "1978": 1
+  },
+  "error": null,
+  "europepmc": "fetched",
+  "europepmc_note": "fetched on gene click (v2.2 item 3)",
+  "europepmc_query": "\"MUC1\"",
+  "europepmc_count": 25628,
+  "europepmc_error": null,
+  "europepmc_echo_live": false,
+  "europepmc_echo_ok": true
+ },
+ "chembl": {
+  "state": "mechanisms",
+  "note": null,
+  "target_chembl_id": "CHEMBL3580494",
+  "n_mechanisms": 16,
+  "n_direct": 16,
+  "n_direct_efficacy": 16,
+  "rows": [
+   {
+    "molecule": "CHEMBL2109361",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 3,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109361/"
+   },
+   {
+    "molecule": "CHEMBL2109637",
+    "action_type": "OTHER",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 other",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109637/"
+   },
+   {
+    "molecule": "CHEMBL2108341",
+    "action_type": "OTHER",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 other",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2108341/"
+   },
+   {
+    "molecule": "CHEMBL1742997",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL1742997/"
+   },
+   {
+    "molecule": "CHEMBL1742998",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL1742998/"
+   },
+   {
+    "molecule": "CHEMBL2109364",
+    "action_type": "OTHER",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 other",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109364/"
+   },
+   {
+    "molecule": "CHEMBL2109635",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109635/"
+   },
+   {
+    "molecule": "CHEMBL2109365",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 1,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109365/"
+   },
+   {
+    "molecule": "CHEMBL2108592",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2108592/"
+   },
+   {
+    "molecule": "CHEMBL2108403",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2108403/"
+   },
+   {
+    "molecule": "CHEMBL2109284",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 1,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109284/"
+   },
+   {
+    "molecule": "CHEMBL2109360",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 1,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109360/"
+   },
+   {
+    "molecule": "CHEMBL3039544",
+    "action_type": "VACCINE ANTIGEN",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 3,
+    "mechanism_of_action": "Mucin-1 vaccine antigen",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL3039544/"
+   },
+   {
+    "molecule": "CHEMBL4297560",
+    "action_type": "INHIBITOR",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 inhibitor",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL4297560/"
+   },
+   {
+    "molecule": "CHEMBL2109523",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 1,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2109523/"
+   },
+   {
+    "molecule": "CHEMBL2108151",
+    "action_type": "BINDING AGENT",
+    "direct_interaction": 1,
+    "disease_efficacy": 1,
+    "max_phase": 2,
+    "mechanism_of_action": "Mucin-1 binding agent",
+    "url": "https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL2108151/"
+   }
+  ],
+  "untrusted": true,
+  "untrusted_reason": "UniProt/ChEMBL resolution is unprobed at scale (QA B6). This panel is evidence, not a ring, and does not affect any rank."
+ },
+ "chembl_note": "fetched on gene click (v2.2 item 3)",
+ "mouse_phenotypes": [
+  "no abnormal phenotype detected",
+  "abnormal gallbladder physiology",
+  "abnormal intestinal lipid absorption",
+  "decreased digestive secretion",
+  "decreased intestinal cholesterol absorption",
+  "gallstones",
+  "decreased tumor growth/size"
+ ],
+ "cells": {
+  "logfc": {
+   "state": "value",
+   "value": 3.1,
+   "detail": "logFC 3.1 (submitted)"
+  },
+  "neg_log10_padj": {
+   "state": "value",
+   "value": 21.6584899975002,
+   "detail": "adjusted p 2.19538e-22 (submitted)"
+  },
+  "tractable": {
+   "state": "value",
+   "value": 0.0,
+   "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00"
+  },
+  "chemical_probe": {
+   "state": "no_data",
+   "value": null,
+   "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+  },
+  "safety": {
+   "state": "value",
+   "value": 0.013681183237469197,
+   "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.05, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence."
+  },
+  "regional_specificity": {
+   "state": "value",
+   "value": 1.3300357622230503,
+   "detail": "9.3 TPM in Small_Intestine_Terminal_Ileum / 6.992 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
+  },
+  "clinical_phase": {
+   "state": "value",
+   "value": 4.0,
+   "detail": "Phase 3 for this indication \u2014 TECEMOTIDE reached Phase 3 for breast cancer, which is attributable to this target (genetic_association 0.25). 7 of 12 candidates have an attributable indication"
+  },
+  "clinical_activity": {
+   "state": "value",
+   "value": -1.0,
+   "detail": "stopped for cause, nothing live \u2014 1 of 7 stop(s) categorised Negative or Safety_Sideeffects by Open Targets (22 trial row(s) in total); all stop categories: Business_Administrative 3, Insufficient_Enrollment 1, Negative 1, No_Context 1 Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this target's rows: ClinicalTrials.gov 22, TTD 12. Counts here are drug-trial pairs over 12 drug row(s); 22 distinct NCT id(s) are in the drawer."
+  },
+  "tdl": {
+   "state": "value",
+   "value": 2.0,
+   "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+  },
+  "rodent": {
+   "state": "value",
+   "value": 1.0,
+   "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+  },
+  "literature": {
+   "state": "value",
+   "value": 4.608600905481854,
+   "detail": "40606 PubTator3 records for '@GENE_MUC1' (log10(1+n) = 4.61); gene id-resolved, region is free text"
+  },
+  "completeness": {
+   "state": "value",
+   "value": 8.0,
+   "detail": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+  }
+ },
+ "triage": null,
+ "expression": {
+  "region": "Small_Intestine_Terminal_Ileum",
+  "region_tpm": 9.3,
+  "region_tpm_source": "GTEx median TPM, as printed in the regional_specificity cell",
+  "panel_median_tpm": 6.992,
+  "n_tissues": 54,
+  "tissue_distribution": -1.0,
+  "region_is_disease_tissue": true,
+  "region_is_disease_tissue_source": "manifest run_conditions: 'region ... was inferred from the disease' = True; region == the form's silent default and not inferred = False; chosen by hand = null (no claim)",
+  "whole_blood_tpm": 0.600426,
+  "spleen_tpm": 3.0039999999999996,
+  "immune_hint_tissues": {
+   "whole_blood_tpm": "Whole_Blood",
+   "spleen_tpm": "Spleen"
+  }
+ },
+ "contrast_text": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification' A1a Paris classification; Crohn's disease",
+ "recommendation": {
+  "verdict": "GO",
+  "criteria": [
+   {
+    "key": "expressed",
+    "label": "expressed",
+    "status": "met",
+    "value": 9.3,
+    "shown": "9.3 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+    "bare": "9.3 TPM",
+    "threshold": "GTEx TPM >= 1 in the run's region",
+    "source": "GTEx median TPM"
+   },
+   {
+    "key": "dysregulated",
+    "label": "dysregulated in the study",
+    "status": "met",
+    "value": {
+     "logfc": 3.1,
+     "padj": 2.19538e-22
+    },
+    "shown": "logFC 3.1, adjusted p 2.2e-22",
+    "bare": "logFC +3.1, p 2.2e-22",
+    "threshold": "|logFC| >= 1 and adjusted p <= 0.05",
+    "source": "submitted DE table"
+   },
+   {
+    "key": "phenotype",
+    "label": "phenotype in a study",
+    "status": "met",
+    "value": {
+     "ring": 1.0,
+     "n_abnormal": 6
+    },
+    "shown": "phenotyped, 6 abnormal term(s) on record",
+    "bare": "6 abnormal terms",
+    "threshold": "mouse phenotype ring > 0, or >= 1 abnormal mouse term(s)",
+    "source": "Open Targets mousePhenotypes",
+    "disease_area": {
+     "disease_area": "inflammatory bowel disease",
+     "mapping_version": "5ca634159f74",
+     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+     "n_met_terms": 6,
+     "matched": true,
+     "matching_terms": [
+      {
+       "term": "abnormal gallbladder physiology",
+       "area": "digestive/alimentary system"
+      },
+      {
+       "term": "abnormal intestinal lipid absorption",
+       "area": "digestive/alimentary system"
+      },
+      {
+       "term": "decreased digestive secretion",
+       "area": "digestive/alimentary system"
+      },
+      {
+       "term": "decreased intestinal cholesterol absorption",
+       "area": "digestive/alimentary system"
+      },
+      {
+       "term": "gallstones",
+       "area": "digestive/alimentary system"
+      }
+     ],
+     "areas": [
+      "digestive/alimentary system",
+      "immune system",
+      "inflammation"
+     ],
+     "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal gallbladder physiology [digestive/alimentary system]; abnormal intestinal lipid absorption [digestive/alimentary system]; decreased digestive secretion [digestive/alimentary system]; decreased intestinal cholesterol absorption [digestive/alimentary system]; gallstones [digestive/alimentary system]",
+     "short": "disease-area terms: 5",
+     "tooltip": "inflammatory bowel disease: abnormal gallbladder physiology [digestive/alimentary system]; abnormal intestinal lipid absorption [digestive/alimentary system]; decreased digestive secretion [digestive/alimentary system]; decreased intestinal cholesterol absorption [digestive/alimentary system]; gallstones [digestive/alimentary system]. Display aid, not a criterion."
+    }
+   }
+  ],
+  "caveats": [],
+  "modality": null,
+  "expression": {
+   "region": "Small_Intestine_Terminal_Ileum",
+   "region_tpm": 9.3,
+   "panel_median_tpm": 6.992,
+   "n_tissues": 54,
+   "ratio": 1.330091533180778,
+   "region_is_disease_tissue": true,
+   "specific": false,
+   "specific_ratio_threshold": 5.0,
+   "blood_or_spleen_at_or_above_region": false,
+   "shown": "9.3 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 6.992 TPM",
+   "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+  },
+  "region_tag": {
+   "region": "Small_Intestine_Terminal_Ileum",
+   "short": "ileum",
+   "origin": "inferred",
+   "shown": "region: ileum, inferred",
+   "tooltip": "Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+  },
+  "disease_area": {
+   "disease_area": "inflammatory bowel disease",
+   "mapping_version": "5ca634159f74",
+   "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+   "n_met_terms": 6,
+   "matched": true,
+   "matching_terms": [
+    {
+     "term": "abnormal gallbladder physiology",
+     "area": "digestive/alimentary system"
+    },
+    {
+     "term": "abnormal intestinal lipid absorption",
+     "area": "digestive/alimentary system"
+    },
+    {
+     "term": "decreased digestive secretion",
+     "area": "digestive/alimentary system"
+    },
+    {
+     "term": "decreased intestinal cholesterol absorption",
+     "area": "digestive/alimentary system"
+    },
+    {
+     "term": "gallstones",
+     "area": "digestive/alimentary system"
+    }
+   ],
+   "areas": [
+    "digestive/alimentary system",
+    "immune system",
+    "inflammation"
+   ],
+   "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal gallbladder physiology [digestive/alimentary system]; abnormal intestinal lipid absorption [digestive/alimentary system]; decreased digestive secretion [digestive/alimentary system]; decreased intestinal cholesterol absorption [digestive/alimentary system]; gallstones [digestive/alimentary system]",
+   "short": "disease-area terms: 5",
+   "tooltip": "inflammatory bowel disease: abnormal gallbladder physiology [digestive/alimentary system]; abnormal intestinal lipid absorption [digestive/alimentary system]; decreased digestive secretion [digestive/alimentary system]; decreased intestinal cholesterol absorption [digestive/alimentary system]; gallstones [digestive/alimentary system]. Display aid, not a criterion."
+  },
+  "thresholds": {
+   "min_tpm": 1.0,
+   "min_abs_logfc": 1.0,
+   "max_q": 0.05,
+   "min_phenotypes": 1,
+   "specific_ratio": 5.0
+  },
+  "rule_short": "rule: expressed AND dysregulated AND phenotype \u2014 not used to order or filter the figure",
+  "rule_tooltip": "Thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
+  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+  "rule_version": "bdc70c8fc230",
+  "mode": "rule",
+  "note": "not used to order or filter the figure",
+  "basis": "Puck's explicit rule (2026-10-18), separate from the evidence rings"
+ },
+ "baked": {
+  "at_utc": "2026-10-18T19:07:55Z",
+  "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
+  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count -- fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
+  "run_id": "20261018T190526Z-94ef5f",
+  "sources": [
+   "opentargets.target",
+   "pharos.target",
+   "pubtator.count",
+   "chembl.target",
+   "chembl.mechanism",
+   "europepmc.search"
+  ]
+ },
+ "summary": {
+  "text": "GO: expressed (9.3 TPM in Small_Intestine_Terminal_Ileum, a disease tissue for this contrast), dysregulated in the study (logFC 3.1, adjusted p 2.2e-22), and a mouse phenotype on record (phenotyped, 6 abnormal terms). Hypothesis: inhibition, because the gene is up-regulated in Crohn's disease versus non-inflammatory-bowel-disease controls, logFC 3.1, adjusted p 2.2e-22. Mouse phenotypes include abnormal gallbladder physiology, abnormal intestinal lipid absorption, decreased digestive secretion, decreased intestinal cholesterol absorption, gallstones and decreased tumour growth/size; expression is 9.3 TPM in Small_Intestine_Terminal_Ileum against a median of 6.992 TPM across 54 tissues. The pipeline holds 12 agents across 22 distinct trials, furthest TECEMOTIDE (a protein) at Phase 3, with no active trials and 1 agent having a trial stopped for cause; development level: potent small molecules exist, 16 ChEMBL mechanisms, and 40,606 PubTator3 records. No data: chemical probe.",
+  "model": "claude-opus-5",
+  "prompt_version": "2ab6ea127fbd28e5",
+  "effort": "low",
+  "generated_at": "2026-10-19T01:58:59Z",
+  "inputs": {
+   "gene": "MUC1",
+   "input_symbol": "MUC1",
+   "ensembl_id": "ENSG00000185499",
+   "study": {
+    "source": "Expression Atlas E-GEOD-101794 g2_g1",
+    "contrast_name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
+    "sign_sentence": "positive log2FC = up in A1a Paris classification; Crohn's disease (n=61) vs A1a Paris classification; non inflammatory bowel disease control (n=13)",
+    "test_group": "A1a Paris classification; Crohn's disease",
+    "reference_group": "A1a Paris classification; non inflammatory bowel disease control",
+    "n_test": 61,
+    "n_ref": 13,
+    "log2_fold_change": 3.1,
+    "adjusted_p": 2.19538e-22,
+    "direction": "up in the test group"
+   },
+   "region": "Small_Intestine_Terminal_Ileum",
+   "expression": {
+    "region": "Small_Intestine_Terminal_Ileum",
+    "region_tpm": 9.3,
+    "panel_median_tpm": 6.992,
+    "n_tissues": 54,
+    "ratio": 1.330091533180778,
+    "region_is_disease_tissue": true,
+    "specific": false,
+    "specific_ratio_threshold": 5.0,
+    "blood_or_spleen_at_or_above_region": false,
+    "shown": "9.3 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 6.992 TPM",
+    "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+   },
+   "immune_origin_hint": {
+    "suggested": false,
+    "reasons": [],
+    "rule": "GTEx whole-blood or spleen median TPM >= 1 and >= the region's TPM",
+    "inflamed_tissue_contrast": true
+   },
+   "rings": [
+    {
+     "ring": "logfc",
+     "state": "value",
+     "value": 3.1,
+     "detail": "logFC 3.1 (submitted)"
+    },
+    {
+     "ring": "neg_log10_padj",
+     "state": "value",
+     "value": 21.6584899975002,
+     "detail": "adjusted p 2.19538e-22 (submitted)"
+    },
+    {
+     "ring": "tractable",
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00"
+    },
+    {
+     "ring": "chemical_probe",
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+    },
+    {
+     "ring": "safety",
+     "state": "value",
+     "value": 0.013681183237469197,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.05, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence."
+    },
+    {
+     "ring": "regional_specificity",
+     "state": "value",
+     "value": 1.3300357622230503,
+     "detail": "9.3 TPM in Small_Intestine_Terminal_Ileum / 6.992 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
+    },
+    {
+     "ring": "clinical_phase",
+     "state": "value",
+     "value": 4.0,
+     "detail": "Phase 3 for this indication \u2014 TECEMOTIDE reached Phase 3 for breast cancer, which is attributable to this target (genetic_association 0.25). 7 of 12 candidates have an attributable indication"
+    },
+    {
+     "ring": "clinical_activity",
+     "state": "value",
+     "value": -1.0,
+     "detail": "stopped for cause, nothing live \u2014 1 of 7 stop(s) categorised Negative or Safety_Sideeffects by Open Targets (22 trial row(s) in total); all stop categories: Business_Administrative 3, Insufficient_Enrollment 1, Negative 1, No_Context 1 Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this target's rows: ClinicalTrials.gov 22, TTD 12. Counts here are drug-trial pairs over 12 drug row(s); 22 distinct NCT id(s) are in the drawer."
+    },
+    {
+     "ring": "tdl",
+     "state": "value",
+     "value": 2.0,
+     "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+    },
+    {
+     "ring": "rodent",
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+    },
+    {
+     "ring": "literature",
+     "state": "value",
+     "value": 4.608600905481854,
+     "detail": "40606 PubTator3 records for '@GENE_MUC1' (log10(1+n) = 4.61); gene id-resolved, region is free text"
+    },
+    {
+     "ring": "completeness",
+     "state": "value",
+     "value": 8.0,
+     "detail": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+    }
+   ],
+   "rings_without_a_value": [
+    "chemical_probe"
+   ],
+   "k": 8,
+   "k_max": 9,
+   "mouse_phenotypes": [
+    "no abnormal phenotype detected",
+    "abnormal gallbladder physiology",
+    "abnormal intestinal lipid absorption",
+    "decreased digestive secretion",
+    "decreased intestinal cholesterol absorption",
+    "gallstones",
+    "decreased tumor growth/size"
+   ],
+   "pipeline": {
+    "n_drugs": 12,
+    "stages_reached": [
+     "PHASE_1",
+     "PHASE_1_2",
+     "PHASE_2",
+     "PHASE_3",
+     "UNKNOWN"
+    ],
+    "furthest_agent": {
+     "name": "TECEMOTIDE",
+     "stage": "Phase 3",
+     "modality": "Protein",
+     "indications": [
+      "non-small cell lung carcinoma",
+      "breast cancer",
+      "plasma cell myeloma",
+      "colorectal liver metastases",
+      "colorectal carcinoma",
+      "prostate cancer"
+     ]
+    },
+    "summary_line": "12 agents \u00b7 0 with an active trial \u00b7 1 with \u22651 trial stopped for cause \u00b7 9 indicated for a disease attributable to this target",
+    "n_distinct_trials": 22,
+    "n_live_trials": 0,
+    "n_stopped_trials": 7,
+    "n_stopped_for_cause": 1,
+    "severe_safety_liabilities": [],
+    "n_safety_liability_rows": 0
+   },
+   "chembl": {
+    "state": "mechanisms",
+    "n_mechanisms": 16,
+    "n_direct_interaction": 16,
+    "n_direct_with_disease_efficacy": 16
+   },
+   "tdl": {
+    "state": "value",
+    "label": "Tchem",
+    "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+   },
+   "literature": {
+    "pubtator_records": 40606,
+    "europepmc_records": 25628
+   },
+   "ledger_status": "rendered; not in the drop ledger (submitted as drawn)",
+   "recommendation": {
+    "verdict": "GO",
+    "criteria": [
+     {
+      "criterion": "expressed",
+      "status": "met",
+      "shown": "9.3 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+     },
+     {
+      "criterion": "dysregulated in the study",
+      "status": "met",
+      "shown": "logFC 3.1, adjusted p 2.2e-22"
+     },
+     {
+      "criterion": "phenotype in a study",
+      "status": "met",
+      "shown": "phenotyped, 6 abnormal term(s) on record"
+     }
+    ],
+    "caveats": [],
+    "modality": null,
+    "disease_area": {
+     "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal gallbladder physiology [digestive/alimentary system]; abnormal intestinal lipid absorption [digestive/alimentary system]; decreased digestive secretion [digestive/alimentary system]; decreased intestinal cholesterol absorption [digestive/alimentary system]; gallstones [digestive/alimentary system]",
+     "matched": true,
+     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)"
+    },
+    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+    "rule_version": "bdc70c8fc230"
+   }
+  },
+  "facts_key": "327d4f252cd4a9c5",
+  "usage": {
+   "input_tokens": 6768,
+   "output_tokens": 429,
+   "cache_read_tokens": 0,
+   "usd": 0.044565
+  },
+  "stop_reason": "end_turn",
+  "note": "LLM-generated from the values in this drawer and nothing else, when the summary was baked, not when you opened it. It reads the figure; it is not a literature review. Its first sentence restates the GO / NO-GO verdict computed by the owner's rule (recommend.py), which it was given and did not decide. The exact facts it was given are stored beside it."
+ },
+ "phenotype_llm": {
+  "flag": 1,
+  "reason": "The list includes gut-related terms such as \"abnormal intestinal lipid absorption\", \"decreased intestinal cholesterol absorption\" and \"decreased digestive secretion\", touching intestinal function.",
+  "model": "claude-opus-5",
+  "prompt_version": "dce98a0009c9c277",
+  "effort": "low",
+  "generated_at": "2026-10-19T01:57:20Z",
+  "inputs": {
+   "gene": "MUC1",
+   "disease_area": "inflammatory bowel disease",
+   "contrast_text": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification' A1a Paris classification; Crohn's disease",
+   "mouse_phenotype_terms": [
+    "no abnormal phenotype detected",
+    "abnormal gallbladder physiology",
+    "abnormal intestinal lipid absorption",
+    "decreased digestive secretion",
+    "decreased intestinal cholesterol absorption",
+    "gallstones",
+    "decreased tumor growth/size"
+   ],
+   "n_terms": 7,
+   "knockout_ring": {
+    "state": "value",
+    "value": 1.0,
+    "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+   },
+   "question": "Is there a model-organism phenotype that a biologist would read as evidence this gene matters for this disease area? Answer 1 or 0 and one plain sentence naming the term(s)."
+  },
+  "facts_key": "fc7c5828e84db845",
+  "usage": {
+   "input_tokens": 1288,
+   "output_tokens": 86,
+   "cache_read_tokens": 0,
+   "usd": 0.00859
+  },
+  "stop_reason": "end_turn",
+  "is_criterion": false,
+  "note": "A 0/1 read of this gene's mouse phenotype terms against the contrast's disease area, written by the model named beside it from those terms and nothing else, when the drawer was baked. It sits BESIDE the owner's deterministic phenotype criterion and is never the criterion: it never changes the GO / NO-GO verdict and orders nothing on the figure."
+ },
+ "phenotype_terms": [
+  {
+   "label": "no abnormal phenotype detected",
+   "mp_id": "MP:0002169",
+   "models": [
+    {
+     "id": "MGI:4443060",
+     "allelic_composition": "Muc1<tm1.1(cre/ERT2)Lcm>/Muc1<tm1.1(cre/ERT2)Lcm>",
+     "genetic_background": "involves: 129S1/Sv * 129S4/SvJaeSor * 129X1/SvJ * C57BL/6 * CD-1",
+     "pmids": [
+      "20377894"
+     ]
+    }
+   ]
+  },
+  {
+   "label": "abnormal gallbladder physiology",
+   "mp_id": "MP:0005085",
+   "models": [
+    {
+     "id": "MGI:3574841",
+     "allelic_composition": "Muc1<tm1Gend>/Muc1<tm1Gend>",
+     "genetic_background": "involves: FVB",
+     "pmids": [
+      "14703511",
+      "15075252"
+     ]
+    }
+   ]
+  },
+  {
+   "label": "abnormal intestinal lipid absorption",
+   "mp_id": "MP:0005342",
+   "models": [
+    {
+     "id": "MGI:3574841",
+     "allelic_composition": "Muc1<tm1Gend>/Muc1<tm1Gend>",
+     "genetic_background": "involves: FVB",
+     "pmids": [
+      "14703511",
+      "15075252"
+     ]
+    }
+   ]
+  },
+  {
+   "label": "decreased digestive secretion",
+   "mp_id": "MP:0000505",
+   "models": [
+    {
+     "id": "MGI:4837864",
+     "allelic_composition": "Muc1<tm1Gend>/Muc1<tm1Gend>",
+     "genetic_background": "involves: 129P2/OlaHsd",
+     "pmids": [
+      "18719000"
+     ]
+    }
+   ]
+  },
+  {
+   "label": "decreased intestinal cholesterol absorption",
+   "mp_id": "MP:0002647",
+   "models": [
+    {
+     "id": "MGI:3574841",
+     "allelic_composition": "Muc1<tm1Gend>/Muc1<tm1Gend>",
+     "genetic_background": "involves: FVB",
+     "pmids": [
+      "14703511",
+      "15075252"
+     ]
+    }
+   ]
+  },
+  {
+   "label": "gallstones",
+   "mp_id": "MP:0002830",
+   "models": [
+    {
+     "id": "MGI:3574841",
+     "allelic_composition": "Muc1<tm1Gend>/Muc1<tm1Gend>",
+     "genetic_background": "involves: FVB",
+     "pmids": [
+      "14703511",
+      "15075252"
+     ]
+    }
+   ]
+  },
+  {
+   "label": "decreased tumor growth/size",
+   "mp_id": "MP:0003447",
+   "models": [
+    {
+     "id": "MGI:3574840",
+     "allelic_composition": "Muc1<tm1Gend>/Muc1<tm1Gend>",
+     "genetic_background": "B6.129P2-Muc1<tm1Gend>",
+     "pmids": [
+      "12618757",
+      "8530414"
+     ]
+    }
+   ]
+  }
+ ]
+}

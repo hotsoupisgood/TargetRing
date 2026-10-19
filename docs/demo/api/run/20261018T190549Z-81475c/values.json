@@ -1,0 +1,1820 @@
+{
+ "run_id": "20261018T190549Z-81475c",
+ "region": "Small_Intestine_Terminal_Ileum",
+ "timestamp_utc": "2026-10-18T19:06:18+00:00",
+ "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
+ "rings": [
+  {
+   "n": 1,
+   "key": "logfc",
+   "label": "logFC (Atlas)",
+   "short_label": "logFC (Atlas)",
+   "column_label": "logFC (Atlas)",
+   "source_name": "Expression Atlas",
+   "units": "log2 fold change",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 2,
+   "key": "neg_log10_padj",
+   "label": "-log10 padj (Atlas)",
+   "short_label": "\u2212log10 padj (Atlas)",
+   "column_label": "-log10 padj (Atlas)",
+   "source_name": "Expression Atlas",
+   "units": "-log10 adjusted p",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 3,
+   "key": "tractable",
+   "label": "Tractability (family suggests druggable)",
+   "short_label": "Tractability (suggested)",
+   "column_label": "Tractability",
+   "source_name": "Open Targets",
+   "units": "mean of 3 keys, each 0 or 1",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 4,
+   "key": "chemical_probe",
+   "label": "Chemical probe available (prior tool-compound effort)",
+   "short_label": "Chemical probe (yes/no)",
+   "column_label": "Chemical probe available",
+   "source_name": "Open Targets",
+   "units": "probe: no / yes",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 5,
+   "key": "safety",
+   "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+   "short_label": "Safety flags \u2260 safe",
+   "column_label": "Safety flags \u2014 NOT evidence of safety",
+   "source_name": "Open Targets",
+   "units": "mean of 4 keys, each in [-1, 1]",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 6,
+   "key": "regional_specificity",
+   "label": "Regional specificity",
+   "short_label": "Region TPM \u00f7 median",
+   "column_label": "Regional specificity",
+   "source_name": "GTEx v8",
+   "units": "\u00d7 median across the GTEx panel",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 7,
+   "key": "clinical_phase",
+   "label": "Pipeline: furthest phase (attributable indications only)",
+   "short_label": "Furthest trial phase",
+   "column_label": "Pipeline: furthest phase",
+   "source_name": "Open Targets",
+   "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 8,
+   "key": "clinical_activity",
+   "label": "Pipeline: current activity (Open Targets clinicalReports)",
+   "short_label": "Trial activity now",
+   "column_label": "Pipeline: current activity",
+   "source_name": "Open Targets",
+   "units": "three named states, no order implied by colour",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 9,
+   "key": "tdl",
+   "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)",
+   "short_label": "TDL \u2014 knowledge",
+   "column_label": "Target development level",
+   "source_name": "Pharos",
+   "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 10,
+   "key": "rodent",
+   "label": "Mouse phenotype lead (3 states)",
+   "short_label": "Mouse phenotype",
+   "column_label": "Mouse phenotype lead",
+   "source_name": "Open Targets",
+   "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 11,
+   "key": "literature",
+   "label": "Literature volume",
+   "short_label": "Literature count",
+   "column_label": "Literature volume",
+   "source_name": "PubTator3",
+   "units": "PubTator3 records",
+   "sortable": true,
+   "dimmable": true
+  },
+  {
+   "n": 12,
+   "key": "completeness",
+   "label": "k \u2014 external rings with a measurement",
+   "short_label": "k of 9 rings",
+   "column_label": "k \u2014 external rings",
+   "source_name": "derived",
+   "units": "rings with a real value, of 9",
+   "sortable": false,
+   "dimmable": false
+  }
+ ],
+ "genes": [
+  {
+   "gene": "MUC1",
+   "ensembl_id": "ENSG00000185499",
+   "k": 8,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 3.1,
+     "detail": "logFC 3.1 (submitted)",
+     "fill": "#8d2c0d",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 21.6584899975002,
+     "detail": "adjusted p 2.19538e-22 (submitted)",
+     "fill": "#822c68",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#ebddd1",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": 0.013681183237469197,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.05, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#d1d9dc",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "value",
+     "value": 1.3300357622230503,
+     "detail": "9.3 TPM in Small_Intestine_Terminal_Ileum / 6.992 TPM median across 54 GTEx tissues (above the 1 TPM floor)",
+     "fill": "#c2c9ab",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 4.0,
+     "detail": "Phase 3 for this indication \u2014 TECEMOTIDE reached Phase 3 for breast cancer, which is attributable to this target (genetic_association 0.25). 7 of 12 candidates have an attributable indication",
+     "fill": "#007875",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "value",
+     "value": -1.0,
+     "detail": "stopped for cause, nothing live \u2014 1 of 7 stop(s) categorised Negative or Safety_Sideeffects by Open Targets (22 trial row(s) in total); all stop categories: Business_Administrative 3, Insufficient_Enrollment 1, Negative 1, No_Context 1 Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this target's rows: ClinicalTrials.gov 22, TTD 12. Counts here are drug-trial pairs over 12 drug row(s); 22 distinct NCT id(s) are in the drawer.",
+     "fill": "#983c22",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 2.0,
+     "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#917729",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 4.608600905481854,
+     "detail": "40606 PubTator3 records for '@GENE_MUC1' (log10(1+n) = 4.61); gene id-resolved, region is free text",
+     "fill": "#604b00",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 8.0,
+     "detail": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#456768",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "FCGR3A",
+   "ensembl_id": "ENSG00000203747",
+   "k": 7,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.7,
+     "detail": "logFC 2.7 (submitted)",
+     "fill": "#99442c",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 19.376930202484107,
+     "detail": "adjusted p 4.19826e-20 (submitted)",
+     "fill": "#995080",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#ebddd1",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": -0.02466447548616818,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=-0.10, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#ddd4d5",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "value",
+     "value": 0.6693132792532874,
+     "detail": "4.004 TPM in Small_Intestine_Terminal_Ileum / 5.982 TPM median across 54 GTEx tissues (above the 1 TPM floor)",
+     "fill": "#dde1d1",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "2 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 3 (BEMARITUZUMAB, IMGATUZUMAB). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate (COUNCIL V1/D2).",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "live trial \u2014 3 of 23 trial row(s) recruiting or ongoing, on 1 of 2 drug(s) Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this target's rows: ClinicalTrials.gov 23, TTD 5. Counts here are drug-trial pairs over 2 drug row(s); 23 distinct NCT id(s) are in the drawer.",
+     "fill": "#7592e6",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 3.0,
+     "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#695200",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (2 abnormal term(s) of 2 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 4.576398945124239,
+     "detail": "37704 PubTator3 records for '@GENE_FCGR3A' (log10(1+n) = 4.58); gene id-resolved, region is free text",
+     "fill": "#614b00",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 7.0,
+     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#537475",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "FCGR1A",
+   "ensembl_id": "ENSG00000150337",
+   "k": 6,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.9,
+     "detail": "logFC 2.9 (submitted)",
+     "fill": "#93381e",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 16.982574514945437,
+     "detail": "adjusted p 1.04094e-17 (submitted)",
+     "fill": "#b37a9e",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.3333333333333333,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+1.00",
+     "fill": "#c9a585",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": -0.3774308408655163,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=-1.00, geneticConstraint=-0.51, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#c2989e",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "no_data",
+     "value": null,
+     "detail": "0.5814 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (0.741x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer.",
+     "fill": "#e8e8e8",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "1 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 1 (MDX-447). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate (COUNCIL V1/D2).",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "dormant \u2014 drugs exist, none of 1 trial row(s) live Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this target's rows: ClinicalTrials.gov 1. Counts here are drug-trial pairs over 1 drug row(s); 1 distinct NCT id(s) are in the drawer.",
+     "fill": "#f9b8e0",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 3.0,
+     "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#695200",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 4.13751235312213,
+     "detail": "13724 PubTator3 records for '@GENE_FCGR1A' (log10(1+n) = 4.14); gene id-resolved, region is free text",
+     "fill": "#705800",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 6.0,
+     "detail": "6 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#608081",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "FCN1",
+   "ensembl_id": "ENSG00000085265",
+   "k": 5,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.6,
+     "detail": "logFC 2.6 (submitted)",
+     "fill": "#9c4932",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 15.432973621748479,
+     "detail": "adjusted p 3.69e-16 (submitted)",
+     "fill": "#c597b3",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.3333333333333333,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+1.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#c9a585",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": 0.20058887975897016,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.80, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#a8bfc8",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "no_data",
+     "value": null,
+     "detail": "0.947 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (1.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer.",
+     "fill": "#e8e8e8",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#b19f6e",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "no_data",
+     "value": null,
+     "detail": "not phenotyped \u2014 no mouse phenotype records at all, which is not the same as 'no phenotype'",
+     "fill": "#e8e8e8",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 3.229425847920695,
+     "detail": "1695 PubTator3 records for '@GENE_FCN1' (log10(1+n) = 3.23); gene id-resolved, region is free text",
+     "fill": "#8e7320",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 5.0,
+     "detail": "5 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#6e8c8d",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "PELATON",
+   "ensembl_id": "ENSG00000224397",
+   "k": 3,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.7,
+     "detail": "logFC 2.7 (submitted)",
+     "fill": "#99442c",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 14.633352898075398,
+     "detail": "adjusted p 2.3262e-15 (submitted)",
+     "fill": "#cfa9c0",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "no_data",
+     "value": null,
+     "detail": "tractability: hasLigand, hasPocket, hasSmallMoleculeBinder absent for this gene and not a sparse-encoded key. A 3-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "no_data",
+     "value": null,
+     "detail": "safety: geneEssentiality, geneticConstraint absent for this gene and not a sparse-encoded key. A 4-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "value",
+     "value": 1.5684076624739385,
+     "detail": "1.084 TPM in Small_Intestine_Terminal_Ileum / 0.6914 TPM median across 54 GTEx tissues (above the 1 TPM floor)",
+     "fill": "#bbc3a2",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "no_data",
+     "value": null,
+     "detail": "Pharos holds no target record for PELATON. Pharos covers 20,412 human targets; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a target we do hold'.",
+     "fill": "#e8e8e8",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "no_data",
+     "value": null,
+     "detail": "not phenotyped \u2014 no mouse phenotype records at all, which is not the same as 'no phenotype'",
+     "fill": "#e8e8e8",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "0 PubTator3 records for '@GENE_PELATON' (log10(1+n) = 0.00); gene id-resolved, region is free text",
+     "fill": "#e5dfcf",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 3.0,
+     "detail": "3 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#8ba6a7",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "CXCL5",
+   "ensembl_id": "ENSG00000163735",
+   "k": 6,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.9,
+     "detail": "logFC 2.9 (submitted)",
+     "fill": "#93381e",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 14.148911018838197,
+     "detail": "adjusted p 7.09723e-15 (submitted)",
+     "fill": "#d5b3c7",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#ebddd1",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": 0.21866611887154203,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.87, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#a4bdc6",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "no_data",
+     "value": null,
+     "detail": "0.5082 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (2.86x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer.",
+     "fill": "#e8e8e8",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#b19f6e",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (7 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 4.0745238879349515,
+     "detail": "11871 PubTator3 records for '@GENE_CXCL5' (log10(1+n) = 4.07); gene id-resolved, region is free text",
+     "fill": "#725a00",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 6.0,
+     "detail": "6 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#608081",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "FCGR1BP",
+   "ensembl_id": "ENSG00000198019",
+   "k": 3,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.8,
+     "detail": "logFC 2.8 (submitted)",
+     "fill": "#963e25",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 14.12220604323215,
+     "detail": "adjusted p 7.54734e-15 (submitted)",
+     "fill": "#d6b4c8",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "no_data",
+     "value": null,
+     "detail": "tractability: hasLigand, hasPocket, hasSmallMoleculeBinder absent for this gene and not a sparse-encoded key. A 3-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "no_data",
+     "value": null,
+     "detail": "safety: geneEssentiality absent for this gene and not a sparse-encoded key. A 4-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "no_data",
+     "value": null,
+     "detail": "0.224 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (0.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer.",
+     "fill": "#e8e8e8",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "no_data",
+     "value": null,
+     "detail": "Pharos holds no target record for FCGR1BP. Pharos covers 20,412 human targets; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a target we do hold'.",
+     "fill": "#e8e8e8",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "0 PubTator3 records for '@GENE_FCGR1BP' (log10(1+n) = 0.00); gene id-resolved, region is free text",
+     "fill": "#e5dfcf",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 3.0,
+     "detail": "3 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#8ba6a7",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "CXCL2",
+   "ensembl_id": "ENSG00000081041",
+   "k": 7,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.3,
+     "detail": "logFC 2.3 (submitted)",
+     "fill": "#a55b46",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 14.06128193899464,
+     "detail": "adjusted p 8.68396e-15 (submitted)",
+     "fill": "#d6b5c9",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#ebddd1",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": 0.2207477403451109,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.88, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#a4bdc6",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "value",
+     "value": 1.052676731413012,
+     "detail": "7.338 TPM in Small_Intestine_Terminal_Ileum / 6.971 TPM median across 54 GTEx tissues (above the 1 TPM floor)",
+     "fill": "#cbd2b9",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#b19f6e",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 4.412309316059834,
+     "detail": "25840 PubTator3 records for '@GENE_CXCL2' (log10(1+n) = 4.41); gene id-resolved, region is free text",
+     "fill": "#665000",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 7.0,
+     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#537475",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "FCGR3B",
+   "ensembl_id": "ENSG00000162747",
+   "k": 6,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.9,
+     "detail": "logFC 2.9 (submitted)",
+     "fill": "#93381e",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 14.052051099593308,
+     "detail": "adjusted p 8.87052e-15 (submitted)",
+     "fill": "#d6b5c9",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#ebddd1",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": 0.08201862503423718,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.33, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#c5cfd2",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "no_data",
+     "value": null,
+     "detail": "0.7127 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (1.27x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer.",
+     "fill": "#e8e8e8",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#b19f6e",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (2 abnormal term(s) of 2 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 3.382197210377454,
+     "detail": "2410 PubTator3 records for '@GENE_FCGR3B' (log10(1+n) = 3.38); gene id-resolved, region is free text",
+     "fill": "#8a6e12",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 6.0,
+     "detail": "6 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#608081",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "CXCL3",
+   "ensembl_id": "ENSG00000163734",
+   "k": 7,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.5,
+     "detail": "logFC 2.5 (submitted)",
+     "fill": "#9f4f38",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 13.900725835105105,
+     "detail": "adjusted p 1.25682e-14 (submitted)",
+     "fill": "#d8b9cb",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#ebddd1",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": 0.19349493289509723,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.77, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#aac0c8",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "value",
+     "value": 2.5750534157888474,
+     "detail": "1.483 TPM in Small_Intestine_Terminal_Ileum / 0.5759 TPM median across 54 GTEx tissues (above the 1 TPM floor)",
+     "fill": "#a8b288",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#b19f6e",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 3.744762237065578,
+     "detail": "5555 PubTator3 records for '@GENE_CXCL3' (log10(1+n) = 3.74); gene id-resolved, region is free text",
+     "fill": "#7e6300",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 7.0,
+     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#537475",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "CXCL1",
+   "ensembl_id": "ENSG00000163739",
+   "k": 7,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.2,
+     "detail": "logFC 2.2 (submitted)",
+     "fill": "#a8604c",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 13.3956039480127,
+     "detail": "adjusted p 4.02157e-14 (submitted)",
+     "fill": "#dfc4d4",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+0.00",
+     "fill": "#ebddd1",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": 0.16832374691865243,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.67, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#b0c3cb",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "value",
+     "value": 11.017435980419918,
+     "detail": "19.06 TPM in Small_Intestine_Terminal_Ileum / 1.73 TPM median across 54 GTEx tissues (above the 1 TPM floor)",
+     "fill": "#738138",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#b19f6e",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "value",
+     "value": 1.0,
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "fill": "#00623b",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 4.534800034874203,
+     "detail": "34260 PubTator3 records for '@GENE_CXCL1' (log10(1+n) = 4.53); gene id-resolved, region is free text",
+     "fill": "#634d00",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 7.0,
+     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#537475",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "CXCR2P1",
+   "ensembl_id": "ENSG00000229754",
+   "k": 3,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.0,
+     "detail": "logFC 2 (submitted)",
+     "fill": "#ad6b58",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 13.263824597913183,
+     "detail": "adjusted p 5.44723e-14 (submitted)",
+     "fill": "#e1c8d7",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "no_data",
+     "value": null,
+     "detail": "tractability: hasLigand, hasPocket, hasSmallMoleculeBinder absent for this gene and not a sparse-encoded key. A 3-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "no_data",
+     "value": null,
+     "detail": "safety: geneEssentiality, geneticConstraint absent for this gene and not a sparse-encoded key. A 4-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "value",
+     "value": 43.773654216221864,
+     "detail": "2.598 TPM in Small_Intestine_Terminal_Ileum / 0.05934 TPM median across 54 GTEx tissues (above the 1 TPM floor)",
+     "fill": "#475300",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "no_data",
+     "value": null,
+     "detail": "Pharos holds no target record for CXCR2P1. Pharos covers 20,412 human targets; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a target we do hold'.",
+     "fill": "#e8e8e8",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "no_data",
+     "value": null,
+     "detail": "not phenotyped \u2014 no mouse phenotype records at all, which is not the same as 'no phenotype'",
+     "fill": "#e8e8e8",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 1.6232492903979006,
+     "detail": "41 PubTator3 records for '@GENE_CXCR2P1' (log10(1+n) = 1.62); gene id-resolved, region is free text",
+     "fill": "#b8a87b",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 3.0,
+     "detail": "3 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#8ba6a7",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  },
+  {
+   "gene": "APOBEC3A",
+   "ensembl_id": "ENSG00000128383",
+   "k": 5,
+   "no_value_on_sort_key": false,
+   "dim_state": "match",
+   "dim_reason": "",
+   "cells": {
+    "logfc": {
+     "state": "value",
+     "value": 2.7,
+     "detail": "logFC 2.7 (submitted)",
+     "fill": "#99442c",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "neg_log10_padj": {
+     "state": "value",
+     "value": 12.486685600894635,
+     "detail": "adjusted p 3.26073e-13 (submitted)",
+     "fill": "#ebdbe4",
+     "source": "Expression Atlas E-GEOD-101794 g2_g1"
+    },
+    "tractable": {
+     "state": "value",
+     "value": 0.3333333333333333,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+0.00, hasSmallMoleculeBinder=+1.00",
+     "fill": "#c9a585",
+     "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
+    },
+    "chemical_probe": {
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "fill": "#e8e8e8",
+     "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
+    },
+    "safety": {
+     "state": "value",
+     "value": -0.0064228978362092515,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=-0.03, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence.",
+     "fill": "#e0d7d8",
+     "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+    },
+    "regional_specificity": {
+     "state": "no_data",
+     "value": null,
+     "detail": "0.595 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (1.94x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer.",
+     "fill": "#e8e8e8",
+     "source": "GTEx v8 median TPM ratio, log10, floor applied"
+    },
+    "clinical_phase": {
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates",
+     "fill": "#acd0ce",
+     "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
+    },
+    "clinical_activity": {
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report",
+     "fill": "#ffffff",
+     "source": "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a trialOverallStatus \u2014 NOT by a source literal (the AACT->ClinicalTrials.gov relabelling of 2026-09-24 is what a literal filter missed)"
+    },
+    "tdl": {
+     "state": "value",
+     "value": 2.0,
+     "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "fill": "#917729",
+     "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
+    },
+    "rodent": {
+     "state": "no_data",
+     "value": null,
+     "detail": "not phenotyped \u2014 no mouse phenotype records at all, which is not the same as 'no phenotype'",
+     "fill": "#e8e8e8",
+     "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
+    },
+    "literature": {
+     "state": "value",
+     "value": 3.2837533833325265,
+     "detail": "1921 PubTator3 records for '@GENE_APOBEC3A' (log10(1+n) = 3.28); gene id-resolved, region is free text",
+     "fill": "#8d711b",
+     "source": "PubTator3, gene-id resolved, log10(1+n)"
+    },
+    "completeness": {
+     "state": "value",
+     "value": 5.0,
+     "detail": "5 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "fill": "#6e8c8d",
+     "source": "derived; maximum is the number of external rings"
+    }
+   }
+  }
+ ],
+ "k_max": 9,
+ "order": [
+  "MUC1",
+  "FCGR3A",
+  "FCGR1A",
+  "FCN1",
+  "PELATON",
+  "CXCL5",
+  "FCGR1BP",
+  "CXCL2",
+  "FCGR3B",
+  "CXCL3",
+  "CXCL1",
+  "CXCR2P1",
+  "APOBEC3A"
+ ],
+ "sort": [],
+ "sort_note": "row order: the order this run drew the spokes in",
+ "missing_block": [],
+ "citations": [
+  {
+   "n": 1,
+   "key": "logfc",
+   "label": "logFC (Atlas)",
+   "units": "log2 fold change",
+   "source_name": "Expression Atlas",
+   "linked": false,
+   "anchor_text": "",
+   "url": "",
+   "reason": "the `g2_g1.log2foldchange` column of E-GEOD-101794-analytics.tsv, read from Expression Atlas, Ensembl 95 for contrast g2_g1 (DESeq2 version: 1.10.1). Not a table you submitted: this run selected these genes from that contrast. The run's manifest records the file's URL under `contrast.analytics_url` and `values.csv` carries the value per gene",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 2,
+   "key": "neg_log10_padj",
+   "label": "-log10 padj (Atlas)",
+   "units": "-log10 adjusted p",
+   "source_name": "Expression Atlas",
+   "linked": false,
+   "anchor_text": "",
+   "url": "",
+   "reason": "the `g2_g1.p-value` column of E-GEOD-101794-analytics.tsv, read from Expression Atlas, Ensembl 95 for contrast g2_g1 (DESeq2 version: 1.10.1) and drawn as \u2212log10(padj) so that more significant is larger \u2014 that one transform and nothing else. Not a table you submitted. The run's manifest records the file's URL under `contrast.analytics_url` and the cell detail prints the original p back",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 3,
+   "key": "tractable",
+   "label": "Tractability (family suggests druggable)",
+   "units": "mean of 3 keys, each 0 or 1",
+   "source_name": "Open Targets",
+   "linked": true,
+   "anchor_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section",
+   "reason": "defines and scores the three keys this ring averages",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 4,
+   "key": "chemical_probe",
+   "label": "Chemical probe available (prior tool-compound effort)",
+   "units": "probe: no / yes",
+   "source_name": "Open Targets",
+   "linked": true,
+   "anchor_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#chemical-probes",
+   "reason": "the section for the one sparse key, which is why it is its own ring",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 5,
+   "key": "safety",
+   "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+   "units": "mean of 4 keys, each in [-1, 1]",
+   "source_name": "Open Targets",
+   "linked": true,
+   "anchor_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+   "reason": "states that an absent safety record scores 0 rather than 'safe' \u2014 the caveat this ring's label carries",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 6,
+   "key": "regional_specificity",
+   "label": "Regional specificity",
+   "units": "\u00d7 median across the GTEx panel",
+   "source_name": "GTEx v8",
+   "linked": true,
+   "anchor_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+   "url": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+   "reason": "the operation this ring calls, with its parameters and its dataset ids",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 7,
+   "key": "clinical_phase",
+   "label": "Pipeline: furthest phase (attributable indications only)",
+   "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+   "source_name": "Open Targets",
+   "linked": true,
+   "anchor_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "url": "https://platform-docs.opentargets.org/target/drugs",
+   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications \u2014 the reason the ring gates on attribution (COUNCIL V1)",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 8,
+   "key": "clinical_activity",
+   "label": "Pipeline: current activity (Open Targets clinicalReports)",
+   "units": "three named states, no order implied by colour",
+   "source_name": "Open Targets",
+   "linked": true,
+   "anchor_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "url": "https://platform-docs.opentargets.org/drug/clinical-report",
+   "reason": "the clinical report record itself \u2014 the statuses and the stop categories, which is what the three states are built from",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 9,
+   "key": "tdl",
+   "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)",
+   "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+   "source_name": "Pharos",
+   "linked": true,
+   "anchor_text": "Pharos \u00b7 druggablegenome.net",
+   "url": "https://druggablegenome.net/IDGProteinFamilies",
+   "reason": "the IDG-KMC definition of the four levels; Pharos serves the field and does not define it",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 10,
+   "key": "rodent",
+   "label": "Mouse phenotype lead (3 states)",
+   "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+   "source_name": "Open Targets",
+   "linked": true,
+   "anchor_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "url": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+   "reason": "Open Targets publishes no page for the mousePhenotypes field; this table names its upstream dataset. The prioritisation view's Mouse models section documents a different number and is NOT cited here",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 11,
+   "key": "literature",
+   "label": "Literature volume",
+   "units": "PubTator3 records",
+   "source_name": "PubTator3",
+   "linked": true,
+   "anchor_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+   "url": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+   "reason": "the API this ring counts through, which is where the gene-id resolution that stops common-word symbols inflating is specified",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  },
+  {
+   "n": 12,
+   "key": "completeness",
+   "label": "k \u2014 external rings with a measurement",
+   "units": "rings with a real value, of 9",
+   "source_name": "derived",
+   "linked": false,
+   "anchor_text": "",
+   "url": "",
+   "reason": "computed here, by counting rings 3-11: k is how many of the nine external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs \u2014 no source of its own is read for it",
+   "failed_genes": [],
+   "failed_target": null,
+   "recorded_drift": ""
+  }
+ ],
+ "citation_note": "A link is the column's, not a cell's \u2014 the ring is what has a source. It answers a measured cell and a hatched no-data one alike: \u201cis this gene really absent upstream?\u201d is a question you check at the source. It does not answer a black FAILED cell; those rows say where to look instead.",
+ "counts": {
+  "input": 14,
+  "rendered": 13,
+  "dropped": 1,
+  "identity_holds": true
+ },
+ "ledger": [
+  {
+   "input": "ENSG00000279487",
+   "status": "unresolved",
+   "reason": "'ENSG00000279487' matched no Open Targets target Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence.",
+   "resolved_symbol": null,
+   "ensembl_id": null,
+   "row": 11
+  }
+ ],
+ "invariants": [
+  {
+   "id": "I1",
+   "name": "cell-count identity",
+   "outcome": "PASS",
+   "detail": "156 cells across 12 rings match the CSV",
+   "affects": ""
+  },
+  {
+   "id": "I2",
+   "name": "missing-fill disjointness",
+   "outcome": "PASS",
+   "detail": "44 non-value cells painted only in ['#4d4d4d', '#808080', '#e8e8e8', '#ffffff']; disjoint from the 112 value cells' 65 colours and from the full 2200-step colormap (hatch patterns resolved, not compared as url refs)",
+   "affects": ""
+  },
+  {
+   "id": "I3",
+   "name": "label correspondence",
+   "outcome": "PASS",
+   "detail": "all 156 cells carry the gene their spoke index claims, and every ring follows the same order (ok)",
+   "affects": ""
+  },
+  {
+   "id": "I4",
+   "name": "input == rendered + ledgered",
+   "outcome": "PASS",
+   "detail": "14 = 13 rendered + 1 dropped",
+   "affects": ""
+  },
+  {
+   "id": "I5",
+   "name": "literature query integrity",
+   "outcome": "PASS",
+   "detail": "1 Europe PMC echo(es) checked live and byte-identical; no ERROR key in 13 NCBI response(s)",
+   "affects": ""
+  },
+  {
+   "id": "I6",
+   "name": "five-ID regression",
+   "outcome": "PASS",
+   "detail": "five_spokes=ok; missing_is_explicit=ok; braf_matches_single_query=ok; survivors_not_shifted=ok",
+   "affects": ""
+  },
+  {
+   "id": "I7",
+   "name": "the figure states what it did",
+   "outcome": "PASS",
+   "detail": "no headline marker survives the ranking; the spoke order is printed on the figure (spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)) and the spokes follow it; no threshold filter was active",
+   "affects": ""
+  },
+  {
+   "id": "I8",
+   "name": "contrast identity",
+   "outcome": "PASS",
+   "detail": "E-GEOD-101794 g2_g1 \u2014 prose name and sign sentence both printed on the figure and match the `ContrastRef` this run used",
+   "affects": ""
+  },
+  {
+   "id": "I9",
+   "name": "three-stage accounting",
+   "outcome": "PASS",
+   "detail": "65217 = 25232 with a statistic + 39985 without; top 60 <= with-statistic; 14 selected <= top",
+   "affects": ""
+  }
+ ],
+ "contracts": [
+  {
+   "check": "opentargets.production_query",
+   "ok": true,
+   "detail": "18 prioritisation keys, 18 drug candidates"
+  },
+  {
+   "check": "opentargets.prioritisation_keys",
+   "ok": true,
+   "detail": "all 18 keys present"
+  },
+  {
+   "check": "opentargets.ring_keys",
+   "ok": true,
+   "detail": "every key a ring reads is present"
+  },
+  {
+   "check": "opentargets.field_snapshot",
+   "ok": true,
+   "detail": "schema matches the checked-in snapshot"
+  },
+  {
+   "check": "opentargets.batch_drop",
+   "ok": true,
+   "detail": "nonexistent id still dropped, not nulled (returned ['ENSG00000157764'])"
+  },
+  {
+   "check": "gtex.version_coupling",
+   "ok": true,
+   "detail": "ENSG00000157764.12 (gtex_v8) returns 54 tissues"
+  }
+ ],
+ "any_invariant_failed": false,
+ "all_invariants_pass": true,
+ "ordering": "submitted",
+ "ordering_note": "spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)",
+ "ordering_note_recorded": "spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)",
+ "ordering_note_drift": "",
+ "filters": [],
+ "filter_counts": {
+  "filtered": 0,
+  "kept_unevaluated": 0,
+  "kept_unevaluated_by_gene": {}
+ },
+ "dim": [],
+ "dim_counts": {
+  "match": 13,
+  "dimmed": 0,
+  "unevaluable": 0
+ },
+ "dim_dimmable": [
+  "logfc",
+  "neg_log10_padj",
+  "tractable",
+  "chemical_probe",
+  "safety",
+  "regional_specificity",
+  "clinical_phase",
+  "clinical_activity",
+  "tdl",
+  "rodent",
+  "literature"
+ ],
+ "dim_count_line": "",
+ "dim_count_note": "",
+ "submitted_order_source": "manifest",
+ "states": [
+  {
+   "key": "no_data",
+   "label": "no data \u2014 never measured here",
+   "fill": "#e8e8e8",
+   "edge": "#4d4d4d"
+  },
+  {
+   "key": "not_applicable",
+   "label": "not applicable to this gene",
+   "fill": "#ffffff",
+   "edge": "#808080"
+  },
+  {
+   "key": "failed",
+   "label": "call FAILED \u2014 not the same as absent",
+   "fill": "#000000",
+   "edge": "#ff0000"
+  }
+ ],
+ "in_memory": false,
+ "baked_drawers": [
+  "APOBEC3A",
+  "CXCL1",
+  "CXCL2",
+  "CXCL3",
+  "CXCL5",
+  "CXCR2P1",
+  "FCGR1A",
+  "FCGR1BP",
+  "FCGR3A",
+  "FCGR3B",
+  "FCN1",
+  "MUC1",
+  "PELATON"
+ ],
+ "drawer_note": "Click a gene to open its drawer \u2014 read from disk, as recorded when this run's drawers were baked; nothing is fetched on click.",
+ "artefact_links": [
+  {
+   "label": "its figure",
+   "url": "/api/run/20261018T190549Z-81475c/figure.svg"
+  },
+  {
+   "label": "values.csv",
+   "url": "/api/run/20261018T190549Z-81475c/values.csv"
+  },
+  {
+   "label": "manifest.json",
+   "url": "/api/run/20261018T190549Z-81475c/manifest.json"
+  }
+ ],
+ "not_attempted": [
+  "Measured rate limits under parallel load \u2014 unmeasured for every source. Concurrency is capped at 4 per host and any 429 is a hard run failure (QA \u00a75).",
+  "LLM triage gold set \u2014 labelling ~20 abstracts is human work. Triage precision is UNMEASURED (QA S2 item 5).",
+  "Any ChEMBL-backed ring \u2014 UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring (QA B6, COUNCIL D2).",
+  "Any ordering of the genes by merit. The spokes are in the order this run states on the figure and nothing on it is a ranking, a score or a recommendation."
+ ],
+ "llm": {
+  "accounts": {
+   "triage": {
+    "cap": 5.0,
+    "spent": 0,
+    "calls": 0,
+    "remaining": 5.0,
+    "purpose": "LLM triage of the top 10 genes (not built; nothing has ever been spent on it)"
+   },
+   "phenotype": {
+    "cap": 5.0,
+    "spent": 0.05852,
+    "calls": 5,
+    "remaining": 4.94148,
+    "purpose": "the phenotype-page summary, one call per gene, summarising only the table it sits above"
+   },
+   "chooser": {
+    "cap": 2.0,
+    "spent": 0.24304,
+    "calls": 35,
+    "remaining": 1.75696,
+    "purpose": "the contrast chooser, one call per disease, choosing only among contrasts the index already offered it"
+   },
+   "region": {
+    "cap": 1.0,
+    "spent": 0.0524,
+    "calls": 9,
+    "remaining": 0.9476,
+    "purpose": "the region chooser, one call per disease and then cached, choosing only among the GTEx tissues this build can read"
+   },
+   "summary": {
+    "cap": 3.0,
+    "spent": 0.996595,
+    "calls": 52,
+    "remaining": 2.003405,
+    "purpose": "the per-gene evidence summary, baked offline by scripts/bake_summaries.py from the gene's own drawer values and served as a file; the app never makes this call"
+   }
+  },
+  "lines": [
+   "triage: $0.00 of $5.00 spent over 0 calls",
+   "phenotype: $0.06 of $5.00 spent over 5 calls",
+   "chooser: $0.24 of $2.00 spent over 35 calls",
+   "region: $0.05 of $1.00 spent over 9 calls",
+   "summary: $1.00 of $3.00 spent over 52 calls"
+  ],
+  "model": null,
+  "prompt_hash": null,
+  "price_table": {
+   "claude-opus-5": {
+    "input": 5.0,
+    "output": 25.0,
+    "cache_read": 0.5
+   },
+   "claude-fable-5-1": {
+    "input": 10.0,
+    "output": 50.0
+   }
+  },
+  "price_table_cached_utc": "2026-06-24",
+  "attempted": false,
+  "note": "no paid call is on the render path; both accounts are folded from the append-only spend ledger, not assumed to be zero"
+ }
+}

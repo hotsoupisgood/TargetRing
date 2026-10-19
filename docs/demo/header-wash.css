@@ -1,0 +1,79 @@
+/* header-wash.css — the masthead watercolour, and the only file in this repo
+   that is allowed to name an image.
+
+   WHY THIS IS A SEPARATE FILE, AND NOT THREE LINES IN app.css
+   -----------------------------------------------------------
+   `test_export.py::test_the_stylesheet_is_inlined_and_imports_nothing` inlines
+   `app.css` verbatim into the standalone export and then asserts that the
+   literal text `url(` appears nowhere in the inlined stylesheet. Its message is
+   "a CSS url() is a request", and that is AGENTS.md rule 10 in presentational
+   form: a file:// artefact that quietly fetches a sibling is not local-only.
+   Because the check is on the literal string it covers a `data:` URI too, which
+   is correct — a literal-text check cannot tell a fetch from an embed, and the
+   rule is cheap to keep and expensive to lose.
+
+   So `app.css` keeps the masthead's geometry and type (and `--tr-wash-height`,
+   which reserves the band so linking this file moves no layout), and the one
+   rule that mounts the image lives here. This file is linked from
+   `static/index.html` and is NEVER inlined into the export: `export.py` builds
+   its own `<head>` and inlines only `app.css` + its own export rules, so the
+   offline artefact stays url()-free and the served app still gets the accent.
+
+   THE IMAGE IS NOT DECORATION THAT CAN DRIFT
+   ------------------------------------------
+   `header-wash.png` is generated, never hand-drawn, by
+   `scripts/make_header_wash.py` from the `--tr-*` palette tokens, and it is
+   deterministic in its seed so it is reproducible from the manifest like every
+   other artefact here. The seed and the exact regeneration command are in
+   `docs/design/header-wash.md` and in the PNG's own text metadata.
+
+   DEGRADATION
+   -----------
+   `background-color: var(--tr-surface)` is painted underneath by `app.css`, and
+   it is NOT restated here — this file only ever sets `background-image` and its
+   positioning, never the `background` shorthand, which would reset the colour.
+   So if the asset is missing, or this file is not served, the header degrades to
+   plain tinted paper rather than to a hole. That is also why the layout lives in
+   the other file: this one is a pure accent and is safe to lose. */
+
+header {
+  /* Relative, so it resolves against THIS stylesheet's URL rather than the
+     document's: the file sits beside this one in `static/`, and it keeps
+     working whatever path the stylesheet itself is served from. */
+  background-image: url("header-wash.png");
+  background-repeat: no-repeat;
+
+  /* Anchored right/top and `cover`-scaled. The wash is painted with its quiet
+     corner on the left, where the h1 and the sub-heading sit, so the pigment
+     collects on the right where there is nothing to read. */
+  background-position: right top;
+  background-size: cover;
+}
+
+/* Dark mode gets its own render, not the light one dimmed: a pale paper wash on
+   a near-black surface is a bright blob, and no blend mode fixes that honestly.
+   Both files come out of the same generator and the same seed — only the token
+   set it samples changes. Declared under both scopes for the same reason
+   `app.css` does it: the media query covers the OS setting, the `data-theme`
+   scope covers an explicit choice, and an explicit light choice has to beat
+   OS-dark. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) header {
+    background-image: url("header-wash-dark.png");
+  }
+}
+:root[data-theme="dark"] header {
+  background-image: url("header-wash-dark.png");
+}
+
+/* An explicit light choice under OS-dark must get the light wash back. */
+:root[data-theme="light"] header {
+  background-image: url("header-wash.png");
+}
+
+/* Print and forced-colours drop the accent entirely. In a high-contrast mode the
+   wash is noise competing with the only thing that matters, and on paper it is
+   ink spent on nothing. */
+@media print, (forced-colors: active) {
+  header { background-image: none; }
+}

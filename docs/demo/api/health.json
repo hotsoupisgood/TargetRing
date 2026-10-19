@@ -1,0 +1,11 @@
+{
+ "status": "ok",
+ "demo": true,
+ "demo_runs": [
+  "20261018T190526Z-94ef5f",
+  "20261018T190549Z-81475c",
+  "20261018T190619Z-e52d65",
+  "20261018T190650Z-df1587"
+ ],
+ "note": "This is a read-only demo: it serves finished runs and makes no requests and no model calls. Clone the repo to run analyses."
+}

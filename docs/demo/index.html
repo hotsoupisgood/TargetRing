@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- v3.2 / UX v3 round 2 A5: v1 here and `targetring v2` in the middle of the
+       circle this page inlines, in the same screenshot, from v2.1 to v3.1. The
+       version lives in `figure.FIGURE_TITLE` and
+       `test_the_page_and_the_figure_cannot_disagree_about_the_version` holds
+       these two strings to it. -->
+  <title>targetring v2</title>
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="header-wash.css">
+</head>
+<!-- `landing` is the first-view state: one search box, centred, and nothing
+     else. `app.js` drops the class the first time a disease is chosen, and
+     from then on the page is the working surface it always was.
+
+     A class on <body> rather than a separate landing page, because a second
+     page would be a second copy of the search, the autocomplete and the
+     contrast flow — and the moment there are two, they drift. -->
+<body class="landing">
+<header>
+  <h1>targetring <span class="ver">v2</span></h1>
+  <p class="sub">
+    A gene set, rings of evidence, and a drawer per gene.
+    <strong>Nothing here is ranked or scored.</strong>
+    <span id="local-note">Local only — nothing leaves this machine.</span>
+  </p>
+</header>
+
+<main>
+  <!-- Stage 1. A second way in: start from a disease instead of from a table you
+       already have. It sits ABOVE the paste panel and the paste path stays the
+       default — this adds an entry point and replaces nothing.
+
+       The two things printed here that are not decoration:
+
+       * every hit carries BOTH ids. `EFO_0000384` is obsolete (Open Targets
+         returns null for it) and Expression Atlas still tags its samples with it,
+         so one id would make one of those two sources look empty. The row says
+         which id belongs to which source.
+       * every count carries the date its index was built. A contrast count is a
+         measurement from a crawl, and a month-old number rendered like a live one
+         is a small plausible wrong figure. -->
+  <p id="landing-lede" class="landing-only">Type a disease.<br>
+    <span class="hint">targetring finds a public expression study for it,
+      picks a comparison of affected against unaffected people, and draws what
+      is known about each gene that differs. Everything it chose is shown and
+      can be changed.</span></p>
+
+  <!-- Demo mode (config.DEMO_MODE). The server tells the page via /api/health
+       and the page adds `demo` to <body>; CSS hides the disease search, the
+       paste link and the form, and shows this. Nothing on this box runs an
+       analysis: every card is a finished run read from its artefacts, and the
+       figure shown is the PNG the run exported. -->
+  <section id="demo-panel" hidden>
+    <p class="landing-only"><b>Read-only demo.</b>
+      <span class="hint">These are finished runs, served from their artefacts.
+        Nothing here fetches, analyses or calls a model — clone the
+        repository to draw your own. Open a run for its table, its evidence
+        surface, its drop ledger and every download.</span></p>
+    <div id="demo-runs"></div>
+  </section>
+
+  <section id="find-panel">
+    <details id="find" open>
+      <summary><span class="chev" aria-hidden="true">▾</span>
+        <b>Find genes from a disease</b>
+        — search Expression Atlas contrasts</summary>
+      <div class="reveal">
+        <p class="hint">Type a disease. Each hit shows how many Expression Atlas
+          <b>contrasts</b> exist for it — not experiments — with the date the local
+          index was built. Nothing is fetched from Atlas until you pick a contrast,
+          and no contrast is picked for you.</p>
+        <div class="row">
+          <input id="disease" spellcheck="false" size="34"
+                 placeholder="Crohn&#39;s disease">
+          <span id="disease-status" class="hint"></span>
+        </div>
+        <div id="disease-hits"></div>
+        <div id="disease-chosen" hidden></div>
+        <div id="contrast-panel" hidden></div>
+        <!-- Stage 3/4, PLAN §9: a stepped flow on THIS page, not a new page or
+             a tab. Steps 1-2 are the disease search and the contrast picker
+             above; step 3 is the gene table, step 4 the heatmap and
+             selection. Each finished step collapses to one line generated
+             from the same values that go on the figure and the manifest —
+             see `collapsedContrastLine()` / `collapsedGeneTableLine()` in
+             app.js, which are the ONLY place those strings are built, so the
+             strip and the figure cannot disagree. -->
+        <div id="gene-table-panel" hidden></div>
+        <div id="heatmap-panel" hidden></div>
+        <p id="index-note" class="hint"></p>
+        <div id="find-sources"></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- The landing hides the paste panel, and pasting your own table is a way
+       in that predates the disease search. This is how you get back to it
+       without picking a disease first — one line, quiet, and it leaves the
+       landing exactly as choosing a disease does. -->
+  <p id="landing-paste" class="landing-only">
+    <button id="go-paste" class="linkish">or paste a differential expression
+      table you already have</button></p>
+
+  <section id="input-panel">
+    <!-- v3.2 / UX v3 round 2 B7. This form is 1,053 px tall — 42% of a 2,487 px
+         document — so the figure began at y = 1,279 and changing one threshold
+         meant scrolling up past four sections of help text and back down again.
+         Puck named button placement and animations; this is both.
+
+         So it collapses, and it collapses AFTER the first run rather than being
+         closed to start with: before you have a figure the help text is the
+         point, and after you have one it is the thing between you and your own
+         result. `app.js` closes it on a successful render.
+
+         It is the third `<details>` on the page and the rule of this review
+         applies to it the same way: the summary says what it opens and how much
+         is behind it, so the closed state is not a dead end. Neither of the two
+         things that must survive whatever animates away is inside it — they are
+         in `#decode`, in `#result`, and
+         `TestUXv3TheTwoThingsThatSurviveWhateverAnimatesAway` asks about
+         ancestry rather than about strings, so it would have failed if this
+         wrapper had swallowed either. -->
+    <details id="controls" open>
+      <summary><span class="chev" aria-hidden="true">▾</span>
+        <b>The table, the region, the gene order and the filters</b>
+        — 4 sections</summary>
+      <div class="reveal">
+    <!-- Wrapped so it can be hidden as a unit on the Atlas path, where it is
+         the one section of the four that does NOT apply: `makeSpokes` reads
+         the region, the gene order and the filters from the sections below,
+         and takes its genes from the contrast instead of from this box.
+
+         Hidden rather than filled in with the contrast's own logFC/padj. A
+         populated textarea reads as editable, and an edited value would draw a
+         figure whose provenance says Expression Atlas over numbers that were
+         typed — the same lie `sources.DESource` was built to stop. -->
+    <div id="paste-section">
+    <h2>1. Differential expression table</h2>
+    <p class="hint">Columns: gene symbol, logFC, adjusted p. CSV or TSV.
+      Every row is either rendered or named in the drop ledger.<br>
+      <!-- UX B9: the rejection message names the accepted aliases; so should
+           the hint, before you have to fail to find out. -->
+      Accepted headers, as exported: DESeq2 <code>log2FoldChange</code>/<code>padj</code>,
+      edgeR <code>logFC</code>/<code>FDR</code>, limma <code>logFC</code>/<code>adj.P.Val</code>.
+      Positional guessing is never attempted.<br>
+      Up to <b>60</b> genes. Above that the spokes are too narrow to read, so the
+      table is capped by adjusted p and every excluded gene is named in the ledger.</p>
+    <textarea id="table" rows="10" spellcheck="false"
+      placeholder="gene,logFC,padj&#10;BRAF,2.41,0.0003"></textarea>
+    <div class="row">
+      <button id="load-example" class="ghost">load example</button>
+      <button id="load-broken" class="ghost">load a deliberately broken table</button>
+      <input type="file" id="file" accept=".csv,.tsv,.txt">
+    </div>
+    </div>
+    <!-- What stands in its place while a contrast is driving the run. Says
+         where the genes are coming from rather than leaving a gap, because a
+         section that silently vanishes reads as a bug. -->
+    <div id="paste-superseded" class="note" hidden></div>
+    <h2>2. Region</h2>
+    <!-- UX B11: nothing said what this changed. -->
+    <p class="hint">Affects exactly one ring — <b>regional specificity</b>, the region's
+      median TPM divided by this gene's median across the GTEx panel. Genes below
+      1 TPM in the region are drawn <b>no data</b> rather than given a ratio: a ratio
+      without a level is not a specificity statement.</p>
+    <select id="region"></select>
+    <!-- Set for you when a disease is chosen, and said rather than done
+         silently: "enriched in ileum" and "enriched in whole blood" are
+         different statements about a gene, and a reader who did not pick the
+         tissue will not notice it was picked unless it is here. The select
+         stays exactly as editable as it was. -->
+    <div id="region-inferred" class="note" hidden></div>
+
+    <h2>3. Gene order around the circle</h2>
+    <!-- v2.5 item 1. The order carries meaning and is printed on the figure. -->
+    <p class="hint">The default is <b>the order of your submitted table</b>, unchanged —
+      you have usually already sorted it, and it is your measurement rather than a
+      composite this app invented. Ordering by a single ring uses that one source's own
+      number; genes with no value on it go last, as a visible block, never treated as
+      the lowest value.</p>
+    <select id="ordering"></select>
+
+    <h2>4. Threshold filters <span class="hint">optional</span></h2>
+    <!-- v2.5 item 2, and the two rules that govern it. -->
+    <p class="hint">One per line, as <code>ring &gt;= number</code> or
+      <code>ring &lt;= number</code>, compared against the ring's own raw value — the
+      number in <code>values.csv</code>, not a rank or a colour position. A filtered
+      gene is removed from the plot and named in the drop ledger.<br>
+      <b>A threshold never drops a gene that has no data on that ring.</b> It is kept
+      and marked <code>~</code>; otherwise filtering would quietly delete the
+      under-studied genes instead of the ones that missed the threshold. Tick the box
+      below to drop them anyway, and the figure will say that is what happened.</p>
+    <textarea id="filters" rows="3" spellcheck="false"
+      placeholder="regional_specificity >= 5&#10;literature >= 1.5"></textarea>
+    <label class="check"><input type="checkbox" id="drop-no-data">
+      also drop genes with no data on a filtered ring (off by default)</label>
+    <div id="filterable" class="hint"></div>
+      </div>
+    </details>
+
+    <!-- Outside the collapse on purpose: the button that acts on the form is not
+         part of the form's help text, and after B7 closes the sections it is the
+         one control that must still be where it was. -->
+    <button id="go">Draw the figure</button>
+    <!-- Where the staged progress panel renders while a run is in flight. The
+         Atlas path uses `#make-spokes-status` for the same thing, so both ways
+         in get the same panel. -->
+    <div id="run-progress"></div>
+    <div id="status"></div>
+  </section>
+
+  <section id="result" hidden>
+    <div id="banner" hidden></div>
+    <div id="conditions" hidden></div>
+    <div id="counts" class="counts"></div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="figure">Figure</button>
+      <!-- v3.6. The same run, as a grid. Not a second analysis and not a second
+           reading of the sources: it is a pivot of `values.csv`, the artefact
+           invariant 1 already asserts is cell-for-cell what was drawn. -->
+      <button class="tab" data-tab="table">Table</button>
+      <!-- The go/no-go surface. Named "Evidence" and not "Go / no-go" because it
+           does not produce one: rule 7 forbids ranking, scoring and eligibility,
+           and a verdict is that machinery renamed. It states what each source
+           found per target, what it did not, and where two of them disagree.
+           See `evidence.py` for the rules and why each one is a fact rather
+           than a judgement. -->
+      <button class="tab" data-tab="evidence">Evidence</button>
+      <button class="tab" data-tab="ledger">Drop ledger</button>
+      <button class="tab" data-tab="invariants">Invariants</button>
+      <button class="tab" data-tab="caveats">What this is not</button>
+    </div>
+
+    <div class="tabpane" id="pane-figure">
+      <!-- v3.0. Was a row of six and v3.0 adds three artefacts, which would
+           have made it nine. Three menus instead, grouped by what you are
+           trying to walk away with rather than by file type: the figure, the
+           legend that goes on the next slide, and the data that lets somebody
+           check it. Everything inside a menu names its format, so nothing is
+           hidden -- the row just stops being a wall.
+           The run id is repeated here because every one of these downloads is
+           only true of that run, and the legend most of all. -->
+      <div class="row dl-row">
+        <details class="dl">
+          <summary class="btn">Figure ▾</summary>
+          <div class="dl-menu">
+            <a id="dl-png" download>PNG — the full export, with every caveat</a>
+            <a id="dl-svg" download>SVG — same, editable in Illustrator</a>
+            <a id="dl-slide" download>Slide SVG (16:9)</a>
+            <a id="dl-slide-png" download>Slide PNG (16:9)</a>
+            <a id="dl-caption" download>caption.txt — paste under the slide</a>
+          </div>
+        </details>
+        <details class="dl">
+          <summary class="btn">Legend ▾</summary>
+          <div class="dl-menu">
+            <a id="dl-legend-png" download>PNG — the legend on its own slide</a>
+            <a id="dl-legend" download>SVG — same, editable</a>
+            <p class="hint">Twelve scales, the cell states and the caveats, 16:9.
+              It carries this run's id: only pair it with a figure that shows
+              the same one.</p>
+          </div>
+        </details>
+        <details class="dl">
+          <summary class="btn">Data ▾</summary>
+          <div class="dl-menu">
+            <a id="dl-csv" download>values.csv — every cell, with its Ensembl id</a>
+            <!-- UX A3 -->
+            <a id="dl-ledger" download>ledger.csv — every gene not on the figure</a>
+            <a id="dl-manifest" target="_blank">manifest.json — sources, versions, invariants</a>
+          </div>
+        </details>
+        <span id="dl-run" class="hint"></span>
+        <span class="hint" id="figure-click-hint">Click a gene label or any of its cells to open the drawer.</span>
+      </div>
+      <!-- v3.1 / UX v3 A2. Two things used to live inside the SVG and be drawn
+           at 5.8-6.5 CSS px on a 1440 px laptop: the twelve per-ring scales and
+           the cell-state box. They are HTML now, at the page's own type sizes.
+
+           The two things Puck's rule protects are outside the collapse and stay
+           outside it:
+             * the comparability sentence is drawn large in the render's own
+               top-left corner, above the circle and before any cell — see
+               below;
+             * the four cell states are always rendered open — `#cell-states`
+               has no toggle at all, so there is no state of this page in which
+               they are hidden.
+           What animates is `#scales`, which is reference a reader consults when
+           decoding a particular cell, and its summary says what it contains and
+           how many there are so the closed state is not a dead end.
+
+           v3.2 / UX v3 round 2 A6. There WAS a full-width amber `#comparability`
+           band here, added by round 1 alongside the size fix that made the
+           render's own copy 16.55 px. Both landed, so the sentence was printed
+           twice with 8 px between them, two amber bold blocks whose first lines
+           were the same 47 characters -- which is `UX-v1-mvp.md`'s own noise
+           finding about the counts appearing three times, restored.
+
+           Only the size fix was needed. Round 1's objection to the in-SVG copy
+           was that it was "178 x 7 CSS px in the top-right corner -- not behind
+           a click, and not seen either", i.e. an objection to its SIZE, and the
+           canvas change answered that by itself. So the band is gone and rule 2
+           is held by the render, where the sentence also survives a screenshot.
+           The assertion got stronger rather than weaker: it now measures the
+           drawn size against the 12.0 px floor at the width the app gives the
+           figure, which is the question the rule was always asking and the one
+           an HTML-presence test could not see.
+
+           The band's extra clause -- that nine of the twelve ranges move with
+           the submitted set -- went into `#cell-states`, beside the ranges. -->
+      <div class="figure-row">
+        <div id="figure-col">
+          <div id="figure"></div>
+          <!-- v3.2 / UX v3 round 2 A4. The caveat clauses the app render used to
+               draw under its own circle. They were four to five wrapped lines of
+               10 pt — 0.83 in of the canvas — and they were the block that made
+               the figure 1,148 px tall in a 900 px viewport: every (height,
+               bottom margin, axes height) triple the geometry assertions were
+               offered failed on them or on the wedge names until both left.
+
+               This is A2's trade on a second block, and §v3.0's rule for this
+               layout rather than a new idea: the app render drops what the page
+               itself says, the page says it at 13 px, and the export keeps every
+               word. Directly under the circle, in document order, not inside a
+               <details> — a caveat behind a click is a caveat nobody read.
+
+               The one clause that did NOT move is FILTERED. It is the difference
+               between this circle being the submitted set and being a subset of
+               it, and the only other copy of it on the figure is the centre's at
+               9.8 CSS px, under this review's floor. See
+               `figure.caveats_for_the_page`. -->
+          <p id="figure-caveats" class="figure-caveats"></p>
+        </div>
+        <aside id="decode">
+          <!-- v3.5 item 2. The sentence that explains the gap at 12 o'clock, and
+               it is here because of what it explains rather than to tidy the
+               strip below.
+
+               With the ring names off, the gap reads as a rendering bug: a
+               wedge of white where every other spoke has twelve bands. The
+               sentence that answers it was the third clause of
+               `#figure-caveats`, 953 px down the document — below the fold on
+               the 1440 x 900 laptop this review measures at, so the question and
+               its answer were never on the screen at once. Beside the figure it
+               is read while the hole is being looked at.
+
+               ONE statement, in one place. `figure.caveats_for_the_page`
+               classifies it `where` and drops it from the strip under the
+               circle in the same move, so there is no copy to go stale — round 2
+               A6 deleted a caveat that had been added beside an existing one
+               instead of moved, and that is the class of bug this must not
+               reintroduce. It is outside every `<details>` on the page, like the
+               two things that may never be behind a click. -->
+          <p id="wedge-note" class="wedge-note"></p>
+          <div id="cell-states"></div>
+          <details id="scales" open>
+            <summary><span class="chev" aria-hidden="true">▾</span>
+              <b>The 12 ring scales</b> — what a colour means, ring by ring</summary>
+            <div id="scale-rows" class="reveal"></div>
+          </details>
+        </aside>
+      </div>
+    </div>
+
+    <!-- v3.6. Genes down, the rings across, in the figure's own radial order —
+         column 1 is the outermost band. On the circle that correspondence is
+         recoverable only by counting inward on an 11.2 px pitch
+         (`docs/reviews/PANEL-v0-instrument.md` P1/P2); here the column is
+         named, which is most of what P1 asked for, on this rendering.
+
+         The run is addressed by id rather than taken from `RUN`, so the 250
+         runs already under `runs/` are viewable and a reload does not lose the
+         one on screen. `?run=<id>` opens straight to it. -->
+    <div class="tabpane" id="pane-table" hidden>
+      <div class="row table-pick">
+        <label for="table-run">Run</label>
+        <input id="table-run" list="table-runs" spellcheck="false"
+               placeholder="20260928T044236Z-893dec" size="30">
+        <datalist id="table-runs"></datalist>
+        <button id="table-load" class="ghost">load</button>
+        <span id="table-run-note" class="hint"></span>
+      </div>
+      <div id="table-status" class="hint"></div>
+      <div id="table-meta"></div>
+      <div id="table-sort"></div>
+      <!-- v3.8. The per-column dim filter, and it is NOT §4 of the analyse form.
+           §4 is PLAN §3.2: a threshold there removes genes from the plot and names
+           each one in the drop ledger, it is set before the run, and it is part of
+           what the run was. This one dims rows in the view already on screen, after
+           the fact, and removes nothing — no run, no figure, no ledger row, no
+           artefact, no values.csv, no manifest. Two mechanisms that look alike but
+           do different things is its own hazard, so this one is somewhere else,
+           shaped differently (dropdowns, not a `ring >= n` textarea), worded
+           differently ("is at least", not ">="), and says what it does not do.
+
+           The count line goes directly above the grid: a filtered grid that does
+           not say it is filtered is a misleading artefact, and this is the same
+           principle as the manifest making a screenshot of the figure
+           self-describing. -->
+      <div id="table-dim"></div>
+      <div id="table-dim-counts"></div>
+      <div id="table-grid" class="scroll-x"></div>
+      <!-- v3.7 item 1. "Where these N columns come from" — one row per column,
+           numbered to match the column numbers, with the ring's source as a real
+           link.
+
+           OUTSIDE `.scroll-x` on purpose: the grid scrolls sideways at fourteen
+           columns and a citation strip that scrolled away with column 12 would be
+           a citation nobody found. It is a `<details>` because it is reference a
+           reader consults about a particular column, and its summary counts the
+           rows so the closed state is not a dead end — the same rule `#scales`
+           and the drop ledger follow.
+
+           This is also the only place in the app where a run READ OFF DISK has
+           its sources on screen. `#scales`, in `#pane-figure`, is populated from
+           `/api/run/{id}/scales`, which reads the in-process `_runs` dict and so
+           404s for all ~250 runs under `runs/`. -->
+      <div id="table-sources"></div>
+      <div id="table-ledger"></div>
+    </div>
+
+    <!-- The evidence pane carries its own run picker for the reason the Table
+         pane does: it reads artefacts, so it can open any of the runs under
+         `runs/` and not only the one in memory. `evidence-status` is where a
+         refusal is printed — an empty surface with no sentence reads as a
+         broken tab. -->
+    <div class="tabpane" id="pane-evidence" hidden>
+      <div class="row table-pick">
+        <label for="evidence-run">Run</label>
+        <input id="evidence-run" list="evidence-runs" spellcheck="false"
+               placeholder="20260928T044236Z-893dec" size="30">
+        <datalist id="evidence-runs"></datalist>
+        <button id="evidence-load" class="ghost">load</button>
+      </div>
+      <div id="evidence-status" class="hint"></div>
+      <div id="evidence"></div>
+    </div>
+
+    <div class="tabpane" id="pane-ledger" hidden><div id="ledger"></div></div>
+    <div class="tabpane" id="pane-invariants" hidden><div id="invariants"></div></div>
+    <div class="tabpane" id="pane-caveats" hidden><div id="caveats"></div></div>
+  </section>
+</main>
+
+<aside id="drawer" hidden>
+  <button id="drawer-close" aria-label="close">×</button>
+  <div id="drawer-body"></div>
+</aside>
+<!-- 2026-10-18, Puck: "a text box on highlight that has an LLM interpretation of
+     the values". Filled by `showSummary` from the gene's BAKED drawer (the
+     `summary` block `scripts/bake_summaries.py` wrote); shown on hover/focus of a
+     gene label or any of its cells, dismissed by its button or Escape. Empty
+     when no baked summary exists -- nothing is fetched live and nothing is
+     generated on the page. -->
+<aside id="summary-box" hidden role="status" aria-live="polite">
+  <button id="summary-close" aria-label="dismiss summary">×</button>
+  <div id="summary-body"></div>
+</aside>
+<div id="scrim" hidden></div>
+
+<script src="static-demo.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

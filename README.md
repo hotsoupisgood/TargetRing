@@ -214,6 +214,14 @@ a sentence saying so. Run ids outside the list are "unknown run", same as an
 id that never existed. One middleware, `app._demo_gate`; `tests/test_demo.py`
 enumerates what it refuses. A demo box needs no API key and must not have one.
 
+Because that surface answers nothing but GETs for nothing but four finished
+runs, it can be crawled once and served as files:
+`scripts/export_static_demo.py` writes it to `docs/demo/` (16 MB, no server, no
+key, no box). `docs/STATIC-DEMO.md` has what works, what is stubbed and how to
+regenerate; `docs/showcase/06-static-demo.png` is the static copy running.
+Nothing is deployed — rule 10 stands, and turning GitHub Pages on is the
+owner's to do.
+
 ## Stack
 
 Python 3.13 · FastAPI + uvicorn · httpx · matplotlib + pyCirclize · pydantic

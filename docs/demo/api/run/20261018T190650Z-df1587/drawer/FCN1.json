@@ -1,0 +1,541 @@
+{
+ "gene": "FCN1",
+ "input_symbol": "FCN1",
+ "ensembl_id": "ENSG00000085265",
+ "uniprot": "O00602",
+ "gencode_id": "ENSG00000085265.10",
+ "resolution_status": "ok",
+ "resolution_note": "",
+ "logfc": 2.6,
+ "padj": 3.69e-16,
+ "k": 5,
+ "k_max": 9,
+ "k_note": "5 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+ "unfiltered_rings": [],
+ "pipeline_summary": "0 agents \u2014 target record exists, genuinely undrugged",
+ "severe_liabilities": [],
+ "attribution_error": null,
+ "drugs": [],
+ "safety_liabilities": [],
+ "trials": {
+  "source": "Open Targets clinicalReports",
+  "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this target are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
+  "sources_seen": {},
+  "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 0 drug-trial PAIRS; the same trials are 0 DISTINCT studies, because a trial testing two of this target's drugs appears in both rows. Live: 0 pairs = 0 distinct. Stopped early: 0 pairs = 0 distinct, of which 0 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
+  "n_pairs": 0,
+  "n_pairs_live": 0,
+  "n_pairs_stopped": 0,
+  "n_pairs_for_cause": 0,
+  "n_distinct_trials": 0,
+  "n_distinct_live": 0,
+  "n_distinct_stopped": 0,
+  "n_live_and_stopped": 0,
+  "n_rows_without_an_nct_id": 0,
+  "distinct_is_a_floor": false,
+  "stop_categories": {},
+  "lead_sponsors": [],
+  "n_lead_sponsors": 0,
+  "drugs": []
+ },
+ "tdl": {
+  "state": "value",
+  "value": 1.0,
+  "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+  "raw": {
+   "tdl": "Tbio",
+   "ordinal": 1,
+   "family": null,
+   "novelty": 0.01037775,
+   "source": "Pharos TDL",
+   "matched_on": "sym (cached)",
+   "pharos_symbol": "FCN1"
+  }
+ },
+ "literature": {
+  "pubtator_count": 1695,
+  "pubtator_query": "@GENE_FCN1",
+  "years": {
+   "2023": 270,
+   "2022": 259,
+   "2025": 236,
+   "2024": 213,
+   "2021": 176,
+   "2020": 131,
+   "2019": 63,
+   "2026": 57,
+   "2018": 43,
+   "2017": 38,
+   "2013": 30,
+   "2016": 28,
+   "2014": 26,
+   "2012": 25,
+   "2015": 24,
+   "2011": 18,
+   "2009": 14,
+   "2010": 9,
+   "2008": 8,
+   "2007": 7,
+   "2005": 4,
+   "2006": 4,
+   "1998": 3,
+   "2003": 3,
+   "1996": 2,
+   "2004": 2,
+   "1993": 1,
+   "2000": 1
+  },
+  "error": null,
+  "europepmc": "fetched",
+  "europepmc_note": "fetched on gene click (v2.2 item 3)",
+  "europepmc_query": "\"FCN1\"",
+  "europepmc_count": 2161,
+  "europepmc_error": null,
+  "europepmc_echo_live": false,
+  "europepmc_echo_ok": true
+ },
+ "chembl": {
+  "state": "no_target_record",
+  "note": "no ChEMBL target record for this accession (no data, not undrugged)",
+  "target_chembl_id": null,
+  "n_mechanisms": 0,
+  "n_direct": 0,
+  "n_direct_efficacy": 0,
+  "rows": [],
+  "untrusted": true,
+  "untrusted_reason": "UniProt/ChEMBL resolution is unprobed at scale (QA B6). This panel is evidence, not a ring, and does not affect any rank."
+ },
+ "chembl_note": "fetched on gene click (v2.2 item 3)",
+ "mouse_phenotypes": [],
+ "cells": {
+  "logfc": {
+   "state": "value",
+   "value": 2.6,
+   "detail": "logFC 2.6 (submitted)"
+  },
+  "neg_log10_padj": {
+   "state": "value",
+   "value": 15.432973621748479,
+   "detail": "adjusted p 3.69e-16 (submitted)"
+  },
+  "tractable": {
+   "state": "value",
+   "value": 0.3333333333333333,
+   "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+1.00, hasSmallMoleculeBinder=+0.00"
+  },
+  "chemical_probe": {
+   "state": "no_data",
+   "value": null,
+   "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+  },
+  "safety": {
+   "state": "value",
+   "value": 0.20058887975897016,
+   "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.80, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence."
+  },
+  "regional_specificity": {
+   "state": "no_data",
+   "value": null,
+   "detail": "0.947 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (1.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer."
+  },
+  "clinical_phase": {
+   "state": "value",
+   "value": 0.0,
+   "detail": "target record exists, 0 drug or clinical candidates"
+  },
+  "clinical_activity": {
+   "state": "not_applicable",
+   "value": null,
+   "detail": "no drugs, so there is no activity to report"
+  },
+  "tdl": {
+   "state": "value",
+   "value": 1.0,
+   "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+  },
+  "rodent": {
+   "state": "no_data",
+   "value": null,
+   "detail": "not phenotyped \u2014 no mouse phenotype records at all, which is not the same as 'no phenotype'"
+  },
+  "literature": {
+   "state": "value",
+   "value": 3.229425847920695,
+   "detail": "1695 PubTator3 records for '@GENE_FCN1' (log10(1+n) = 3.23); gene id-resolved, region is free text"
+  },
+  "completeness": {
+   "state": "value",
+   "value": 5.0,
+   "detail": "5 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+  }
+ },
+ "triage": null,
+ "expression": {
+  "region": "Small_Intestine_Terminal_Ileum",
+  "region_tpm": 0.947,
+  "region_tpm_source": "GTEx median TPM, as printed in the regional_specificity cell",
+  "panel_median_tpm": null,
+  "n_tissues": null,
+  "tissue_distribution": 0.5185185185185186,
+  "region_is_disease_tissue": true,
+  "region_is_disease_tissue_source": "manifest run_conditions: 'region ... was inferred from the disease' = True; region == the form's silent default and not inferred = False; chosen by hand = null (no claim)",
+  "whole_blood_tpm": 287.683,
+  "spleen_tpm": 42.8739,
+  "immune_hint_tissues": {
+   "whole_blood_tpm": "Whole_Blood",
+   "spleen_tpm": "Spleen"
+  }
+ },
+ "contrast_text": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification' A1a Paris classification; Crohn's disease",
+ "recommendation": {
+  "verdict": "NO-GO",
+  "criteria": [
+   {
+    "key": "expressed",
+    "label": "expressed",
+    "status": "not_met",
+    "value": 0.947,
+    "shown": "0.947 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+    "bare": "0.947 TPM",
+    "threshold": "GTEx TPM >= 1 in the run's region",
+    "source": "GTEx median TPM"
+   },
+   {
+    "key": "dysregulated",
+    "label": "dysregulated in the study",
+    "status": "met",
+    "value": {
+     "logfc": 2.6,
+     "padj": 3.69e-16
+    },
+    "shown": "logFC 2.6, adjusted p 3.69e-16",
+    "bare": "logFC +2.6, p 3.7e-16",
+    "threshold": "|logFC| >= 1 and adjusted p <= 0.05",
+    "source": "submitted DE table"
+   },
+   {
+    "key": "phenotype",
+    "label": "phenotype in a study",
+    "status": "no_data",
+    "value": {
+     "ring": null,
+     "n_abnormal": 0
+    },
+    "shown": "not phenotyped -- no mouse phenotype records, which is not 'no phenotype'",
+    "bare": "not phenotyped",
+    "threshold": "mouse phenotype ring > 0, or >= 1 abnormal mouse term(s)",
+    "source": "Open Targets mousePhenotypes",
+    "disease_area": {
+     "disease_area": "inflammatory bowel disease",
+     "mapping_version": "5ca634159f74",
+     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+     "n_met_terms": 0,
+     "matched": false,
+     "matching_terms": [],
+     "areas": [
+      "digestive/alimentary system",
+      "immune system",
+      "inflammation"
+     ],
+     "shown": "disease-area match: no abnormal terms to match (inflammatory bowel disease)",
+     "short": "disease-area terms: 0",
+     "tooltip": "inflammatory bowel disease: none of the 0 abnormal term(s) is in this disease area (digestive/alimentary system, immune system, inflammation). Display aid, not a criterion."
+    }
+   }
+  ],
+  "caveats": [],
+  "modality": null,
+  "expression": {
+   "region": "Small_Intestine_Terminal_Ileum",
+   "region_tpm": 0.947,
+   "panel_median_tpm": null,
+   "n_tissues": null,
+   "ratio": null,
+   "region_is_disease_tissue": true,
+   "specific": false,
+   "specific_ratio_threshold": 5.0,
+   "blood_or_spleen_at_or_above_region": true,
+   "shown": "0.947 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+   "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+  },
+  "region_tag": {
+   "region": "Small_Intestine_Terminal_Ileum",
+   "short": "ileum",
+   "origin": "inferred",
+   "shown": "region: ileum, inferred",
+   "tooltip": "Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+  },
+  "disease_area": {
+   "disease_area": "inflammatory bowel disease",
+   "mapping_version": "5ca634159f74",
+   "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+   "n_met_terms": 0,
+   "matched": false,
+   "matching_terms": [],
+   "areas": [
+    "digestive/alimentary system",
+    "immune system",
+    "inflammation"
+   ],
+   "shown": "disease-area match: no abnormal terms to match (inflammatory bowel disease)",
+   "short": "disease-area terms: 0",
+   "tooltip": "inflammatory bowel disease: none of the 0 abnormal term(s) is in this disease area (digestive/alimentary system, immune system, inflammation). Display aid, not a criterion."
+  },
+  "thresholds": {
+   "min_tpm": 1.0,
+   "min_abs_logfc": 1.0,
+   "max_q": 0.05,
+   "min_phenotypes": 1,
+   "specific_ratio": 5.0
+  },
+  "rule_short": "rule: expressed AND dysregulated AND phenotype \u2014 not used to order or filter the figure",
+  "rule_tooltip": "Thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
+  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+  "rule_version": "bdc70c8fc230",
+  "mode": "rule",
+  "note": "not used to order or filter the figure",
+  "basis": "Puck's explicit rule (2026-10-18), separate from the evidence rings"
+ },
+ "baked": {
+  "at_utc": "2026-10-18T19:07:56Z",
+  "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
+  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count -- fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
+  "run_id": "20261018T190650Z-df1587",
+  "sources": [
+   "opentargets.target",
+   "pharos.target",
+   "pubtator.count",
+   "chembl.target",
+   "chembl.mechanism",
+   "europepmc.search"
+  ]
+ },
+ "summary": {
+  "text": "NO-GO: expressed not met (0.947 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue and a disease tissue for this contrast), dysregulated in the study met (logFC 2.6, adjusted p 3.69e-16), and phenotype in a study has no data (not phenotyped \u2014 no mouse phenotype records, which is not \"no phenotype\"). Hypothesis: inhibition, because the gene is up-regulated in the Crohn's disease versus non-inflammatory-bowel-disease control contrast, logFC 2.6, adjusted p 3.69e-16. There are no mouse phenotype records, the pipeline holds 0 agents against a target record that exists and no ChEMBL mechanisms, development level: biology known, no chemistry, and the literature runs to 1695 PubTator3 records. The change may reflect infiltrating immune cells rather than regulation in the tissue: whole blood 287.7 TPM and spleen 42.87 TPM both sit at or above the region's 0.947 TPM. No data: chemical probe, regional specificity and the mouse phenotype lead; clinical activity is not applicable, as there are no drugs.",
+  "model": "claude-opus-5",
+  "prompt_version": "2ab6ea127fbd28e5",
+  "effort": "low",
+  "generated_at": "2026-10-19T01:58:59Z",
+  "inputs": {
+   "gene": "FCN1",
+   "input_symbol": "FCN1",
+   "ensembl_id": "ENSG00000085265",
+   "study": {
+    "source": "Expression Atlas E-GEOD-101794 g2_g1",
+    "contrast_name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
+    "sign_sentence": "positive log2FC = up in A1a Paris classification; Crohn's disease (n=61) vs A1a Paris classification; non inflammatory bowel disease control (n=13)",
+    "test_group": "A1a Paris classification; Crohn's disease",
+    "reference_group": "A1a Paris classification; non inflammatory bowel disease control",
+    "n_test": 61,
+    "n_ref": 13,
+    "log2_fold_change": 2.6,
+    "adjusted_p": 3.69e-16,
+    "direction": "up in the test group"
+   },
+   "region": "Small_Intestine_Terminal_Ileum",
+   "expression": {
+    "region": "Small_Intestine_Terminal_Ileum",
+    "region_tpm": 0.947,
+    "panel_median_tpm": null,
+    "n_tissues": null,
+    "ratio": null,
+    "region_is_disease_tissue": true,
+    "specific": false,
+    "specific_ratio_threshold": 5.0,
+    "blood_or_spleen_at_or_above_region": true,
+    "shown": "0.947 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+    "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+   },
+   "immune_origin_hint": {
+    "suggested": true,
+    "reasons": [
+     "whole blood 287.7 TPM >= Small_Intestine_Terminal_Ileum 0.947 TPM",
+     "spleen 42.87 TPM >= Small_Intestine_Terminal_Ileum 0.947 TPM"
+    ],
+    "rule": "GTEx whole-blood or spleen median TPM >= 1 and >= the region's TPM",
+    "inflamed_tissue_contrast": true
+   },
+   "rings": [
+    {
+     "ring": "logfc",
+     "state": "value",
+     "value": 2.6,
+     "detail": "logFC 2.6 (submitted)"
+    },
+    {
+     "ring": "neg_log10_padj",
+     "state": "value",
+     "value": 15.432973621748479,
+     "detail": "adjusted p 3.69e-16 (submitted)"
+    },
+    {
+     "ring": "tractable",
+     "state": "value",
+     "value": 0.3333333333333333,
+     "detail": "mean of 3/3 keys: hasLigand=+0.00, hasPocket=+1.00, hasSmallMoleculeBinder=+0.00"
+    },
+    {
+     "ring": "chemical_probe",
+     "state": "no_data",
+     "value": null,
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+    },
+    {
+     "ring": "safety",
+     "state": "value",
+     "value": 0.20058887975897016,
+     "detail": "mean of 4/4 keys: hasSafetyEvent=+0.00*, geneEssentiality=+0.00, geneticConstraint=+0.80, isCancerDriverGene=+0.00* | * = key absent from the response. Open Targets emits hasSafetyEvent, isCancerDriverGene only at the non-zero end, so absence is that field's other value, not a missing measurement. Absence of a record is not evidence."
+    },
+    {
+     "ring": "regional_specificity",
+     "state": "no_data",
+     "value": null,
+     "detail": "0.947 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (1.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer."
+    },
+    {
+     "ring": "clinical_phase",
+     "state": "value",
+     "value": 0.0,
+     "detail": "target record exists, 0 drug or clinical candidates"
+    },
+    {
+     "ring": "clinical_activity",
+     "state": "not_applicable",
+     "value": null,
+     "detail": "no drugs, so there is no activity to report"
+    },
+    {
+     "ring": "tdl",
+     "state": "value",
+     "value": 1.0,
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+    },
+    {
+     "ring": "rodent",
+     "state": "no_data",
+     "value": null,
+     "detail": "not phenotyped \u2014 no mouse phenotype records at all, which is not the same as 'no phenotype'"
+    },
+    {
+     "ring": "literature",
+     "state": "value",
+     "value": 3.229425847920695,
+     "detail": "1695 PubTator3 records for '@GENE_FCN1' (log10(1+n) = 3.23); gene id-resolved, region is free text"
+    },
+    {
+     "ring": "completeness",
+     "state": "value",
+     "value": 5.0,
+     "detail": "5 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+    }
+   ],
+   "rings_without_a_value": [
+    "chemical_probe",
+    "regional_specificity",
+    "clinical_activity",
+    "rodent"
+   ],
+   "k": 5,
+   "k_max": 9,
+   "mouse_phenotypes": [],
+   "pipeline": {
+    "n_drugs": 0,
+    "stages_reached": [],
+    "furthest_agent": null,
+    "summary_line": "0 agents \u2014 target record exists, genuinely undrugged",
+    "n_distinct_trials": 0,
+    "n_live_trials": 0,
+    "n_stopped_trials": 0,
+    "n_stopped_for_cause": 0,
+    "severe_safety_liabilities": [],
+    "n_safety_liability_rows": 0
+   },
+   "chembl": {
+    "state": "no_target_record",
+    "n_mechanisms": 0,
+    "n_direct_interaction": 0,
+    "n_direct_with_disease_efficacy": 0
+   },
+   "tdl": {
+    "state": "value",
+    "label": "Tbio",
+    "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+   },
+   "literature": {
+    "pubtator_records": 1695,
+    "europepmc_records": 2161
+   },
+   "ledger_status": "rendered; not in the drop ledger (submitted as drawn)",
+   "recommendation": {
+    "verdict": "NO-GO",
+    "criteria": [
+     {
+      "criterion": "expressed",
+      "status": "not_met",
+      "shown": "0.947 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+     },
+     {
+      "criterion": "dysregulated in the study",
+      "status": "met",
+      "shown": "logFC 2.6, adjusted p 3.69e-16"
+     },
+     {
+      "criterion": "phenotype in a study",
+      "status": "no_data",
+      "shown": "not phenotyped -- no mouse phenotype records, which is not 'no phenotype'"
+     }
+    ],
+    "caveats": [],
+    "modality": null,
+    "disease_area": {
+     "shown": "disease-area match: no abnormal terms to match (inflammatory bowel disease)",
+     "matched": false,
+     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)"
+    },
+    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+    "rule_version": "bdc70c8fc230"
+   }
+  },
+  "facts_key": "076ef0a661c19240",
+  "usage": {
+   "input_tokens": 6224,
+   "output_tokens": 404,
+   "cache_read_tokens": 0,
+   "usd": 0.04122
+  },
+  "stop_reason": "end_turn",
+  "note": "LLM-generated from the values in this drawer and nothing else, when the summary was baked, not when you opened it. It reads the figure; it is not a literature review. Its first sentence restates the GO / NO-GO verdict computed by the owner's rule (recommend.py), which it was given and did not decide. The exact facts it was given are stored beside it."
+ },
+ "phenotype_llm": {
+  "flag": 0,
+  "reason": "No mouse phenotype terms are on record for this gene, so there is nothing pointing to gut or inflammatory biology.",
+  "model": "claude-opus-5",
+  "prompt_version": "dce98a0009c9c277",
+  "effort": "low",
+  "generated_at": "2026-10-19T01:57:20Z",
+  "inputs": {
+   "gene": "FCN1",
+   "disease_area": "inflammatory bowel disease",
+   "contrast_text": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification' A1a Paris classification; Crohn's disease",
+   "mouse_phenotype_terms": [],
+   "n_terms": 0,
+   "knockout_ring": {
+    "state": "no_data",
+    "value": null,
+    "detail": "not phenotyped \u2014 no mouse phenotype records at all, which is not the same as 'no phenotype'"
+   },
+   "question": "Is there a model-organism phenotype that a biologist would read as evidence this gene matters for this disease area? Answer 1 or 0 and one plain sentence naming the term(s)."
+  },
+  "facts_key": "5907afce478f10a3",
+  "usage": {
+   "input_tokens": 1165,
+   "output_tokens": 54,
+   "cache_read_tokens": 0,
+   "usd": 0.007175
+  },
+  "stop_reason": "end_turn",
+  "is_criterion": false,
+  "note": "A 0/1 read of this gene's mouse phenotype terms against the contrast's disease area, written by the model named beside it from those terms and nothing else, when the drawer was baked. It sits BESIDE the owner's deterministic phenotype criterion and is never the criterion: it never changes the GO / NO-GO verdict and orders nothing on the figure."
+ },
+ "phenotype_terms": []
+}

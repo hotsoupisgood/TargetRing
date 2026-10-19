@@ -1,0 +1,524 @@
+{
+ "run_id": "20261018T190526Z-94ef5f",
+ "timestamp_utc": "2026-10-18T19:05:48+00:00",
+ "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
+ "region": "Small_Intestine_Terminal_Ileum",
+ "input_row_count": 12,
+ "rendered_count": 11,
+ "ledger_count": 1,
+ "gene_order": [
+  "MUC1",
+  "FCGR3A",
+  "FCGR1A",
+  "FCN1",
+  "PELATON",
+  "CXCL5",
+  "FCGR1BP",
+  "CXCL2",
+  "FCGR3B",
+  "CXCL3",
+  "CXCL1"
+ ],
+ "submitted_order": [
+  "MUC1",
+  "FCGR3A",
+  "FCGR1A",
+  "FCN1",
+  "PELATON",
+  "CXCL5",
+  "FCGR1BP",
+  "CXCL2",
+  "FCGR3B",
+  "CXCL3",
+  "CXCL1"
+ ],
+ "sources": {
+  "opentargets": "https://api.platform.opentargets.org/api/v4/graphql",
+  "gtex": "https://gtexportal.org/api/v2/expression/medianGeneExpression?datasetId=gtex_v8",
+  "gtex_reference": "https://gtexportal.org/api/v2/reference/gene",
+  "pubtator3": "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/search/",
+  "europepmc": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+  "chembl": "https://www.ebi.ac.uk/chembl/api/data",
+  "pharos": "https://pharos-api.ncats.io/graphql",
+  "atlas_experiment": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/{ACC}/",
+  "atlas_catalogue": "https://www.ebi.ac.uk/gxa/json/experiments",
+  "ols4_select": "https://www.ebi.ac.uk/ols4/api/select",
+  "ols4_terms": "https://www.ebi.ac.uk/ols4/api/ontologies",
+  "gtex_region": "Small_Intestine_Terminal_Ileum",
+  "cache_hits": 81,
+  "cache_misses": 0
+ },
+ "schema_versions": {
+  "region_llm": "1",
+  "chooser_llm": "1",
+  "opentargets.resolve": "1",
+  "opentargets.target": "4",
+  "gtex.gene": "1",
+  "gtex.median_expression": "1",
+  "pubtator.count": "1",
+  "chembl.target": "1",
+  "chembl.mechanism": "1",
+  "europepmc.search": "1",
+  "pharos.target": "1",
+  "ols.select": "1",
+  "ols.term": "1",
+  "atlas.catalogue": "1",
+  "atlas.configuration": "1",
+  "atlas.condensed_sdrf": "1",
+  "atlas.index": "2",
+  "atlas.analytics": "1",
+  "atlas.raw_counts": "1",
+  "atlas.analysis_methods": "1",
+  "europepmc.article": "1",
+  "llm.phenotype_summary": "1",
+  "llm.evidence_summary": "1"
+ },
+ "contracts": [
+  {
+   "check": "opentargets.production_query",
+   "ok": true,
+   "detail": "18 prioritisation keys, 18 drug candidates"
+  },
+  {
+   "check": "opentargets.prioritisation_keys",
+   "ok": true,
+   "detail": "all 18 keys present"
+  },
+  {
+   "check": "opentargets.ring_keys",
+   "ok": true,
+   "detail": "every key a ring reads is present"
+  },
+  {
+   "check": "opentargets.field_snapshot",
+   "ok": true,
+   "detail": "schema matches the checked-in snapshot"
+  },
+  {
+   "check": "opentargets.batch_drop",
+   "ok": true,
+   "detail": "nonexistent id still dropped, not nulled (returned ['ENSG00000157764'])"
+  },
+  {
+   "check": "gtex.version_coupling",
+   "ok": true,
+   "detail": "ENSG00000157764.12 (gtex_v8) returns 54 tissues"
+  }
+ ],
+ "invariants": [
+  {
+   "id": "I1",
+   "name": "cell-count identity",
+   "outcome": "PASS",
+   "detail": "132 cells across 12 rings match the CSV",
+   "affects": ""
+  },
+  {
+   "id": "I2",
+   "name": "missing-fill disjointness",
+   "outcome": "PASS",
+   "detail": "34 non-value cells painted only in ['#4d4d4d', '#808080', '#e8e8e8', '#ffffff']; disjoint from the 98 value cells' 58 colours and from the full 2200-step colormap (hatch patterns resolved, not compared as url refs)",
+   "affects": ""
+  },
+  {
+   "id": "I3",
+   "name": "label correspondence",
+   "outcome": "PASS",
+   "detail": "all 132 cells carry the gene their spoke index claims, and every ring follows the same order (ok)",
+   "affects": ""
+  },
+  {
+   "id": "I4",
+   "name": "input == rendered + ledgered",
+   "outcome": "PASS",
+   "detail": "12 = 11 rendered + 1 dropped",
+   "affects": ""
+  },
+  {
+   "id": "I5",
+   "name": "literature query integrity",
+   "outcome": "PASS",
+   "detail": "1 Europe PMC echo(es) checked live and byte-identical; no ERROR key in 11 NCBI response(s)",
+   "affects": ""
+  },
+  {
+   "id": "I6",
+   "name": "five-ID regression",
+   "outcome": "PASS",
+   "detail": "five_spokes=ok; missing_is_explicit=ok; braf_matches_single_query=ok; survivors_not_shifted=ok",
+   "affects": ""
+  },
+  {
+   "id": "I7",
+   "name": "the figure states what it did",
+   "outcome": "PASS",
+   "detail": "no headline marker survives the ranking; the spoke order is printed on the figure (spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)) and the spokes follow it; no threshold filter was active",
+   "affects": ""
+  },
+  {
+   "id": "I8",
+   "name": "contrast identity",
+   "outcome": "PASS",
+   "detail": "E-GEOD-101794 g2_g1 \u2014 prose name and sign sentence both printed on the figure and match the `ContrastRef` this run used",
+   "affects": ""
+  },
+  {
+   "id": "I9",
+   "name": "three-stage accounting",
+   "outcome": "PASS",
+   "detail": "65217 = 25232 with a statistic + 39985 without; top 60 <= with-statistic; 12 selected <= top",
+   "affects": ""
+  }
+ ],
+ "llm": {
+  "accounts": {
+   "triage": {
+    "cap": 5.0,
+    "spent": 0,
+    "calls": 0,
+    "remaining": 5.0,
+    "purpose": "LLM triage of the top 10 genes (not built; nothing has ever been spent on it)"
+   },
+   "phenotype": {
+    "cap": 5.0,
+    "spent": 0.05852,
+    "calls": 5,
+    "remaining": 4.94148,
+    "purpose": "the phenotype-page summary, one call per gene, summarising only the table it sits above"
+   },
+   "chooser": {
+    "cap": 2.0,
+    "spent": 0.24304,
+    "calls": 35,
+    "remaining": 1.75696,
+    "purpose": "the contrast chooser, one call per disease, choosing only among contrasts the index already offered it"
+   },
+   "region": {
+    "cap": 1.0,
+    "spent": 0.0524,
+    "calls": 9,
+    "remaining": 0.9476,
+    "purpose": "the region chooser, one call per disease and then cached, choosing only among the GTEx tissues this build can read"
+   },
+   "summary": {
+    "cap": 3.0,
+    "spent": 0.996595,
+    "calls": 52,
+    "remaining": 2.003405,
+    "purpose": "the per-gene evidence summary, baked offline by scripts/bake_summaries.py from the gene's own drawer values and served as a file; the app never makes this call"
+   }
+  },
+  "lines": [
+   "triage: $0.00 of $5.00 spent over 0 calls",
+   "phenotype: $0.06 of $5.00 spent over 5 calls",
+   "chooser: $0.24 of $2.00 spent over 35 calls",
+   "region: $0.05 of $1.00 spent over 9 calls",
+   "summary: $1.00 of $3.00 spent over 52 calls"
+  ],
+  "model": null,
+  "prompt_hash": null,
+  "price_table": {
+   "claude-opus-5": {
+    "input": 5.0,
+    "output": 25.0,
+    "cache_read": 0.5
+   },
+   "claude-fable-5-1": {
+    "input": 10.0,
+    "output": 50.0
+   }
+  },
+  "price_table_cached_utc": "2026-06-24",
+  "attempted": false,
+  "note": "no paid call is on the render path; both accounts are folded from the append-only spend ledger, not assumed to be zero"
+ },
+ "ledger": [
+  {
+   "input": "ENSG00000279487",
+   "status": "unresolved",
+   "reason": "'ENSG00000279487' matched no Open Targets target Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence.",
+   "resolved_symbol": null,
+   "ensembl_id": null,
+   "row": 11
+  }
+ ],
+ "timings": {
+  "contracts_s": 2.09,
+  "resolve_s": 0.01,
+  "opentargets_s": 0.0,
+  "gtex_s": 0.0,
+  "pubtator_s": 0.0,
+  "pharos_s": 0.47,
+  "europepmc_probe_s": 0.97,
+  "adapters_s": 0.98,
+  "regression_s": 1.16,
+  "render_s": 4.7,
+  "exports_s": 13.48,
+  "total_s": 22.49
+ },
+ "not_attempted": [
+  "Measured rate limits under parallel load \u2014 unmeasured for every source. Concurrency is capped at 4 per host and any 429 is a hard run failure (QA \u00a75).",
+  "LLM triage gold set \u2014 labelling ~20 abstracts is human work. Triage precision is UNMEASURED (QA S2 item 5).",
+  "Any ChEMBL-backed ring \u2014 UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring (QA B6, COUNCIL D2).",
+  "Any ordering of the genes by merit. The spokes are in the order this run states on the figure and nothing on it is a ranking, a score or a recommendation."
+ ],
+ "environment": {
+  "python": "3.13.15",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "max_concurrency_per_host": "4"
+ },
+ "warnings": [],
+ "ordering": "submitted",
+ "ordering_note": "spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)",
+ "filters": [],
+ "filter_counts": {
+  "filtered": 0,
+  "kept_unevaluated": 0,
+  "kept_unevaluated_by_gene": {}
+ },
+ "run_conditions": [
+  {
+   "condition": "region Small_Intestine_Terminal_Ileum was inferred from the disease, not chosen",
+   "affects": "the regional-specificity ring only \u2014 every other ring is unaffected. Crohn disease most characteristically causes transmural granulomatous inflammation of the terminal ileum, the classic site examined for diagnosis and research. Chosen for 'Crohn disease' by the region chooser (remembered from 2026-10-09). Change the region in the form and re-run if this is the wrong tissue."
+  },
+  {
+   "condition": "no Pharos TDL for 2 of 11 gene(s) (PELATON, FCGR1BP)",
+   "affects": "those cells are hatched, never zeroed; Pharos covers 20,412 human targets and absence of a record is not Tdark"
+  }
+ ],
+ "ring_sources": [
+  {
+   "ring": "logfc",
+   "linked": "no",
+   "reason": "the `g2_g1.log2foldchange` column of E-GEOD-101794-analytics.tsv, read from Expression Atlas, Ensembl 95 for contrast g2_g1 (DESeq2 version: 1.10.1). Not a table you submitted: this run selected these genes from that contrast. The run's manifest records the file's URL under `contrast.analytics_url` and `values.csv` carries the value per gene",
+   "legend_text": "",
+   "doc_url": "",
+   "endpoint": "",
+   "version": "",
+   "reads": ""
+  },
+  {
+   "ring": "neg_log10_padj",
+   "linked": "no",
+   "reason": "the `g2_g1.p-value` column of E-GEOD-101794-analytics.tsv, read from Expression Atlas, Ensembl 95 for contrast g2_g1 (DESeq2 version: 1.10.1) and drawn as \u2212log10(padj) so that more significant is larger \u2014 that one transform and nothing else. Not a table you submitted. The run's manifest records the file's URL under `contrast.analytics_url` and the cell detail prints the original p back",
+   "legend_text": "",
+   "doc_url": "",
+   "endpoint": "",
+   "version": "",
+   "reads": ""
+  },
+  {
+   "ring": "tractable",
+   "linked": "yes",
+   "reason": "defines and scores the three keys this ring averages",
+   "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "doc_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section",
+   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+   "version": "api/v4 graphql \u00b7 target query schema v4",
+   "reads": "target.prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder"
+  },
+  {
+   "ring": "chemical_probe",
+   "linked": "yes",
+   "reason": "the section for the one sparse key, which is why it is its own ring",
+   "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "doc_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#chemical-probes",
+   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+   "version": "api/v4 graphql \u00b7 target query schema v4",
+   "reads": "target.prioritisation: hasHighQualityChemicalProbes"
+  },
+  {
+   "ring": "safety",
+   "linked": "yes",
+   "reason": "states that an absent safety record scores 0 rather than 'safe' \u2014 the caveat this ring's label carries",
+   "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "doc_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+   "version": "api/v4 graphql \u00b7 target query schema v4",
+   "reads": "target.prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
+  },
+  {
+   "ring": "regional_specificity",
+   "linked": "yes",
+   "reason": "the operation this ring calls, with its parameters and its dataset ids",
+   "legend_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+   "doc_url": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+   "endpoint": "https://gtexportal.org/api/v2/expression/medianGeneExpression",
+   "version": "api v2 \u00b7 dataset gtex_v8 \u00b7 schema v1",
+   "reads": "medianGeneExpression: region median TPM / median across the panel"
+  },
+  {
+   "ring": "clinical_phase",
+   "linked": "yes",
+   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications \u2014 the reason the ring gates on attribution (COUNCIL V1)",
+   "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "doc_url": "https://platform-docs.opentargets.org/target/drugs",
+   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+   "version": "api/v4 graphql \u00b7 target query schema v4",
+   "reads": "target.drugAndClinicalCandidates \u2014 maximum stage per indication"
+  },
+  {
+   "ring": "clinical_activity",
+   "linked": "yes",
+   "reason": "the clinical report record itself \u2014 the statuses and the stop categories, which is what the three states are built from",
+   "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "doc_url": "https://platform-docs.opentargets.org/drug/clinical-report",
+   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+   "version": "api/v4 graphql \u00b7 target query schema v4",
+   "reads": "clinicalReports: trialOverallStatus, trialWhyStopped category"
+  },
+  {
+   "ring": "tdl",
+   "linked": "yes",
+   "reason": "the IDG-KMC definition of the four levels; Pharos serves the field and does not define it",
+   "legend_text": "Pharos \u00b7 druggablegenome.net",
+   "doc_url": "https://druggablegenome.net/IDGProteinFamilies",
+   "endpoint": "https://pharos-api.ncats.io/graphql",
+   "version": "graphql \u00b7 schema v1",
+   "reads": "target(q:{sym}).tdl"
+  },
+  {
+   "ring": "rodent",
+   "linked": "yes",
+   "reason": "Open Targets publishes no page for the mousePhenotypes field; this table names its upstream dataset. The prioritisation view's Mouse models section documents a different number and is NOT cited here",
+   "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "doc_url": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
+   "version": "api/v4 graphql \u00b7 target query schema v4",
+   "reads": "target.mousePhenotypes (upstream: MGI)"
+  },
+  {
+   "ring": "literature",
+   "linked": "yes",
+   "reason": "the API this ring counts through, which is where the gene-id resolution that stops common-word symbols inflating is specified",
+   "legend_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+   "doc_url": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+   "endpoint": "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/search/",
+   "version": "search api \u00b7 schema v1",
+   "reads": "search?text=@GENE_<id> \u2014 records matching the resolved NCBI Gene id"
+  },
+  {
+   "ring": "completeness",
+   "linked": "no",
+   "reason": "computed here, by counting rings 3-11: k is how many of the nine external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs \u2014 no source of its own is read for it",
+   "legend_text": "",
+   "doc_url": "",
+   "endpoint": "",
+   "version": "",
+   "reads": ""
+  }
+ ],
+ "contrast": {
+  "accession": "E-GEOD-101794",
+  "contrast_id": "g2_g1",
+  "ref_group": "g2",
+  "test_group": "g1",
+  "ref_label": "A1a Paris classification; non inflammatory bowel disease control",
+  "test_label": "A1a Paris classification; Crohn's disease",
+  "n_ref": 13,
+  "n_test": 61,
+  "name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
+  "platform": "rnaseq",
+  "ensembl_release": "95",
+  "pipeline": "DESeq2 version: 1.10.1",
+  "analytics_url": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-GEOD-101794/E-GEOD-101794-analytics.tsv",
+  "configuration_url": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-GEOD-101794/E-GEOD-101794-configuration.xml",
+  "index_built_utc": "2026-09-29T22:37:58+00:00",
+  "ref_assays": [
+   "SRR5862239",
+   "SRR5862229",
+   "SRR5862232",
+   "SRR5862231",
+   "SRR5862236",
+   "SRR5862230",
+   "SRR5862238",
+   "SRR5862240",
+   "SRR5862235",
+   "SRR5862233",
+   "SRR5862228",
+   "SRR5862237",
+   "SRR5862234"
+  ],
+  "test_assays": [
+   "SRR5862036",
+   "SRR5862046",
+   "SRR5861974",
+   "SRR5862044",
+   "SRR5862030",
+   "SRR5862076",
+   "SRR5861984",
+   "SRR5861982",
+   "SRR5862037",
+   "SRR5862067",
+   "SRR5862056",
+   "SRR5862051",
+   "SRR5862072",
+   "SRR5862068",
+   "SRR5861986",
+   "SRR5862063",
+   "SRR5862071",
+   "SRR5862066",
+   "SRR5862042",
+   "SRR5862077",
+   "SRR5861985",
+   "SRR5862047",
+   "SRR5862060",
+   "SRR5862043",
+   "SRR5861978",
+   "SRR5861981",
+   "SRR5862062",
+   "SRR5861975",
+   "SRR5862041",
+   "SRR5862055",
+   "SRR5862049",
+   "SRR5862032",
+   "SRR5862050",
+   "SRR5862065",
+   "SRR5862057",
+   "SRR5862031",
+   "SRR5861979",
+   "SRR5862073",
+   "SRR5862045",
+   "SRR5862048",
+   "SRR5862038",
+   "SRR5862052",
+   "SRR5862070",
+   "SRR5862034",
+   "SRR5862035",
+   "SRR5861976",
+   "SRR5862054",
+   "SRR5862053",
+   "SRR5861977",
+   "SRR5862069",
+   "SRR5862061",
+   "SRR5862040",
+   "SRR5862033",
+   "SRR5862075",
+   "SRR5862039",
+   "SRR5862059",
+   "SRR5862058",
+   "SRR5862064",
+   "SRR5861983",
+   "SRR5861980",
+   "SRR5862074"
+  ],
+  "sign_sentence": "positive log2FC = up in A1a Paris classification; Crohn's disease (n=61) vs A1a Paris classification; non inflammatory bowel disease control (n=13)",
+  "is_rnaseq": true,
+  "min_n": 13,
+  "small_n_caveat": "",
+  "small_n_headline": "",
+  "small_n_affects": "",
+  "small_n_flag_key": ""
+ },
+ "selection_accounting": {
+  "n_total": 65217,
+  "n_with_statistic": 25232,
+  "n_without_statistic": 39985,
+  "n_top": 60,
+  "n_up": 59,
+  "n_down": 1,
+  "n_selected": 12
+ },
+ "any_invariant_failed": false,
+ "all_invariants_pass": true
+}
