@@ -168,15 +168,20 @@ async function init() {
       // reader's machine, and on a demo box it is somebody else's. Say what
       // this box actually is.
       const note = $("#local-note");
+      // v4.2, Puck 2026-10-19: "no published version please" — no sentence on
+      // this page may call it a demo, a read-only copy, a static export or a
+      // published version, or explain that there is no server behind it. The
+      // page is the tool.
+      //
+      // So in tool mode the clause is EMPTY rather than reworded: the masthead's
+      // default ("nothing leaves this machine") is a claim about the reader's
+      // machine and is not this box's to make, and anything that replaced it
+      // would be a sentence about hosting above a figure. What a control cannot
+      // do is said by that control, in its own tooltip
+      // (`disableServerOnlyControls`), where a reader meets it.
       if (note) note.textContent = h.featured_run
-        // v4.0. In tool mode this is one clause, not a blurb: "no 'read-only
-        // demo' prose; the page is the tool". It still has to SAY that nothing
-        // runs here, because the masthead's other sentence ("nothing leaves
-        // this machine") is a claim about the reader's machine and on this box
-        // it is somebody else's — but the explanation of what a demo is belongs
-        // in Puck's blog post, not above his figure.
-        ? "Served from one finished run's files; nothing is computed here."
-        : "Read-only demo — finished runs, served as files; nothing is computed here.";
+        ? ""
+        : "Finished runs, served from their artefacts.";
       // v4.0, Puck 2026-10-19: "i want the target ring to be interactive too
       // also make it the same as the final site will be so just have one
       // example" and "its supposed to be a tool, explanations will be on my
@@ -351,9 +356,48 @@ async function init() {
     RESIZE_TIMER = setTimeout(redrawForThisWindow, RESIZE_SETTLE_MS);
   });
 
+  // After every control is wired, so the disabling is not undone by a later
+  // assignment.
+  disableServerOnlyControls();
+
   // Last, so the hash is read after every control above is wired and can be
   // painted into. It replaces rather than pushes; the comment on it says why.
   startHistory();
+}
+
+// v4.2. True when this copy of the page has no analysis server behind it —
+// `scripts/static_demo_shim.js` sets the flag, so the served app never takes
+// this branch and `tests/test_demo.py` still enumerates the server's behaviour
+// unchanged.
+function noServerHere() {
+  return !!window.TARGETRING_STATIC_DEMO;
+}
+
+// v4.2, Puck 2026-10-19: a control that cannot act says so in a short plain
+// tooltip, on itself. Not a banner, not a paragraph, and never a sentence about
+// what kind of copy of the page this is.
+//
+// The list is only what genuinely needs the server: a disease search is a live
+// query, a pasted table is a new analysis. "Draw the figure" is deliberately
+// NOT here — it redraws the run on screen, which is a real thing it can do.
+function serverOnly(sel, why) {
+  const el = typeof sel === "string" ? $(sel) : sel;
+  if (!el) return;
+  el.disabled = true;
+  el.title = why;
+}
+
+function disableServerOnlyControls() {
+  if (!noServerHere()) return;
+  serverOnly("#disease", "Searching for a disease needs the analysis server.");
+  serverOnly("#table", "Drawing a new figure needs the analysis server.");
+  serverOnly("#file", "Drawing a new figure needs the analysis server.");
+  serverOnly("#load-example", "Drawing a new figure needs the analysis server.");
+  serverOnly("#load-broken", "Drawing a new figure needs the analysis server.");
+  serverOnly("#ordering", "The spoke order is set when a figure is drawn.");
+  serverOnly("#filters", "Threshold filters are applied when a figure is drawn.");
+  serverOnly("#drop-no-data", "Threshold filters are applied when a figure is drawn.");
+  serverOnly("#region", "The region is set when a figure is drawn.");
 }
 
 // ---------- stage 1: disease search ----------
@@ -3575,6 +3619,22 @@ function renderTable(d) {
   $("#table-grid").innerHTML = `<table class="grid">
     <thead>${head}</thead><tbody>${body}</tbody></table>`;
 
+  // v4.2. Re-sorting and dimming are `order.py`'s and `dim.classify`'s, both
+  // server-side on purpose — a second definition of either in this file is the
+  // drift the app's own comments refuse. With no server the column heads stop
+  // being click targets and say why in one clause, rather than offering a sort
+  // that answers with a refusal.
+  const sortless = noServerHere();
+  if (sortless) {
+    $("#table-grid").querySelectorAll("th.sortable").forEach((th) => {
+      th.classList.remove("sortable");
+      th.classList.add("unsortable");
+      th.title = (th.title ? th.title + " — " : "")
+        + "sorting needs the analysis server; this is the order the run drew.";
+    });
+    const clear = $("#table-clear");
+    if (clear) serverOnly(clear, "This is already the order the run drew.");
+  }
   $("#table-grid").querySelectorAll("th.sortable").forEach((th) => {
     th.onclick = (ev) => {
       const o = th.dataset.ordering;
@@ -3694,6 +3754,14 @@ function renderDimBar(d) {
        on is neither a match nor an exclusion and gets its own treatment — no value
        is not a low value. To actually remove genes, use
        <b>threshold filters</b> on the analyse form, which ledger what they drop.</p>`;
+
+  // v4.2. `dim.classify` decides a dim filter and it is server-side on purpose,
+  // so with no server the control is disabled with one clause rather than left
+  // to answer with a refusal.
+  if (noServerHere()) {
+    const why = "Dim filters are decided by the analysis server.";
+    ["#dim-col", "#dim-op", "#dim-thr", "#dim-add"].forEach((s) => serverOnly(s, why));
+  }
 
   $("#dim-add").onclick = () => {
     const thr = $("#dim-thr").value.trim();

@@ -265,7 +265,34 @@ def rewrite_index(html: str) -> str:
     if 'nav class="sitenav"' not in html:
         raise SystemExit("index.html no longer carries nav.sitenav; the "
                          "exported page would have no link to docs/flow/")
+
+    # v4.2, Puck 2026-10-19: "no published version please". The run-card index
+    # and its "Read-only demo" paragraph are already hidden in tool mode — the
+    # exported page opens IN one run and never lists cards — so the markup is
+    # removed outright rather than left in the document as prose about what kind
+    # of copy this is. Nothing on the exported page references `#demo-panel`:
+    # `app.js` fills it only when the server reports a demo WITHOUT a featured
+    # run, which this export never is.
+    html = _DEMO_PANEL.sub("", html)
+    for phrase in BANNED_ON_THE_PAGE:
+        if phrase.lower() in html.lower():
+            raise SystemExit(
+                f"the exported page still says {phrase!r} — the page is the "
+                "tool and may not describe itself as a demo or a copy")
     return html
+
+
+# One `<section>`, matched by its id and closed by the first `</section>`,
+# because that is how it is written in `static/index.html` (no nested section).
+_DEMO_PANEL = re.compile(r'\s*<section id="demo-panel".*?</section>', re.S)
+
+# Sentences the exported page may not carry, from Puck's own list: "remove ...
+# every sentence that calls it a demo, read-only, static copy, published
+# version, or explains that there is no server". Checked against the HTML the
+# browser parses, not against the JS comments that explain why it is gone.
+BANNED_ON_THE_PAGE = ("read-only demo", "static copy", "static export",
+                      "published version", "there is no server",
+                      "nothing is computed here")
 
 
 def check_shim_refusal(app_module) -> None:
