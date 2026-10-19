@@ -30,9 +30,27 @@
      A class on <body> rather than a separate landing page, because a second
      page would be a second copy of the search, the autocomplete and the
      contrast flow — and the moment there are two, they drift. -->
-<body class="landing">
+<body class="landing" data-site="pages">
 <header>
   <h1>targetring <span class="ver">v2</span></h1>
+  <!-- The site nav, and it is display:none HERE on purpose.
+
+       The published site has two pages — the tool at `/TargetRing/demo/` and
+       the methods flowchart at `/TargetRing/flow/` — and they are meant to
+       read as one site, so the nav belongs in this file rather than being
+       patched in by the exporter: a masthead assembled in two places drifts,
+       and the nav row is part of the masthead's geometry.
+
+       But the app server serves exactly one page. `../flow/` from `/` is not
+       a page here, and a link to a page that is not there is worse than no
+       link, so `app.css` hides `nav.sitenav` unless <body> carries
+       `data-site="pages"` — which only `scripts/export_static_demo.py` sets,
+       on the copy it writes into `docs/demo/`. No JS, no probe and no flash:
+       the live app simply never paints it. -->
+  <nav class="sitenav" aria-label="targetring">
+    <a href="./" class="here" aria-current="page">Tool</a>
+    <a href="../flow/">How it works</a>
+  </nav>
   <p class="sub">
     A gene set, rings of evidence, and a drawer per gene.
     <strong>Nothing here is ranked or scored.</strong>

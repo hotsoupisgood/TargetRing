@@ -351,6 +351,39 @@ h1 { margin: 0; font-size: var(--tr-t-h1); line-height: var(--tr-lh-tight);
      letter-spacing: var(--tr-tracking-tight); font-weight: 600; }
 h1 .ver { color: var(--muted); font-weight: 400; font-size: var(--tr-t-lede);
           letter-spacing: 0; }
+/* The site nav, hidden here and shown only on the published two-page site.
+
+   `static/index.html` carries the markup; the reason it is not painted by the
+   app is in the comment beside it — the app server has no `../flow/` to point
+   at. The switch is a `data-site` attribute the exporter sets, so the decision
+   is made once, at export, by the only thing that knows the sibling page is
+   there. Hidden with `display:none` rather than `visibility`, so it takes no
+   space and is out of the tab order.
+
+   `--tr-wash-height` already reserves 128 px of masthead, which is taller than
+   the title and the lede need, so the nav row drops into the band that was
+   there and moves no layout below it. */
+header nav.sitenav { display: none; }
+body[data-site="pages"] header nav.sitenav {
+  display: flex; gap: var(--tr-s-4); margin: var(--tr-s-2) 0 0;
+  font-size: var(--tr-t-small); line-height: var(--tr-lh-tight);
+}
+header nav.sitenav a {
+  color: var(--tr-ink-3); text-decoration: none; font-weight: 500;
+  letter-spacing: var(--tr-tracking-caps); text-transform: uppercase;
+  padding-bottom: 2px; border-bottom: 2px solid transparent;
+}
+header nav.sitenav a:hover { color: var(--tr-ink); }
+/* The current page is marked by weight, colour and a rule rather than by
+   removing the link: a nav that drops its own entry changes width between the
+   two pages, and the whole point of this row is that the masthead is the same
+   object on both. The rule is 2 px so it reads at 390 px too. */
+header nav.sitenav a.here {
+  color: var(--tr-ink); border-bottom-color: var(--tr-ink);
+}
+header nav.sitenav a:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px;
+}
 /* The section eyebrow. Caps and tracking carry the hierarchy, not size: a
    13 px label and a 13 px row are told apart by weight, colour and letter
    spacing, which is what keeps every string on the floor. */

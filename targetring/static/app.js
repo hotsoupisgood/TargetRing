@@ -164,8 +164,11 @@ async function init() {
   $("#summary-box").addEventListener("mouseleave", () => hideSummary(false));
 
   document.querySelectorAll(".tab").forEach((t) => {
-    t.onclick = () => showTab(t.dataset.tab);
+    t.onclick = () => goTab(t.dataset.tab);
   });
+  // The Back button. Wired once, here, before anything paints — see the block
+  // above `goTab` for what it is for and why the drawer is a history entry.
+  addEventListener("popstate", applyHash);
 
   // v3.6. The table reads artefacts, so it can open any run on disk — which is
   // the first time this app has had a way back to a run you already made.
@@ -242,7 +245,10 @@ async function init() {
     //
     // Nothing is redrawn and nothing is fetched from a source: the SVG on disk
     // is the one this run drew, and the drawer is the baked file beside it.
-    showToolFigure(wanted).then(() => showTab("figure"),
+    // v4.1: the hash wins over the default. This resolves after `startHistory`
+    // below, so a `#ledger` or `#figure/BRAF` link would otherwise be painted
+    // and then immediately overwritten by the figure tab.
+    showToolFigure(wanted).then(() => showTab(currentView().tab),
                                 () => showTab("table"));
     if (TOOL_RUN === wanted) showToolInputs(wanted);
   }
@@ -254,6 +260,10 @@ async function init() {
     clearTimeout(RESIZE_TIMER);
     RESIZE_TIMER = setTimeout(redrawForThisWindow, RESIZE_SETTLE_MS);
   });
+
+  // Last, so the hash is read after every control above is wired and can be
+  // painted into. It replaces rather than pushes; the comment on it says why.
+  startHistory();
 }
 
 // ---------- stage 1: disease search ----------
@@ -1329,6 +1339,82 @@ async function makeSpokes() {
   $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// ---------------------------------------------------------------------------
+// THE BACK BUTTON (v4.1, Puck: "check the button flow and back buttons")
+//
+// Until now this page had no history at all. Six tabs and a full-height drawer
+// were states of one URL, so the browser's Back button did the only thing it
+// could: leave the site. On a phone, where Back is the system gesture, that
+// meant a reader who opened a gene drawer and swiped back lost the figure —
+// and on the published site landed on the `docs/index.html` redirect stub,
+// which reloads the tool from scratch and drops the run.
+//
+// THE RULES, because getting these wrong is how a Back button half-works:
+//
+// * Painters never push. `showTab` and `openDrawer` only draw. `goTab` and
+//   `goGene` are the user's routes and are the only two that push. A painter
+//   that pushed would answer `popstate` with a new entry, which is a Back
+//   button that goes forward.
+// * One entry per view, not per click. Re-selecting the tab you are on, or
+//   re-opening the gene already in the drawer, replaces nothing and pushes
+//   nothing — otherwise Back walks a stack of identical views.
+// * The drawer is a view, so closing it is Back. `closeDrawer` delegates to
+//   `history.back()` when the drawer owns the current entry, which is also
+//   what restores the reader's scroll position: the browser kept it, and it
+//   does a better job than anything this file could save and reapply.
+// * `?run=` is NOT in the hash. It names which run is loaded and survives a
+//   reload; the hash names which view of that run is on screen. Mixing them
+//   would make a tab switch re-fetch a run.
+//
+// The hash is `#<tab>` or `#<tab>/<gene>`. Unknown tabs and unknown genes fall
+// back to the figure rather than painting a blank pane, because a stale link
+// in someone's notes should degrade to the tool, not to nothing.
+// ---------------------------------------------------------------------------
+const TABS = ["figure", "table", "ledger", "evidence", "invariants", "caveats"];
+
+function currentView() {
+  const [tab, gene] = decodeURIComponent(location.hash.slice(1)).split("/");
+  return {tab: TABS.includes(tab) ? tab : "figure", gene: gene || null};
+}
+
+function hashFor(tab, gene) {
+  return "#" + encodeURIComponent(tab) + (gene ? "/" + encodeURIComponent(gene) : "");
+}
+
+// `popstate` and the opening paint both land here. It paints, and it is the
+// one function in this block that must never push.
+function applyHash() {
+  const v = currentView();
+  showTab(v.tab);
+  if (v.gene) openDrawer(v.gene, false);
+  else closeDrawerPaint();
+}
+
+function goTab(name) {
+  // Leaving a gene open while switching tabs would put two views in one entry.
+  if (hashFor(name, null) === location.hash) { showTab(name); return; }
+  history.pushState({tab: name}, "", hashFor(name, null));
+  showTab(name);
+  closeDrawerPaint();
+}
+
+function goGene(gene) {
+  const v = currentView();
+  if (v.gene === gene) { openDrawer(gene, false); return; }
+  history.pushState({tab: v.tab, gene}, "", hashFor(v.tab, gene));
+  openDrawer(gene, false);
+}
+
+// Called once at boot, after the figure or table has settled. `replaceState`,
+// not `pushState`: the first view must not be a history entry of its own, or
+// one Back from a freshly opened tool lands on the tool again and the reader
+// has to press it twice to leave.
+function startHistory() {
+  const v = currentView();
+  history.replaceState({tab: v.tab, gene: v.gene}, "", hashFor(v.tab, v.gene));
+  if (v.gene) openDrawer(v.gene, false);
+}
+
 function showTab(name) {
   document.querySelectorAll(".tab").forEach((x) =>
     x.classList.toggle("active", x.dataset.tab === name));
@@ -1691,7 +1777,10 @@ function render(b) {
   // UX B3: "N not shown" looked like a link and did nothing. It is the one
   // place the user asks "why?".
   const sl = $("#show-ledger");
-  if (sl) sl.onclick = () => showTab("ledger");
+  // v4.1: `goTab`, not `showTab` — this is a user-driven tab change like any
+  // other, so Back from the ledger has to return to the figure it was asked
+  // about rather than off the site.
+  if (sl) sl.onclick = () => goTab("ledger");
 
   // v3.2 / UX v3 round 2 B7. The form is 1,053 px of a 2,487 px page and every
   // word of its help text is worth reading exactly once. Closed on the first
@@ -2281,7 +2370,12 @@ function sectionise(html) {
   }).join("");
 }
 
-async function openDrawer(gene) {
+async function openDrawer(gene, push = true) {
+  // `push` defaults true so every existing call site — the spoke labels, the
+  // figure cells, the grid rows — becomes a history entry without being
+  // touched. `applyHash` and `goGene` pass false: they are already answering
+  // or writing the entry themselves.
+  if (push) { goGene(gene); return; }
   // Two routes, one drawer. A run in memory has adapters behind it and
   // `/gene/` fetches ChEMBL and Europe PMC on this click. A run read from disk
   // has none; `/drawer/` is the file `scripts/bake_drawers.py` wrote beside the
@@ -2311,9 +2405,25 @@ async function openDrawer(gene) {
   $("#drawer").scrollTop = 0;
 }
 
-function closeDrawer() {
+// The paint half: hide the drawer, touch no history. `applyHash` uses this, so
+// that arriving at a gene-less entry closes the drawer without pushing.
+function closeDrawerPaint() {
   $("#drawer").hidden = true;
   $("#scrim").hidden = true;
+}
+
+// The user's half, behind the ×, the scrim and Escape. Closing the drawer is
+// going back from it, so it IS `history.back()`: that pops the entry the
+// drawer owns — leaving Back pointing at whatever came before the gene instead
+// of re-opening it — and the browser restores the scroll position it saved,
+// which is more faithful than anything this file could reapply.
+//
+// The guard matters. If the drawer somehow owns no entry (an old deep link, a
+// hand-edited hash) `history.back()` would walk off the site, so in that case
+// it just closes.
+function closeDrawer() {
+  if (currentView().gene) history.back();
+  else closeDrawerPaint();
 }
 
 // ---------- the evidence summary box (2026-10-18) ----------

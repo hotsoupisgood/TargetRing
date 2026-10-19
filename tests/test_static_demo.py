@@ -140,3 +140,51 @@ def test_nothing_published_names_this_machine_or_a_key():
             offenders.append(str(p.relative_to(DEMO)))
     assert not offenders, offenders
     assert not list(DEMO.rglob("spend-ledger*"))
+
+
+# ---------------------------------------------------------------------------
+# The 2026-10-19 button-flow audit found two ways the published download menus
+# were dead, and neither was visible locally — the demo is served at `/` here,
+# where the wrong URL happens to be the right one. Both regressions are cheap
+# to re-introduce and expensive to notice, so both get a test.
+# ---------------------------------------------------------------------------
+
+def test_the_shim_rebases_a_url_set_as_a_property():
+    """`app.js` fills the download menus with `el.href = "/api/run/..."`.
+
+    That is not a fetch, not an `innerHTML` write and not an inserted node, so
+    the shim's other three rebases never saw it: under `/TargetRing/` all ten
+    items pointed at the host's root and every download was a 404.
+    """
+    shim = (REPO / "scripts" / "static_demo_shim.js").read_text()
+    assert "patchUrlProperty" in shim, (
+        "the shim no longer patches the href/src property setters; every "
+        "download on the published site goes back to 404"
+    )
+    for ctor, prop in (("HTMLAnchorElement", "href"),
+                       ("HTMLImageElement", "src")):
+        assert f'patchUrlProperty(window.{ctor}, "{prop}")' in shim, (
+            f"{ctor}.{prop} is no longer rebased"
+        )
+    assert (DEMO / "static-demo.js").read_text() == shim, (
+        "docs/demo/static-demo.js is stale; re-run export_static_demo.py"
+    )
+
+
+@pytest.mark.parametrize("run_id", RUN_IDS)
+def test_every_artefact_the_payload_advertises_was_exported(run_id):
+    """A menu item is built for every name in `artefacts`, so a name that is
+    not in the tree is a dead link on a published page.
+
+    `figure-slide.svg` and `figure-slide.png` are deliberately not exported,
+    and the payload — which reads the RUN's directory, not the export's — used
+    to list them anyway. `export_static_demo.only_exported_artefacts` trims it.
+    """
+    body = json.loads((DEMO / "api" / "run" / run_id / "values.json").read_text())
+    arts = body.get("artefacts")
+    assert isinstance(arts, list) and arts, "values.json lost its artefacts list"
+    missing = [a for a in arts if not (DEMO / "api" / "run" / run_id / a).exists()]
+    assert not missing, (
+        f"values.json advertises {missing}, which the export did not write; "
+        "every one is a live menu item that 404s"
+    )

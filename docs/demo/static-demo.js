@@ -207,6 +207,49 @@
     set: function (v) { innerHTMLDesc.set.call(this, rewriteHtml(String(v))); }
   });
 
+  // ---- the third way a URL gets into this page: a PROPERTY --------------
+  //
+  // Found by the 2026-10-19 button-flow audit, and it was the whole download
+  // surface. `app.js` fills the Figure / Legend / Data menus with
+  //
+  //     el.href = `/api/run/${id}/figure.png`;
+  //
+  // on anchors that are ALREADY in the document. That is not a fetch, not an
+  // `innerHTML` write and not an inserted node, so none of the three rebases
+  // above saw it — and on a site served under `/TargetRing/` every one of the
+  // ten download items pointed at the host's root. All ten were 404 on the
+  // published page, which is the one claim ("every download") the demo makes
+  // about itself that a reader can check in a second.
+  //
+  // Patched on the prototype, the same shape as `innerHTML` and for the same
+  // reason: it has to happen as the value is assigned. A `MutationObserver` on
+  // attributes would fire after the anchor is already wrong, and a click in
+  // that window downloads the 404.
+  //
+  // A non-rewritable URL is passed through untouched, so an external link, a
+  // `blob:`, a `data:` and an already-relative path are not the shim's
+  // business.
+  function patchUrlProperty(ctor, prop) {
+    if (!ctor) return;
+    var desc = Object.getOwnPropertyDescriptor(ctor.prototype, prop);
+    if (!desc || !desc.set) return;
+    Object.defineProperty(ctor.prototype, prop, {
+      configurable: true,
+      enumerable: desc.enumerable,
+      get: desc.get,
+      set: function (v) {
+        var s = String(v);
+        if (s.charAt(0) === "/" && s.charAt(1) !== "/") {
+          var f = fileFor(s.split("?")[0], "");
+          if (f) s = BASE + f;
+        }
+        desc.set.call(this, s);
+      }
+    });
+  }
+  patchUrlProperty(window.HTMLAnchorElement, "href");
+  patchUrlProperty(window.HTMLImageElement, "src");
+
   // The backstop, for anything inserted another way. A no-op today; it costs
   // nothing and it is the difference between a broken image and a correct one
   // if app.js ever builds a node with `createElement`.
