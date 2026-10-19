@@ -52,6 +52,71 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// ---------- naming the input: "Gene expression", then the comparison ----------
+//
+// Puck, 2026-10-19, asked whether "contrast" is the first word a biologist
+// should meet: "Maybe just title it gene expression and then say
+// Differential... or Contrast underneath". So every place the tool names its
+// input is three layers, in this order:
+//
+//   Gene expression                                   <- the heading
+//   Differential expression: <group A> vs <group B>   <- what was compared
+//   Expression Atlas <acc> · contrast <id> · n=… · …  <- small-print provenance
+//
+// `contrast` stays where it is an IDENTIFIER (`g2_g1`) or a column name in a
+// data file. It is never a heading word, and no JSON key or CSV column is
+// renamed — a key that reads nicely and a key that joins are different jobs.
+//
+// Built HERE and nowhere else, for the reason `collapsedContrastLine()` exists:
+// the moment there are two of these strings they drift, and a card that
+// disagrees with the figure is the plausible-wrong-output this build refuses.
+
+//: "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a
+//: Paris classification'" -> "Crohn's disease vs non inflammatory bowel
+//: disease control". The factor clause is dropped: it is the Atlas variable
+//: the groups were cut on, not one of the two groups, and reading it as a
+//: third term is the kind of small misreading this layering is for.
+//
+// Split on the SEPARATOR, never on the quotes — `/'([^']+)'/` reads "Crohn"
+// out of "'Crohn's disease'", the same defect `showToolInputs` was fixed for.
+// Returns "" when the name is not in that shape, and every caller falls back
+// rather than printing half a comparison.
+function plainComparison(name) {
+  const s = String(name || "");
+  const sep = s.indexOf("' vs '");
+  if (sep < 0) return "";
+  const a = s.slice(0, sep).replace(/^'/, "");
+  let b = s.slice(sep + "' vs '".length);
+  const inAt = b.lastIndexOf("' in '");
+  b = (inAt >= 0 ? b.slice(0, inAt) : b.replace(/'$/, ""));
+  return a && b ? `${a} vs ${b}` : "";
+}
+
+//: The manifest stores the platform as Atlas spells it (`rnaseq`) and the
+//: pipeline as the configuration file spells it ("DESeq2 version: 1.10.1").
+//: Both are shown as a reader writes them. The stored values are untouched.
+const platformWord = (p) =>
+  String(p || "").toLowerCase() === "rnaseq" ? "RNA-seq" : String(p || "");
+const pipelineWord = (p) => String(p || "").replace(/\s*version:\s*/i, " ");
+
+//: The small-print line, from a manifest-shaped contrast record. Each field is
+//: dropped when absent rather than printed as an empty separator-delimited gap.
+function provenanceLine(c) {
+  const parts = [];
+  if (c.accession) parts.push(`Expression Atlas <code>${esc(c.accession)}</code>`);
+  const id = c.contrast_id || c.id;
+  if (id) parts.push(`contrast <code>${esc(id)}</code>`);
+  if (c.n_test != null && c.n_ref != null) {
+    parts.push(`n=${esc(c.n_test)} vs ${esc(c.n_ref)}`);
+  }
+  const plat = platformWord(c.platform);
+  if (plat) parts.push(esc(plat));
+  const pipe = pipelineWord(c.pipeline);
+  if (pipe) parts.push(esc(pipe));
+  if (c.ensembl_release) parts.push(`Ensembl ${esc(c.ensembl_release)}`);
+  return parts.join(" · ");
+}
+
 // The server reports a refusal two ways and the page must read both. The
 // hand-built `JSONResponse` paths — 422 no_selection, 502 source_failure —
 // carry `message`. Every `raise HTTPException` instead serialises as FastAPI's
@@ -570,13 +635,15 @@ async function showToolInputs(runId) {
   if (box && disease) box.value = disease;
   if (c) {
     $("#disease-chosen").hidden = false;
+    // Heading, comparison, provenance — the three layers, see
+    // `plainComparison()`. The comparison falls back to the manifest's own
+    // `name` if it is not in the `'A' vs 'B' in 'factor'` shape, because a
+    // card that silently drops what was compared is worse than a quoted one.
+    const comparison = plainComparison(c.name) || c.name || "";
     $("#disease-chosen").innerHTML =
-      `<div class="note"><b>${esc(c.name || "")}</b><br>
-        Expression Atlas <code>${esc(c.accession || "")}</code>
-        contrast <code>${esc(c.contrast_id || "")}</code> ·
-        n=${esc(c.n_test ?? "")} vs ${esc(c.n_ref ?? "")} ·
-        ${esc(c.platform || "")} · ${esc(c.pipeline || "")} ·
-        Ensembl ${esc(c.ensembl_release || "")}
+      `<div class="note"><b>Gene expression</b><br>
+        Differential expression: ${esc(comparison)}
+        <br><span class="hint">${provenanceLine(c)}</span>
         <br><span class="hint">${esc(c.sign_sentence || "")}</span></div>`;
   }
   // The region select shows the tissue the ring was actually read against, and
@@ -779,17 +846,18 @@ function pickedContrastHtml(picked) {
   const p = picked.chosen;
   const n = picked.n_considered;
   return `<div class="note picked">
-    <p class="picked-line"><b>Chosen for you:</b>
-      <code>${esc(p.accession)}</code> <code>${esc(p.contrast_id)}</code> —
+    <p class="picked-line"><b>Gene expression</b> — chosen for you</p>
+    <p class="picked-line">Differential expression:
       ${esc(p.test_label)} <b>(${p.n_test})</b> vs
       ${esc(p.ref_label)} <b>(${p.n_ref})</b></p>
+    <p class="hint">${provenanceLine(p)}</p>
     <p class="hint">${esc(picked.reason)}.</p>
     ${picked.control_caveat
       ? `<p class="hint"><b>The control side:</b> ${esc(picked.control_caveat)}.</p>`
       : ""}
     <div class="row">
       <button id="use-picked" class="primary">
-        Use this contrast — step 3: the gene table →</button>
+        Use this comparison — step 3: the gene table →</button>
       <button id="show-all-contrasts" class="ghost">choose a different one</button>
     </div>
     <details class="ev-why"><summary>how this was chosen</summary>
@@ -817,14 +885,15 @@ function renderContrasts(b, picked) {
   // neither for as long as the call takes.
   const open = picked && picked.chosen ? "" : " open";
   $("#contrast-panel").innerHTML = `
-    <h2>Contrasts</h2>
+    <h2>Gene expression</h2>
+    <p class="sub-head">Differential expression — which comparison to draw</p>
     <p class="picker-head"><b>${esc(c.count_text)}</b> · ${esc(c.built_text)}</p>
     ${picked === null
-      ? `<p class="hint" id="pick-pending">Choosing a contrast for you…
+      ? `<p class="hint" id="pick-pending">Choosing a comparison for you…
          the full list is below and works now.</p>`
       : pickedContrastHtml(picked)}
     <details id="all-contrasts"${open}>
-    <summary><b>All ${b.rows.length} contrasts</b> — choose a different one,
+    <summary><b>All ${b.rows.length} comparisons</b> — choose a different one,
       or check how the choice above was made</summary>
     <div class="reveal">
     <div class="note ${c.availability === "none_supported" ? "warn" : ""}"
@@ -951,9 +1020,12 @@ function showContrast(r) {
   // in the wrong case is a small version of the thing this whole panel exists to
   // prevent.
   $("#contrast-detail").innerHTML = `
-    <p class="detail-head"><code>${esc(r.accession)}</code> ·
-      <code>${esc(r.contrast_id)}</code></p>
-    <p class="prose-name">${esc(r.name || "(this experiment states no prose name)")}</p>
+    <p class="detail-head">Gene expression</p>
+    <p class="prose-name">Differential expression: ${
+      esc(plainComparison(r.name) || r.name
+          || "(this experiment states no prose name)")}</p>
+    <p class="hint">Expression Atlas <code>${esc(r.accession)}</code> ·
+      contrast <code>${esc(r.contrast_id)}</code></p>
     ${r.sign_sentence
       ? `<div class="note"><b>${esc(r.sign_sentence)}</b><br>
          The contrast id is <code>{reference}_{test}</code>, so
@@ -972,7 +1044,7 @@ function showContrast(r) {
       <code>-configuration.xml</code></a> is where every string above comes from.</p>
     ${r.drawable
       ? `<div class="row"><button id="use-contrast" class="primary">
-           Use this contrast — step 3: the gene table →</button></div>`
+           Use this comparison — step 3: the gene table →</button></div>`
       : ""}`;
   if (r.drawable) $("#use-contrast").onclick = () => selectContrast(r);
   $("#contrast-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -1055,7 +1127,11 @@ function invalidateFromStep(n) {
 }
 
 function collapsedContrastLine(r) {
-  return `${esc(r.accession)} ${esc(r.contrast_id)} · ${esc(r.name)} · ` +
+  // One line, so the three layers run inline: what it is, what was compared,
+  // where it came from. `contrast` appears only against the id.
+  const comparison = plainComparison(r.name) || r.name;
+  return `Differential expression: ${esc(comparison)} · ` +
+    `Expression Atlas ${esc(r.accession)} · contrast ${esc(r.contrast_id)} · ` +
     `n=${r.n_test} vs ${r.n_ref} · ${r.is_rnaseq ? "RNA-seq" : esc(r.platform)}`;
 }
 
@@ -1606,7 +1682,7 @@ async function analyse() {
   // This button draws the PASTED table. On the disease path the genes come
   // from the picked contrast instead and `syncPasteSection` hides this button
   // — but only once the gene table has loaded, and the gene table only loads
-  // when the reader clicks "Use this contrast". Between the pick landing and
+  // when the reader clicks "Use this comparison". Between the pick landing and
   // that click, this button is visible, enabled, and posts an empty table.
   // Observed 2026-10-09: the reader scrolled past the chosen contrast, pressed
   // the button they could see, and got a 400 and a spinner.
@@ -1618,8 +1694,8 @@ async function analyse() {
     const picked = $("#use-picked");
     fail(picked
       ? "This button draws a table you pasted, and there isn't one. Your "
-        + "genes are coming from the contrast chosen above — press "
-        + "“Use this contrast” there to load them."
+        + "genes are coming from the gene expression comparison chosen above "
+        + "— press “Use this comparison” there to load them."
       : "Paste a differential expression table, or upload one, first.");
     if (picked) picked.scrollIntoView({ behavior: "smooth", block: "center" });
     btn.disabled = false;

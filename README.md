@@ -3,18 +3,21 @@
 **A differential-expression result in, a Circos evidence figure out — built so
 that it cannot quietly draw something wrong.**
 
-Type a disease. The app finds a public expression study for it, picks a
-comparison of affected against unaffected people, and draws what is known about
-each gene that differs: druggability, safety, tissue specificity, drug pipeline,
-literature, mouse phenotype. Every choice it made is shown and can be changed.
-Click a gene for its full drug pipeline and the trials behind it.
+Type a disease. The app finds **gene expression** data for it in a public
+study, picks a **differential expression** comparison of affected against
+unaffected people, and draws what is known about each gene that differs:
+druggability, safety, tissue specificity, drug pipeline, literature, mouse
+phenotype. Every choice it made is shown and can be changed. Click a gene for
+its full drug pipeline and the trials behind it.
 
-![Crohn's disease, from an Expression Atlas contrast to a figure](docs/showcase/01-figure-from-a-disease.png)
+![Crohn's disease, from gene expression to a figure](docs/showcase/01-figure-from-a-disease.png)
 
-*Crohn's disease. The app chose contrast `E-GEOD-101794 g2_g1` (n=61 vs 13),
-took the top 60 genes by adjusted p, and drew the 12 selected. The centre
-states the contrast, the sign convention and the selection rule. Each ring
-has its own scale, in the column on the right.*
+*Crohn's disease. Differential expression: Crohn's disease vs non
+inflammatory bowel disease control — Expression Atlas `E-GEOD-101794`,
+contrast `g2_g1`, n=61 vs 13. The app took the top 60 genes by adjusted p and
+drew the 12 selected. The centre states the comparison, the sign convention
+and the selection rule. Each ring has its own scale, in the column on the
+right.*
 
 ## Try it
 
@@ -167,6 +170,14 @@ set. A filter never drops a gene for being unmeasured.
 
 ## How it was built
 
+**The input, named in three layers.** Every screen that names what the figure
+was drawn from says it the same way: **Gene expression** as the heading, then
+*Differential expression: `<group A>` vs `<group B>`* in the study's own plain
+words, then the provenance in small print — *Expression Atlas `E-GEOD-101794`
+· contrast `g2_g1` · n=61 vs 13 · RNA-seq · DESeq2 1.10.1*. "Contrast" is the
+Atlas identifier and a column name in the data files, so it stays there and
+only there; it is never the heading a reader meets first.
+
 **Planned first.** [`PLAN.md`](PLAN.md) is the spec. Before the build, two
 external reviews were commissioned against it — a scientific council and a QA
 review, in [`docs/reviews/`](docs/reviews/) — and every BLOCKING finding
@@ -179,8 +190,8 @@ did.
 [`V2`](docs/V2-REPORT.md), then a sequence of measured, dated decisions:
 
 - [RNA-seq only](docs/DECISION-RNASEQ-ONLY-2026-10-02.md) — microarray
-  contrasts dropped after a probe-mapping investigation showed sign flips.
-- [The app chooses a contrast by default](docs/DECISION-AUTOPICK-2026-10-09.md)
+  comparisons dropped after a probe-mapping investigation showed sign flips.
+- [The app chooses the comparison by default](docs/DECISION-AUTOPICK-2026-10-09.md)
   — reversing an earlier refusal, with the reasons, and what must stay true.
 - [A public demo, tabled](docs/TABLED-PUBLIC-DEMO-2026-10-09.md) — sized and
   costed, not built.

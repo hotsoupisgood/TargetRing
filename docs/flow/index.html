@@ -244,6 +244,28 @@ const n = (v) => (v === null || v === undefined || v === "") ? "—"
   : (typeof v === "number" ? v.toLocaleString("en-US") : String(v));
 const money = (v) => (v === null || v === undefined) ? "—"
   : "$" + Number(v).toFixed(2);
+// "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris
+// classification'" -> "Crohn's disease vs non inflammatory bowel disease
+// control". Puck, 2026-10-19: the heading is "Gene expression", the comparison
+// is said in plain words under it, and "contrast" is kept for the Atlas id.
+// Split on the SEPARATOR, never on the quotes: the apostrophe in "Crohn's"
+// closes a quote group and a `/'([^']+)'/` match reads back "Crohn".
+// Mirrors `plainComparison()` in `targetring/static/app.js`.
+// Atlas spells the platform `rnaseq`; a reader writes RNA-seq. The stored
+// value is untouched — this is display only, and it matches `platformWord()`
+// in `targetring/static/app.js` so the two pages cannot disagree.
+const platformWord = (p) =>
+  String(p || "").toLowerCase() === "rnaseq" ? "RNA-seq" : "";
+const plainComparison = (name) => {
+  const s = String(name || "");
+  const sep = s.indexOf("' vs '");
+  if (sep < 0) return "";
+  const a = s.slice(0, sep).replace(/^'/, "");
+  let b = s.slice(sep + 6);
+  const inAt = b.lastIndexOf("' in '");
+  b = inAt >= 0 ? b.slice(0, inAt) : b.replace(/'$/, "");
+  return a && b ? `${a} vs ${b}` : "";
+};
 
 d3.json("flow.json").then(draw).catch((e) => {
   d3.select("#lede").attr("class", "sub err")
@@ -294,9 +316,11 @@ function draw(D) {
         <p>Nothing is preselected and nothing is fetched from Atlas yet.</p>`,
     },
     {
-      id: "atlas", kind: "source", title: "2. Expression Atlas search",
-      stat: () => `${n(c.accession)} · index built ${n(c.index_built_utc)}`,
+      id: "atlas", kind: "source", title: "2. Gene expression",
+      stat: () => `Expression Atlas ${n(c.accession)} · built ${n(c.index_built_utc)}`,
       detail: () => `
+        <p><b>Differential expression</b> — which public study, and which
+        comparison inside it.</p>
         <p>A local index of Expression Atlas differential experiments is searched
         for contrasts tagged with this disease. <b>A row is a contrast, never an
         experiment</b>: the sign, the groups and the n per side differ per
@@ -311,13 +335,15 @@ function draw(D) {
         is.</p>`,
     },
     {
-      id: "contrast", kind: "decision", title: "3. Contrast choice",
-      stat: () => `n=${n(c.n_test)} vs ${n(c.n_ref)} · ${n(c.platform)}`,
+      id: "contrast", kind: "decision", title: "3. Differential expression",
+      stat: () => `contrast ${n(c.id)} · n=${n(c.n_test)} vs ${n(c.n_ref)} · ${
+        platformWord(c.platform) || n(c.platform)}`,
       detail: () => `
         <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
-        <p><b>${esc(c.name)}</b></p>
+        <p><b>Differential expression:</b> ${esc(plainComparison(c.name) || c.name)}</p>
         <table><tbody>
-          <tr><th>accession</th><td class="n">${esc(c.accession)} ${esc(c.id)}</td></tr>
+          <tr><th>accession</th><td class="n">${esc(c.accession)}</td></tr>
+          <tr><th>contrast</th><td class="n">${esc(c.id)}</td></tr>
           <tr><th>n</th><td class="n">${n(c.n_test)} vs ${n(c.n_ref)}</td></tr>
           <tr><th>platform</th><td>${esc(c.platform)}</td></tr>
           <tr><th>pipeline</th><td>${esc(c.pipeline)}</td></tr>
@@ -353,12 +379,14 @@ function draw(D) {
         picked, so the figure says so itself — not just the form.</p>`,
     },
     {
-      id: "de", kind: "source", title: "5. DE table",
+      id: "de", kind: "source", title: "5. Differential expression table",
       stat: () => `${n(sel.n_total)} rows · ${n(sel.n_with_statistic)} with a statistic`,
       detail: () => `
-        <p>The contrast's analytics file: gene, log2 fold change, adjusted p.
+        <p><b>Gene expression</b> — the numbers themselves.</p>
+        <p>The analytics file for contrast <code>${esc(c.id)}</code>: gene,
+        log2 fold change, adjusted p.
         ${n(sel.n_total)} rows, of which <b>${n(sel.n_with_statistic)}</b> carry
-        a statistic for this contrast and <b>${n(sel.n_without_statistic)}</b> do
+        a statistic for this comparison and <b>${n(sel.n_without_statistic)}</b> do
         not.</p>
         <p>Rows without a statistic are not zeros and are not dropped quietly —
         the count above is on the figure. Headers are matched against the exact

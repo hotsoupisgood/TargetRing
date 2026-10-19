@@ -94,14 +94,21 @@
 
   <section id="find-panel">
     <details id="find" open>
+      <!-- Puck, 2026-10-19, on whether "contrast" is the word a biologist
+           reads first: "Maybe just title it gene expression and then say
+           Differential... or Contrast underneath". So the heading is the thing
+           — gene expression — and the comparison and its Atlas provenance are
+           layered under it. The word "contrast" survives only where it is the
+           Atlas IDENTIFIER (`g2_g1`) or a column name in a data file; it is
+           never the heading. -->
       <summary><span class="chev" aria-hidden="true">▾</span>
-        <b>Find genes from a disease</b>
-        — search Expression Atlas contrasts</summary>
+        <b>Gene expression</b>
+        — differential expression from a disease name</summary>
       <div class="reveal">
         <p class="hint">Type a disease. Each hit shows how many Expression Atlas
-          <b>contrasts</b> exist for it — not experiments — with the date the local
-          index was built. Nothing is fetched from Atlas until you pick a contrast,
-          and no contrast is picked for you.</p>
+          <b>comparisons</b> exist for it — not experiments — with the date the
+          local index was built. Nothing is fetched from Atlas until you pick
+          one, and none is picked for you.</p>
         <div class="row">
           <input id="disease" spellcheck="false" size="34"
                  placeholder="Crohn&#39;s disease">

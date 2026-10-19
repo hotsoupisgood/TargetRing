@@ -1309,6 +1309,11 @@ details.src .reveal { padding-top: 6px; }
    wider than the prose measure, and it scrolls sideways at eight columns rather
    than pushing the help text out with it. */
 #contrast-panel { margin-top: 14px; }
+/* The line under a "Gene expression" heading that says what kind of thing is
+   below it (Puck, 2026-10-19). A subtitle, not a hint: it belongs to the
+   heading, so it sits tight under it and keeps reading size. */
+.sub-head { font-size: var(--tr-t-read); color: var(--muted);
+            margin: calc(-1 * var(--tr-s-2)) 0 var(--tr-s-2); }
 .picker-head { font-size: 13px; margin: 6px 0; }
 table.picker { border-collapse: collapse; font-size: 12.5px; width: 100%; }
 table.picker th { text-align: left; font-weight: 600; color: var(--muted);

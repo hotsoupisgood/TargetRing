@@ -114,6 +114,32 @@ def test_the_page_loads_the_shim_before_app_js_and_its_assets_relatively():
         assert (DEMO / name).exists()
 
 
+def test_the_tool_page_names_its_input_gene_expression():
+    """Puck, 2026-10-19, on whether "contrast" is the right first word for a
+    biologist: "Maybe just title it gene expression and then say
+    Differential... or Contrast underneath".
+
+    So the published tool must carry all three layers, and the third one must
+    still name the Atlas identifier: a heading a reader understands is only an
+    improvement if the thing it names stays auditable. A page that said "Gene
+    expression" and dropped `g2_g1` would be a friendlier label over a figure
+    nobody can trace back to a study -- this build's own worst case.
+    """
+    html = (DEMO / "index.html").read_text()
+    js = (DEMO / "app.js").read_text()
+    assert "Gene expression" in html, "the exported page has no gene expression heading"
+    assert "Differential expression:" in html + js, (
+        "nothing on the exported page says what was compared")
+    # Layer three. The id itself comes from the run's own manifest, so assert
+    # both that the page labels one and that the manifest the page reads still
+    # carries it -- either half alone would pass over an empty id.
+    assert "contrast <code>" in js, (
+        "the provenance line no longer labels the Atlas contrast id")
+    manifest = json.loads((DEMO / "api" / "run" / config.DEMO_FEATURED_RUN
+                           / "manifest.json").read_text())
+    assert manifest["contrast"]["contrast_id"], "the exported manifest has no contrast id"
+
+
 def test_github_pages_needs_these_two():
     assert (DOCS / ".nojekyll").exists()
     assert "./demo/" in (DOCS / "index.html").read_text()
