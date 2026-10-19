@@ -59,6 +59,7 @@ async function init() {
   DEFAULT_REGION = r.default || "";
   sel.innerHTML = r.regions.map((t) =>
     `<option ${t === r.default ? "selected" : ""}>${esc(t)}</option>`).join("");
+  sel.addEventListener("change", () => { REGION_TOUCHED = true; });
   if (r.error) $("#status").textContent = "GTEx region list unavailable: " + r.error;
 
   // v2.5. The spoke orders and the rings a threshold can be set on both come
@@ -118,7 +119,11 @@ async function init() {
   $("#go").onclick = analyse;
   $("#drawer-close").onclick = closeDrawer;
   $("#scrim").onclick = closeDrawer;
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { closeDrawer(); if (!$("#summary-box").hidden) hideSummary(true); }
+  });
+  $("#summary-close").onclick = () => hideSummary(true);
+  $("#summary-box").addEventListener("mouseleave", () => hideSummary(false));
 
   document.querySelectorAll(".tab").forEach((t) => {
     t.onclick = () => showTab(t.dataset.tab);
@@ -165,6 +170,12 @@ async function init() {
   if (wanted) {
     // A deep link lands on a result, so it was never a landing.
     leaveLanding();
+    // And it is ONE run's page: the demo index -- every listed run's card with
+    // its figure.png -- must not sit above this run's tabs, where the first
+    // card's figure (a Liver paste fixture, in the default list) read as this
+    // run's figure (2026-10-18 walkthrough, item g). `body.viewing-run` hides
+    // the index; the run's own figure, if it exported one, is shown instead.
+    document.body.classList.add("viewing-run");
     $("#result").hidden = false;
     $("#banner").hidden = true;
     $("#counts").innerHTML = "";
@@ -174,6 +185,7 @@ async function init() {
        Its rendered figure is
        <a href="/api/run/${esc(wanted)}/figure.svg" target="_blank" rel="noopener">
        figure.svg</a>.</p>`;
+    showDiskRunFigure(wanted);
     showTab("table");
     picker.value = wanted;
     // The evidence pane's picker too, so switching to that tab opens the run
@@ -358,12 +370,39 @@ function leaveLanding() {
   document.body.classList.remove("landing");
 }
 
+// The figure a disk-loaded run exported, or nothing. Asked of the server (a
+// HEAD on the artefact route), never assumed: a run whose exports were cut off
+// has no figure.png, and an <img> that 404s is a broken-image icon where a
+// figure should be. Nothing else -- never another run's figure -- goes here.
+async function showDiskRunFigure(runId) {
+  const url = `/api/run/${encodeURIComponent(runId)}/figure.png`;
+  let ok = false;
+  try {
+    const r = await fetch(url, { method: "HEAD" });
+    ok = r.ok;
+  } catch (e) { ok = false; }
+  if (!ok) return;
+  const slot = document.createElement("p");
+  slot.className = "disk-run-figure";
+  slot.innerHTML = `<img src="${url}" alt="figure.png exported by run ${esc(runId)}"
+    loading="lazy"><span class="hint">This run's own exported figure.png, read
+    from disk; the interactive circle is drawn only in the session that ran it.</span>`;
+  $("#figure").appendChild(slot);
+}
+
 // The region the app falls back to, captured at init so a disease with no
 // inference can be reset to it rather than silently keeping the PREVIOUS
 // disease's tissue — which would draw one disease's specificity ring against
 // another disease's organ.
 let DEFAULT_REGION = "";
 let REGION_WAS_INFERRED = false;
+//: Whether the reader has touched the region dropdown at all. A contrast run
+//: posts a region only when somebody -- the reader or the chooser -- actually
+//: chose one; an untouched default is posted as EMPTY, and the server infers
+//: the disease's tissue or refuses with "choose a region". The four Crohn's
+//: demo runs were judged "expressed in Lung" because the form's default went
+//: through unnoticed (2026-10-18 walkthrough, item a).
+let REGION_TOUCHED = false;
 //: The disease the in-flight region request is for. Two diseases chosen in
 //: quick succession leave two requests outstanding, and without this the slower
 //: one wins — setting the first disease's tissue over the second's.
@@ -1006,7 +1045,12 @@ async function makeSpokes() {
   fd.append("contrast_id", t.contrast.contrast_id);
   fd.append("n", String(t.rows.length));
   fd.append("ensembl_ids", JSON.stringify([...SELECTED]));
-  fd.append("region", $("#region").value);
+  // A region somebody chose -- the reader (REGION_TOUCHED) or the chooser
+  // (REGION_WAS_INFERRED, and then the flag and reason above say so). An
+  // untouched default is sent empty; the server infers from the disease or
+  // refuses. The disease label goes with it for that inference.
+  fd.append("region", (REGION_TOUCHED || REGION_WAS_INFERRED) ? $("#region").value : "");
+  fd.append("disease", (PICKER.disease && (PICKER.disease.label || PICKER.disease.current_id)) || "");
   fd.append("ordering", $("#ordering").value);
   const drop = $("#drop-no-data").checked;
   fd.append("filters", (($("#filters").value) || "").split("\n")
@@ -1670,7 +1714,7 @@ function renderCaveats(b) {
      Nothing on it is ranked or scored.</b> It is your gene set, the evidence rings,
      and a drawer per gene.</div>
      <h4>Not attempted — and deliberately so</h4>
-     <ul class="tight">${b.not_attempted.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
+     <ul class="tight">${(b.not_attempted || []).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
      <h4>Spoke order</h4>
      <p>${esc(b.ordering_note || "")}</p>
      <p class="hint">The order carries meaning, so it is printed on the figure too.
@@ -1958,8 +2002,24 @@ function sectionise(html) {
 }
 
 async function openDrawer(gene) {
-  const d = await fetch(`/api/run/${RUN.run_id}/gene/${encodeURIComponent(gene)}`)
-    .then((r) => r.json());
+  // Two routes, one drawer. A run in memory has adapters behind it and
+  // `/gene/` fetches ChEMBL and Europe PMC on this click. A run read from disk
+  // has none; `/drawer/` is the file `scripts/bake_drawers.py` wrote beside the
+  // run, and the drawer says so on its face (`d.baked`). Which one is never
+  // guessed from the page's state alone: `renderTable` only makes a label
+  // clickable when the payload named it (`in_memory` or `baked_drawers`).
+  const runId = RUN ? RUN.run_id : TABLE.run_id;
+  const route = RUN ? "gene" : "drawer";
+  const r = await fetch(`/api/run/${encodeURIComponent(runId)}/${route}/${encodeURIComponent(gene)}`);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    $("#drawer-body").innerHTML = `<h3>${esc(gene)}</h3>
+      <div class="note bad"><b>${esc(d.error || `HTTP ${r.status}`)}</b><br>
+      ${esc(errText(d, "the drawer could not be opened"))}</div>`;
+    $("#drawer").hidden = false;
+    $("#scrim").hidden = false;
+    return;
+  }
   $("#drawer-body").innerHTML = sectionise(drawerHtml(d));
   $("#drawer").hidden = false;
   $("#scrim").hidden = false;
@@ -1969,6 +2029,168 @@ async function openDrawer(gene) {
 function closeDrawer() {
   $("#drawer").hidden = true;
   $("#scrim").hidden = true;
+}
+
+// ---------- the evidence summary box (2026-10-18) ----------
+//
+// Puck: "a text box on highlight that has an LLM interpretation of the values
+// ... basically a summary of evidence, kind of dry." The text is NOT generated
+// here and NOT fetched from a model: it is the `summary` block that
+// `scripts/bake_summaries.py` wrote into the gene's baked drawer, read through
+// the same file route the drawer uses (`/api/run/{id}/drawer/{gene}`), cached per
+// gene for the page's life. A gene with no baked summary -- no drawer file, or a
+// drawer baked before summaries existed -- shows nothing at all: no box, no
+// error, no "generating…". The box names what it is on its face: model, date,
+// prompt version, and the drawer's own provenance line.
+const SUMMARY_CACHE = new Map();   // `${run}|${gene}` -> drawer JSON | null
+let SUMMARY_SHOWING = "";          // the gene the box is currently about
+let SUMMARY_DISMISSED = "";        // a gene the reader closed; stays closed until another is highlighted
+let SUMMARY_TIMER = null;
+
+async function bakedDrawerFor(runId, gene) {
+  const k = `${runId}|${gene}`;
+  if (SUMMARY_CACHE.has(k)) return SUMMARY_CACHE.get(k);
+  let d = null;
+  try {
+    const r = await fetch(`/api/run/${encodeURIComponent(runId)}/drawer/${encodeURIComponent(gene)}`);
+    d = r.ok ? await r.json() : null;
+  } catch (e) {
+    d = null;                       // a network failure is "no summary", never a message
+  }
+  SUMMARY_CACHE.set(k, d);
+  return d;
+}
+
+// ---------- the GO / NO-GO verdict (2026-10-18) ----------
+//
+// Puck: "make a recommendation, have go/no go: we need the gene to be
+// expressed, and also misregulated in the study, and have a strong phenotype in
+// a study." The verdict is the `recommendation` block `scripts/bake_drawers.py`
+// wrote into the gene's baked drawer -- `targetring/recommend.py`, a
+// deterministic rule over numbers the drawer already shows, with its thresholds
+// and a hash of the rule stored beside it. Nothing is computed here and nothing
+// is fetched for it. It is the owner's explicit rule, not the rings (PLAN v2.5:
+// the rings are evidence, not a score) -- and it never orders, filters or
+// ledgers anything on the figure; the box says so under the rule text.
+// 2026-10-18 18:42 PDT, Puck: "can remove druggability caveat. and make it
+// much less wordy. or remove the word expression altogether as the information
+// is in the graph. i would like an explanation on the phenotype though,
+// somewhere, like a 0/1 for phenotype that is claude coded." So the box is now:
+// the verdict pill; three criteria as met / not met / no data plus the bare
+// value (`criterion.bare`, computed in recommend.py beside the sentence, which
+// stays in the JSON and in the summary's facts); a three-word region tag; the
+// phenotype flag; the modality line when the gene is down-regulated; and one
+// rule line whose thresholds are in its tooltip. The expression sentence and
+// the two TPMs are gone from the box on purpose -- the specificity ring on the
+// figure carries them, and the drawer's own numbers are one click away.
+const VERDICT_CLASS = { "GO": "go", "NO-GO": "nogo", "INSUFFICIENT DATA": "nodata" };
+const CRIT_MARK = { met: "✓", not_met: "✗", no_data: "~" };
+const CRIT_WORD = { met: "met", not_met: "not met", no_data: "no data" };
+
+// `phenotype (Claude): 1 — <sentence>`. A display aid printed beside the
+// owner's deterministic phenotype criterion and never that criterion: the
+// baked block says so itself (`is_criterion: false`) and the verdict was
+// computed without it.
+function phenotypeFlagHtml(pf) {
+  if (!pf || (pf.flag !== 0 && pf.flag !== 1)) return "";
+  return `<li class="crit-flag ${pf.flag ? "flag-1" : "flag-0"}"
+    title="${esc(pf.note || "")} Model ${esc(pf.model || "")}, prompt ${esc(pf.prompt_version || "")}.">
+    <b>phenotype (Claude)</b>: <span class="flag-num">${pf.flag}</span>
+    <span class="flag-why">— ${esc(pf.reason || "")}</span></li>`;
+}
+
+function recommendationHtml(rec, compact, phenotypeFlag) {
+  if (!rec || !rec.verdict) return "";
+  const cls = VERDICT_CLASS[rec.verdict] || "nodata";
+  const crit = (rec.criteria || []).map((c) => {
+    const st = c.status || "no_data";
+    // The disease-area aid, reduced to a count with the terms in the tooltip.
+    // The leading space is inside the string on purpose: `margin-left` spaces
+    // it on screen, but copied text would otherwise read "6 abnormal
+    // termsdisease-area terms: 3".
+    const area = c.disease_area && c.disease_area.short
+      ? ` <span class="crit-aid" title="${esc(c.disease_area.tooltip || "")}">${
+          esc(c.disease_area.short)}</span>`
+      : "";
+    return `<li class="crit ${esc(st)}"><span class="mark" aria-hidden="true">${CRIT_MARK[st] || "~"}</span>
+      <b>${esc(c.label || c.key)}</b> <span class="word">${CRIT_WORD[st] || esc(st)}</span>
+      <span class="shown" title="${esc(c.shown || "")}">${esc(c.bare || c.shown || "")}</span>${area}</li>`;
+  }).join("");
+  // The region as a three-word tag, with the long sentence in its tooltip.
+  const region = rec.region_tag && rec.region_tag.region
+    ? `<span class="verdict-region" title="${esc(rec.region_tag.tooltip || "")}">${
+        esc(rec.region_tag.shown)}</span>` : "";
+  const caveats = (rec.caveats || []).map((c) => `<p class="verdict-caveat">${esc(c)}</p>`).join("");
+  const modality = rec.modality ? `<p class="verdict-modality">${esc(rec.modality)}</p>` : "";
+  const flag = phenotypeFlagHtml(phenotypeFlag);
+  return `<div class="verdict ${cls}${compact ? " compact" : ""}">
+    <p class="verdict-line"><span class="verdict-word">${esc(rec.verdict)}</span>${region}</p>
+    <ul class="crit-list">${crit}${flag}</ul>
+    ${modality}${caveats}
+    <p class="verdict-rule" title="${esc(rec.rule_tooltip || rec.rule_text || "")}">${
+      esc(rec.rule_short || rec.rule_text || "")}</p>
+  </div>`;
+}
+
+function summaryHtml(d) {
+  const s = d.summary || {};
+  const baked = d.baked || {};
+  // Verdict line first, then the three criteria, then the LLM text (whose
+  // first sentence restates that verdict), then what the text is.
+  return `<h3>${esc(d.gene)} <span class="hint">${d.recommendation ? "GO / NO-GO and " : ""}evidence summary</span></h3>
+    ${recommendationHtml(d.recommendation, true, d.phenotype_llm)}
+    ${s.text ? `<p class="summary-text">${esc(s.text)}</p>
+    <p class="summary-label"><b>LLM-generated from the values below</b>, <code>${esc(s.model)}</code>,
+      ${esc((s.generated_at || "").slice(0, 10))}, prompt <code>${esc(s.prompt_version)}</code>.
+      It reads this gene's own drawer and nothing else; the exact facts it was given are stored
+      beside it. The verdict above was given to it, not decided by it. Open the drawer for the numbers.</p>`
+    : `<p class="summary-label">No evidence summary is baked for this gene.</p>`}
+    ${baked.note ? `<p class="summary-prov">${esc(baked.note)}${
+      baked.at_utc ? ` Baked ${esc(baked.at_utc)}` : ""}${
+      baked.git_sha ? ` at <code>${esc(baked.git_sha)}</code>` : ""}.</p>` : ""}`;
+}
+
+async function showSummary(runId, gene) {
+  if (!runId || !gene || gene === SUMMARY_DISMISSED) return;
+  const d = await bakedDrawerFor(runId, gene);
+  // Nothing baked -- no summary text and no verdict -- shows nothing at all.
+  if (!d || !((d.summary && d.summary.text) || (d.recommendation && d.recommendation.verdict))) return;
+  SUMMARY_SHOWING = gene;
+  $("#summary-body").innerHTML = summaryHtml(d);
+  $("#summary-box").hidden = false;
+}
+
+function hideSummary(dismiss) {
+  if (dismiss) SUMMARY_DISMISSED = SUMMARY_SHOWING;
+  SUMMARY_SHOWING = "";
+  $("#summary-box").hidden = true;
+}
+
+// Hover or keyboard focus on a gene's label, or on any cell of its row, is the
+// highlight. Debounced so a pointer crossing the grid does not fetch every row;
+// leaving the grid hides the box unless the pointer is on the box itself (so the
+// text can be read and selected).
+function wireSummaryHighlight(d) {
+  const runId = d.run_id;
+  const baked = new Set(d.baked_drawers || []);
+  $("#table-grid").querySelectorAll("tbody tr").forEach((tr) => {
+    const label = tr.querySelector(".gene");
+    const gene = label ? (label.dataset.gene || label.textContent.trim()) : "";
+    if (!gene || !baked.has(gene)) return;       // no drawer file -> no summary; nothing wired
+    const arm = () => {
+      clearTimeout(SUMMARY_TIMER);
+      if (gene !== SUMMARY_DISMISSED) SUMMARY_DISMISSED = "";
+      SUMMARY_TIMER = setTimeout(() => showSummary(runId, gene), 120);
+    };
+    tr.addEventListener("mouseenter", arm);
+    tr.addEventListener("focusin", arm);
+  });
+  $("#table-grid").addEventListener("mouseleave", () => {
+    clearTimeout(SUMMARY_TIMER);
+    SUMMARY_TIMER = setTimeout(() => {
+      if (!$("#summary-box").matches(":hover")) hideSummary(false);
+    }, 250);
+  });
 }
 
 function drawerHtml(d) {
@@ -1983,10 +2205,24 @@ function drawerHtml(d) {
       ? " · UniProt " + esc(d.uniprot) : ""}${d.gencode_id
       ? " · GTEx " + esc(d.gencode_id) : ""}</p>`;
 
+  // A baked drawer states its date before anything else in it: the pipeline
+  // and the literature below are as they were on that day, not as they are.
+  if (d.baked) {
+    h += `<div class="note"><b>Read from disk.</b> ${esc(d.baked.note || "")}
+          ${d.baked.at_utc ? `Baked ${esc(d.baked.at_utc)}` : ""}${
+          d.baked.git_sha ? ` at <code>${esc(d.baked.git_sha)}</code>` : ""}.</div>`;
+  }
+
   if (d.input_symbol !== d.gene) {
     h += `<div class="note warn">Submitted as <code>${esc(d.input_symbol)}</code> —
           ${esc(d.resolution_note)}</div>`;
   }
+
+  // The GO / NO-GO verdict, same block as the highlight box, above the
+  // numbers it was computed from -- before the first <h4>, so `sectionise`
+  // leaves it in the always-visible header rather than behind a collapsed
+  // section. Absent for a drawer baked before the rule.
+  if (d.recommendation) h += recommendationHtml(d.recommendation, false, d.phenotype_llm);
 
   h += `<h4>your measurement</h4><dl class="kv">
     <dt>logFC</dt><dd>${d.logfc}</dd>
@@ -2399,6 +2635,21 @@ async function loadTable(runId) {
   if (!RUN) {
     renderLedger(d);
     renderInvariants(d);
+    // And its caveats. This call was missing, so `What this is not` was an
+    // empty pane for every `?run=` and every demo run (found 2026-10-18); the
+    // payload carries `not_attempted`, `ordering_note` and `llm` from the
+    // run's own manifest for exactly this.
+    renderCaveats(d);
+    // The figure pane's "click a gene" sentence is about a figure this session
+    // did not draw. Say what IS clickable, greyed, instead of an instruction
+    // that nothing on the page honours.
+    const hint = $("#figure-click-hint");
+    if (hint) {
+      hint.classList.add("unavailable");
+      hint.textContent = (d.baked_drawers || []).length
+        ? "No figure is drawn in this session. Open a gene from the Table tab — its drawer is read from disk."
+        : "No figure is drawn in this session, and the per-gene drawer needs the run in memory, so nothing here opens one.";
+    }
   }
 }
 
@@ -2566,11 +2817,13 @@ function renderTable(d) {
     return divider + `<tr class="${g.no_value_on_sort_key ? "unplaced" : ""}${dimCls}"${
       g.dim_reason ? ` title="${esc(g.dim_reason)}"` : ""}>
       <th scope="row" class="gene-col">
-        ${d.in_memory
+        ${(d.in_memory || (d.baked_drawers || []).includes(g.gene))
           ? `<button class="gene linkish" data-gene="${esc(g.gene)}">${esc(g.gene)}</button>`
           // Not a disabled button: a control that looks like a control and does
           // nothing is worse than plain text. A run read off disk has no
-          // adapters behind it and the note above the grid says so.
+          // adapters behind it and the note above the grid says so -- unless
+          // `scripts/bake_drawers.py` left this gene's drawer beside the run,
+          // in which case the label opens that file (`openDrawer`).
           : `<span class="gene">${esc(g.gene)}</span>`}
         <div class="ens">${esc(g.ensembl_id)}</div>${dimTag}</th>
       <td class="kcell">${esc(g.k)}<span class="of">/${esc(d.k_max)}</span></td>`
@@ -2602,6 +2855,7 @@ function renderTable(d) {
   $("#table-grid").querySelectorAll("button.gene").forEach((b) => {
     if (!b.disabled) b.onclick = () => openDrawer(b.dataset.gene);
   });
+  wireSummaryHighlight(d);
 
   renderTableSources(d);
 

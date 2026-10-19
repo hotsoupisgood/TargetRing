@@ -484,6 +484,37 @@ def load(run_id: str) -> RunTable:
     )
 
 
+#: Where `scripts/bake_drawers.py` writes a run's per-gene drawers, one JSON per
+#: gene, beside the run's other artefacts. A file, not a cache entry: it is part
+#: of the run's record and is served exactly as written.
+DRAWER_DIR = "drawer"
+DRAWER_GENE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+def baked_drawer_path(run_id: str, gene: str) -> Path | None:
+    """The baked drawer file for one gene of one run, or None if there is none.
+
+    `gene` is whitelisted against `DRAWER_GENE_RE` before it touches a path,
+    for the reason `valid_run_id` exists: this segment arrives from a URL.
+    """
+    if not DRAWER_GENE_RE.match(gene):
+        return None
+    p = run_dir(run_id) / DRAWER_DIR / f"{gene}.json"
+    return p if p.is_file() else None
+
+
+def baked_drawer_genes(run_id: str) -> list[str]:
+    """The genes a run has a baked drawer for, sorted. Empty when the run was
+    never baked -- which is every run `scripts/bake_drawers.py` was not run on."""
+    try:
+        d = run_dir(run_id) / DRAWER_DIR
+    except TableUnavailable:
+        return []
+    if not d.is_dir():
+        return []
+    return sorted(p.stem for p in d.glob("*.json") if DRAWER_GENE_RE.match(p.stem))
+
+
 def recent_runs(limit: int = 40,
                 only: Iterable[str] | None = None) -> list[dict[str, Any]]:
     """The runs on disk, newest first.
@@ -540,4 +571,5 @@ def recent_runs(limit: int = 40,
 
 __all__ = ["RunTable", "TableCell", "TableUnavailable", "load", "recent_runs",
            "read_cell_rows", "ring_keys_drawn", "valid_run_id", "run_dir",
+           "baked_drawer_path", "baked_drawer_genes", "DRAWER_DIR",
            "RUN_ID_RE", "REQUIRED_CELL_COLUMNS", "SECTION_MARKER"]

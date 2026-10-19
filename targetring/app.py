@@ -159,6 +159,14 @@ _DEMO_FORBIDDEN_EXACT = frozenset({
 })
 _DEMO_FORBIDDEN_PREFIX = ("/api/contrast/", "/api/analyse/progress/")
 _DEMO_FORBIDDEN_SUFFIX = ("/phenotypes", "/web-figure")
+# Routes whose acting segment is in the MIDDLE of the path, so neither a prefix
+# nor a suffix names them. `/api/run/{id}/gene/{gene}` is the live drawer: it
+# calls ChEMBL and Europe PMC on every click (`fill_drawer_only_sources`). It
+# was absent from the lists above and only ever refused by accident -- `_runs`
+# is empty on a demo box, so it 404ed -- and a gate that holds by accident is
+# not a gate. The baked drawer a demo serves instead is `/api/run/{id}/drawer/
+# {gene}`, a file read, and is deliberately NOT matched here.
+_DEMO_FORBIDDEN_PATTERNS = (re.compile(r"^/api/run/[^/]+/gene/[^/]+$"),)
 _DEMO_RUN_PATH = re.compile(r"^/api/run/([^/]+)/")
 DEMO_REFUSAL = ("This is a read-only demo: it serves finished runs and makes no "
                 "requests and no model calls. Clone the repo to run analyses.")
@@ -167,7 +175,8 @@ DEMO_REFUSAL = ("This is a read-only demo: it serves finished runs and makes no 
 def demo_forbids(path: str) -> bool:
     return (path in _DEMO_FORBIDDEN_EXACT
             or path.startswith(_DEMO_FORBIDDEN_PREFIX)
-            or path.endswith(_DEMO_FORBIDDEN_SUFFIX))
+            or path.endswith(_DEMO_FORBIDDEN_SUFFIX)
+            or any(p.match(path) for p in _DEMO_FORBIDDEN_PATTERNS))
 
 
 def demo_run_allowed(path: str) -> bool:
@@ -189,9 +198,43 @@ async def _demo_gate(request: Request, call_next):  # type: ignore[no-untyped-de
     return await call_next(request)
 
 
+def demo_regions() -> list[str]:
+    """The regions a demo box may name: the ones its listed runs were drawn
+    against, read from their manifests. No request is made.
+
+    Found 2026-10-18: `/api/regions` was the one route the demo gate allowed
+    that still fetched -- `available_regions()` is a live GTEx call, made by
+    `init()` on every first page load of a box whose promise is "makes no
+    requests". The GTEx panel exists to populate the analyse form, and a demo
+    refuses `/api/analyse`, so the form has nothing to do with a tissue it did
+    not already draw; the manifests are the closed list.
+    """
+    out: list[str] = []
+    for run_id in config.DEMO_RUNS:
+        path = RUNS_DIR / run_id / "manifest.json"
+        if not path.exists():
+            continue
+        try:
+            region = json_mod.loads(path.read_text()).get("region")
+        except Exception:  # noqa: BLE001 -- an unreadable manifest names nothing
+            continue
+        if isinstance(region, str) and region and region not in out:
+            out.append(region)
+    return out
+
+
 @app.get("/api/regions")
-async def regions() -> dict[str, Any]:
+async def regions() -> Any:
     global _regions_cache
+    if config.DEMO_MODE:
+        found = demo_regions()
+        if not found:
+            return JSONResponse({"error": "demo_mode", "message": DEMO_REFUSAL},
+                                status_code=403)
+        default = DEFAULT_REGION if DEFAULT_REGION in found else found[0]
+        return {"regions": found, "default": default, "demo": True,
+                "note": "the regions the demo's runs were drawn against, from "
+                        "their manifests; the GTEx panel is not fetched here"}
     if not _regions_cache:
         try:
             _regions_cache = await available_regions(Cache())
@@ -502,10 +545,64 @@ async def example() -> dict[str, str]:
     }
 
 
+#: The analyse refusal when a contrast run names no region and none can be
+#: inferred for its disease. 422 with a sentence, not a silent default: the four
+#: Crohn's demo runs were judged "expressed in Lung" because the form's default
+#: was never changed (2026-10-18 walkthrough, item a).
+CHOOSE_A_REGION = ("choose a region: this contrast run names no GTEx tissue and "
+                   "none could be inferred for its disease")
+
+
+async def _region_for_contrast_run(region: str, disease: str, cache: Cache
+                                   ) -> tuple[str, bool, str] | JSONResponse:
+    """The region an Atlas/contrast run is judged in, and whether it was
+    inferred. An explicit region is the reader's and claims nothing. An empty
+    one is NOT the form default: the disease's chooser answer is used -- cached
+    (`cache/region_llm/`) or made now against the `region` account's cap -- and
+    the run is stamped `region_inferred` with the chooser's reason. No disease,
+    or no answer, is a 422 that says "choose a region"."""
+    if region.strip():
+        return region.strip(), False, ""
+    if not disease.strip():
+        return JSONResponse({"error": "choose_a_region",
+                             "message": CHOOSE_A_REGION + " (no disease label was sent)"},
+                            status_code=422)
+    try:
+        regions = await available_regions(cache)
+    except Exception as e:  # noqa: BLE001 -- GTEx unreachable
+        return JSONResponse({"error": "choose_a_region",
+                             "message": f"{CHOOSE_A_REGION}; the GTEx tissue panel is "
+                                        f"unavailable: {e}"}, status_code=422)
+    chooser: Any = None
+    if not config.DEMO_MODE:
+        try:
+            chooser = region_llm.AnthropicRegionClient()
+        except Exception:  # noqa: BLE001 -- no `anthropic` / no credential
+            chooser = None
+    result = region_llm.RegionChooser(client=chooser, cache=cache,
+                                      ledger=spend_mod.default_ledger()
+                                      ).choose(disease.strip(), regions)
+    if not result.tissue:
+        return JSONResponse({"error": "choose_a_region",
+                             "message": f"{CHOOSE_A_REGION} ({result.reason})",
+                             "chooser": result.as_dict()}, status_code=422)
+    when = (f" (remembered from {result.chosen_utc[:10]})" if result.cached and result.chosen_utc
+            else "")
+    reason = (f"{result.reason} Chosen for '{disease.strip()}' by the region chooser"
+              f"{when}.").strip()
+    return result.tissue, True, reason
+
+
 @app.post("/api/analyse")
 async def analyse(
     table: str = Form(""),
-    region: str = Form(DEFAULT_REGION),
+    # Empty, not `DEFAULT_REGION`: the paste path still falls back to the
+    # default below (a pasted table names no disease to infer from), but a
+    # contrast run with no region goes through `_region_for_contrast_run`.
+    region: str = Form(""),
+    # The disease label the picker resolved (OLS), for the region chooser when
+    # no region is posted. Public label, nothing else (rule 10).
+    disease: str = Form(""),
     ordering: str = Form(SUBMITTED),
     filters: str = Form(""),
     # v3.5. The window this figure is going to be read in, MEASURED by the page
@@ -566,6 +663,14 @@ async def analyse(
         if err is not None:
             return err
         cache = Cache()
+        # Before the analytics fetch: a run that cannot name its tissue is
+        # refused before anything is downloaded for it.
+        picked = await _region_for_contrast_run(region, disease, cache)
+        if isinstance(picked, JSONResponse):
+            return picked
+        region, inferred_here, reason_here = picked
+        if inferred_here:
+            region_inferred, region_reason = "1", reason_here
         try:
             async with Http() as http:
                 atlas = AtlasAdapter(http, cache)
@@ -599,6 +704,9 @@ async def analyse(
                                 status_code=422)
         contrast_for_run = hydrated
     else:
+        # The paste path keeps its explicit-region behaviour: an empty region
+        # is the form default, as it always was, and the figure names it.
+        region = region.strip() or DEFAULT_REGION
         raw: bytes | str
         if file is not None and file.filename:
             raw = await file.read()
@@ -606,6 +714,19 @@ async def analyse(
             raw = table
         else:
             raise HTTPException(400, "Provide a DE table, pasted or uploaded.")
+        # Before any parsing. A refusal with a number, not a parser error with
+        # a traceback (`config.MAX_UPLOAD_BYTES`).
+        size = len(raw.encode("utf-8")) if isinstance(raw, str) else len(raw)
+        if size > config.MAX_UPLOAD_BYTES:
+            return JSONResponse(
+                {"error": "input_too_large",
+                 "message": f"The DE table is {size:,} bytes; the most this app "
+                            f"reads is {config.MAX_UPLOAD_BYTES:,} bytes "
+                            f"({config.MAX_UPLOAD_BYTES // (1024 * 1024)} MB). A "
+                            f"differential-expression table of {MAX_GENES} "
+                            f"genes is a few kilobytes -- export only the "
+                            f"symbol, logFC and adjusted-p columns."},
+                status_code=413)
 
     sink = _progress_sink(progress_token)
     try:
@@ -758,7 +879,8 @@ def _summarise(r) -> dict[str, Any]:
     }
 
 
-async def fill_drawer_only_sources(d: dict[str, Any]) -> dict[str, Any]:
+async def fill_drawer_only_sources(d: dict[str, Any],
+                                   http: Http | None = None) -> dict[str, Any]:
     """v2.2 item 3 — ChEMBL and Europe PMC, fetched on click.
 
     Both drive no ring and no rank (PLAN §8, COUNCIL M6) and on 2026-09-24 they
@@ -778,7 +900,9 @@ async def fill_drawer_only_sources(d: dict[str, Any]) -> dict[str, Any]:
     if d.get("chembl") is not None and d.get("literature", {}).get("europepmc") is not None:
         return d
     cache = Cache()
-    async with Http() as http:
+    # `http`: a caller that already holds a client (`drawer_bake`) passes it so
+    # its request count and its per-host gate cover these two calls too.
+    async with (Http() if http is None else _borrowed(http)) as http:
         chembl_rec, epmc = await asyncio.gather(
             ChEMBLAdapter(http, cache).fetch_one(d.get("uniprot")),
             EuropePMCAdapter(http, cache).fetch_one(d["gene"], None),
@@ -804,6 +928,20 @@ async def fill_drawer_only_sources(d: dict[str, Any]) -> dict[str, Any]:
     return d
 
 
+class _borrowed:
+    """An `Http` somebody else opened, used as a context manager that neither
+    opens nor closes it."""
+
+    def __init__(self, http: Http) -> None:
+        self._http = http
+
+    async def __aenter__(self) -> Http:
+        return self._http
+
+    async def __aexit__(self, *exc: object) -> None:
+        return None
+
+
 @app.get("/api/run/{run_id}/gene/{gene}")
 async def gene_drawer(run_id: str, gene: str) -> JSONResponse:
     r = _runs.get(run_id)
@@ -822,6 +960,29 @@ async def gene_drawer(run_id: str, gene: str) -> JSONResponse:
         if not filled.pop("_retry_on_next_click", False):
             r.drawers[gene] = filled
     return JSONResponse(filled)
+
+
+@app.get("/api/run/{run_id}/drawer/{gene}")
+async def baked_drawer(run_id: str, gene: str) -> FileResponse:
+    """One gene's drawer as `scripts/bake_drawers.py` wrote it beside the run.
+
+    A file read and nothing else -- no adapter, no request -- which is why it
+    is the drawer a demo serves (`_demo_gate` allows it for listed runs) and
+    why `/gene/{gene}` above is refused there. The file carries a `baked` block
+    naming when it was fetched, and the page prints that before the pipeline.
+    Works in normal mode too: a run opened from disk after a restart has no
+    `_runs` entry, and this is the only drawer it can have.
+    """
+    try:
+        path = table_mod.baked_drawer_path(run_id, gene)
+    except table_mod.TableUnavailable:
+        raise HTTPException(404, "unknown run")
+    if path is None:
+        raise HTTPException(
+            404, f"no baked drawer for {gene} in run {run_id}. The drawer is read "
+                 f"from disk for this run; `scripts/bake_drawers.py {run_id}` "
+                 f"writes it.")
+    return FileResponse(path, media_type="application/json", headers=_NO_STORE)
 
 
 @app.get("/api/run/{run_id}/gene/{gene}/phenotypes")
@@ -1309,8 +1470,12 @@ async def run_evidence(run_id: str) -> JSONResponse:
     return JSONResponse(body)
 
 
-@app.get("/api/run/{run_id}/{filename}")
+@app.api_route("/api/run/{run_id}/{filename}", methods=["GET", "HEAD"])
 async def artefact(run_id: str, filename: str) -> FileResponse:
+    # HEAD too (2026-10-18): a disk-loaded run's page asks whether figure.png
+    # exists before showing it, and shows nothing when it does not -- never a
+    # broken image and never another run's figure. `FileResponse` answers a
+    # HEAD with the headers alone.
     # v3.0 adds three: `figure-web.svg`, which the page inlines and nobody
     # downloads, and `legend.svg` / `legend.png`, the legend as its own image.
     types = {

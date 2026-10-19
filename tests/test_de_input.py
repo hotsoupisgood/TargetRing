@@ -108,6 +108,21 @@ class TestHeadersAndEncoding:
         with pytest.raises(InputRejected, match="Could not decode"):
             decode(b"gene,logFC,padj\n\x81\x8d\x8f,2.1,0.01")
 
+    def test_an_oversize_field_is_a_refusal_not_a_csv_error(self) -> None:
+        """`csv` raises `_csv.Error: field larger than field limit (131072)`
+        from inside `list(reader)`. Found 2026-10-18 reaching `/api/analyse`'s
+        catch-all as a 500 with a traceback; it is a fact about the file."""
+        import csv
+        blob = "x" * (csv.field_size_limit() + 10)
+        with pytest.raises(InputRejected, match="could not be read as CSV"):
+            parse_de_table(HEAD + f'BRAF,2.1,0.01\n"{blob}",1.0,0.5\n')
+
+    def test_an_unclosed_quote_in_the_header_is_the_same_refusal(self) -> None:
+        import csv
+        blob = "y" * (csv.field_size_limit() + 10)
+        with pytest.raises(InputRejected, match="could not be read as CSV"):
+            parse_de_table(f'"{blob},logFC,padj\nBRAF,2.1,0.01\n')
+
     def test_real_latin1_still_accepted(self) -> None:
         p = parse_de_table("gene,logFC,padj\nBRAF,2.1,0.01\n".encode("latin-1"))
         assert p.rows[0].symbol == "BRAF"

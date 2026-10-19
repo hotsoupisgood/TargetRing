@@ -454,6 +454,11 @@ class TestAnalyseRouteSourceAtlas:
         r = route_client.post("/api/analyse", data={
             "source": "atlas", "accession": REAL_ACC, "contrast_id": REAL_CID,
             "n": 5, "ensembl_ids": json_mod.dumps(["ENSG00000000000"]),
+            # Named, because a contrast run with no region and no disease is
+            # refused before the selection is looked at (2026-10-18 walkthrough,
+            # `test_walkthrough.TestContrastRunRegion`). This test is about the
+            # selection check.
+            "region": "Ileum",
         })
         assert r.status_code == 422
         assert r.json()["error"] == "selection_outside_top_n"

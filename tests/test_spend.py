@@ -47,14 +47,27 @@ def _reserve(led, account, *, input_tokens=1000, max_tokens=1200, key="k",
 class TestAccounts:
     def test_the_accounts_are_the_rule_8_names(self) -> None:
         """Four since 2026-10-09, which added the contrast chooser and then the
-        region chooser."""
-        assert spend.ACCOUNTS == ("triage", "phenotype", "chooser", "region")
+        region chooser; a fifth on 2026-10-18, the baked per-gene evidence
+        summary (`summary_llm.py`); a sixth the same evening, the Claude-coded
+        phenotype flag (`phenotype_llm.py`). Both of the last two are spent
+        offline by a script and never by the app."""
+        assert spend.ACCOUNTS == ("triage", "phenotype", "chooser", "region",
+                                  "summary", "phenotype_llm")
 
     def test_each_account_reads_its_own_config_cap(self) -> None:
         assert spend.cap_for("triage") == config.LLM_SPEND_CAP_USD
         assert spend.cap_for("phenotype") == config.PHENOTYPE_LLM_SPEND_CAP_USD
         assert spend.cap_for("chooser") == config.CHOOSER_LLM_SPEND_CAP_USD
         assert spend.cap_for("region") == config.REGION_LLM_SPEND_CAP_USD
+        assert spend.cap_for("summary") == config.SUMMARY_LLM_SPEND_CAP_USD
+        assert spend.cap_for("phenotype_llm") == config.PHENOTYPE_FLAG_SPEND_CAP_USD
+
+    def test_the_phenotype_page_summary_cap_is_not_the_flags_cap(self) -> None:
+        """The two names are one word apart and the accounts are not the same
+        budget: `phenotype` is the phenotype-page summary ($5 cap, rule 8's
+        second call), `phenotype_llm` is the 0/1 flag ($1)."""
+        assert spend.cap_for("phenotype") != spend.cap_for("phenotype_llm")
+        assert config.PHENOTYPE_FLAG_SPEND_CAP_USD == 1.00
 
     def test_no_account_shares_a_cap_with_another(self) -> None:
         """Rule 8's standing requirement: none borrows from another, so a new
@@ -372,7 +385,9 @@ class TestManifestShowsBothAccounts:
         assert block["lines"] == ["triage: $0.00 of $5.00 spent over 0 calls",
                                  "phenotype: $0.00 of $5.00 spent over 0 calls",
                                  "chooser: $0.00 of $2.00 spent over 0 calls",
-                                 "region: $0.00 of $1.00 spent over 0 calls"]
+                                 "region: $0.00 of $1.00 spent over 0 calls",
+                                 "summary: $0.00 of $3.00 spent over 0 calls",
+                                 "phenotype_llm: $0.00 of $1.00 spent over 0 calls"]
 
     def test_a_built_manifest_carries_the_two_lines(self, monkeypatch, tmp_path) -> None:
         """The end the artefact is read from: `manifest.build` through to the JSON

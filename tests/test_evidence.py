@@ -240,9 +240,13 @@ class TestNoVerdictAndNoScore:
     def test_the_surface_states_that_it_does_not_rank_or_recommend(
             self, payload) -> None:
         note = payload["evidence_note"]
-        assert "does not rank" in note
-        assert "recommend" in note
-        assert "yours" in note, "it has to hand the call back explicitly"
+        assert "does not rank or score genes" in note
+        # 2026-10-18 walkthrough item f: one voice. The Table tab shows the
+        # owner's GO / NO-GO pill, so this surface no longer says "the call is
+        # yours"; it names the rule and says what it never does.
+        assert "GO / NO-GO line is the owner's explicit three-part rule" in note
+        assert "never orders or filters the figure" in note
+        assert "yours" not in note
 
     def test_the_order_is_the_runs_own_and_is_not_resorted(self, payload,
                                                            run_id) -> None:

@@ -426,8 +426,13 @@ class TestGenesRoute:
         assert r.status_code == 404
 
     def test_a_missing_index_is_a_503(self, route_client, monkeypatch, tmp_path) -> None:
+        """`read_index_path`, not `index_path`: the route reads the cache's
+        index if a build wrote one and otherwise the checked-in copy under
+        `fixtures/` (README: the disease picker works out of the box). Pointing
+        only the cache path at nothing left the shipped copy to answer, which
+        is correct behaviour, so the test must remove BOTH to earn its 503."""
         from targetring import app as app_mod
-        monkeypatch.setattr(app_mod.atlas_index, "index_path",
+        monkeypatch.setattr(app_mod.atlas_index, "read_index_path",
                             lambda *a, **k: tmp_path / "nope.json")
         monkeypatch.setattr(app_mod, "_index_cache", None)
         r = route_client.get(f"/api/contrast/{REAL_ACC}/{REAL_CID}/genes")

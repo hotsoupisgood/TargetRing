@@ -49,6 +49,12 @@ DRAWER_AVAILABLE_NOTE = "Click a gene to open its drawer."
 DRAWER_ON_DISK_NOTE = (
     "Read from disk — the per-gene drawer needs the run in memory, so it is not "
     "available for this one.")
+# A run read from disk whose drawers `scripts/bake_drawers.py` wrote beside it.
+# The drawer opens, and the note says what it is: the drug pipeline and the
+# literature as they were on the day they were fetched, not a live lookup.
+DRAWER_BAKED_NOTE = (
+    "Click a gene to open its drawer — read from disk, as recorded when this "
+    "run's drawers were baked; nothing is fetched on click.")
 
 
 def app_artefact_links(run_id: str) -> list[dict[str, str]]:
@@ -129,6 +135,7 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
                   record_url: str = "",
                   drawer_note: str = "",
                   artefact_links: list[dict[str, str]] | None = None,
+                  baked_drawers: list[str] | None = None,
                   _table: Any = None,
                   ) -> dict[str, Any]:
     """One run's cells as a wide grid.
@@ -181,8 +188,16 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
     ring_labels_for_dim = {r["key"]: citations_mod.column_label(
         specs.get(r["key"]), r["label"]) for r in t.rings}
 
+    # The genes whose drawer is a file beside the run. Looked up here, not
+    # passed in by the app, so the app and the note cannot disagree about which
+    # genes open; the export passes `[]` because a file has no server to read
+    # another file for it.
+    if baked_drawers is None:
+        baked_drawers = table_mod.baked_drawer_genes(t.run_id)
     if not drawer_note:
-        drawer_note = (DRAWER_AVAILABLE_NOTE if in_memory else DRAWER_ON_DISK_NOTE)
+        drawer_note = (DRAWER_AVAILABLE_NOTE if in_memory
+                       else DRAWER_BAKED_NOTE if baked_drawers
+                       else DRAWER_ON_DISK_NOTE)
     if artefact_links is None:
         artefact_links = [] if in_memory else app_artefact_links(t.run_id)
 
@@ -305,11 +320,20 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
         # The drawer needs the run in memory; a run read off disk has no
         # adapters behind it. Said rather than discovered by clicking.
         "in_memory": in_memory,
+        # The genes with a baked drawer on disk (`table.baked_drawer_genes`).
+        # The page makes exactly these labels clickable when the run is not in
+        # memory, and `/api/run/{id}/drawer/{gene}` is what it reads.
+        "baked_drawers": baked_drawers,
         # v4.0. What to say instead, and where a reader may go — both authored in
         # Python, because an artefact that states what it cannot do is stating a
         # claim and the page does not write claims.
         "drawer_note": drawer_note,
         "artefact_links": artefact_links,
+        # The `What this is not` tab, for a run opened from disk. `renderCaveats`
+        # read these off the analyse response, which a disk run never had, so the
+        # tab was empty for every `?run=` and every demo run (found 2026-10-18).
+        "not_attempted": m.get("not_attempted", []),
+        "llm": m.get("llm"),
     }
 
 
@@ -319,8 +343,8 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
 #: rather than writing them.
 EVIDENCE_NOTE = (
     "Evidence per target, in the order this run drew its spokes. This surface "
-    "does not rank, score or recommend: it states what each source found, what "
-    "it did not, and where two sources disagree. The go/no-go call is yours.")
+    "does not rank or score genes. The GO / NO-GO line is the owner's explicit "
+    "three-part rule, shown for each gene; it never orders or filters the figure.")
 
 #: The sentence that stops an empty findings list reading as a clean bill of
 #: health. It is the whole reason `unevaluable` is a separate outcome.
@@ -442,4 +466,5 @@ def _finding_counts(findings: dict[str, list[dict[str, Any]]]) -> dict[str, int]
 
 __all__ = ["table_payload", "evidence_payload", "dimmable_rings",
            "app_artefact_links", "DRAWER_AVAILABLE_NOTE",
-           "DRAWER_ON_DISK_NOTE", "EVIDENCE_NOTE", "EVIDENCE_EMPTY_NOTE"]
+           "DRAWER_ON_DISK_NOTE", "DRAWER_BAKED_NOTE", "EVIDENCE_NOTE",
+           "EVIDENCE_EMPTY_NOTE"]

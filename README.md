@@ -88,6 +88,54 @@ would mislead on seven of every eight.
 categorised stop reasons. The safety liability is stated above the pipeline
 because the clinical rings are a pipeline statement, never a safety one.*
 
+## The GO / NO-GO line
+
+Separate from the rings, and from a different author. The rings are evidence
+and carry no verdict. The verdict line in a gene's highlight box and drawer is
+**Puck's explicit rule** (2026-10-18: "we need the gene to be expressed, and
+also misregulated in the study, and have a strong phenotype in a study"),
+evaluated deterministically by `targetring/recommend.py` from the numbers the
+drawer already shows, and baked into the drawer file beside them.
+
+Rule: **expressed AND dysregulated AND phenotype.** Each criterion is met, not
+met, or no data, with its value printed:
+
+| criterion | met when | default |
+|---|---|---|
+| expressed | GTEx median TPM in the run's region ≥ `RECOMMEND_MIN_TPM`; with no GTEx number, Open Targets `tissueDistribution` > 0 | 1 TPM |
+| dysregulated in the study | \|logFC\| ≥ `RECOMMEND_MIN_ABS_LOGFC` and adjusted p ≤ `RECOMMEND_MAX_Q` | 1.0, 0.05 |
+| phenotype in a study | mouse-phenotype ring > 0, or ≥ `RECOMMEND_MIN_PHENOTYPES` abnormal mouse terms | 1 |
+
+GO when all three are met; NO-GO when any is not met; INSUFFICIENT DATA when
+nothing is unmet but something could not be judged (not met beats no data).
+A down-regulated gene gets the one line "a biologic may be preferred". The
+thresholds and a hash of the rule travel with every verdict as
+`recommendation.rule_version`.
+
+The box is deliberately terse (owner, 2026-10-18: *"make it much less
+wordy"*): a verdict pill, a three-word region tag, the three criteria as
+met / not met / no data with the bare value, and the rule on one line with its
+thresholds in a tooltip. Expression is not spelled out in words — the
+tissue-specificity ring on the figure is where that number lives. Druggability
+and toxicity say nothing at all: they are not criteria, and a caveat under a
+verdict that never read them was advice the reader could not act on. Only a
+*severe* safety liability on record gets a line, and it still excludes nothing.
+
+Beside the deterministic phenotype criterion the box prints
+**`phenotype (Claude): 0/1`** and one sentence naming the terms it read — a
+baked model call (`targetring/phenotype_llm.py`) given the gene's mouse
+phenotype terms, its knockout ring and the contrast's disease area, and nothing
+else: not the verdict, not the logFC, because a model given the verdict agrees
+with the verdict instead of reading the terms. It is a display aid — it never
+changes a verdict, it is not in `rule_version`, and `recommend.py` cannot see
+it. Baked offline on its own $1 spend account
+(`scripts/bake_phenotype_flags.py`); a demo box serves the file and makes no
+call.
+
+It is not used to order or filter the figure, and it never touches the drop
+ledger. Change a threshold in `config.py` and re-stamp with
+`scripts/bake_drawers.py --recommend-only <run_id>`: no request, no model.
+
 ## Filters are stated, not silent
 
 Threshold filters can remove genes from the plot. When they have, the figure

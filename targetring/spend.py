@@ -1,7 +1,10 @@
-"""Four named LLM accounts, four caps, one append-only ledger.
+"""Six named LLM accounts, six caps, one append-only ledger.
 
 `AGENTS.md` rule 8, amended twice on 2026-10-09 to four paid calls with four
-separate caps -- *"None borrows from another"* -- and to state that a cap is an
+separate caps -- and twice more on 2026-10-18, for the baked per-gene evidence
+summary (`summary`) and the baked Claude-coded phenotype flag
+(`phenotype_llm`), both of which are spent offline by a script and never by the
+app. Rule 8 still says four; those two amendments are Puck's to make -- *"None borrows from another"* -- and to state that a cap is an
 approval gate rather than a ceiling: it stops, names the numbers, records the
 refusal, and raising it is Puck's. Before this
 module the caps were constants with nothing behind them and `manifest.llm` was
@@ -60,8 +63,16 @@ TRIAGE = "triage"
 PHENOTYPE = "phenotype"
 CHOOSER = "chooser"
 REGION = "region"
+#: 2026-10-18: the baked per-gene evidence summary (`summary_llm.py`). Spent
+#: only by `scripts/bake_summaries.py`, offline; the app never calls it.
+SUMMARY = "summary"
+#: 2026-10-18 18:42: the Claude-coded 0/1 phenotype flag (`phenotype_llm.py`).
+#: Spent only by `scripts/bake_phenotype_flags.py`, offline. Distinct from
+#: `PHENOTYPE` above, which is the phenotype-PAGE summary; see the note in
+#: `config.py` on why the two names are this close.
+PHENOTYPE_LLM = "phenotype_llm"
 
-#: The only four account names there are. The value is the `config` attribute
+#: The only account names there are. The value is the `config` attribute
 #: holding that account's cap, looked up when asked rather than copied here, so
 #: the cap has exactly one definition.
 ACCOUNT_CAP_ATTR: dict[str, str] = {
@@ -69,9 +80,12 @@ ACCOUNT_CAP_ATTR: dict[str, str] = {
     PHENOTYPE: "PHENOTYPE_LLM_SPEND_CAP_USD",
     CHOOSER: "CHOOSER_LLM_SPEND_CAP_USD",
     REGION: "REGION_LLM_SPEND_CAP_USD",
+    SUMMARY: "SUMMARY_LLM_SPEND_CAP_USD",
+    PHENOTYPE_LLM: "PHENOTYPE_FLAG_SPEND_CAP_USD",
 }
 
-ACCOUNTS: tuple[str, ...] = (TRIAGE, PHENOTYPE, CHOOSER, REGION)
+ACCOUNTS: tuple[str, ...] = (TRIAGE, PHENOTYPE, CHOOSER, REGION, SUMMARY,
+                             PHENOTYPE_LLM)
 
 #: What an account is for, printed beside its line in the manifest and the UI so
 #: two identical `$0.00 of $5.00` rows are distinguishable.
@@ -84,6 +98,14 @@ ACCOUNT_PURPOSE: dict[str, str] = {
               "contrasts the index already offered it"),
     REGION: ("the region chooser, one call per disease and then cached, "
              "choosing only among the GTEx tissues this build can read"),
+    SUMMARY: ("the per-gene evidence summary, baked offline by "
+              "scripts/bake_summaries.py from the gene's own drawer values and "
+              "served as a file; the app never makes this call"),
+    PHENOTYPE_LLM: ("the Claude-coded 0/1 phenotype flag, baked offline by "
+                    "scripts/bake_phenotype_flags.py from the gene's mouse "
+                    "phenotype terms and the contrast's disease area; a display "
+                    "aid beside the owner's phenotype criterion, never the "
+                    "criterion, and the app never makes this call"),
 }
 
 #: Terminal statuses. A line carrying one of these is the last word on its

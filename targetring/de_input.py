@@ -218,15 +218,29 @@ def parse_de_table(raw: bytes | str, max_genes: int = MAX_GENES) -> ParsedInput:
         dialect = csv.excel  # type: ignore[assignment]
 
     reader = csv.DictReader(io.StringIO(text), dialect=dialect)
-    if not reader.fieldnames:
-        raise InputRejected("The DE table has no header row.")
-    headers = [h for h in reader.fieldnames if h is not None]
+    # `csv` raises its own `Error` on a field over `csv.field_size_limit()`
+    # (131,072 bytes by default) and on a quote that never closes. Both are
+    # facts about the file, so both are refusals with the user's instruction,
+    # not a 500 from the catch-all (found 2026-10-18). The header read below
+    # pulls the first row, so it is inside the guard too.
+    try:
+        fieldnames = reader.fieldnames
+        if not fieldnames:
+            raise InputRejected("The DE table has no header row.")
+        headers = [h for h in fieldnames if h is not None]
 
-    sym_col = _pick(headers, _SYMBOL_HEADERS, "gene symbol")
-    logfc_col = _pick(headers, _LOGFC_HEADERS, "logFC")
-    padj_col = _pick(headers, _PADJ_HEADERS, "adjusted p-value")
+        sym_col = _pick(headers, _SYMBOL_HEADERS, "gene symbol")
+        logfc_col = _pick(headers, _LOGFC_HEADERS, "logFC")
+        padj_col = _pick(headers, _PADJ_HEADERS, "adjusted p-value")
 
-    records = list(reader)
+        records = list(reader)
+    except csv.Error as e:
+        raise InputRejected(
+            f"The DE table could not be read as CSV: {e}. A single field longer "
+            f"than {csv.field_size_limit():,} characters or an unclosed quote "
+            f"usually means a column that is not a gene symbol, a logFC or an "
+            f"adjusted p -- export only those three columns."
+        ) from e
     parsed = ParsedInput(
         input_row_count=len(records),
         columns={"symbol": sym_col, "logfc": logfc_col, "padj": padj_col},

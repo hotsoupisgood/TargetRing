@@ -22,12 +22,14 @@ RUNS_DIR = Path(os.environ.get("TARGETRING_RUNS", REPO_ROOT / "runs"))
 # route away from a public box doing a 385 MB analyse for a stranger.
 DEMO_MODE = os.environ.get("TARGETRING_DEMO", "") == "1"
 #: The runs a demo serves. Overridable as a comma-separated list; the default is
-#: the three the README shows -- a disease-path run and two paste runs, one of
-#: them filtered. Every id here must exist under RUNS_DIR with its artefacts.
+#: the four Crohn's-only allowlist runs (docs/DEMO-RUN-ALLOWLIST.md), all
+#: E-GEOD-101794 g2_g1 on the terminal ileum, owner's decision 2026-10-18.
+#: Every id here must exist under RUNS_DIR with its artefacts.
 DEMO_RUNS: tuple[str, ...] = tuple(
     s.strip() for s in os.environ.get(
         "TARGETRING_DEMO_RUNS",
-        "20261009T160226Z-805ee9,20260926T001101Z-9a2192,20260926T001147Z-054913",
+        "20261018T190526Z-94ef5f,20261018T190549Z-81475c,"
+        "20261018T190619Z-e52d65,20261018T190650Z-df1587",
     ).split(",") if s.strip())
 
 USER_AGENT = "targetring/1.0 (local research prototype; contact: repo owner)"
@@ -159,6 +161,10 @@ SCHEMA_VERSIONS = {
     # input indirectly, via `prompt_hash`, so a prompt change does not need a
     # bump here. Bumped only if the cached *shape* of a summary changes.
     "llm.phenotype_summary": "1",
+    # The per-gene evidence summary baked into `runs/<id>/drawer/<GENE>.json`
+    # (`summary_llm.py`). Keyed by the caller on sha256(facts + prompt_hash +
+    # model); this version is for the stored block's SHAPE.
+    "llm.evidence_summary": "1",
 }
 
 # v2.4: `CTGOV_MAX_DRUG_HOPS` and `CTGOV_ROWS_PER_BUCKET` are gone with the hop.
@@ -181,6 +187,35 @@ MAX_GENES = 60
 
 # The hard geometric ceiling, for the message that explains the soft one.
 CIRCOS_MAX_SECTORS = 180
+
+# The most bytes `/api/analyse` will read as a DE table, pasted or uploaded,
+# before parsing it. 10 MB. A 5,000-row table (PLAN §4's upper case) is about
+# 150 kB, so this is ~60x the largest input the design contemplates, and it is
+# refused with a sentence (HTTP 413) rather than parsed into memory. Found
+# 2026-10-18: without it, a single oversize field reached `csv` as
+# `_csv.Error: field larger than field limit (131072)` and the catch-all turned
+# it into a 500 with a traceback -- a crash, where the contract is a refusal.
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+# --- GO / NO-GO recommendation (Puck, 2026-10-18) -----------------------------
+# "make a recommendation, have go/no go: we need the gene to be expressed, and
+# also misregulated in the study, and have a strong phenotype in a study."
+# This is Puck's explicit rule, evaluated per gene in `recommend.py` and baked
+# into the gene's drawer JSON. It is NOT a score and it is not the evidence
+# rings (PLAN v2.5): it never orders, filters or ledgers anything on the figure.
+# Three thresholds, one per criterion; the drawer prints them beside the verdict
+# and the rule version is a hash of the rule text plus these numbers.
+RECOMMEND_MIN_TPM = 1.0          # expressed: GTEx region median TPM >= this
+RECOMMEND_MIN_ABS_LOGFC = 1.0    # dysregulated: |logFC| >= this ...
+RECOMMEND_MAX_Q = 0.05           # ... and adjusted p <= this
+RECOMMEND_MIN_PHENOTYPES = 1     # phenotype: >= this many abnormal mouse terms
+# 2026-10-18 walkthrough. The expressed line may call a gene "concentrated in
+# <region>" only when region TPM / GTEx panel median exceeds this AND the region
+# is a disease tissue for the contrast (chooser-inferred). A blood-rich tissue
+# reads as "38x Lung" for genes that are simply blood-borne; below this line, or
+# in a region the disease does not act in, the two TPMs are printed and no
+# specificity word is used. A stated choice, documented in docs/RECOMMEND-SPEC.md.
+RECOMMEND_SPECIFIC_RATIO = 5.0
 
 # AGENTS.md rule 8.
 LLM_SPEND_CAP_USD = 5.00
@@ -247,6 +282,46 @@ PHENOTYPE_SUMMARY_MAX_ROWS = 40
 PHENOTYPE_LLM_MODEL = "claude-opus-5"
 PHENOTYPE_LLM_EFFORT = "low"
 PHENOTYPE_LLM_MAX_TOKENS = 1200
+
+# 2026-10-18, Puck's spec for "a text box on highlight that has an LLM
+# interpretation of the values": a fifth paid call, made OFFLINE by
+# `scripts/bake_summaries.py` and never by the app, written into the baked
+# drawer and served as a file. Its own account, cap and counter, like the other
+# four, for the standing reason. (AGENTS.md rule 8 still lists four calls; this
+# entry is the proposed fifth and the amendment is Puck's to make.)
+#
+# The model is the one the repo already pins for its other summary; it is in
+# the price table below, so the ledger can price it. Low effort: this is a
+# reading of twelve numbers, not reasoning. Max tokens covers 4-8 sentences
+# plus the model's own thinking.
+SUMMARY_LLM_MODEL = "claude-opus-5"
+SUMMARY_LLM_EFFORT = "low"
+SUMMARY_LLM_MAX_TOKENS = 1500
+# The cap is the number Puck's spec gave for the whole bake ("stop at $3").
+SUMMARY_LLM_SPEND_CAP_USD = 3.00
+
+# 2026-10-18 18:42 PDT, Puck: "i would like an explanation on the phenotype
+# though, somewhere, like a 0/1 for phenotype that is claude coded." A SIXTH
+# paid call (`phenotype_llm.py`), baked offline per gene and served as a file,
+# with its own account (`spend.PHENOTYPE_LLM`), cap and counter for the
+# standing reason -- a new feature must not be able to move an existing
+# feature's ceiling. The other five are deliberately unchanged.
+#
+# NOTE ON THE TWO PHENOTYPE NAMES. `PHENOTYPE_LLM_SPEND_CAP_USD` above is the
+# PHENOTYPE-PAGE SUMMARY's cap (`spend.PHENOTYPE`, rule 8's second call) and is
+# untouched by this block. This is the flag's cap and its account is
+# `phenotype_llm`. The near-collision is deliberate rather than silent: rule 8
+# named the page summary "the phenotype summary" first, and renaming its cap
+# would rewrite a ledger that already has lines on it.
+#
+# $1.00: the flag is one short JSON answer over a dozen term labels, so the
+# whole demo bake is cents. Low on purpose -- rule 8 as amended, a cap is an
+# approval gate and raising it is Puck's.
+PHENOTYPE_FLAG_SPEND_CAP_USD = 1.00
+PHENOTYPE_FLAG_LLM_MODEL = "claude-opus-5"
+PHENOTYPE_FLAG_LLM_EFFORT = "low"
+# One sentence plus the schema envelope, plus the model's own thinking.
+PHENOTYPE_FLAG_LLM_MAX_TOKENS = 600
 
 # The append-only spend ledger lives under `runs/`, not under `cache/`, and that
 # is the whole point: `cache/` is deleted routinely (there are five

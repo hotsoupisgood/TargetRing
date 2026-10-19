@@ -275,7 +275,7 @@
           </div>
         </details>
         <span id="dl-run" class="hint"></span>
-        <span class="hint">Click a gene label or any of its cells to open the drawer.</span>
+        <span class="hint" id="figure-click-hint">Click a gene label or any of its cells to open the drawer.</span>
       </div>
       <!-- v3.1 / UX v3 A2. Two things used to live inside the SVG and be drawn
            at 5.8-6.5 CSS px on a 1440 px laptop: the twelve per-ring scales and
@@ -449,6 +449,16 @@
 <aside id="drawer" hidden>
   <button id="drawer-close" aria-label="close">×</button>
   <div id="drawer-body"></div>
+</aside>
+<!-- 2026-10-18, Puck: "a text box on highlight that has an LLM interpretation of
+     the values". Filled by `showSummary` from the gene's BAKED drawer (the
+     `summary` block `scripts/bake_summaries.py` wrote); shown on hover/focus of a
+     gene label or any of its cells, dismissed by its button or Escape. Empty
+     when no baked summary exists -- nothing is fetched live and nothing is
+     generated on the page. -->
+<aside id="summary-box" hidden role="status" aria-live="polite">
+  <button id="summary-close" aria-label="dismiss summary">×</button>
+  <div id="summary-body"></div>
 </aside>
 <div id="scrim" hidden></div>
 

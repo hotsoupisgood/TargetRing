@@ -219,7 +219,10 @@ class TestOnePayloadOneRenderer:
         """Not "equivalent": the same dict, from `view.table_payload`, minus the
         three fields that are facts about the SURFACE rather than about the run."""
         served = client.get(f"/api/run/{run_id}/values").json()
-        surface = {"in_memory", "drawer_note", "artefact_links", "citations"}
+        # `baked_drawers` is a surface fact too: the app reads the run's
+        # `drawer/` directory, the file has no server to read one for it.
+        surface = {"in_memory", "drawer_note", "artefact_links", "citations",
+                   "baked_drawers"}
         assert set(served) == set(blob["payload"]), (
             "the export and the endpoint no longer carry the same fields")
         for key in set(served) - surface:
@@ -523,9 +526,21 @@ class TestNothingIsFetchedAndNothingIsExternal:
     an empty grid on Puck's machine with nothing on screen to explain it."""
 
     def test_no_element_loads_anything(self, html) -> None:
+        # Scanned on the MARKUP, with script and style bodies blanked
+        # (`_static_html`). `app.js` is inlined verbatim and, since the demo
+        # gallery, contains `<img src="/api/run/…">` inside a template literal
+        # -- text in a string, which the browser never parses as an element.
+        # The contract this test holds (`export.py`: "no <link>, no <script
+        # src>, no <img>") is about what the document loads, and a string is
+        # not a load; `test_no_url_in_the_data_points_at_a_route` and
+        # `test_the_markup_neither_loads_nor_links_to_anything_remote` already
+        # ask the questions that are honestly askable of the script and the data.
+        static = _static_html(html)
         offenders = re.findall(r"<(?:script|link|img|iframe|source|video|audio|"
-                               r"object|embed)\b[^>]*\b(?:src|data)=", html)
+                               r"object|embed)\b[^>]*\b(?:src|data)=", static)
         assert not offenders, offenders
+        # The `<link>` check stays on the whole document, as it always was:
+        # app.js has no `<link` in it, and the one favicon `<link>` is markup.
         links = re.findall(r'<link\b[^>]*href="([^"]*)"', html)
         assert links == ["data:,"], (
             f"the export references a stylesheet or an icon: {links}")
@@ -605,10 +620,14 @@ class TestItSaysWhatItIsAndWhatItIsNot:
         assert export_mod.DRAWER_OFFLINE_NOTE in html
         assert export_mod.DRAWER_OFFLINE_REASON in html
         assert "live ChEMBL and Europe PMC" in export_mod.DRAWER_OFFLINE_REASON
-        # The renderer only draws a gene as a button when the run is in memory.
+        # The renderer only draws a gene as a button when the run is in memory
+        # or the payload names a baked drawer for it -- and the export's payload
+        # names none (`baked_drawers=[]` in `export_blob`).
         assert blob["payload"]["in_memory"] is False
+        assert blob["payload"]["baked_drawers"] == []
         js = (STATIC / "app.js").read_text()
-        assert 'd.in_memory\n          ? `<button class="gene linkish"' in js
+        assert ('(d.in_memory || (d.baked_drawers || []).includes(g.gene))\n'
+                '          ? `<button class="gene linkish"') in js
 
     def test_the_run_is_stamped_on_the_face_of_it(self, html, blob) -> None:
         p = blob["payload"]

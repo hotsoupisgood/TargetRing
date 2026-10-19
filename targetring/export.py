@@ -346,6 +346,10 @@ def export_blob(run_id: str) -> dict[str, Any]:
         record_url=MANIFEST_ANCHOR,
         drawer_note=DRAWER_OFFLINE_NOTE,
         artefact_links=[],
+        # A detached file has no server to read a baked drawer for it, so no
+        # gene is drawn as a button however many drawers the run has on disk
+        # (`view.table_payload`: "the export passes `[]`").
+        baked_drawers=[],
     )
     return {
         "payload": payload,

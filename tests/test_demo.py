@@ -45,6 +45,9 @@ ACTING_PATHS = [
     ("GET", "/api/contrast/E-GEOD-101794/g2_g1/genes"),
     ("GET", "/api/contrast/E-GEOD-101794/g2_g1/heatmap"),
     ("GET", "/api/analyse/progress/sometoken"),
+    # The live drawer: ChEMBL and Europe PMC on every click. Refused by the
+    # gate, not merely 404ed by an empty `_runs` (found 2026-10-18).
+    ("GET", "/api/run/x/gene/BRAF"),
 ]
 
 
@@ -65,6 +68,114 @@ class TestEveryActingRouteIsRefused:
         assert r.status_code == 403 and r.json()["error"] == "demo_mode"
         r = client.post(f"/api/run/{demo}/web-figure", data={"panel_px": 900})
         assert r.status_code == 403 and r.json()["error"] == "demo_mode"
+
+    def test_the_live_drawer_is_refused_even_for_an_allowed_run(
+            self, demo, client, monkeypatch) -> None:
+        """`/gene/{gene}` calls `fill_drawer_only_sources`. Patched to explode so
+        the test fails loudly if the gate ever lets the handler run."""
+        async def boom(*a, **k):
+            raise AssertionError("the live drawer ran on a demo box")
+        monkeypatch.setattr(app_mod, "fill_drawer_only_sources", boom)
+        r = client.get(f"/api/run/{demo}/gene/BRAF")
+        assert r.status_code == 403 and r.json()["error"] == "demo_mode"
+
+
+class TestRegionsMakeNoRequest:
+    """`/api/regions` is allowed through the gate -- the page calls it on load --
+    and until 2026-10-18 it was the one allowed route that fetched: a live GTEx
+    call on first hit. In demo the list is read from the listed runs' manifests."""
+
+    @pytest.fixture
+    def no_gtex(self, monkeypatch):
+        calls: list[str] = []
+
+        async def boom(*a, **k):
+            calls.append("called")
+            raise AssertionError("GTEx was fetched on a demo box")
+        from targetring import run as run_mod
+        monkeypatch.setattr(app_mod, "available_regions", boom)
+        monkeypatch.setattr(run_mod.GTExAdapter, "fetch_one", boom)
+        monkeypatch.setattr(app_mod, "_regions_cache", [])
+        return calls
+
+    def test_served_from_the_manifests_with_no_outbound_call(
+            self, demo, client, no_gtex) -> None:
+        import json
+        r = client.get("/api/regions")
+        assert r.status_code == 200, r.text[:200]
+        body = r.json()
+        manifest = json.loads((config.RUNS_DIR / demo / "manifest.json").read_text())
+        assert body["regions"] == [manifest["region"]]
+        assert body["default"] in body["regions"]
+        assert body["demo"] is True
+        assert no_gtex == [], "the demo regions route made an outbound call"
+
+    def test_no_listed_run_means_a_refusal_not_a_fetch(
+            self, client, monkeypatch, no_gtex) -> None:
+        monkeypatch.setattr(config, "DEMO_MODE", True)
+        monkeypatch.setattr(config, "DEMO_RUNS", ())
+        r = client.get("/api/regions")
+        assert r.status_code == 403 and r.json()["error"] == "demo_mode"
+        assert no_gtex == []
+
+    def test_normal_mode_still_asks_gtex(self, client, monkeypatch) -> None:
+        """The gate is inert when off: the real panel is what normal mode serves."""
+        monkeypatch.setattr(config, "DEMO_MODE", False)
+        monkeypatch.setattr(app_mod, "_regions_cache", [])
+
+        async def fake(cache=None):
+            return ["Liver", "Lung"]
+        monkeypatch.setattr(app_mod, "available_regions", fake)
+        body = client.get("/api/regions").json()
+        assert body["regions"] == ["Liver", "Lung"] and "demo" not in body
+
+
+class TestTheBakedDrawerIsAFileRead:
+    """`/api/run/{id}/drawer/{gene}` serves what `scripts/bake_drawers.py` wrote.
+    A fake run under a temporary RUNS_DIR, so nothing is written under `runs/`."""
+
+    @pytest.fixture
+    def baked(self, monkeypatch, tmp_path):
+        import json
+        from targetring import table as table_mod
+        run = "20990101T000000Z-baked1"
+        d = tmp_path / run / table_mod.DRAWER_DIR
+        d.mkdir(parents=True)
+        (d / "BRAF.json").write_text(json.dumps(
+            {"gene": "BRAF", "baked": {"at_utc": "2026-10-18T00:00:00Z"}}))
+        monkeypatch.setattr(table_mod, "RUNS_DIR", tmp_path)
+        monkeypatch.setattr(config, "DEMO_MODE", True)
+        monkeypatch.setattr(config, "DEMO_RUNS", (run,))
+        return run
+
+    def test_served_for_a_listed_run(self, baked, client) -> None:
+        r = client.get(f"/api/run/{baked}/drawer/BRAF")
+        assert r.status_code == 200, r.text[:200]
+        assert r.json()["gene"] == "BRAF" and r.json()["baked"]["at_utc"]
+
+    def test_a_gene_without_a_file_is_a_404_naming_the_script(self, baked, client) -> None:
+        r = client.get(f"/api/run/{baked}/drawer/EGFR")
+        assert r.status_code == 404
+        assert "bake_drawers.py" in r.json()["detail"]
+
+    def test_an_unlisted_run_is_unknown(self, baked, client) -> None:
+        r = client.get("/api/run/20990101T000000Z-other1/drawer/BRAF")
+        assert r.status_code == 404 and r.json()["message"] == "unknown run"
+
+    def test_a_traversal_shaped_gene_is_a_404(self, baked, client) -> None:
+        r = client.get(f"/api/run/{baked}/drawer/..%2Fmanifest")
+        assert r.status_code == 404
+
+    def test_the_table_payload_names_the_baked_genes(self, monkeypatch, tmp_path) -> None:
+        """What the page uses to decide which labels are clickable."""
+        from targetring import table as table_mod
+        monkeypatch.setattr(table_mod, "RUNS_DIR", tmp_path)
+        run = "20990101T000000Z-baked2"
+        (tmp_path / run / table_mod.DRAWER_DIR).mkdir(parents=True)
+        for g in ("EGFR", "BRAF", "not a gene!"):
+            (tmp_path / run / table_mod.DRAWER_DIR / f"{g}.json").write_text("{}")
+        assert table_mod.baked_drawer_genes(run) == ["BRAF", "EGFR"]
+        assert table_mod.baked_drawer_genes("never-existed") == []
 
 
 class TestOnlyTheListedRunsExist:
@@ -158,7 +269,8 @@ class TestTheTwoPredicates:
         "/api/analyse", "/api/autopick", "/api/region-for", "/api/diseases",
         "/api/contrasts", "/api/contrast/E-1/g1_g2/genes",
         "/api/analyse/progress/t", "/api/run/x/gene/BRAF/phenotypes",
-        "/api/run/x/web-figure",
+        "/api/run/x/web-figure", "/api/run/x/gene/BRAF",
+        "/api/run/20261009T160226Z-805ee9/gene/MUC1",
     ])
     def test_forbidden(self, path) -> None:
         assert demo_forbids(path)
@@ -166,6 +278,7 @@ class TestTheTwoPredicates:
     @pytest.mark.parametrize("path", [
         "/", "/app.js", "/api/health", "/api/runs", "/api/regions",
         "/api/orderings", "/api/run/x/values", "/api/run/x/manifest.json",
+        "/api/run/x/drawer/BRAF", "/api/run/x/evidence",
     ])
     def test_allowed(self, path) -> None:
         assert not demo_forbids(path)
