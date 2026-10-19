@@ -600,7 +600,7 @@ async function showToolInputs(runId) {
 
 // Every gene symbol this SVG drew a spoke label for. The same pattern
 // `wireFigure` matches with, applied once so the two cannot disagree about what
-// a label looks like — the chromosome suffix (v4.0, `NOD2 · 16`) sits between
+// a label looks like — the chromosome suffix (v4.1, `NOD2 · chr16`) sits between
 // the symbol and the `(k=` that anchors it, and this is the regex that has to
 // know that.
 function spokeGenesInSvg() {

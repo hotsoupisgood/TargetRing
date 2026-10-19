@@ -191,7 +191,7 @@ class TestThePageIsTheTool:
         js = (STATIC / "app.js").read_text()
         src = _re.search(r"const SPOKE_LABEL_RE = (/.*/);", js).group(1)
         pat = _re.compile(src[1:-1])
-        assert pat.match("NOD2 · 16 (k=9/9)").group(1) == "NOD2"
+        assert pat.match("NOD2 · chr16 (k=9/9)").group(1) == "NOD2"
         assert pat.match("MUC1 (k=9/9)").group(1) == "MUC1"
         assert pat.match("⚠ FCGR3A · X (k=5/9)").group(1) == "FCGR3A"
 

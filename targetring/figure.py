@@ -2969,9 +2969,12 @@ _ID_NOTE = (
 # repeating a three-letter prefix on every spoke -- and the drawer header, where
 # there is room, spells it out as "chr 16".
 _CHR_SEP = " · "
+# v4.1, Puck: "around the ring the labels should say ChrXX". The rim reads
+# `NOD2 · chr16`; the drawer header already says `chr 16`.
+_CHR_PREFIX = "chr"
 
 _CHR_NOTE = (
-    "Chromosome per gene: the number after the symbol on the rim, from Open Targets "
+    "Chromosome per gene: the chrN after the symbol on the rim, from Open Targets "
     "genomicLocation (GRCh38). NO suffix means Open Targets had no chromosome for that "
     "gene, or placed it on an unplaced scaffold — never that the gene has none; the "
     "drawer header names which. It is a label: it orders nothing, is not a ring and is "
@@ -2988,7 +2991,7 @@ _CHR_OFF_NOTE = (
 
 
 def _chromosome_suffix(cell: "Any | None") -> str:
-    """` · 16` for a value, and the empty string for everything else.
+    """` · chr16` for a value, and the empty string for everything else.
 
     The one place in this build where a non-value state renders as nothing at
     all. It is deliberate and it is bounded: the figure states the rule in
@@ -3004,7 +3007,7 @@ def _chromosome_suffix(cell: "Any | None") -> str:
     text = getattr(cell, "text", None)
     if state != "value" or not text:
         return ""
-    return f"{_CHR_SEP}{text}"
+    return f"{_CHR_SEP}{_CHR_PREFIX}{text}"
 
 
 def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,

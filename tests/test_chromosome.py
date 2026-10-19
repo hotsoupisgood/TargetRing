@@ -27,7 +27,7 @@ from targetring.adapters.opentargets import (
     TARGET_QUERY,
     _from_payload,
 )
-from targetring.figure import _CHR_NOTE, _CHR_SEP, _chromosome_suffix, render
+from targetring.figure import _CHR_NOTE, _CHR_PREFIX, _CHR_SEP, _chromosome_suffix, render
 from targetring.order import EXTERNAL_RINGS, gene_stats
 from targetring.states import TextCell, text_no_data, text_value
 
@@ -169,7 +169,7 @@ class TestTheLabelOnTheRim:
             "".join(el.itertext()) for el in ET.parse(svg).getroot().iter(SVG_TEXT)))
 
     def test_the_suffix_is_the_number_after_the_symbol(self) -> None:
-        assert _chromosome_suffix(text_value("16")) == f"{_CHR_SEP}16"
+        assert _chromosome_suffix(text_value("16")) == f"{_CHR_SEP}{_CHR_PREFIX}16"
 
     @pytest.mark.parametrize("state_cell", [
         text_no_data("nothing on record"),
@@ -193,13 +193,13 @@ class TestTheLabelOnTheRim:
         _, svg, genes = self._render(tmp_path, n, gene_chromosomes=chroms)
         text = self._rim_text(svg)
         for g in genes:
-            want = f"{g}{_CHR_SEP}{chroms[g].text}"
+            want = f"{g}{_CHR_SEP}{_CHR_PREFIX}{chroms[g].text}"
             assert want in text, f"the rim does not carry {want!r}"
 
     def test_the_suffix_sits_before_k_not_after_it(self, tmp_path: Path) -> None:
         chroms = {f"GENE{i:03d}": text_value("16") for i in range(6)}
         _, svg, _ = self._render(tmp_path, 6, gene_chromosomes=chroms)
-        assert f"GENE000{_CHR_SEP}16 (k=" in self._rim_text(svg)
+        assert f"GENE000{_CHR_SEP}{_CHR_PREFIX}16 (k=" in self._rim_text(svg)
 
     def test_a_gene_with_no_chromosome_keeps_its_bare_symbol(
             self, tmp_path: Path) -> None:
@@ -207,7 +207,7 @@ class TestTheLabelOnTheRim:
                   "GENE001": text_no_data("Open Targets reports no genomicLocation")}
         _, svg, _ = self._render(tmp_path, 6, gene_chromosomes=chroms)
         text = self._rim_text(svg)
-        assert f"GENE000{_CHR_SEP}16 (k=" in text
+        assert f"GENE000{_CHR_SEP}{_CHR_PREFIX}16 (k=" in text
         assert "GENE001 (k=" in text
         assert f"GENE001{_CHR_SEP}" not in text
 
@@ -261,7 +261,7 @@ class TestTheLabelOnTheRim:
         res, lay = render_with_the_chromosomes_if_they_fit(render_one, wanted)
         assert lay.chromosomes_on_rim is False
         rim = self._rim_text(out)
-        assert f"APOBEC3A{_CHR_SEP}22" not in rim
+        assert f"APOBEC3A{_CHR_SEP}{_CHR_PREFIX}22" not in rim
         assert "APOBEC3A (k=" in rim
         said = " ".join(c["text"] for c in res.web_caveats)
         assert "not on this render's rim" in said, res.web_caveats
@@ -292,10 +292,10 @@ class TestTheLabelOnTheRim:
         `AssertionError` it would answer a genuine overprint by drawing the
         figure again without a suffix and shipping it clean."""
         from targetring.figure import _chromosome_blamed
-        labels = [f"GENE000{_CHR_SEP}16 (k=9/9)", "GENE001 (k=8/9)"]
+        labels = [f"GENE000{_CHR_SEP}{_CHR_PREFIX}16 (k=9/9)", "GENE001 (k=8/9)"]
         assert _chromosome_blamed(
             AssertionError("'EACH RING HAS ITS OWN' comes within 4 px of the spoke "
-                           "label 'GENE000 · 16 (k=9/9)'"), labels)
+                           "label 'GENE000 · chr16 (k=9/9)'"), labels)
         assert not _chromosome_blamed(
             AssertionError("the footer block overlaps the scale column"), labels)
         assert not _chromosome_blamed(
