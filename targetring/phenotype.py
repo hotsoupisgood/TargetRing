@@ -169,8 +169,15 @@ def build_table_rows(rec: OTRecord) -> list[dict[str, Any]]:
     real and different facts from the phenotype not existing, and collapsing
     them would read as fewer papers than MGI actually cites.
     """
+    return _rows_from(rec.mouse_phenotypes)
+
+
+def _rows_from(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """`build_table_rows` over a plain list of `mousePhenotypes` records, so a
+    caller can take a prefix of them without rebuilding the `OTRecord` (the
+    adapters hand real records around, the route tests hand stubs)."""
     rows: list[dict[str, Any]] = []
-    for mp in rec.mouse_phenotypes:
+    for mp in records:
         mp_id = mp.get("modelPhenotypeId")
         mp_label = mp.get("modelPhenotypeLabel") or ""
         models = mp.get("biologicalModels") or []
@@ -191,6 +198,60 @@ def build_table_rows(rec: OTRecord) -> list[dict[str, Any]]:
                                             (m.get("literature") or []))),
             })
     return rows
+
+
+#: How many `mousePhenotypes` records a drawer carries, in `run.py` and in
+#: `drawer_bake.py` — the flat `mouse_phenotypes` labels and the
+#: `phenotype_terms` entries are read off the same first N records, so the two
+#: cannot disagree about which terms the gene has.
+DRAWER_TERMS_LIMIT = 25
+
+
+def terms_with_models(rec: OTRecord, limit: int | None = None) -> list[dict[str, Any]]:
+    """One entry per phenotype TERM, with the models it came from underneath:
+
+        [{"label", "mp_id", "models": [{"id", "allelic_composition",
+                                        "genetic_background", "pmids"}]}]
+
+    2026-10-18, Puck: *"can you state which model each term came from"*. The
+    drawer's `mouse_phenotypes` is a flat list of labels, so a reader could see
+    *that* a term was curated but never in which mouse. Built from
+    `build_table_rows`, so the (phenotype, model) pair is the same one the
+    phenotype table shows and the PMIDs stay the MODEL's literature — the join
+    this deliberately does NOT make is the one that docstring describes.
+
+    A label Open Targets lists against several models appears once, with every
+    model under it, in first-seen order; a model repeated under one label (same
+    id) is listed once. A term MGI curates with no `biologicalModels` record
+    keeps an empty `models` list: "MGI records the phenotype and names no
+    model" is a different fact from the phenotype not existing (rule 1 one
+    level down from the gene).
+
+    `limit` caps the number of **source records** read, so the terms agree with
+    the `mouse_phenotypes[:limit]` labels baked beside them.
+    """
+    records = rec.mouse_phenotypes
+    rows = _rows_from(records if limit is None else records[:limit])
+    out: list[dict[str, Any]] = []
+    by_label: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        label = r["mp_label"]
+        term = by_label.get(label)
+        if term is None:
+            term = {"label": label, "mp_id": r["mp_id"], "models": []}
+            by_label[label] = term
+            out.append(term)
+        elif term["mp_id"] is None and r["mp_id"]:
+            term["mp_id"] = r["mp_id"]
+        if not r["model_id"] or any(m["id"] == r["model_id"] for m in term["models"]):
+            continue
+        term["models"].append({
+            "id": r["model_id"],
+            "allelic_composition": r["allelic_composition"],
+            "genetic_background": r["genetic_background"],
+            "pmids": list(r["pmids"]),
+        })
+    return out
 
 
 #: What the table may claim, printed above it. The counts line is built from

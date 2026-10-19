@@ -534,7 +534,10 @@ class TestTheFlagIsNotTheCriterion:
         assert "d.phenotype_llm" in js
         # It is passed in separately from `rec`, so a drawer with a flag and no
         # verdict shows no box and a verdict with no flag shows no flag row.
-        assert "function phenotypeFlagHtml(pf)" in js
+        # `terms` (2026-10-18: which model each phenotype term came from) is
+        # display data printed beside the sentence and never an input to it --
+        # tests/test_phenotype_models.py.
+        assert "function phenotypeFlagHtml(pf, terms)" in js
         assert "pf.flag !== 0 && pf.flag !== 1" in js
 
     def test_the_baked_block_says_on_its_face_that_it_is_not_the_criterion(self) -> None:

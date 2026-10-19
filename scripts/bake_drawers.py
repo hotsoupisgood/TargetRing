@@ -17,6 +17,11 @@ Usage:
     .venv/bin/python scripts/bake_drawers.py --force ...    # re-bake baked genes
     .venv/bin/python scripts/bake_drawers.py --recommend-only <run_id> ...
         # recompute only the GO / NO-GO `recommendation` from what is on disk
+    .venv/bin/python scripts/bake_drawers.py --phenotype-terms-only <run_id> ...
+        # add/refresh only `phenotype_terms` (which model each mouse phenotype
+        # term came from) -- one free Open Targets query, nothing else in the
+        # file touched, so the baked `summary` and `phenotype_llm` flag (both
+        # paid) survive and no verdict can move
 
 Each drawer also carries `recommendation`: Puck's GO / NO-GO rule
 (`targetring/recommend.py`), computed from the drawer's own facts and never
@@ -82,6 +87,33 @@ def recommend_only(run_ids: list[str]) -> int:
     return worst
 
 
+async def phenotype_terms_only(run_ids: list[str]) -> int:
+    """`--phenotype-terms-only`: add `phenotype_terms` to the drawers already on
+    disk (`drawer_bake.restamp_phenotype_terms`). One free Open Targets query
+    per run; no model call, nothing else in any file changed."""
+    worst = 0
+    for run_id in run_ids:
+        print(f"{run_id}:")
+        try:
+            s = await drawer_bake.restamp_phenotype_terms(run_id, log=lambda _s: None)
+        except table_mod.TableUnavailable as e:
+            print(f"  REFUSED: {e}")
+            worst = max(worst, 1)
+            continue
+        c = s["counts"]
+        req = ", ".join(f"{h} {n}" for h, n in sorted(s["requests"].items())) or "none"
+        print(f"  {len(s['written'])} drawer(s), {c['terms']} term(s): "
+              f"{c['no_models']} with no model, {c['one_model']} with one, "
+              f"{c['many_models']} with several; requests: {req}")
+        for g, why in s["skipped"].items():
+            print(f"  SKIPPED {g}: {why}")
+            worst = max(worst, 1)
+        if s["rate_limited"]:
+            print(f"  RATE LIMITED, stopped: {s['rate_limited']}")
+            return 2
+    return worst
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("run_ids", nargs="*", help="default: config.DEMO_RUNS")
@@ -90,11 +122,21 @@ if __name__ == "__main__":
     ap.add_argument("--recommend-only", action="store_true",
                     help="only recompute the GO / NO-GO `recommendation` in drawers "
                          "already on disk; no request, no model call")
+    ap.add_argument("--phenotype-terms-only", action="store_true",
+                    help="only add/refresh `phenotype_terms` (which model each mouse "
+                         "phenotype term came from) in drawers already on disk; one "
+                         "free Open Targets query, no model call")
     a = ap.parse_args()
     ids = a.run_ids or list(config.DEMO_RUNS)
     if not ids:
         print("no run ids given and config.DEMO_RUNS is empty", file=sys.stderr)
         sys.exit(1)
+    if a.recommend_only and a.phenotype_terms_only:
+        print("--recommend-only and --phenotype-terms-only are separate passes; "
+              "run them one at a time", file=sys.stderr)
+        sys.exit(1)
     if a.recommend_only:
         sys.exit(recommend_only(ids))
+    if a.phenotype_terms_only:
+        sys.exit(asyncio.run(phenotype_terms_only(ids)))
     sys.exit(asyncio.run(main(ids, a.force)))

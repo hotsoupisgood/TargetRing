@@ -2091,15 +2091,90 @@ const CRIT_WORD = { met: "met", not_met: "not met", no_data: "no data" };
 // owner's deterministic phenotype criterion and never that criterion: the
 // baked block says so itself (`is_criterion: false`) and the verdict was
 // computed without it.
-function phenotypeFlagHtml(pf) {
+// `terms` is the drawer's `phenotype_terms`: the flag sentence is unchanged and
+// the model count sits beside it, so the box says how much mouse evidence is
+// under the terms the flag was given without the flag claiming anything about it.
+function phenotypeFlagHtml(pf, terms) {
   if (!pf || (pf.flag !== 0 && pf.flag !== 1)) return "";
+  const n = phenotypeModelCount(terms);
+  const models = (terms || []).length
+    ? ` <span class="flag-models" title="Distinct MGI biological models across this
+      gene's ${(terms || []).length} phenotype term(s). Not an input to the flag or to
+      the verdict; the terms are.">models: ${n}</span>`
+    : "";
   return `<li class="crit-flag ${pf.flag ? "flag-1" : "flag-0"}"
     title="${esc(pf.note || "")} Model ${esc(pf.model || "")}, prompt ${esc(pf.prompt_version || "")}.">
     <b>phenotype (Claude)</b>: <span class="flag-num">${pf.flag}</span>
-    <span class="flag-why">— ${esc(pf.reason || "")}</span></li>`;
+    <span class="flag-why">— ${esc(pf.reason || "")}</span>${models}</li>`;
 }
 
-function recommendationHtml(rec, compact, phenotypeFlag) {
+// ---------- which model each phenotype term came from (2026-10-18) ----------
+//
+// Puck: "can you state which model each term came from". The drawer's
+// `phenotype_terms` is one entry per TERM with the MGI biological models under
+// it (`phenotype.terms_with_models`): allelic composition, genetic background
+// and that MODEL's PMIDs. The flat `mouse_phenotypes` label list is still
+// there and still what the rule and the Claude flag read, so none of this can
+// move a verdict or a flag -- it is display only. A drawer baked before this
+// existed has no `phenotype_terms`, and then the bare labels are shown, as
+// before, with no claim about models either way.
+const PUBMED = "https://pubmed.ncbi.nlm.nih.gov/";
+const PHENOTYPE_TERMS_SHOWN = 12;
+
+function phenotypeModelCount(terms) {
+  const ids = new Set();
+  (terms || []).forEach((t) => (t.models || []).forEach((m) => { if (m.id) ids.add(m.id); }));
+  return ids.size;
+}
+
+// "term — n model(s)", one per line, for the verdict box's phenotype tooltip.
+function phenotypeTermsTooltip(terms) {
+  if (!terms || !terms.length) return "";
+  return terms.map((t) => `${t.label} — ${(t.models || []).length} model(s)`).join("\n");
+}
+
+function phenotypeModelHtml(m) {
+  const bits = [];
+  if (m.allelic_composition) bits.push(esc(m.allelic_composition));
+  if (m.genetic_background) bits.push(esc(m.genetic_background));
+  const pmids = (m.pmids || []).map((p) =>
+    `<a href="${esc(PUBMED + p)}" target="_blank" rel="noopener">${esc(p)}</a>`).join(", ");
+  return `<li class="pheno-model"><code>${esc(m.id || "—")}</code>${
+    bits.length ? " " + bits.join(" · ") : ""}${
+    pmids ? ` · <span class="pheno-pmids">papers: ${pmids}</span>`
+          : ` · <span class="hint">no paper on this model in MGI</span>`}</li>`;
+}
+
+function phenotypeTermListHtml(terms, labels) {
+  if (!terms || !terms.length) {
+    const mp = labels || [];
+    return `<ul class="tight">${mp.slice(0, PHENOTYPE_TERMS_SHOWN)
+      .map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
+      ${mp.length > PHENOTYPE_TERMS_SHOWN
+        ? `<p class="hint">…and ${mp.length - PHENOTYPE_TERMS_SHOWN} more</p>` : ""}
+      <p class="hint">This drawer was baked before the models were recorded — which
+        mouse each term came from is in the phenotype table below.</p>`;
+  }
+  const shown = terms.slice(0, PHENOTYPE_TERMS_SHOWN);
+  const h = shown.map((t) => {
+    const models = t.models || [];
+    return `<li class="pheno-term">${esc(t.label)}${t.mp_id
+      ? ` <span class="hint">${esc(t.mp_id)}</span>` : ""}
+      <span class="hint">· ${models.length} model(s)</span>
+      ${models.length
+        ? `<ul class="pheno-models">${models.map(phenotypeModelHtml).join("")}</ul>`
+        : `<p class="hint">MGI records this phenotype and names no biological model
+           for it — not the same as no model existing.</p>`}</li>`;
+  }).join("");
+  return `<ul class="tight pheno-terms">${h}</ul>
+    ${terms.length > PHENOTYPE_TERMS_SHOWN
+      ? `<p class="hint">…and ${terms.length - PHENOTYPE_TERMS_SHOWN} more term(s)</p>` : ""}
+    <p class="hint">Each model is MGI's allelic composition and genetic background;
+      the papers under it are that MODEL's literature — MGI does not attribute a paper
+      to a particular phenotype, and neither does this list.</p>`;
+}
+
+function recommendationHtml(rec, compact, phenotypeFlag, phenotypeTerms) {
   if (!rec || !rec.verdict) return "";
   const cls = VERDICT_CLASS[rec.verdict] || "nodata";
   const crit = (rec.criteria || []).map((c) => {
@@ -2112,9 +2187,13 @@ function recommendationHtml(rec, compact, phenotypeFlag) {
       ? ` <span class="crit-aid" title="${esc(c.disease_area.tooltip || "")}">${
           esc(c.disease_area.short)}</span>`
       : "";
+    // The phenotype line's tooltip also names each term and how many models it
+    // came from -- the terms are the criterion's own input, the models are not.
+    const termsTip = c.key === "phenotype" ? phenotypeTermsTooltip(phenotypeTerms) : "";
+    const tip = termsTip ? `${c.shown || ""}\n\n${termsTip}` : (c.shown || "");
     return `<li class="crit ${esc(st)}"><span class="mark" aria-hidden="true">${CRIT_MARK[st] || "~"}</span>
       <b>${esc(c.label || c.key)}</b> <span class="word">${CRIT_WORD[st] || esc(st)}</span>
-      <span class="shown" title="${esc(c.shown || "")}">${esc(c.bare || c.shown || "")}</span>${area}</li>`;
+      <span class="shown" title="${esc(tip)}">${esc(c.bare || c.shown || "")}</span>${area}</li>`;
   }).join("");
   // The region as a three-word tag, with the long sentence in its tooltip.
   const region = rec.region_tag && rec.region_tag.region
@@ -2122,7 +2201,7 @@ function recommendationHtml(rec, compact, phenotypeFlag) {
         esc(rec.region_tag.shown)}</span>` : "";
   const caveats = (rec.caveats || []).map((c) => `<p class="verdict-caveat">${esc(c)}</p>`).join("");
   const modality = rec.modality ? `<p class="verdict-modality">${esc(rec.modality)}</p>` : "";
-  const flag = phenotypeFlagHtml(phenotypeFlag);
+  const flag = phenotypeFlagHtml(phenotypeFlag, phenotypeTerms);
   return `<div class="verdict ${cls}${compact ? " compact" : ""}">
     <p class="verdict-line"><span class="verdict-word">${esc(rec.verdict)}</span>${region}</p>
     <ul class="crit-list">${crit}${flag}</ul>
@@ -2138,7 +2217,7 @@ function summaryHtml(d) {
   // Verdict line first, then the three criteria, then the LLM text (whose
   // first sentence restates that verdict), then what the text is.
   return `<h3>${esc(d.gene)} <span class="hint">${d.recommendation ? "GO / NO-GO and " : ""}evidence summary</span></h3>
-    ${recommendationHtml(d.recommendation, true, d.phenotype_llm)}
+    ${recommendationHtml(d.recommendation, true, d.phenotype_llm, d.phenotype_terms)}
     ${s.text ? `<p class="summary-text">${esc(s.text)}</p>
     <p class="summary-label"><b>LLM-generated from the values below</b>, <code>${esc(s.model)}</code>,
       ${esc((s.generated_at || "").slice(0, 10))}, prompt <code>${esc(s.prompt_version)}</code>.
@@ -2222,7 +2301,8 @@ function drawerHtml(d) {
   // numbers it was computed from -- before the first <h4>, so `sectionise`
   // leaves it in the always-visible header rather than behind a collapsed
   // section. Absent for a drawer baked before the rule.
-  if (d.recommendation) h += recommendationHtml(d.recommendation, false, d.phenotype_llm);
+  if (d.recommendation) h += recommendationHtml(d.recommendation, false, d.phenotype_llm,
+                                               d.phenotype_terms);
 
   h += `<h4>your measurement</h4><dl class="kv">
     <dt>logFC</dt><dd>${d.logfc}</dd>
@@ -2377,8 +2457,7 @@ function drawerHtml(d) {
        The ring is three states — not phenotyped / phenotyped-and-normal /
        phenotyped-with-abnormal. The count below is context, not a score
        (COUNCIL V9), and the source is mouse only, not rat (COUNCIL V15).</div>
-       <ul class="tight">${mp.slice(0, 12).map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
-       ${mp.length > 12 ? `<p class="hint">…and ${mp.length - 12} more</p>` : ""}`
+       ${phenotypeTermListHtml(d.phenotype_terms, mp)}`
     : `<p class="hint">No mouse phenotype records — not phenotyped, which is not the
        same as “no phenotype”. Embryonic-lethal lines drop out of adult phenotyping,
        which biases exactly the essential genes the safety ring flags as risky

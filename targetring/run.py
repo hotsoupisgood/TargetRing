@@ -64,6 +64,7 @@ from . import filters as filters_mod
 from .http import Http
 from .invariants import InvariantReport, check_all
 from . import order as order_mod
+from . import phenotype as phenotype_mod
 from .order import (
     EXTERNAL_RING_COUNT,
     SUBMITTED,
@@ -967,8 +968,15 @@ async def run_analysis(
             "chembl": None,
             "chembl_note": "fetched on gene click (v2.2 item 3)",
             "mouse_phenotypes": [
-                p.get("modelPhenotypeLabel") for p in rec.mouse_phenotypes[:25]
+                p.get("modelPhenotypeLabel")
+                for p in rec.mouse_phenotypes[:phenotype_mod.DRAWER_TERMS_LIMIT]
             ],
+            # Which model each term came from (Puck, 2026-10-18), over the same
+            # records as the flat label list above -- which stays, unchanged,
+            # for everything that reads it (`recommend.facts_from_drawer`,
+            # `phenotype_llm.build_facts`).
+            "phenotype_terms": phenotype_mod.terms_with_models(
+                rec, phenotype_mod.DRAWER_TERMS_LIMIT),
             "cells": {
                 ring: {
                     "state": cells_by_ring[ring][g].state,

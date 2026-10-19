@@ -48,6 +48,7 @@ from typing import Any, Callable
 from urllib.parse import urlsplit
 
 from . import manifest as manifest_mod
+from . import phenotype as phenotype_mod
 from . import recommend as recommend_mod
 from . import table as table_mod
 from .adapters.gtex import GTExAdapter
@@ -300,7 +301,10 @@ async def _bake_genes(t: Any, run_id: str, out_dir: Path, summary: dict[str, Any
                     "chembl": None,
                     "chembl_note": "fetched on gene click (v2.2 item 3)",
                     "mouse_phenotypes": [
-                        p.get("modelPhenotypeLabel") for p in rec.mouse_phenotypes[:25]],
+                        p.get("modelPhenotypeLabel")
+                        for p in rec.mouse_phenotypes[:phenotype_mod.DRAWER_TERMS_LIMIT]],
+                    "phenotype_terms": phenotype_mod.terms_with_models(
+                        rec, phenotype_mod.DRAWER_TERMS_LIMIT),
                     "cells": {
                         ring: {"state": c.state, "value": c.value, "detail": c.detail}
                         for ring, c in cells.items()},
@@ -362,6 +366,81 @@ async def _bake_genes(t: Any, run_id: str, out_dir: Path, summary: dict[str, Any
     return summary
 
 
+async def restamp_phenotype_terms(run_id: str, *, cache: Cache | None = None,
+                                   log: Callable[[str], None] = print) -> dict[str, Any]:
+    """Add (or refresh) `phenotype_terms` -- which model each mouse phenotype
+    term came from -- in every baked drawer of one run, and change nothing
+    else. Returns {"run_id", "written": [genes], "skipped": {gene: reason},
+    "requests": {host: n}, "rate_limited": str | None, "counts": {...}}.
+
+    Why this is not `bake_drawers.py --force`. A full re-bake rewrites the whole
+    file, and the file now carries two things no adapter can give back for
+    free: the baked evidence `summary` and the `phenotype_llm` flag, each a paid
+    call on its own account (rule 8). Re-baking the four demo runs to add a
+    display field would re-buy both. So this reads each drawer, asks Open
+    Targets (free) for the one record the terms come from, and writes the one
+    key back -- `recommendation`, `summary`, `phenotype_llm` and the flat
+    `mouse_phenotypes` label list are untouched, so no verdict and no flag can
+    move.
+
+    The gene's identity is the drawer's own `ensembl_id`: it IS the id the run
+    drew and the drawer was baked at, and it is looked up by id in the returned
+    `{id: record}` (rule 2). A drawer with no id, or a gene Open Targets no
+    longer returns, is skipped and named rather than written with empty terms.
+    """
+    run_dir = table_mod.run_dir(run_id)
+    st = run_dir.stat()
+    dir_times = (st.st_atime_ns, st.st_mtime_ns)
+    out: dict[str, Any] = {"run_id": run_id, "written": [], "skipped": {},
+                           "requests": {}, "rate_limited": None,
+                           "counts": {"no_models": 0, "one_model": 0, "many_models": 0,
+                                      "terms": 0}}
+    paths = {g: table_mod.baked_drawer_path(run_id, g)
+             for g in table_mod.baked_drawer_genes(run_id)}
+    drawers = {g: json.loads(p.read_text()) for g, p in paths.items() if p is not None}
+    by_id: dict[str, str] = {}
+    for g, d in drawers.items():
+        eid = d.get("ensembl_id")
+        if not eid:
+            out["skipped"][g] = "drawer carries no ensembl_id; not guessing one"
+        else:
+            by_id[eid] = g
+    try:
+        async with Http() as http:
+            counts = _counting(http)
+            out["requests"] = counts
+            try:
+                records = await OpenTargetsAdapter(http, cache or Cache()).fetch(
+                    sorted(by_id))
+            except RateLimited as e:
+                out["rate_limited"] = str(e)
+                log(f"  {run_id}: STOPPED on 429 -- {e}")
+                return out
+        for eid, g in sorted(by_id.items(), key=lambda kv: kv[1]):
+            rec = records.get(eid)
+            if rec is None or not rec.found:
+                out["skipped"][g] = (
+                    f"Open Targets does not return {eid} now "
+                    f"(error={getattr(rec, 'error', None)!r}); the terms on disk are "
+                    f"left as they are rather than emptied")
+                continue
+            terms = phenotype_mod.terms_with_models(rec, phenotype_mod.DRAWER_TERMS_LIMIT)
+            d = drawers[g]
+            d["phenotype_terms"] = terms
+            _write_atomic(paths[g], d)
+            out["written"].append(g)
+            out["counts"]["terms"] += len(terms)
+            for t in terms:
+                n = len(t["models"])
+                key = "no_models" if n == 0 else "one_model" if n == 1 else "many_models"
+                out["counts"][key] += 1
+            log(f"  {run_id} {g}: {len(terms)} term(s), "
+                f"{sum(len(t['models']) for t in terms)} (term, model) pair(s)")
+    finally:
+        os.utime(run_dir, ns=dir_times)
+    return out
+
+
 def restamp_recommendations(run_id: str, *, log: Callable[[str], None] = print
                             ) -> dict[str, Any]:
     """Recompute `recommendation` for every baked drawer of one run from the
@@ -397,4 +476,5 @@ def restamp_recommendations(run_id: str, *, log: Callable[[str], None] = print
     return out
 
 
-__all__ = ["bake_run", "restamp_recommendations", "BakeRefused", "BAKED_NOTE"]
+__all__ = ["bake_run", "restamp_recommendations", "restamp_phenotype_terms",
+           "BakeRefused", "BAKED_NOTE"]

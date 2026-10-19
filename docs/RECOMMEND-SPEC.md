@@ -254,3 +254,44 @@ required infiltrating-immune-cells sentence when the hint fires, and the absent
 evidence last. No druggability sentence, no reconciliation sentence, no closing
 "what would change this picture" sentence. A prompt change re-buys every
 summary, so the four runs were re-baked.
+
+## Which model each phenotype term came from (2026-10-18, later)
+
+Puck: *"can you state which model each term came from"*. The drawer carried
+`mouse_phenotypes`, a flat list of term labels, so a reader could see *that*
+MGI curates a term for this gene but never in which mouse.
+
+**Baked.** `phenotype_terms`, one entry per TERM:
+`{label, mp_id, models: [{id, allelic_composition, genetic_background,
+pmids}]}` — `phenotype.terms_with_models`, over the same first
+`phenotype.DRAWER_TERMS_LIMIT` (25) `mousePhenotypes` records the flat label
+list is read from, so the two cannot disagree about which terms a gene has. A
+label Open Targets lists against several models appears **once**, with every
+model under it; a model repeated under one label is listed once. A term with no
+`biologicalModels` record keeps `models: []` — MGI naming no model is a
+different fact from the phenotype not existing, and an empty list says so.
+The PMIDs stay the **model's** literature: the (phenotype, model) pair is the
+one `build_table_rows` emits, and the join onto papers that
+`phenotype.build_table_rows`' docstring refuses is still refused here.
+
+**Nothing reads it but the page.** The flat `mouse_phenotypes` list is
+unchanged and is still the only phenotype input to `recommend.py`
+(`facts_from_drawer` → `Facts.mouse_phenotypes`, the phenotype criterion and
+the disease-area display aid) and to `phenotype_llm.build_facts`. So the
+prompt hash, the `facts_key`, every flag and every verdict are unmoved, and no
+paid call was re-bought to add this.
+
+**Shown.** In the drawer's *mouse phenotype lead*, each term lists its models
+underneath in small type — model id, allelic composition, genetic background,
+and each PMID as a link to PubMed. In the verdict box, the phenotype line's
+`title` gains one `term — n model(s)` line per term, and `models: n` (distinct
+models across the gene's terms) sits beside the `phenotype (Claude)` sentence,
+which is itself unchanged. A drawer baked before this field exists shows the
+bare labels and says so rather than implying no models.
+
+**Added to the four demo runs** with
+`scripts/bake_drawers.py --phenotype-terms-only <run_id> ...`: one free Open
+Targets query per run, the one key written back, the baked `summary`,
+`phenotype_llm` and `recommendation` left exactly as they were. A full
+`--force` re-bake would have re-bought both paid blocks, which is why that
+pass exists. Held in `tests/test_phenotype_models.py`.
