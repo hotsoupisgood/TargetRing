@@ -2087,6 +2087,10 @@ async function redrawForThisWindow() {
 // scales. Read the CSS beside `.figure-row` for why only one of the three is
 // allowed to collapse.
 function renderDecode(s) {
+  // The legend's own words for each ring, which are what a cell's hover says
+  // it measures (v4.2). The scales route carries the linked source text, so it
+  // is the better of the two sources for `RING_INFO`.
+  rememberRings(s.rings);
   // v3.2 / round 2 A6: no amber band here any more. The render draws the
   // comparability sentence at 16.55 px in its own top-left corner and that is
   // the copy the reader meets; a second one 8 px above it was the same claim
@@ -2188,6 +2192,7 @@ const SPOKE_LABEL_RE = /^[⚠\s]*([A-Za-z0-9._-]+)(?:\s*·\s*[A-Za-z0-9._-]+)?\s
 // list comes from the SVG itself (`showToolFigure`).
 function wireFigure(genes) {
   const known = genes || (RUN ? RUN.gene_order : []);
+  wireFigureTooltips();
   // Cells carry id="cell|<ring>|<index>|<gene>" — the same handle the invariant
   // checks use, so what is clickable is exactly what was audited.
   $("#figure").querySelectorAll('[id^="cell|"]').forEach((el) => {
@@ -2580,6 +2585,10 @@ async function openDrawer(gene, push = true) {
   // touched. `applyHash` and `goGene` pass false: they are already answering
   // or writing the entry themselves.
   if (push) { goGene(gene); return; }
+  // v4.2. Whichever surface opened it — a row, the gene button, a cell on the
+  // circle or a `#table/<gene>` link — the grid marks the row the drawer is
+  // about. One highlight, set in one place, so the two routes cannot disagree.
+  highlightRowFor(gene);
   // Two routes, one drawer. A run in memory has adapters behind it and
   // `/gene/` fetches ChEMBL and Europe PMC on this click. A run read from disk
   // has none; `/drawer/` is the file `scripts/bake_drawers.py` wrote beside the
@@ -2614,6 +2623,33 @@ async function openDrawer(gene, push = true) {
 function closeDrawerPaint() {
   $("#drawer").hidden = true;
   $("#scrim").hidden = true;
+  // v4.2. The row highlight is the drawer's: it says which row the panel on
+  // screen is about, so it goes when the panel does.
+  clearRowHighlight();
+}
+
+// v4.2, Puck 2026-10-19: "when you click on a row, it should highlight the
+// whole row and then bring up the table thing". One row at a time, cleared
+// when the drawer closes — a highlight left behind after the drawer is a row
+// claiming to be the subject of a panel that is no longer there.
+function clearRowHighlight() {
+  document.querySelectorAll("#table-grid tr.row-selected")
+    .forEach((tr) => tr.classList.remove("row-selected"));
+}
+
+function highlightRow(tr) {
+  clearRowHighlight();
+  if (tr) tr.classList.add("row-selected");
+}
+
+function highlightRowFor(gene) {
+  let found = null;
+  document.querySelectorAll("#table-grid tbody tr").forEach((tr) => {
+    const label = tr.querySelector(".gene");
+    if (!label) return;
+    if ((label.dataset.gene || label.textContent.trim()) === gene) found = tr;
+  });
+  highlightRow(found);
 }
 
 // The user's half, behind the ×, the scrim and Escape. Closing the drawer is
@@ -3309,6 +3345,127 @@ const num = (v) => String(Number((+v).toPrecision(4)));
 // Never blank, never zero (AGENTS.md rule 1). Every non-value state gets a word.
 const STATE_WORD = { no_data: "no data", not_applicable: "n/a", failed: "FAILED" };
 
+// ---------------------------------------------------------------------------
+// ONE CELL TOOLTIP, for both renderings of the same cell (v4.2).
+//
+// Puck, 2026-10-19: "the value should show on hover" and the cells "should also
+// have tool tips that show the value and an explanation of the cell". A ring
+// cell on the circle and the same cell in the grid are the same measurement, so
+// there is one function that writes what a cell says and two ways of showing it
+// — `title` on the table's `<td>`, a positioned box over the SVG, which has no
+// `title` a browser will render.
+//
+// Every word in it is somebody else's: the ring's own label, units and source
+// name come from the payload (`view.table_payload`'s rings, or the scales route
+// that feeds the legend beside the circle), and the last line is the adapter's
+// own `detail` for that cell. Nothing here describes a ring in words this file
+// invented — a second description of a measurement is the drift this build
+// refuses everywhere else.
+// ---------------------------------------------------------------------------
+
+// ring key -> what the legend and the column head say about that ring.
+let RING_INFO = {};
+// "<ring>|<gene>" -> the cell as `values.csv` recorded it.
+let CELL_INFO = {};
+
+function rememberRings(rings) {
+  (rings || []).forEach((r) => {
+    const was = RING_INFO[r.key] || {};
+    RING_INFO[r.key] = {
+      n: r.n ?? was.n,
+      label: r.label || was.label || r.key,
+      column_label: r.column_label || was.column_label || r.label || r.key,
+      units: r.units || was.units || "",
+      transform: r.transform || was.transform || "",
+      // The grid calls it `source_name`; the scales route calls it
+      // `source_text` and that is the longer, linked form. Either is the
+      // source, and whichever arrived last is the one with more in it.
+      source: r.source_text || r.source_name || was.source || "",
+    };
+  });
+}
+
+function rememberCells(genes) {
+  (genes || []).forEach((g) => {
+    Object.entries(g.cells || {}).forEach(([key, c]) => {
+      if (c) CELL_INFO[`${key}|${g.gene}`] = c;
+    });
+  });
+}
+
+// The value with its unit, or the state in words. Never a bare number: a cell
+// whose unit is not on the hover is a number a reader has to guess at.
+function cellValueWords(c, ring) {
+  if (!c) return "no cell";
+  if (c.state !== "value") return STATE_WORD[c.state] || c.state;
+  const u = (ring && ring.units) || "";
+  return num(c.value) + (u ? " " + u : "");
+}
+
+function cellTooltip(ringKey, gene) {
+  const r = RING_INFO[ringKey] || { column_label: ringKey, label: ringKey,
+                                    units: "", source: "" };
+  const c = CELL_INFO[`${ringKey}|${gene}`];
+  const head = `${r.n ? r.n + ". " : ""}${r.column_label} · ${gene}`;
+  const value = cellValueWords(c, r);
+  // The one sentence: what this ring measures, in the words the legend uses,
+  // and where the number came from.
+  const measures = `${r.label}${r.units ? ", in " + r.units : ""}${
+    r.transform ? " (" + r.transform + ")" : ""}${
+    r.source ? " — source: " + r.source : ""}.`;
+  const detail = c && c.detail ? c.detail : "";
+  return [head, value, measures, detail].filter(Boolean).join("\n");
+}
+
+// The SVG half. A `<title>` child inside an inlined SVG does render as a
+// tooltip, but only after the browser's own delay and with no control over
+// where it lands on a 900 px circle, so the box is positioned at the pointer.
+function cellTipBox() {
+  let el = $("#cell-tip");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "cell-tip";
+    el.hidden = true;
+    el.setAttribute("role", "tooltip");
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function showCellTip(text, x, y) {
+  const el = cellTipBox();
+  el.textContent = text;
+  el.hidden = false;
+  // Clamped, so a cell at the right or bottom edge of the circle does not put
+  // its own explanation off the screen.
+  const box = el.getBoundingClientRect();
+  const left = Math.min(x + 14, window.innerWidth - box.width - 8);
+  const top = Math.min(y + 16, window.innerHeight - box.height - 8);
+  el.style.left = Math.max(8, left) + "px";
+  el.style.top = Math.max(8, top) + "px";
+}
+
+function hideCellTip() {
+  const el = $("#cell-tip");
+  if (el) el.hidden = true;
+}
+
+// Wired once on `#figure`, which survives every `innerHTML` the figure pane
+// gets, so a redraw does not need re-wiring and cannot double-wire.
+function wireFigureTooltips() {
+  const fig = $("#figure");
+  if (!fig || fig.dataset.tipWired) return;
+  fig.dataset.tipWired = "1";
+  fig.addEventListener("mousemove", (e) => {
+    const el = e.target && e.target.closest ? e.target.closest('[id^="cell|"]') : null;
+    if (!el) { hideCellTip(); return; }
+    const bits = el.id.split("|");
+    showCellTip(cellTooltip(bits[1], bits[3]), e.clientX, e.clientY);
+  });
+  fig.addEventListener("mouseleave", hideCellTip);
+  addEventListener("scroll", hideCellTip, { passive: true });
+}
+
 function tableSortSpec() {
   return TABLE.sort.map((k) => k.ordering + (k.reverse ? ":asc" : ":desc")).join(",");
 }
@@ -3440,6 +3597,10 @@ function diskRunDownloads(runId, artefacts) {
 
 function renderTable(d) {
   const ring = (k) => d.rings.find((r) => r.key === k);
+  // v4.2. What every cell says on hover, here and on the circle, is written
+  // from these two — see `cellTooltip`.
+  rememberRings(d.rings);
+  rememberCells(d.genes);
   // v3.7 item 4. `column_label`, so a sort chip names the column the way the
   // column head does and the way the scale column names the same ring.
   const ringLabel = (o) => o === "alphabetical" ? "gene symbol"
@@ -3612,7 +3773,7 @@ function renderTable(d) {
           : `<span class="gene">${esc(g.gene)}</span>`}
         <div class="ens">${esc(g.ensembl_id)}</div>${dimTag}</th>
       <td class="kcell">${esc(g.k)}<span class="of">/${esc(d.k_max)}</span></td>`
-      + d.rings.map((r) => cellHtml(g.cells[r.key])).join("")
+      + d.rings.map((r) => cellHtml(g.cells[r.key], r.key, g.gene)).join("")
       + `</tr>`;
   }).join("");
 
@@ -3655,6 +3816,31 @@ function renderTable(d) {
   });
   $("#table-grid").querySelectorAll("button.gene").forEach((b) => {
     if (!b.disabled) b.onclick = () => openDrawer(b.dataset.gene);
+  });
+
+  // v4.2, Puck: "when you click on a row, it should highlight the whole row and
+  // then bring up the table thing". The whole row is the click target, so a
+  // reader who lands on a number gets the same drawer as a reader who lands on
+  // the gene name — which is already how a cell on the circle behaves, and the
+  // grid was the one surface where only the first column was live.
+  //
+  // The gene BUTTON keeps its own handler: it is the keyboard route into the
+  // drawer and must not depend on a row click. The row handler skips a click
+  // on a link or on a control, so the dim tag's tooltip, the `<a>` in a cell
+  // and the gene button are not intercepted by it.
+  $("#table-grid").querySelectorAll("tbody tr").forEach((tr) => {
+    const label = tr.querySelector(".gene");
+    if (!label) return;                        // the "no value" divider row
+    const gene = label.dataset.gene || label.textContent.trim();
+    tr.classList.add("rowlink");
+    tr.addEventListener("click", (ev) => {
+      if (ev.target.closest("a, button.gene")) return;
+      highlightRow(tr);
+      // A gene with no drawer on this run still highlights: the row is the
+      // reader's place in the grid either way, and a click that did nothing at
+      // all would read as a broken table.
+      if (d.in_memory || (d.baked_drawers || []).includes(gene)) openDrawer(gene);
+    });
   });
   wireSummaryHighlight(d);
 
@@ -3892,15 +4078,21 @@ function renderTableSources(d) {
 // that are not measurements carry a word as well as a pattern, so the table is
 // readable in greyscale, in a screenshot, and by a reader who cannot tell the
 // hatches apart. A `no_data` cell is never blank and never 0.
-function cellHtml(c) {
+// v4.2. `ringKey` and `gene` are passed so the hover is the SAME sentence the
+// circle's cells show — ring name, gene, the value with its unit or the state
+// word, what the ring measures and its source, then the cell's own record.
+// `title` is enough on a `<td>`; the SVG needs the positioned box because it
+// has no `title` a browser renders.
+function cellHtml(c, ringKey, gene) {
   if (!c) {
     // `table.load` refuses a non-rectangular pivot, so this is unreachable —
     // and if it ever is reached it says so rather than drawing an empty box.
     return `<td class="st-missing">NO CELL</td>`;
   }
+  const tip = ringKey && gene ? cellTooltip(ringKey, gene) : (c.detail || "");
   if (c.state === "value") {
     return `<td class="st-value" style="background:${esc(c.fill)};color:${
-      inkOn(c.fill)}" title="${esc(c.detail)}">${esc(num(c.value))}</td>`;
+      inkOn(c.fill)}" title="${esc(tip)}">${esc(num(c.value))}</td>`;
   }
   // v3.7 item 3. A `failed` cell's hover says where to look, and where not to.
   // The column's source link answers `no_data` — "is this gene really absent

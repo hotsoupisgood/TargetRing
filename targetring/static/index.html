@@ -480,7 +480,20 @@
       <div id="evidence"></div>
     </div>
 
-    <div class="tabpane" id="pane-ledger" hidden><div id="ledger"></div></div>
+    <!-- v4.2, Puck 2026-10-19: "Under the drop ledger, have a 1 sentence
+         description of what the ledger is". It is in the markup rather than in
+         `renderLedger` because it is true of the ledger with no run loaded too,
+         and the sentence matches what the ledger ACTUALLY holds: `renamed` and
+         `possible_mouse` rows are on the figure and are listed because the
+         symbol changed, which is why this does not simply say "not on the
+         figure" (see the status order in `renderLedger`). -->
+    <div class="tabpane" id="pane-ledger" hidden>
+      <h3 class="pane-h">Drop ledger</h3>
+      <p class="pane-lede">Every input gene the figure does not draw, with the
+        rule that removed it — plus the genes it does draw under a changed
+        symbol — so a gene can never leave the figure silently.</p>
+      <div id="ledger"></div>
+    </div>
     <div class="tabpane" id="pane-invariants" hidden><div id="invariants"></div></div>
     <div class="tabpane" id="pane-caveats" hidden><div id="caveats"></div></div>
   </section>

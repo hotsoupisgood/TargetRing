@@ -497,6 +497,11 @@ label.check input { margin-right: 6px; }
        border-radius: 0; padding: 8px 14px; }
 .tab.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
 .tabpane { padding-top: 14px; }
+/* v4.2. A pane that states what it is, in one heading and one sentence, before
+   its table (Puck: "Under the drop ledger, have a 1 sentence description of
+   what the ledger is"). */
+.pane-h { margin: 0 0 4px; }
+.pane-lede { margin: 0 0 12px; max-width: 70ch; color: var(--tr-ink-3, inherit); }
 
 #figure svg { width: 100%; height: auto; background: #fff; border: 1px solid var(--line);
               border-radius: 6px; }
@@ -608,6 +613,24 @@ td.reason { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   #drawer .sect[open] .reveal { animation: none; }
 }
+/* v4.2, Puck 2026-10-19: "the value should show on hover ... tool tips that
+   show the value and an explanation of the cell". The SVG half of
+   `cellTooltip`: an inlined `<svg>` carries no `title` attribute a browser
+   paints, so the same sentence the table puts in a `title` is drawn in a box
+   at the pointer. `pre-line` because that one function writes four short
+   lines, which is how they render in the table's tooltip too.
+   `pointer-events: none` so the box can never stand between the pointer and
+   the cell it describes — a tooltip that eats the click breaks the drawer. */
+#cell-tip {
+  position: fixed; z-index: 60; pointer-events: none;
+  max-width: min(360px, 86vw); padding: 7px 10px;
+  background: var(--tr-surface, #fff); color: var(--tr-ink, #16181d);
+  border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.18);
+  font-size: 12.5px; line-height: 1.4; white-space: pre-line;
+}
+#cell-tip[hidden] { display: none; }
+
 /* 2026-10-18. The evidence summary box: shown on gene highlight, below the
    drawer's z-order and above the grid, anchored bottom-right so it never covers
    the row that raised it. Dismissible (button, Escape); the label line is part
@@ -1065,6 +1088,20 @@ ul.tight li { margin: 2px 0; }
   border-top: 2px solid var(--warn); border-bottom: 2px solid var(--warn);
 }
 .grid tr.unplaced .gene-col { background: #fffaf2; }
+
+/* v4.2, Puck 2026-10-19: "when you click on a row, it should highlight the
+   whole row and then bring up the table thing". The whole row is a click
+   target, and the row the open drawer is about is marked until that drawer
+   closes. An outline rather than a wash on the cells: the value cells carry
+   the figure's own fills, and a highlight that tinted them would restate a
+   colour `values.csv` recorded. */
+.grid tbody tr.rowlink { cursor: pointer; }
+.grid tbody tr.row-selected > * { background-color: #eef3fb; }
+/* A value cell keeps the fill `values.csv` recorded: its inline background
+   wins over the rule above, which is deliberate — the highlight marks the row,
+   it does not restate a colour. The rail and the tinted non-value cells carry
+   it instead. */
+.grid tbody tr.row-selected > .gene-col { box-shadow: inset 5px 0 0 var(--accent); }
 
 /* ---------------------------------------------------------------------------
    v3.8 — the per-column DIM filter. The encoding is the whole difficulty.
