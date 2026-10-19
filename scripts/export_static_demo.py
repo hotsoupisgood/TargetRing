@@ -38,6 +38,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
@@ -193,13 +194,42 @@ def get(client: httpx.Client, url: str, expect: int = 200) -> httpx.Response:
     return r
 
 
-def save_json(client: httpx.Client, out: Path, url: str, rel: str) -> int:
+def only_exported_artefacts(body: Any, keep_slides: bool) -> Any:
+    """Trim `artefacts` to the files this export actually writes.
+
+    The payload's `artefacts` list is read off the RUN's directory by
+    `table.artefacts_on_disk`, which is right for the app — the app serves that
+    directory. The export does not: `SLIDE_ARTEFACTS` is deliberately left out
+    (the deck pair is +1.4 MB a run and nothing on the page shows it), so the
+    exported `values.json` was advertising two files the exported tree does not
+    contain, and `diskRunDownloads` duly set two menu items pointing at them.
+
+    Found by the 2026-10-19 button-flow audit: `Slide SVG (16:9)` and
+    `Slide PNG (16:9)` were live items in the Figure menu of the published
+    page, and both 404ed on click. `diskRunDownloads` already removes an item
+    whose file is not in the list — it was being told the wrong list.
+
+    So the trim happens here rather than in `view.py`: the server's answer is
+    correct about the server, and the export is the thing that knows what it
+    chose to leave behind.
+    """
+    if keep_slides or not isinstance(body, dict):
+        return body
+    arts = body.get("artefacts")
+    if isinstance(arts, list):
+        body["artefacts"] = [a for a in arts if a not in SLIDE_ARTEFACTS]
+    return body
+
+
+def save_json(client: httpx.Client, out: Path, url: str, rel: str,
+              keep_slides: bool = False) -> int:
     # `date_the_spend` runs on every payload, not just the manifest: the spend
     # table the PAGE draws comes from `values.json`'s own `llm` block
     # (`renderCaveats` is called with the table payload for a run read off
     # disk), so dating only the manifest would date the file nobody reads and
     # leave the rendered dollars bare. It is a no-op on a payload with no `llm`.
-    body = date_the_spend(scrub(get(client, url).json()))
+    body = only_exported_artefacts(
+        date_the_spend(scrub(get(client, url).json())), keep_slides)
     return write(out / rel, json.dumps(body, indent=1, sort_keys=False).encode())
 
 
@@ -220,6 +250,21 @@ def rewrite_index(html: str) -> str:
                         '<script src="app.js"></script>')
     if "static-demo.js" not in html:
         raise SystemExit("could not inject the shim before app.js")
+
+    # The site nav. `static/index.html` carries the markup and `app.css` hides
+    # it unless <body> says the sibling page exists; this is the one place that
+    # knows it does, because this is the script that writes into `docs/`
+    # beside `docs/flow/`. A one-attribute switch rather than an injected
+    # block: the masthead stays assembled in one file, so the two pages cannot
+    # drift apart, and the live app keeps serving a nav-less header.
+    if '<body class="landing">' not in html:
+        raise SystemExit("index.html no longer opens <body class=\"landing\"> — "
+                         "the site-nav switch has nowhere to go")
+    html = html.replace('<body class="landing">',
+                        '<body class="landing" data-site="pages">')
+    if 'nav class="sitenav"' not in html:
+        raise SystemExit("index.html no longer carries nav.sitenav; the "
+                         "exported page would have no link to docs/flow/")
     return html
 
 
@@ -325,7 +370,8 @@ def main() -> int:
         for run_id in run_ids:
             for name in RUN_JSON:
                 total += save_json(client, out, f"/api/run/{run_id}/{name}",
-                                   f"api/run/{run_id}/{name}.json"); files += 1
+                                   f"api/run/{run_id}/{name}.json",
+                                   args.keep_slides); files += 1
             wanted = RUN_ARTEFACTS + (SLIDE_ARTEFACTS if args.keep_slides else ())
             for name in wanted:
                 r = client.get(f"/api/run/{run_id}/{name}", timeout=120.0)

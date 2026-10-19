@@ -15,9 +15,24 @@
         failing. If a number is missing from the data this page draws an em dash
         and says so; it never substitutes a plausible one.
      2. IT IS NOT INSIDE THE TOOL. The tool is the app view at
-        /TargetRing/; this is a separate page, so it can be iframed into a blog
-        post without dragging the app's stylesheet, state or refusals with it.
-        It shares no CSS and no JS with the app on purpose.
+        /TargetRing/demo/; this is a separate page, so it can be iframed into a
+        blog post without dragging the app's stylesheet, state or refusals with
+        it. It shares no JS with the app, and the ONE stylesheet it borrows is
+        `../demo/header-wash.css`.
+
+        v4.1, Puck 2026-10-19: "make sure the header is maintained on the flow
+        page". The masthead below is the tool's masthead — same markup, same
+        type, same wash — because two pages of one site with two different
+        mastheads read as two sites. The geometry is restated here as literal
+        values rather than by linking `app.css`, which would drag 1,600 lines
+        of app surface in to style two elements; the wash is linked, because it
+        is one rule and an image and copying it would mean a second copy of the
+        png path. `header-wash.css` names its image RELATIVELY, so the link
+        from here resolves it at `../demo/header-wash.png` with no change to
+        that file. If a value in `app.css`'s header block moves, the one below
+        has to move with it:
+        `test_flow_header.py::test_the_flow_page_masthead_matches_the_app`
+        fails when they disagree.
      3. LIGHT ONLY, like the tool, and for the same reason: it sits beside
         screenshots of a figure drawn on white. There is no
         prefers-color-scheme block in this file. -->
@@ -29,9 +44,20 @@
 <meta name="description" content="A disease name to a GO / NO-GO verdict: every
  step targetring takes, with the real numbers from one Crohn's disease run.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<!-- The masthead wash, and the only file this page shares with the app. It is
+     linked rather than copied because it names `header-wash.png` relatively —
+     relative to ITSELF, not to this document — so the same unmodified file
+     mounts the same image whether it is served from `/TargetRing/demo/` beside
+     the tool or linked from `/TargetRing/flow/` here. It sets only
+     `background-image`, so if it 404s this header degrades to plain white
+     paper rather than to a hole. -->
+<link rel="stylesheet" href="../demo/header-wash.css">
 <style>
+  /* v4.1: `--bg`, `--ink` and `--muted` are the app's values now
+     (`app.css` --bg / --tr-ink / --muted), not near-misses of them. Two pages
+     of one site a hair apart in paper colour looks like a rendering bug. */
   :root { color-scheme: light;
-    --bg:#fafaf9; --ink:#1c1917; --muted:#6b6560; --grid:#e7e5e4;
+    --bg:#faf9f7; --ink:#16181d; --muted:#5d636e; --grid:#e7e5e4;
     --panel:#fff; --border:#d6d3d1;
     /* The status key. Measured against --panel for WCAG AA on the stroke's own
        label text, not only on the stroke: a 3:1 graphical stroke beside a
@@ -42,7 +68,60 @@
   body { margin:0; background:var(--bg); color:var(--ink);
          font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
   main { max-width: 1060px; margin: 0 auto; padding: 24px 18px 64px; }
-  h1 { font-size: 23px; margin: 0 0 4px; letter-spacing: -0.01em; }
+
+  /* ---- THE MASTHEAD. Restated from `app.css`, value for value. ------------
+     Every number and colour here is a literal copy of the token `app.css`
+     uses, named in the comment so the two can be diffed by eye and by
+     `tests/test_flow_header.py`. The reason this page is not just linking
+     `app.css` is in the file header: that stylesheet is the app's entire
+     surface and it would restyle the chart, the panels and the detail pane. */
+  header {
+    padding: 24px 26px 12px;          /* --tr-s-5 26px --tr-s-3 */
+    min-height: 128px;                /* --tr-wash-height: reserves the wash */
+    border-bottom: 1px solid #c7cad1; /* --tr-rule-strong */
+    background-color: #ffffff;        /* --tr-surface */
+    /* The app's stack, not this page's `system-ui` — a 26 px title in two
+       different faces is the most visible way for two pages to disagree. */
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+          Arial, sans-serif;
+    color: var(--ink);
+  }
+  header h1 {
+    margin: 0; font-size: 26px;       /* --tr-t-h1 */
+    line-height: 1.2;                 /* --tr-lh-tight */
+    letter-spacing: -0.012em;         /* --tr-tracking-tight */
+    font-weight: 600;
+  }
+  header h1 .ver { color: var(--muted); font-weight: 400;
+                   font-size: 17px;   /* --tr-t-lede */
+                   letter-spacing: 0; }
+  header .sub {
+    margin: 8px 0 0;                  /* --tr-s-2 */
+    color: #3f434b;                   /* --tr-ink-2 */
+    font-size: 17px;                  /* --tr-t-lede */
+    line-height: 1.35;                /* --tr-lh-snug */
+    max-width: 68ch; font-weight: 400;
+  }
+  header .sub b, header .sub strong { color: var(--ink); }
+  /* The nav row. No `display:none` switch here, unlike `app.css`: on this page
+     both destinations exist, which is the whole reason the switch is over
+     there. The marked item is the current page on each side. */
+  header nav.sitenav {
+    display: flex; gap: 16px;         /* --tr-s-4 */
+    margin: 8px 0 0; font-size: 12.5px; line-height: 1.2;
+  }
+  header nav.sitenav a {
+    color: #5d636e; text-decoration: none; font-weight: 500;
+    letter-spacing: .07em; text-transform: uppercase;
+    padding-bottom: 2px; border-bottom: 2px solid transparent;
+  }
+  header nav.sitenav a:hover { color: var(--ink); }
+  header nav.sitenav a.here { color: var(--ink); border-bottom-color: var(--ink); }
+  header nav.sitenav a:focus-visible { outline: 2px solid #1d4ed8;
+                                       outline-offset: 3px; }
+  /* The h1 moved out of `main`, so this rule is now only for any heading the
+     chart's panes draw. `main h1` would have inherited the masthead size. */
+  main h1 { font-size: 23px; margin: 0 0 4px; letter-spacing: -0.01em; }
   .sub { color: var(--muted); margin: 0 0 8px; font-size: 14px; max-width: 72ch; }
   .sub b { color: var(--ink); }
   .sub a { color: var(--source); }
@@ -106,8 +185,25 @@
 </style>
 </head>
 <body>
+<!-- The tool's masthead, markup for markup — see rule 2 at the top of the file.
+     The subtitle is this page's own: it is the sentence the old <h1> carried
+     ("a disease name to a GO / NO-GO verdict"), demoted to the lede so the
+     title can be the site's title. It is static, unlike `#lede` below, because
+     the masthead must not be blank while `flow.json` is in flight. -->
+<header>
+  <h1>targetring <span class="ver">v2</span></h1>
+  <nav class="sitenav" aria-label="targetring">
+    <a href="../demo/">Tool</a>
+    <a href="./" class="here" aria-current="page">How it works</a>
+  </nav>
+  <p class="sub">
+    A disease name to a GO / NO-GO verdict, step by step.
+    <strong>Nothing here is ranked or scored.</strong>
+    Every number below is read from one real run.
+  </p>
+</header>
+
 <main>
-  <h1>targetring: a disease name to a GO / NO-GO verdict</h1>
   <p class="sub" id="lede">Loading…</p>
   <p class="sub" id="norank"></p>
   <div class="key">
@@ -125,7 +221,7 @@
       <h3>Click any box</h3>
       <p class="what">the method</p>
       <p>Every number on this chart is read from one real run — the same run the
-        <a href="../">interactive tool</a> opens in — and from the build's own
+        <a href="../demo/">interactive tool</a> opens in — and from the build's own
         constants. Nothing here is illustrative.</p>
     </div>
   </div>
@@ -173,7 +269,7 @@ function draw(D) {
      model spend ${money(sp.total)} measured ${esc(sp.measured)} ·
      numbers generated by <code>scripts/export_flow.py</code> from
      ${esc(D.generated_from)}.
-     <a href="../">Open the tool</a> ·
+     <a href="../demo/">Open the tool</a> ·
      <a href="https://github.com/hotsoupisgood/TargetRing">source</a>`);
 
   // -------------------------------------------------------------------------
@@ -374,7 +470,7 @@ function draw(D) {
         means. <b>A screenshot that cannot be audited is not a deliverable</b>,
         so a manifest is written beside it with the UTC timestamp, the git SHA,
         every source URL and schema version, and PASS/FAIL per invariant.</p>
-        <p><a href="../">Open this figure in the tool →</a></p>`,
+        <p><a href="../demo/">Open this figure in the tool →</a></p>`,
     },
     {
       id: "verdict", kind: "decision", title: "11. GO / NO-GO rule",
@@ -463,9 +559,22 @@ function draw(D) {
     .attr("tabindex", 0)
     .attr("role", "button")
     .attr("aria-label", (d) => d.title)
-    .on("click", (ev, d) => select(d))
+    .on("click", (ev, d) => go(d))
     .on("keydown", (ev, d) => {
-      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(d); }
+      // Arrow keys walk the pipeline, which is what a flowchart's reading
+      // order means; Enter/Space activate, as `role="button"` promises.
+      const i = NODES.indexOf(d);
+      const step = {ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1}[ev.key];
+      if (step !== undefined) {
+        const nxt = NODES[i + step];
+        if (nxt) {
+          ev.preventDefault();
+          go(nxt);
+          g.nodes()[i + step].focus();
+        }
+        return;
+      }
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(d); }
     });
 
   g.append("rect").attr("class", "box")
@@ -482,22 +591,67 @@ function draw(D) {
       return s.length > 52 ? s.slice(0, 51) + "…" : s;
     });
 
-  function select(d) {
+  // -------------------------------------------------------------------------
+  // Selection, and the three things v4.1 fixed about it.
+  //
+  // 1. IT IS IN THE URL. A box is a view of this page, so it gets an address:
+  //    `#box-<id>`. Without it the Back button walked off the site from the
+  //    middle of a reading session, and a box could not be linked to from a
+  //    post — which is the whole point of a page that can be iframed.
+  //    `go()` is the user's route and pushes; `select()` only paints, so the
+  //    popstate handler cannot push the entry it is answering.
+  //
+  // 2. IT DOES NOT SCROLL THE PAGE ON LOAD. `select()` used to
+  //    `scrollIntoView` unconditionally, including on the opening call. At
+  //    880 px and under the detail pane stacks BELOW the chart, so the first
+  //    paint scrolled 686 px and the page opened with its own masthead off
+  //    screen. Scrolling is now a response to a click, never to a render, and
+  //    only when the pane is actually out of view.
+  //
+  // 3. AN UNKNOWN HASH IS NOT A DEAD PAGE. A stale `#box-whatever` falls back
+  //    to the first box rather than leaving the pane on "Click any box".
+  // -------------------------------------------------------------------------
+  const WHAT = {source: "reads a public source", derived: "derived here",
+                decision: "a decision, stated on the figure",
+                check: "a check that can stop the figure",
+                spend: "costs money", out: "output"};
+
+  function select(d, scroll) {
     g.classed("sel", (x) => x.id === d.id);
-    d3.select("#detail").html(
-      `<h3>${esc(d.title)}</h3>
-       <p class="what">${esc({source: "reads a public source",
-                              derived: "derived here",
-                              decision: "a decision, stated on the figure",
-                              check: "a check that can stop the figure",
-                              spend: "costs money",
-                              out: "output"}[d.kind] || "")}</p>`
-      + d.detail());
-    d3.select("#detail").node().scrollIntoView(
-      {block: "nearest", behavior: "smooth"});
+    const pane = d3.select("#detail");
+    pane.html(`<h3>${esc(d.title)}</h3>
+       <p class="what">${esc(WHAT[d.kind] || "")}</p>` + d.detail());
+    if (!scroll) return;
+    const r = pane.node().getBoundingClientRect();
+    if (r.top < 0 || r.top > window.innerHeight - 80) {
+      pane.node().scrollIntoView({block: "nearest", behavior: "smooth"});
+    }
   }
 
-  select(NODES[0]);
+  // The user's route: paint, then record. `pushState` rather than assigning
+  // `location.hash`, so no `hashchange` fires and the box is not painted twice.
+  function go(d) {
+    if (("#box-" + d.id) === location.hash) { select(d, true); return; }
+    history.pushState({box: d.id}, "", "#box-" + d.id);
+    select(d, true);
+  }
+
+  const fromHash = () => NODES.find(
+    (d) => "#box-" + d.id === location.hash) || NODES[0];
+
+  // Back and forward. Both the Back button and a hand-edited hash land here,
+  // and neither pushes: answering a history entry with a new one is how a Back
+  // button stops working.
+  addEventListener("popstate", () => select(fromHash(), false));
+  addEventListener("hashchange", () => select(fromHash(), false));
+
+  // The opening paint. `replaceState` normalises a stale or absent hash into
+  // the entry that is actually on screen WITHOUT adding a history entry — so
+  // one Back from a freshly opened flow page returns to the tool, not to the
+  // page you are already looking on.
+  const first = fromHash();
+  history.replaceState({box: first.id}, "", "#box-" + first.id);
+  select(first, false);
 }
 </script>
 </body>
