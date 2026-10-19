@@ -1,0 +1,504 @@
+<!doctype html>
+<!-- docs/flow/ — the methods of targetring as a flowchart, served at
+     /TargetRing/flow/.
+
+     v4.0, Puck 2026-10-19: "make one for the methods of the target ring too",
+     in the style of https://hotsoupisgood.github.io/AI-Graph-Response-Compare/.
+
+     THREE RULES, and each is the reason a line below looks the way it does.
+
+     1. NOTHING IS HARD-CODED. Every count, threshold, dollar and source name is
+        read from `flow.json`, which `scripts/export_flow.py` writes from
+        `targetring.config` and the featured run's own `manifest.json`. A
+        diagram is a claim about what the code does, and a diagram carrying its
+        own copy of a threshold is a claim that stops being true without
+        failing. If a number is missing from the data this page draws an em dash
+        and says so; it never substitutes a plausible one.
+     2. IT IS NOT INSIDE THE TOOL. The tool is the app view at
+        /TargetRing/; this is a separate page, so it can be iframed into a blog
+        post without dragging the app's stylesheet, state or refusals with it.
+        It shares no CSS and no JS with the app on purpose.
+     3. LIGHT ONLY, like the tool, and for the same reason: it sits beside
+        screenshots of a figure drawn on white. There is no
+        prefers-color-scheme block in this file. -->
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>targetring — how it works</title>
+<meta name="description" content="A disease name to a GO / NO-GO verdict: every
+ step targetring takes, with the real numbers from one Crohn's disease run.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root { color-scheme: light;
+    --bg:#fafaf9; --ink:#1c1917; --muted:#6b6560; --grid:#e7e5e4;
+    --panel:#fff; --border:#d6d3d1;
+    /* The status key. Measured against --panel for WCAG AA on the stroke's own
+       label text, not only on the stroke: a 3:1 graphical stroke beside a
+       4.5:1 label is the combination that reads as "nearly legible". */
+    --source:#1d4ed8; --derived:#15803d; --decision:#a1620a; --check:#7c2d93;
+    --out:#1c1917; --spend:#9a3412; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width: 1060px; margin: 0 auto; padding: 24px 18px 64px; }
+  h1 { font-size: 23px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 8px; font-size: 14px; max-width: 72ch; }
+  .sub b { color: var(--ink); }
+  .sub a { color: var(--source); }
+  .key { display:flex; gap:14px; font-size:12.5px; color:var(--muted);
+         margin: 10px 0 14px; flex-wrap: wrap; }
+  .key span { display:inline-flex; align-items:center; }
+  .key span::before { content:""; display:inline-block; width:11px; height:11px;
+    border-radius:3px; margin-right:6px; border:2px solid var(--c); background:#fff; }
+  .key span.dash::before { border-style: dashed; }
+  .wrap { display:grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 370px);
+          gap: 16px; align-items:start; }
+  @media (max-width: 880px) { .wrap { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border);
+           border-radius: 10px; padding: 12px; overflow-x: auto; }
+  .detail { position: sticky; top: 12px; }
+  @media (max-width: 880px) { .detail { position: static; } }
+  .detail h3 { margin: 0 0 2px; font-size: 16px; }
+  .detail .what { color: var(--muted); font-size: 12px; text-transform: uppercase;
+                  letter-spacing: .06em; margin: 0 0 8px; }
+  .detail p { margin: 0 0 9px; font-size: 13.5px; }
+  .detail ul { margin: 0 0 9px; padding-left: 18px; font-size: 13.5px; }
+  .detail li { margin-bottom: 4px; }
+  .detail table { border-collapse: collapse; width: 100%; font-size: 12.5px;
+                  margin: 0 0 9px; }
+  .detail th, .detail td { text-align:left; padding: 4px 6px;
+    border-bottom: 1px solid var(--border); vertical-align: top; }
+  .detail th { color: var(--muted); font-weight: 500; }
+  .detail td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .detail a { color: var(--source); }
+  .detail code, .sub code { font: 12px ui-monospace, Menlo, monospace;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 0 3px; }
+  .quote { border-left: 3px solid var(--border); padding-left: 10px;
+           color: var(--muted); font-size: 13px; margin: 0 0 9px; }
+  #flow { display:block; max-width:100%; height:auto; }
+  svg text { fill: var(--ink); }
+  svg .box { fill: #fff; stroke: var(--muted); stroke-width: 1.6; }
+  svg .node { cursor: pointer; }
+  svg .node .box { transition: none; }
+  svg .node.source  .box { stroke: var(--source); }
+  svg .node.derived .box { stroke: var(--derived); }
+  svg .node.decision .box { stroke: var(--decision); stroke-dasharray: 6 3; }
+  svg .node.check   .box { stroke: var(--check); }
+  svg .node.out     .box { stroke: var(--out); stroke-width: 2.4; }
+  svg .node.spend   .box { stroke: var(--spend); }
+  svg .node.sel .box { stroke-width: 3.4; }
+  svg .node:focus { outline: none; }
+  svg .node:focus .box { stroke-width: 3.4; }
+  svg .num { font-weight: 700; font-size: 12px; fill: var(--muted);
+             font-variant-numeric: tabular-nums; }
+  svg .title { font-weight: 600; font-size: 14.5px; }
+  svg .stat { font-size: 12.5px; fill: var(--muted);
+              font-variant-numeric: tabular-nums; }
+  svg .edge { fill:none; stroke: var(--muted); stroke-width: 1.8; }
+  svg .edge.branch { stroke: var(--decision); stroke-dasharray: 5 3; }
+  svg .elabel { font-size: 11.5px; fill: var(--muted); }
+  .foot { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 78ch; }
+  .foot a { color: var(--source); }
+  .err { color: #991b1b; }
+  @media print { .detail { display: none; } .wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>targetring: a disease name to a GO / NO-GO verdict</h1>
+  <p class="sub" id="lede">Loading…</p>
+  <p class="sub" id="norank"></p>
+  <div class="key">
+    <span style="--c:var(--source)">reads a public source</span>
+    <span style="--c:var(--derived)">derived here</span>
+    <span class="dash" style="--c:var(--decision)">decision</span>
+    <span style="--c:var(--check)">check that can stop the figure</span>
+    <span style="--c:var(--spend)">costs money</span>
+    <span style="--c:var(--out)">output</span>
+  </div>
+  <div class="wrap">
+    <div class="panel"><svg id="flow" role="img"
+      aria-label="Flowchart of the targetring pipeline, from a disease name to a per-gene verdict"></svg></div>
+    <div class="panel detail" id="detail">
+      <h3>Click any box</h3>
+      <p class="what">the method</p>
+      <p>Every number on this chart is read from one real run — the same run the
+        <a href="../">interactive tool</a> opens in — and from the build's own
+        constants. Nothing here is illustrative.</p>
+    </div>
+  </div>
+  <p class="foot" id="foot"></p>
+</main>
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// The one escape hatch, and the one rule about missing data.
+//
+// `n()` renders a number or an em dash. It NEVER falls back to a plausible
+// value, because this page's whole claim is that its numbers are the run's. A
+// chart with a made-up count on it is the HTML version of the defect the build
+// exists to prevent.
+// ---------------------------------------------------------------------------
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const n = (v) => (v === null || v === undefined || v === "") ? "—"
+  : (typeof v === "number" ? v.toLocaleString("en-US") : String(v));
+const money = (v) => (v === null || v === undefined) ? "—"
+  : "$" + Number(v).toFixed(2);
+
+d3.json("flow.json").then(draw).catch((e) => {
+  d3.select("#lede").attr("class", "sub err")
+    .text("flow.json could not be read, so this chart has no numbers to draw. "
+          + "Regenerate it with scripts/export_flow.py. (" + e.message + ")");
+});
+
+function draw(D) {
+  const c = D.contrast || {}, sel = D.selection || {}, acct = D.accounting || {};
+  const rule = D.verdict_rule || {}, sp = D.spend || {};
+
+  d3.select("#lede").html(
+    `Every step the tool takes, with the numbers from one real run: <b>${esc(D.disease)}</b>,
+     Expression Atlas <code>${esc(c.accession)} ${esc(c.id)}</code>
+     (n=${n(c.n_test)} vs ${n(c.n_ref)}), drawn in
+     <b>${esc((D.region || "").replace(/_/g, " "))}</b>.
+     Click a box for what it does and why. Dashed boxes are decisions the tool
+     made and states on the figure.`);
+  d3.select("#norank").html(esc(D.no_ranking));
+  d3.select("#foot").html(
+    `Run <code>${esc(D.run_id)}</code> · build <code>${esc(D.git_sha)}</code> ·
+     run at ${esc((D.timestamp_utc || "").slice(0, 16).replace("T", " "))} UTC ·
+     model spend ${money(sp.total)} measured ${esc(sp.measured)} ·
+     numbers generated by <code>scripts/export_flow.py</code> from
+     ${esc(D.generated_from)}.
+     <a href="../">Open the tool</a> ·
+     <a href="https://github.com/hotsoupisgood/TargetRing">source</a>`);
+
+  // -------------------------------------------------------------------------
+  // The boxes. `kind` drives the colour and is the status key; `stat` is the one
+  // line of numbers drawn inside the box; `detail()` builds the side pane.
+  //
+  // In source order, which is pipeline order, which is the order they are drawn
+  // in — one list, so a box cannot be drawn in a place its arrow does not go.
+  // -------------------------------------------------------------------------
+  const NODES = [
+    {
+      id: "disease", kind: "source", title: "1. Disease name",
+      stat: () => `“${D.disease}”`,
+      detail: () => `
+        <p>You type a disease. It is resolved against EFO/MONDO through OLS4,
+        and <b>every hit carries two ids</b> — the current one for Open Targets
+        and whichever ones Expression Atlas still tags its samples with.</p>
+        <p>One id would make one of those two sources look empty:
+        <code>EFO_0000384</code> is obsolete and Open Targets returns null for
+        it, while Atlas is still using it. The picker shows which id belongs to
+        which source rather than choosing for you.</p>
+        <p>Nothing is preselected and nothing is fetched from Atlas yet.</p>`,
+    },
+    {
+      id: "atlas", kind: "source", title: "2. Expression Atlas search",
+      stat: () => `${n(c.accession)} · index built ${n(c.index_built_utc)}`,
+      detail: () => `
+        <p>A local index of Expression Atlas differential experiments is searched
+        for contrasts tagged with this disease. <b>A row is a contrast, never an
+        experiment</b>: the sign, the groups and the n per side differ per
+        contrast, and one accession can carry a hundred of them.</p>
+        <p>Every count on that screen carries <b>the date the index was
+        built</b> (${n(c.index_built_utc)} for this run) and the picker marks it
+        stale after 30 days. A contrast count is a measurement from a crawl, and
+        a month-old number rendered like a live one is a small plausible wrong
+        figure.</p>
+        <p>Microarray contrasts are shown, greyed, with the reason — this build
+        reads RNA-seq only. Hiding them would make Atlas look emptier than it
+        is.</p>`,
+    },
+    {
+      id: "contrast", kind: "decision", title: "3. Contrast choice",
+      stat: () => `n=${n(c.n_test)} vs ${n(c.n_ref)} · ${n(c.platform)}`,
+      detail: () => `
+        <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
+        <p><b>${esc(c.name)}</b></p>
+        <table><tbody>
+          <tr><th>accession</th><td class="n">${esc(c.accession)} ${esc(c.id)}</td></tr>
+          <tr><th>n</th><td class="n">${n(c.n_test)} vs ${n(c.n_ref)}</td></tr>
+          <tr><th>platform</th><td>${esc(c.platform)}</td></tr>
+          <tr><th>pipeline</th><td>${esc(c.pipeline)}</td></tr>
+          <tr><th>Ensembl</th><td class="n">release ${n(c.ensembl_release)}</td></tr>
+        </tbody></table>
+        <p><b>Sign convention, verbatim from the manifest:</b></p>
+        <p class="quote">${esc(c.sign_sentence)}</p>
+        <p>Either a rule picks the contrast or a model does, choosing <b>only
+        among contrasts the index already offered it</b> — it cannot invent one.
+        That call has its own spend cap and its own counter
+        (${money((sp.accounts || []).find((a) => a.account === "chooser")?.spent)}
+        spent of
+        ${money((sp.accounts || []).find((a) => a.account === "chooser")?.cap)}
+        over
+        ${n((sp.accounts || []).find((a) => a.account === "chooser")?.calls)}
+        calls, measured ${esc(sp.measured)}). Whichever chose it, the choice is
+        printed in the middle of the figure.</p>`,
+    },
+    {
+      id: "region", kind: "decision", title: "4. Body region",
+      stat: () => (D.region || "").replace(/_/g, " "),
+      detail: () => `
+        <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
+        <p>The tissue the regional-specificity ring is read against. It changes
+        exactly one ring, and it changes what that ring <i>means</i>: “enriched
+        in ileum” and “enriched in whole blood” are different statements about a
+        gene.</p>
+        <p>It is inferred from the disease, cached, and chosen <b>only among the
+        GTEx tissues this build can read</b>.</p>
+        ${(D.region_inferred || []).length ? `<p><b>This run:</b></p>
+          <p class="quote">${esc(D.region_inferred[0])}</p>` : ""}
+        <p>A reader who did not pick the tissue would not notice it had been
+        picked, so the figure says so itself — not just the form.</p>`,
+    },
+    {
+      id: "de", kind: "source", title: "5. DE table",
+      stat: () => `${n(sel.n_total)} rows · ${n(sel.n_with_statistic)} with a statistic`,
+      detail: () => `
+        <p>The contrast's analytics file: gene, log2 fold change, adjusted p.
+        ${n(sel.n_total)} rows, of which <b>${n(sel.n_with_statistic)}</b> carry
+        a statistic for this contrast and <b>${n(sel.n_without_statistic)}</b> do
+        not.</p>
+        <p>Rows without a statistic are not zeros and are not dropped quietly —
+        the count above is on the figure. Headers are matched against the exact
+        names DESeq2, edgeR and limma export
+        (<code>log2FoldChange</code>/<code>padj</code>,
+        <code>logFC</code>/<code>FDR</code>,
+        <code>logFC</code>/<code>adj.P.Val</code>).
+        <b>Positional guessing is never attempted</b>: a column read by position
+        is a wrong number that looks right.</p>
+        <p>You can also paste your own table here instead of using Atlas at
+        all.</p>`,
+    },
+    {
+      id: "top", kind: "decision", title: "6. Top by adjusted p",
+      stat: () => `${n(sel.n_top)} of ${n(sel.n_with_statistic)} · ${n(sel.n_selected)} drawn`,
+      detail: () => `
+        <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
+        <p>Three stages, and <b>all three counts are printed on the figure</b>,
+        because this is the one place a gene set can shrink without anyone
+        noticing:</p>
+        <table><tbody>
+          <tr><th>rows in the contrast</th><td class="n">${n(sel.n_total)}</td></tr>
+          <tr><th>with a statistic</th><td class="n">${n(sel.n_with_statistic)}</td></tr>
+          <tr><th>top by adjusted p</th><td class="n">${n(sel.n_top)}</td></tr>
+          <tr><th>of those, up / down</th><td class="n">${n(sel.n_up)} / ${n(sel.n_down)}</td></tr>
+          <tr><th>selected to draw</th><td class="n">${n(sel.n_selected)}</td></tr>
+        </tbody></table>
+        <p>The cap is <b>${n(sel.max_genes)}</b> genes. Above that the spokes are
+        too narrow to read, so the table is cut by adjusted p and
+        <b>every excluded gene is named in the drop ledger</b>.</p>`,
+    },
+    {
+      id: "join", kind: "source", title: "7. Identifier join",
+      stat: () => `${(D.sources || []).length} sources · by id, never by position`,
+      detail: () => `
+        <p><b>Join by identifier, never by index.</b> Open Targets'
+        <code>targets()</code> drops ids it cannot find and answers HTTP 200
+        with a <i>shorter array</i>, which shifts every downstream cell by one —
+        a figure that is wrong in a way nothing looks wrong about. Every adapter
+        builds <code>{id: record}</code> and looks up the id it asked for.</p>
+        <p>Identifiers are resolved <b>once, before any ring</b>: symbol →
+        Ensembl (at the exact GTEx gencode version) → UniProt → ChEMBL, with
+        explicit <code>ambiguous</code> and <code>no_match</code> states. A wrong
+        gencode version returns empty and looks exactly like legitimate
+        absence.</p>
+        <table><thead><tr><th>source</th><th>joined by</th></tr></thead><tbody>
+        ${(D.sources || []).map((s) => `<tr>
+          <td><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a><br>
+            <span style="color:var(--muted)">${esc(s.gives)}</span></td>
+          <td>${esc(s.by)}</td></tr>`).join("")}
+        </tbody></table>`,
+    },
+    {
+      id: "states", kind: "derived", title: "8. Four cell states",
+      stat: () => `${n((D.rings || {}).total)} rings · ${n((D.rings || {}).external)} external`,
+      detail: () => `
+        <p><b>Missing is not low.</b> Every cell in every ring is exactly one
+        of four states:</p>
+        <ul>
+          <li><code>value</code> — a real measurement, on that ring's scale</li>
+          <li><code>no_data</code> — nobody has measured this. Hatched grey, and
+            <b>never filled, averaged, zeroed or imputed</b></li>
+          <li><code>not_applicable</code> — the question does not apply to this
+            gene. Stippled</li>
+          <li><code>failed</code> — the call broke. Red, and distinct from the
+            source saying nothing</li>
+        </ul>
+        <p>The three non-values are drawn differently from each other and from
+        every value, because the hardest part of building this figure by hand was
+        being sure an empty cell meant “nobody measured it” and not “the lookup
+        silently failed”.</p>
+        <p>Each gene also carries <b>k</b> — how many of the
+        ${n((D.rings || {}).external)} external rings it actually has — printed
+        next to its name on the rim, with the chromosome it sits on.</p>`,
+    },
+    {
+      id: "invariants", kind: "check", title: "9. Invariant checks",
+      stat: () => `${(D.invariants || []).length} checks · ${
+        (D.invariants || []).filter((i) => i.outcome === "PASS").length} passed`,
+      detail: () => `
+        <p>Run on <b>every</b> render. A failure puts a banner on the figure
+        itself — not a log line, not a toast — so a screenshot carries the
+        warning with it.</p>
+        <table><thead><tr><th>#</th><th>check</th><th>this run</th></tr></thead><tbody>
+        ${(D.invariants || []).map((i) => `<tr>
+          <td class="n">${esc(i.id)}</td><td>${esc(i.name)}</td>
+          <td class="n">${esc(i.outcome)}</td></tr>`).join("")}
+        </tbody></table>
+        <p><b>Every gene is accounted for:</b>
+        <code>input == rendered + ledgered</code>, asserted in code.
+        This run: <b>${n(acct.input)}</b> in,
+        <b>${n(acct.rendered)}</b> drawn,
+        <b>${n(acct.ledgered)}</b> in the ledger.</p>
+        ${(D.ledger || []).length ? `<p><b>What left the figure, and why:</b></p>
+          <ul>${(D.ledger || []).map((e) => `<li><code>${esc(e.input)}</code> —
+            ${esc(e.status)}. ${esc(e.reason)}</li>`).join("")}</ul>` : ""}`,
+    },
+    {
+      id: "figure", kind: "out", title: "10. The figure",
+      stat: () => `${n(acct.rendered)} spokes · ${n((D.rings || {}).total)} rings`,
+      detail: () => `
+        <p>A Circos figure: the circle is the submitted gene set in a stated
+        order, and each ring is one evidence track.</p>
+        <p><b>No ranking, no score, no weights.</b> ${esc(D.no_ranking)}</p>
+        <p>This run's order: <code>${esc(acct.ordering_note)}</code></p>
+        <p>The figure states on itself what it did — the contrast, the sign
+        convention, the selection rule, the region and how it was chosen, the
+        three counts, any active filter, and what a missing chromosome suffix
+        means. <b>A screenshot that cannot be audited is not a deliverable</b>,
+        so a manifest is written beside it with the UTC timestamp, the git SHA,
+        every source URL and schema version, and PASS/FAIL per invariant.</p>
+        <p><a href="../">Open this figure in the tool →</a></p>`,
+    },
+    {
+      id: "verdict", kind: "decision", title: "11. GO / NO-GO rule",
+      stat: () => Object.entries(rule.counts || {})
+        .map(([k, v]) => `${v} ${k.replace(" DATA", "")}`).join(" · ") || "3 criteria",
+      detail: () => `
+        <p class="what" style="margin:0 0 6px">decision — per gene, in the drawer</p>
+        <p>Three criteria, each <b>met / not met / no data</b> with its value
+        shown:</p>
+        <table><thead><tr><th>#</th><th>criterion</th><th>met when</th></tr></thead><tbody>
+        ${(rule.criteria || []).map((k) => `<tr><td class="n">${n(k.n)}</td>
+          <td>${esc(k.name)}<br><span style="color:var(--muted)">${esc(k.source)}</span></td>
+          <td>${esc(k.met_when)}</td></tr>`).join("")}
+        </tbody></table>
+        <ul>
+          <li><b>GO</b> — ${esc(rule.go)}</li>
+          <li><b>NO-GO</b> — ${esc(rule.no_go)}</li>
+          <li><b>INSUFFICIENT DATA</b> — ${esc(rule.insufficient)}</li>
+        </ul>
+        <p>This run: ${Object.entries(rule.counts || {})
+          .map(([k, v]) => `<b>${v}</b> ${esc(k)}`).join(", ") || "—"}.</p>
+        <p><b>What never affects the verdict.</b> ${esc(rule.never_a_criterion)}</p>`,
+    },
+    {
+      id: "summaries", kind: "spend", title: "12. Baked summaries",
+      stat: () => `${money(sp.total)} total · measured ${n(sp.measured)}`,
+      detail: () => `
+        <p>The per-gene evidence summary and the mouse-phenotype flag are the
+        only model-written text on the page, and they are <b>baked offline into
+        the drawer files</b> — nothing is generated while you read.</p>
+        <p>A summary paraphrases <b>only the table it sits above</b>. The
+        phenotype lead is reported at three levels —
+        <code>asserted</code> / <code>asserted-negative</code> /
+        <code>none found</code> — labelled “abstract asserts target manipulation
+        altered the phenotype (unverified)”, with the sentence and the PMID.
+        <b>It is never folded into a verdict.</b></p>
+        <p><b>Spend, measured ${esc(sp.measured)}</b> — ${money(sp.total)} across
+        ${n((sp.accounts || []).length)} accounts:</p>
+        <table><thead><tr><th>account</th><th>spent</th><th>calls</th></tr></thead><tbody>
+        ${(sp.accounts || []).map((a) => `<tr><td><code>${esc(a.account)}</code><br>
+          <span style="color:var(--muted)">${esc(a.purpose)}</span></td>
+          <td class="n">${money(a.spent)}<br>
+            <span style="color:var(--muted)">cap ${money(a.cap)}</span></td>
+          <td class="n">${n(a.calls)}</td></tr>`).join("")}
+        </tbody></table>
+        <p>${esc(sp.note)}</p>
+        <p style="color:var(--muted)">Each cap is an approval gate rather than a
+        ceiling: a call that would cross one is stopped, the numbers are named
+        and the refusal is recorded at $0.00, so “why is there no summary” is
+        answerable from the ledger file.</p>`,
+    },
+  ];
+
+  // -------------------------------------------------------------------------
+  // Layout. One column, measured rather than guessed: each box's height is set
+  // from the number of lines it actually draws, so a long `stat` cannot
+  // overflow its own border — which is the bug this whole revision is about.
+  // -------------------------------------------------------------------------
+  const W = 560, BOX_W = 420, PAD_X = 14, GAP = 30, BOX_H = 62, X = (W - BOX_W) / 2;
+  const svg = d3.select("#flow")
+    .attr("viewBox", `0 0 ${W} ${NODES.length * (BOX_H + GAP) + 20}`)
+    .attr("width", W).attr("height", NODES.length * (BOX_H + GAP) + 20);
+
+  const pos = NODES.map((_, i) => 10 + i * (BOX_H + GAP));
+
+  // Edges first, so a box always paints over its own arrow rather than under.
+  svg.append("defs").append("marker")
+    .attr("id", "arrow").attr("viewBox", "0 0 10 10")
+    .attr("refX", 9).attr("refY", 5)
+    .attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto")
+    .append("path").attr("d", "M0,0 L10,5 L0,10 z")
+    .attr("fill", "currentColor").attr("stroke", "none");
+
+  NODES.slice(0, -1).forEach((nd, i) => {
+    const y1 = pos[i] + BOX_H, y2 = pos[i + 1];
+    svg.append("path")
+      .attr("class", "edge" + (NODES[i + 1].kind === "decision" ? " branch" : ""))
+      .attr("marker-end", "url(#arrow)")
+      .attr("d", `M${W / 2},${y1} L${W / 2},${y2 - 2}`)
+      .style("color", "var(--muted)");
+  });
+
+  const g = svg.selectAll("g.node").data(NODES).join("g")
+    .attr("class", (d) => "node " + d.kind)
+    .attr("transform", (d, i) => `translate(${X},${pos[i]})`)
+    .attr("tabindex", 0)
+    .attr("role", "button")
+    .attr("aria-label", (d) => d.title)
+    .on("click", (ev, d) => select(d))
+    .on("keydown", (ev, d) => {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(d); }
+    });
+
+  g.append("rect").attr("class", "box")
+    .attr("width", BOX_W).attr("height", BOX_H).attr("rx", 8);
+  g.append("text").attr("class", "title")
+    .attr("x", PAD_X).attr("y", 25).text((d) => d.title);
+  g.append("text").attr("class", "stat")
+    .attr("x", PAD_X).attr("y", 45)
+    .text((d) => {
+      const s = String(d.stat() ?? "");
+      // Truncated to what the box is wide enough for at this type size, so the
+      // text can never run past its own border. The side pane has the full
+      // version of every one of these numbers, so nothing is lost by cutting.
+      return s.length > 52 ? s.slice(0, 51) + "…" : s;
+    });
+
+  function select(d) {
+    g.classed("sel", (x) => x.id === d.id);
+    d3.select("#detail").html(
+      `<h3>${esc(d.title)}</h3>
+       <p class="what">${esc({source: "reads a public source",
+                              derived: "derived here",
+                              decision: "a decision, stated on the figure",
+                              check: "a check that can stop the figure",
+                              spend: "costs money",
+                              out: "output"}[d.kind] || "")}</p>`
+      + d.detail());
+    d3.select("#detail").node().scrollIntoView(
+      {block: "nearest", behavior: "smooth"});
+  }
+
+  select(NODES[0]);
+}
+</script>
+</body>
+</html>
