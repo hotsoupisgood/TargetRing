@@ -329,6 +329,21 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
         # claim and the page does not write claims.
         "drawer_note": drawer_note,
         "artefact_links": artefact_links,
+        # v4.0. Which artefact files this run ACTUALLY WROTE, read off its own
+        # directory. The three download menus are filled from this list when
+        # there is no analyse response to fill them from.
+        #
+        # It exists because the alternative was the page HEAD-probing ten
+        # filenames to find out — which worked, and put two 404s in the console
+        # of a published page for the two slide exports that are deliberately
+        # not exported (UI audit, 2026-10-19). A reader who opens the console of
+        # a page whose claim is "nothing here fetches" should not find failed
+        # requests in it.
+        #
+        # Listed rather than assumed: the slide pair is optional, a run cut off
+        # mid-export has fewer, and a menu item pointing at a file that is not
+        # there is the dead link this replaces.
+        "artefacts": table_mod.artefacts_on_disk(run_id),
         # The `What this is not` tab, for a run opened from disk. `renderCaveats`
         # read these off the analyse response, which a disk run never had, so the
         # tab was empty for every `?run=` and every demo run (found 2026-10-18).

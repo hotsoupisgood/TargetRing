@@ -132,17 +132,47 @@ class TestADiskLoadedRunGetsItsCitations:
                 assert not c["url"]
         assert d["citation_note"]
 
-    def test_the_scales_endpoint_still_404s_and_the_strip_does_not_care(
+    def test_the_strip_does_not_depend_on_the_scales_endpoint(
             self, client) -> None:
-        """The defect itself, pinned. `/scales` reads `_runs`, so it answers 404
-        for a run on disk — that is unchanged by this work and is the reason the
-        citations had to come from somewhere else. What must never be true again is
-        a session in which a run is on screen and its sources are not."""
+        """The claim this test was written for, and it is the durable half:
+        **the citation strip must not need `/scales`.** It is drawn from
+        `/values`, which reads `values.csv`, so a run on screen always has its
+        sources on screen with it.
+
+        v4.0 made `/scales` answer for a run on disk too (it used to 404, which
+        is why the citations had to come from somewhere else in the first place),
+        and that must not quietly turn the strip into a second consumer of it: a
+        surface that worked only when both routes answered would be back to
+        having a state in which a run is up and its sources are not."""
         run_id = _loadable()[-1]
-        assert client.get(f"/api/run/{run_id}/scales").status_code == 404
         d = client.get(f"/api/run/{run_id}/values").json()
         assert [c for c in d["citations"] if c["linked"]], (
             "a disk-loaded run has no source link on screen — this is the defect")
+        js = (STATIC / "app.js").read_text()
+        strip = js[js.index("#table-sources"):]
+        strip = strip[:strip.index("\nfunction ")]
+        assert "/scales" not in strip, (
+            "the citation strip must be drawn from the table payload alone")
+
+    def test_the_scales_endpoint_now_answers_for_a_run_on_disk(
+            self, client) -> None:
+        """v4.0, and a separate claim from the one above. It is what fills the
+        decode panel beside a disk-loaded figure — the two empty bordered boxes
+        in Puck's 2026-10-19 screenshot.
+
+        Two outcomes are correct and a 500 is not either of them. A run drawn
+        against the ring specs this build declares gets its scales; a run drawn
+        against older ones (found the same day: a `rodent` ring holding a raw
+        count of 181 where the spec now declares [0, 1]) is refused in words,
+        because a scale drawn from another build's ranges would decode this
+        run's colours as numbers it does not hold."""
+        for run_id in _loadable():
+            r = client.get(f"/api/run/{run_id}/scales")
+            assert r.status_code in (200, 409), (run_id, r.status_code, r.text)
+            if r.status_code == 200:
+                assert r.json()["rings"] and r.json()["in_memory"] is False
+            else:
+                assert "no longer declares" in r.json()["detail"]
 
     def test_every_run_on_disk_gets_a_citation_for_every_column(self) -> None:
         """All of them, not a sample. The claim is about `runs/`, so it is asserted

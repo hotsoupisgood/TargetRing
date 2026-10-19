@@ -68,7 +68,14 @@ SLIDE_ARTEFACTS = ("figure-slide.svg", "figure-slide.png")
 # process's memory ("not in memory; re-submit the table"), and the page asks for
 # it only from `showRun`, which a disk-loaded run never reaches. Exporting a
 # route the demo itself cannot answer would be exporting a 404.
-RUN_JSON = ("values", "evidence")
+# v4.0 adds `scales`. The comment this replaces said it "answers only for a run
+# still in this process's memory" and that the page asks for it only from
+# `showRun`, which a disk-loaded run never reaches — both were true, and both
+# stopped being true in v4.0: the route answers from `values.csv`, and
+# `showToolFigure` asks for it to fill the decode panel beside the circle.
+# Leaving it out was why the published page had two empty bordered boxes where
+# the cell states and the ring scales belong (found by the UI audit, 2026-10-19).
+RUN_JSON = ("values", "evidence", "scales")
 
 # Every path the demo gate must still refuse, asked for so the export can say it
 # was. Mirrors `app._DEMO_FORBIDDEN_*` and `tests/test_demo.py`.
@@ -140,6 +147,38 @@ def scrub(obj):
     return obj
 
 
+def date_the_spend(manifest: dict) -> dict:
+    """Stamp a published manifest's dollar totals with the date they were measured.
+
+    v4.0, Puck 2026-10-19: "just date it because the costs all change", and the
+    requirement that every dollar figure on the page or in the exported manifest
+    carries its measured date.
+
+    `spend.manifest_block` writes `accounts_measured_utc` from v4.0 on, so a run
+    rendered after this change arrives already dated and is left exactly as it
+    is. The runs being published were written on 2026-10-18 and have no such key
+    — and the date that is TRUE of their numbers is the run's own timestamp,
+    because that is when the fold happened. It is not today: re-exporting an old
+    manifest tomorrow must not relabel yesterday's balances as current, which is
+    the entire failure Puck named.
+
+    So: never overwritten, only filled in, and only from the manifest's own
+    recorded timestamp.
+    """
+    llm = manifest.get("llm")
+    if not isinstance(llm, dict) or llm.get("accounts_measured_utc"):
+        return manifest
+    when = manifest.get("timestamp_utc")
+    if not when:
+        return manifest
+    llm["accounts_measured_utc"] = when
+    llm["accounts_measured_note"] = (
+        "this manifest predates the measured-date field; the totals are the "
+        "ledger as folded when this run was written, so the run's own timestamp "
+        "is when they were measured")
+    return manifest
+
+
 def write(path: Path, data: bytes) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
@@ -155,7 +194,12 @@ def get(client: httpx.Client, url: str, expect: int = 200) -> httpx.Response:
 
 
 def save_json(client: httpx.Client, out: Path, url: str, rel: str) -> int:
-    body = scrub(get(client, url).json())
+    # `date_the_spend` runs on every payload, not just the manifest: the spend
+    # table the PAGE draws comes from `values.json`'s own `llm` block
+    # (`renderCaveats` is called with the table payload for a run read off
+    # disk), so dating only the manifest would date the file nobody reads and
+    # leave the rendered dollars bare. It is a no-op on a payload with no `llm`.
+    body = date_the_spend(scrub(get(client, url).json()))
     return write(out / rel, json.dumps(body, indent=1, sort_keys=False).encode())
 
 
@@ -198,6 +242,13 @@ def main() -> int:
     ap.add_argument("--keep-slides", action="store_true",
                     help="also export figure-slide.svg/.png (+1.4 MB per run, "
                          "referenced by no page)")
+    # v4.0, Puck 2026-10-19: "just have one example". The published site is the
+    # tool opened IN one run, so the export writes one run and the box it crawls
+    # is gated to that one -- there is then no second run to deep-link to, which
+    # is the honest version of "no run-card list".
+    ap.add_argument("--all-runs", action="store_true",
+                    help="export every run in config.DEMO_RUNS instead of only "
+                         "the featured one (the published site is one run)")
     args = ap.parse_args()
 
     os.environ["TARGETRING_DEMO"] = "1"
@@ -206,6 +257,20 @@ def main() -> int:
     check_shim_refusal(app_module)
 
     run_ids = tuple(config.DEMO_RUNS)
+    if not args.all_runs:
+        featured = config.DEMO_FEATURED_RUN
+        if featured not in run_ids:
+            raise SystemExit(
+                f"the featured run {featured!r} is not in config.DEMO_RUNS "
+                f"{run_ids}: the page would open a run its own gate refuses")
+        run_ids = (featured,)
+        # The CHILD's allowlist too, not just this loop's. The gate is what makes
+        # the crawl an export of a ONE-RUN box rather than a one-run slice of a
+        # four-run box: with `DEMO_RUNS` still naming four, `/api/runs.json`
+        # would list three runs whose files were never written, and the page
+        # would offer cards pointing at 404s.
+        os.environ["TARGETRING_DEMO_RUNS"] = featured
+        os.environ["TARGETRING_DEMO_FEATURED_RUN"] = featured
     missing = [r for r in run_ids if not (config.RUNS_DIR / r).is_dir()]
     if missing:
         raise SystemExit(f"these demo runs are not on disk: {missing}")
@@ -271,7 +336,8 @@ def main() -> int:
                     raise SystemExit(f"{run_id}/{name} -> {r.status_code}")
                 body = r.content
                 if name == "manifest.json":
-                    body = json.dumps(scrub(json.loads(body)), indent=1).encode()
+                    body = json.dumps(
+                        date_the_spend(scrub(json.loads(body))), indent=1).encode()
                 total += write(out / "api" / "run" / run_id / name, body); files += 1
 
             # The clickable genes are the ones the payload itself named — the

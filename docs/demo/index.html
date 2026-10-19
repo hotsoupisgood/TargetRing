@@ -1,5 +1,17 @@
 <!doctype html>
-<html lang="en">
+<!-- v4.0, Puck 2026-10-19: "the dark theme looks bad there is a lot of dark on
+     dark". The page is pinned LIGHT, and it is pinned by the mechanism app.css
+     already had rather than by deleting the dark tokens: the dark block is
+     scoped `:root:where(:not([data-theme="light"]))`, so this one attribute
+     defeats OS-dark everywhere, and `header-wash.css`'s
+     `:root[data-theme="light"] header` rule puts the light wash back with it.
+
+     The reason it is not left as a preference is the figure. The circle is
+     drawn by matplotlib on WHITE and shipped as SVG and PNG, and no stylesheet
+     recolours it — so under OS-dark the one thing this page exists to show was
+     a white slab in a dark frame, with every panel beside it dark-on-dark. One
+     surface, one paper colour. -->
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <!-- v3.2 / UX v3 round 2 A5: v1 here and `targetring v2` in the middle of the

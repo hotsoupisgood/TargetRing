@@ -515,6 +515,37 @@ def baked_drawer_genes(run_id: str) -> list[str]:
     return sorted(p.stem for p in d.glob("*.json") if DRAWER_GENE_RE.match(p.stem))
 
 
+#: The downloadable artefacts a run may have written, in the order the three
+#: download menus list them. Not every run has every one: the slide pair is an
+#: optional export and a run cut off partway has fewer.
+DOWNLOADABLE = (
+    "figure.png", "figure.svg", "figure-slide.svg", "figure-slide.png",
+    "caption.txt", "legend.png", "legend.svg",
+    "values.csv", "ledger.csv", "manifest.json",
+)
+
+
+def artefacts_on_disk(run_id: str) -> list[str]:
+    """Which of `DOWNLOADABLE` this run actually wrote.
+
+    v4.0. The three download menus are built from this when there is no analyse
+    response to build them from. They used to be filled only from that
+    response's `*_url` fields, so a run opened from disk got ten `<a>` elements
+    with no `href` — links that looked like links and did nothing, on a page
+    whose own list of what works says "every download" (UI audit, 2026-10-19).
+
+    Read rather than assumed, and that is the value of it: a menu item pointing
+    at a file the run never wrote is the same defect one step further on, and
+    HEAD-probing from the page to find out put 404s in the console of a box
+    whose claim is that it fetches nothing.
+    """
+    try:
+        d = run_dir(run_id)
+    except TableUnavailable:
+        return []
+    return [n for n in DOWNLOADABLE if (d / n).exists()]
+
+
 def recent_runs(limit: int = 40,
                 only: Iterable[str] | None = None) -> list[dict[str, Any]]:
     """The runs on disk, newest first.

@@ -707,5 +707,10 @@
     }
    ]
   }
- ]
+ ],
+ "chromosome": {
+  "state": "value",
+  "text": "4",
+  "detail": "chromosome 4 \u2014 Open Targets genomicLocation.chromosome for ENSG00000163735 (GRCh38)"
+ }
 }

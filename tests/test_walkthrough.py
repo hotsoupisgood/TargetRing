@@ -427,13 +427,28 @@ class TestDiskRunFigure:
         deep = js[js.index('new URLSearchParams(location.search).get("run")'):]
         deep = deep[:deep.index('showTab("table")')]
         assert 'document.body.classList.add("viewing-run")' in deep
-        assert "showDiskRunFigure(wanted)" in deep
         assert "body.viewing-run #demo-panel { display: none !important; }" in css
-        fn = js[js.index("async function showDiskRunFigure"):]
+        # v4.0. The deep-link path now draws THIS run's own `figure-web.svg`,
+        # inlined, so the circle is clickable (Puck, 2026-10-19: "i want the
+        # target ring to be interactive too"). The claim this test was written
+        # for is unchanged and is what is asserted below: the figure shown is
+        # the deep-linked run's own, addressed by the id asked for, or there is
+        # none — never another run's circle left over in the page's state.
+        assert "showToolFigure(wanted)" in deep
+        fn = js[js.index("async function showToolFigure"):]
         fn = fn[:fn.index("\n}\n") + 3]
-        assert 'fetch(url, { method: "HEAD" })' in fn
-        assert "if (!ok) return;" in fn, "no figure.png means nothing, not a placeholder"
-        assert "figure.png" in fn and "demo-runs" not in fn
+        assert "${encodeURIComponent(runId)}/figure-web.svg" in fn
+        assert "demo-runs" not in fn
+        assert "if (!res.ok) throw" in fn, (
+            "no exported web SVG means the grid, not a placeholder circle")
+        # The `<img>` path it supersedes is still there and still honest, for a
+        # surface with no inlineable SVG.
+        old = js[js.index("async function showDiskRunFigure"):]
+        old = old[:old.index("\n}\n") + 3]
+        assert 'fetch(url, { method: "HEAD" })' in old
+        assert "if (!ok) return;" in old, (
+            "no figure.png means nothing, not a placeholder")
+        assert "figure.png" in old and "demo-runs" not in old
 
     def test_the_artefact_route_answers_head_for_an_existing_figure(self, monkeypatch, tmp_path) -> None:
         from targetring import table as table_mod

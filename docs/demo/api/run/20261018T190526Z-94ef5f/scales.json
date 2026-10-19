@@ -1,0 +1,636 @@
+{
+ "run_id": "20261018T190526Z-94ef5f",
+ "comparability": "EACH RING HAS ITS OWN SCALE AND ITS OWN COLOURS",
+ "in_memory": false,
+ "figure_caveats": [],
+ "states": [
+  {
+   "key": "no_data",
+   "label": "no data \u2014 never measured here",
+   "fill": "#e8e8e8",
+   "hatch": "////",
+   "edge": "#4d4d4d"
+  },
+  {
+   "key": "not_applicable",
+   "label": "not applicable to this gene",
+   "fill": "#ffffff",
+   "hatch": "....",
+   "edge": "#808080"
+  },
+  {
+   "key": "failed",
+   "label": "call FAILED \u2014 not the same as absent",
+   "fill": "#000000",
+   "hatch": "xxxx",
+   "edge": "#ff0000"
+  }
+ ],
+ "rings": [
+  {
+   "n": 1,
+   "key": "logfc",
+   "label": "logFC (Atlas)",
+   "short_label": "logFC (Atlas)",
+   "column_label": "logFC (Atlas)",
+   "units": "log2 fold change",
+   "transform": "diverging, anchored at 0 and symmetric; neither direction is drawn as the good one",
+   "stepped": false,
+   "colours": [
+    "#30479a",
+    "#39509e",
+    "#425aa3",
+    "#4c63a7",
+    "#566cab",
+    "#6075b0",
+    "#6a7eb4",
+    "#7587b8",
+    "#7f90bc",
+    "#8a99c0",
+    "#95a2c4",
+    "#a0abc8",
+    "#abb5cc",
+    "#b7becf",
+    "#c2c7d3",
+    "#ced0d7",
+    "#d7dae1",
+    "#d7cfcc",
+    "#d2c4c0",
+    "#cfb9b3",
+    "#caafa7",
+    "#c6a49a",
+    "#c2998e",
+    "#bd8f81",
+    "#b98475",
+    "#b47a69",
+    "#af6f5d",
+    "#aa6451",
+    "#a45a45",
+    "#9f4f38",
+    "#99442c",
+    "#93381e",
+    "#8d2c0d"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.0,
+     "label": "-3.1"
+    },
+    {
+     "at": 0.5,
+     "label": "0"
+    },
+    {
+     "at": 1.0,
+     "label": "3.1"
+    }
+   ],
+   "source_text": "Expression Atlas",
+   "source_url": "",
+   "tooltip": ""
+  },
+  {
+   "n": 2,
+   "key": "neg_log10_padj",
+   "label": "-log10 padj (Atlas)",
+   "short_label": "\u2212log10 padj (Atlas)",
+   "column_label": "-log10 padj (Atlas)",
+   "units": "-log10 adjusted p",
+   "transform": "log-spaced: colour is log10(1 + x), ticks are x",
+   "stepped": false,
+   "colours": [
+    "#ebdbe4",
+    "#e8d5e0",
+    "#e5d0dc",
+    "#e2cad8",
+    "#dfc4d4",
+    "#dcbfd0",
+    "#d9b9cc",
+    "#d6b4c8",
+    "#d3aec4",
+    "#cfa9c0",
+    "#cca3bc",
+    "#c99eb8",
+    "#c698b4",
+    "#c293b0",
+    "#bf8dac",
+    "#bc88a8",
+    "#b982a4",
+    "#b57da0",
+    "#b2789c",
+    "#af7298",
+    "#ab6d94",
+    "#a86891",
+    "#a5628d",
+    "#a15d89",
+    "#9e5785",
+    "#9a5281",
+    "#974d7e",
+    "#93477a",
+    "#904276",
+    "#8c3c72",
+    "#89366f",
+    "#85316b"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.0,
+     "label": "13"
+    },
+    {
+     "at": 1.0,
+     "label": "22"
+    }
+   ],
+   "source_text": "Expression Atlas",
+   "source_url": "",
+   "tooltip": ""
+  },
+  {
+   "n": 3,
+   "key": "tractable",
+   "label": "Tractability (family suggests druggable)",
+   "short_label": "Tractability (suggested)",
+   "column_label": "Tractability",
+   "units": "mean of 3 keys, each 0 or 1",
+   "transform": "fixed 0\u20131, same colour in every run",
+   "stepped": false,
+   "colours": [
+    "#ebddd1",
+    "#e8d8ca",
+    "#e4d2c3",
+    "#e1cdbc",
+    "#dec8b4",
+    "#dbc3ad",
+    "#d8bda6",
+    "#d5b89f",
+    "#d1b398",
+    "#ceae91",
+    "#cba98a",
+    "#c8a383",
+    "#c49e7c",
+    "#c19975",
+    "#be946e",
+    "#bb8f66",
+    "#b78a5f",
+    "#b48558",
+    "#b18051",
+    "#ad7a4a",
+    "#aa7542",
+    "#a7703a",
+    "#a36b32",
+    "#a0662a",
+    "#9d6120",
+    "#995c14",
+    "#965703",
+    "#905300",
+    "#8a4f00",
+    "#844c00",
+    "#7e4800",
+    "#794500"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.0,
+     "label": "0"
+    },
+    {
+     "at": 1.0,
+     "label": "1"
+    }
+   ],
+   "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "source_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section",
+   "tooltip": "Tractability (family suggests druggable) \u00b7 mean of 3 keys, each 0 or 1 \u00b7 fixed 0\u20131, same colour in every run \u00b7 source: Open Targets \u00b7 https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section"
+  },
+  {
+   "n": 4,
+   "key": "chemical_probe",
+   "label": "Chemical probe available (prior tool-compound effort)",
+   "short_label": "Chemical probe (yes/no)",
+   "column_label": "Chemical probe available",
+   "units": "probe: no / yes",
+   "transform": "binary; absent key is hatched, never 0",
+   "stepped": true,
+   "colours": [
+    "#ddc5b1",
+    "#7e4800"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.25,
+     "label": "0"
+    },
+    {
+     "at": 0.75,
+     "label": "1"
+    }
+   ],
+   "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "source_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#chemical-probes",
+   "tooltip": ""
+  },
+  {
+   "n": 5,
+   "key": "safety",
+   "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+   "short_label": "Safety flags \u2260 safe",
+   "column_label": "Safety flags \u2014 NOT evidence of safety",
+   "units": "mean of 4 keys, each in [-1, 1]",
+   "transform": "fixed \u22121\u2026+1, diverging at 0; amber arm is the bad one",
+   "stepped": false,
+   "colours": [
+    "#8d2743",
+    "#93344b",
+    "#994054",
+    "#9f4b5d",
+    "#a45666",
+    "#aa616f",
+    "#af6c78",
+    "#b47781",
+    "#b9828b",
+    "#be8d94",
+    "#c2989e",
+    "#c7a2a8",
+    "#cbadb1",
+    "#cfb8bb",
+    "#d3c3c5",
+    "#d7cecf",
+    "#e1d8d9",
+    "#cad2d5",
+    "#bbcacf",
+    "#acc1c9",
+    "#9db9c3",
+    "#8db1be",
+    "#7da9b8",
+    "#6da1b3",
+    "#5d99ad",
+    "#4b91a7",
+    "#3889a2",
+    "#1e819c",
+    "#007894",
+    "#006f89",
+    "#00667e",
+    "#005d74",
+    "#005569"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.0,
+     "label": "-1"
+    },
+    {
+     "at": 0.5,
+     "label": "0"
+    },
+    {
+     "at": 1.0,
+     "label": "1"
+    }
+   ],
+   "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "source_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
+   "tooltip": ""
+  },
+  {
+   "n": 6,
+   "key": "regional_specificity",
+   "label": "Regional specificity",
+   "short_label": "Region TPM \u00f7 median",
+   "column_label": "Regional specificity",
+   "units": "\u00d7 median across the GTEx panel",
+   "transform": "log10; ticks are the raw ratio. Range moves with the submitted set \u2014 unbounded above",
+   "stepped": false,
+   "colours": [
+    "#dde1d1",
+    "#d8ddca",
+    "#d3d8c3",
+    "#cdd3bb",
+    "#c8cfb4",
+    "#c3caad",
+    "#bec6a6",
+    "#b9c19f",
+    "#b4bc98",
+    "#aeb891",
+    "#a9b38a",
+    "#a4af83",
+    "#a0aa7c",
+    "#9ba675",
+    "#96a16e",
+    "#919d66",
+    "#8c995f",
+    "#879458",
+    "#839051",
+    "#7e8b4a",
+    "#798742",
+    "#75833a",
+    "#707e32",
+    "#6b7a2a",
+    "#677620",
+    "#637115",
+    "#5e6d04",
+    "#5a6800",
+    "#566400",
+    "#525f00",
+    "#4e5b00",
+    "#4a5700"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.0,
+     "label": "0.669"
+    },
+    {
+     "at": 1.0,
+     "label": "11"
+    }
+   ],
+   "source_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
+   "source_url": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
+   "tooltip": "Regional specificity \u00b7 \u00d7 median across the GTEx panel \u00b7 log10; ticks are the raw ratio. Range moves with the submitted set \u2014 unbounded above \u00b7 source: GTEx v8 \u00b7 https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get"
+  },
+  {
+   "n": 7,
+   "key": "clinical_phase",
+   "label": "Pipeline: furthest phase (attributable indications only)",
+   "short_label": "Furthest trial phase",
+   "column_label": "Pipeline: furthest phase",
+   "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+   "transform": "6 discrete stages, fixed; no value between two stages",
+   "stepped": true,
+   "colours": [
+    "#acd0ce",
+    "#85bbb8",
+    "#5aa5a2",
+    "#22908c",
+    "#007875",
+    "#00605d"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.0833,
+     "label": "0"
+    },
+    {
+     "at": 0.25,
+     "label": "1"
+    },
+    {
+     "at": 0.4167,
+     "label": "2"
+    },
+    {
+     "at": 0.5833,
+     "label": "3"
+    },
+    {
+     "at": 0.75,
+     "label": "4"
+    },
+    {
+     "at": 0.9167,
+     "label": "5"
+    }
+   ],
+   "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "source_url": "https://platform-docs.opentargets.org/target/drugs",
+   "tooltip": "Pipeline: furthest phase (attributable indications only) \u00b7 0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved \u00b7 6 discrete stages, fixed; no value between two stages \u00b7 source: Open Targets \u00b7 https://platform-docs.opentargets.org/target/drugs"
+  },
+  {
+   "n": 8,
+   "key": "clinical_activity",
+   "label": "Pipeline: current activity (Open Targets clinicalReports)",
+   "short_label": "Trial activity now",
+   "column_label": "Pipeline: current activity",
+   "units": "three named states, no order implied by colour",
+   "transform": "categorical \u2014 not a ramp, and not comparable to one",
+   "stepped": true,
+   "colours": [
+    "#983c22",
+    "#f9b8e0",
+    "#7592e6"
+   ],
+   "categories": [
+    "stopped for cause \u2014 OT category Negative / Safety_Sideeffects",
+    "dormant \u2014 drugs exist, no live trial, no for-cause stop",
+    "live trial \u2014 recruiting or ongoing"
+   ],
+   "ticks": [
+    {
+     "at": 0.1667,
+     "label": "-1"
+    },
+    {
+     "at": 0.5,
+     "label": "0"
+    },
+    {
+     "at": 0.8333,
+     "label": "1"
+    }
+   ],
+   "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "source_url": "https://platform-docs.opentargets.org/drug/clinical-report",
+   "tooltip": "Pipeline: current activity (Open Targets clinicalReports) \u00b7 three named states, no order implied by colour \u00b7 categorical \u2014 not a ramp, and not comparable to one \u00b7 source: Open Targets \u00b7 https://platform-docs.opentargets.org/drug/clinical-report"
+  },
+  {
+   "n": 9,
+   "key": "tdl",
+   "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)",
+   "short_label": "TDL \u2014 knowledge",
+   "column_label": "Target development level",
+   "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+   "transform": "4 discrete levels, fixed",
+   "stepped": true,
+   "colours": [
+    "#d3c9ae",
+    "#b19f6e",
+    "#917729",
+    "#695200"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.125,
+     "label": "0"
+    },
+    {
+     "at": 0.375,
+     "label": "1"
+    },
+    {
+     "at": 0.625,
+     "label": "2"
+    },
+    {
+     "at": 0.875,
+     "label": "3"
+    }
+   ],
+   "source_text": "Pharos \u00b7 druggablegenome.net",
+   "source_url": "https://druggablegenome.net/IDGProteinFamilies",
+   "tooltip": "Target development level (Pharos TDL \u2014 knowledge, not a pocket) \u00b7 Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin \u00b7 4 discrete levels, fixed \u00b7 source: Pharos \u00b7 https://druggablegenome.net/IDGProteinFamilies"
+  },
+  {
+   "n": 10,
+   "key": "rodent",
+   "label": "Mouse phenotype lead (3 states)",
+   "short_label": "Mouse phenotype",
+   "column_label": "Mouse phenotype lead",
+   "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+   "transform": "binary; 'not phenotyped' is hatched, never 0",
+   "stepped": true,
+   "colours": [
+    "#b4d0be",
+    "#00623b"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.25,
+     "label": "0"
+    },
+    {
+     "at": 0.75,
+     "label": "1"
+    }
+   ],
+   "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
+   "source_url": "https://platform-docs.opentargets.org/target#target-annotation-data-sources",
+   "tooltip": ""
+  },
+  {
+   "n": 11,
+   "key": "literature",
+   "label": "Literature volume",
+   "short_label": "Literature count",
+   "column_label": "Literature volume",
+   "units": "PubTator3 records",
+   "transform": "the adapter stores log10(1 + records); ticks are records. Range moves with the submitted set",
+   "stepped": false,
+   "colours": [
+    "#e5dfcf",
+    "#e1dac8",
+    "#ddd5c0",
+    "#d9d0b9",
+    "#d5cbb1",
+    "#d1c6aa",
+    "#cdc1a2",
+    "#c9bc9b",
+    "#c5b893",
+    "#c1b38c",
+    "#bdae85",
+    "#b9a97d",
+    "#b5a476",
+    "#b19f6e",
+    "#ae9a67",
+    "#aa965f",
+    "#a69158",
+    "#a28c50",
+    "#9e8748",
+    "#9b8340",
+    "#977e37",
+    "#93792e",
+    "#8f7524",
+    "#8c7018",
+    "#886b05",
+    "#836700",
+    "#7e6300",
+    "#795f00",
+    "#745b00",
+    "#6e5600",
+    "#695200",
+    "#644e00"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.0,
+     "label": "0"
+    },
+    {
+     "at": 1.0,
+     "label": "40,606"
+    }
+   ],
+   "source_text": "PubTator3 \u00b7 ncbi.nlm.nih.gov/research/pubtator3",
+   "source_url": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
+   "tooltip": ""
+  },
+  {
+   "n": 12,
+   "key": "completeness",
+   "label": "k \u2014 external rings with a measurement",
+   "short_label": "k of 9 rings",
+   "column_label": "k \u2014 external rings",
+   "units": "rings with a real value, of 9",
+   "transform": "a completeness gauge: it orders nothing and selects nothing, and is drawn muted to say so",
+   "stepped": true,
+   "colours": [
+    "#b7cece",
+    "#a8c1c1",
+    "#99b3b4",
+    "#8ba6a7",
+    "#7d999a",
+    "#6e8c8d",
+    "#608081",
+    "#537475",
+    "#456768",
+    "#385b5c"
+   ],
+   "categories": [],
+   "ticks": [
+    {
+     "at": 0.05,
+     "label": "0"
+    },
+    {
+     "at": 0.15,
+     "label": "1"
+    },
+    {
+     "at": 0.25,
+     "label": "2"
+    },
+    {
+     "at": 0.35,
+     "label": "3"
+    },
+    {
+     "at": 0.45,
+     "label": "4"
+    },
+    {
+     "at": 0.55,
+     "label": "5"
+    },
+    {
+     "at": 0.65,
+     "label": "6"
+    },
+    {
+     "at": 0.75,
+     "label": "7"
+    },
+    {
+     "at": 0.85,
+     "label": "8"
+    },
+    {
+     "at": 0.95,
+     "label": "9"
+    }
+   ],
+   "source_text": "derived",
+   "source_url": "",
+   "tooltip": ""
+  }
+ ]
+}

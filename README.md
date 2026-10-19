@@ -16,6 +16,27 @@ took the top 60 genes by adjusted p, and drew the 12 selected. The centre
 states the contrast, the sign convention and the selection rule. Each ring
 has its own scale, in the column on the right.*
 
+## Try it
+
+**[The tool, on one worked example →](https://hotsoupisgood.github.io/TargetRing/)**
+
+That page is the app itself, opened in the Crohn's run above: the circle is
+clickable, every gene opens its drawer with its verdict and its evidence
+summary, and the drop ledger and the invariant results are that run's own. It
+serves finished artefacts and nothing else — it makes no request and no model
+call, and the controls that would start an analysis answer with the refusal
+that says so.
+
+**What the demo run's model spend came to, measured 2026-10-18: $1.35 across
+five separate accounts** — baked evidence summaries $1.00, the contrast chooser
+$0.24, the per-gene phenotype summaries $0.06, the region chooser $0.05, and
+nothing at all on the triage account, which is not built. Those numbers are on
+the demo's **Paid calls** tab and in its `manifest.json`, each carrying the date
+it was measured: model prices change, so an undated total would read as current
+forever. No paid call is on the render path — the figure draws without a key.
+
+**[The flowchart: disease name to GO / NO-GO, step by step →](https://hotsoupisgood.github.io/TargetRing/flow/)**
+
 ## Why it exists
 
 This figure used to be built by hand, for a target-prioritisation meeting,

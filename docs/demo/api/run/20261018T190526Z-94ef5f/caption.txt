@@ -46,6 +46,7 @@ Pipeline: furthest phase counts only drugs indicated for a disease with human ge
 Missing is never imputed. k = external rings with a real measurement for that gene; it is a completeness gauge and orders nothing. Spoke ORDER: the circle starts at 12 o'clock and runs clockwise — spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged). Region affects exactly one ring (regional specificity).
 This figure is internally consistent and auditable. Nothing on it is ranked or scored: it is your gene set, the evidence rings, and a drawer per gene.
 Ensembl id per gene: in the click-drawer and in values.csv, deliberately NOT on the rim at any gene count — a spoke label runs radially and the id needs 155 px where there are 121 between the circle and the scale column. Symbols are ambiguous; the id is what was queried.
+Chromosome per gene: the number after the symbol on the rim, from Open Targets genomicLocation (GRCh38). NO suffix means Open Targets had no chromosome for that gene, or placed it on an unplaced scaffold — never that the gene has none; the drawer header names which. It is a label: it orders nothing, is not a ring and is not counted in k.
 
 Ring names are in the column beside the circle, not inside it. On this render the twelve rings span 134 px of radius — 11 px a ring — against 13 px for one line of legible type, so names at their own radii would overlap each other. The audit render, whose circle is twice as wide, puts them in a gap at 12 o'clock instead.
 

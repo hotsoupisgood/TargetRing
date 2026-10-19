@@ -1,39 +1,6 @@
 {
  "runs": [
   {
-   "run_id": "20261018T190650Z-df1587",
-   "timestamp_utc": "2026-10-18T19:07:21+00:00",
-   "region": "Small_Intestine_Terminal_Ileum",
-   "n_genes": 11,
-   "ordering": "submitted",
-   "any_invariant_failed": false,
-   "contrast": "E-GEOD-101794 g2_g1",
-   "contrast_name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
-   "filtered": false
-  },
-  {
-   "run_id": "20261018T190619Z-e52d65",
-   "timestamp_utc": "2026-10-18T19:06:49+00:00",
-   "region": "Small_Intestine_Terminal_Ileum",
-   "n_genes": 11,
-   "ordering": "alphabetical",
-   "any_invariant_failed": false,
-   "contrast": "E-GEOD-101794 g2_g1",
-   "contrast_name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
-   "filtered": false
-  },
-  {
-   "run_id": "20261018T190549Z-81475c",
-   "timestamp_utc": "2026-10-18T19:06:18+00:00",
-   "region": "Small_Intestine_Terminal_Ileum",
-   "n_genes": 13,
-   "ordering": "submitted",
-   "any_invariant_failed": false,
-   "contrast": "E-GEOD-101794 g2_g1",
-   "contrast_name": "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris classification'",
-   "filtered": false
-  },
-  {
    "run_id": "20261018T190526Z-94ef5f",
    "timestamp_utc": "2026-10-18T19:05:48+00:00",
    "region": "Small_Intestine_Terminal_Ileum",

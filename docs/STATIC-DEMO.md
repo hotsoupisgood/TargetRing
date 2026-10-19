@@ -4,6 +4,63 @@ The read-only Crohn's demo (`docs/DECISION-DEMO-CROHNS-2026-10-18.md`,
 `docs/DEMO-RUN-ALLOWLIST.md`) as a folder of files. No server, no process, no
 port, no API key — because there is nothing running to hold one.
 
+## v4.0, 2026-10-19: it is the tool, on one run
+
+Puck: *"i want the target ring to be interactive too also make it the same as
+the final site will be so just have one example"* and *"its supposed to be a
+tool, explanations will be on my blog post"*.
+
+So the page no longer lands on a list of run cards. It lands **in** the run
+`config.DEMO_FEATURED_RUN` names — the allowlist's flagship — exactly as a
+`?run=<id>` deep link does, and the export writes that one run only
+(`--all-runs` restores the four). Four changes carry it:
+
+- **The circle is interactive.** `figure-web.svg` is *inlined* rather than shown
+  in an `<img>`, so the cells it carries (`id="cell|<ring>|<i>|<gene>"`, the
+  handles `invariants.py` audited) and the spoke labels are elements the page
+  binds clicks to. Each one opens that gene's **baked** drawer — a file read, so
+  it works on a box that refuses every route that fetches.
+- **`/api/run/{id}/scales` answers for a run on disk.** It used to 404 for
+  anything not in process memory, and the cost of that 404 was two bordered
+  boxes with nothing in them beside the figure. It is built from `values.csv`
+  through `table.load`, the same pivot the Table tab reads. `figure_caveats`
+  stays empty on that path on purpose: those clauses are what a particular
+  render said about its own geometry, and the run's `figure.png` carries every
+  one of them in its own footer.
+- **The analyse controls stay visible**, pre-filled from the run's own manifest
+  (disease, contrast, region, gene order — never from a literal in the page).
+  `body.demo` hid them because "a button that leads to a refusal is a worse
+  landing than no button"; `body.tool` puts them back, because the controls are
+  what the tool *is* and their refusal is a sentence the server writes.
+- **One paper colour.** `<html data-theme="light">`, which defeats the
+  `prefers-color-scheme: dark` block through the scope `app.css` already gave
+  it. The figure is drawn by matplotlib on white and no stylesheet recolours it,
+  so under OS-dark the one thing the page exists to show was a white slab in a
+  dark frame with dark-on-dark panels beside it.
+
+Dollars are **dated**, on the page and in the published manifest (Puck: *"just
+date it because the costs all change"*). `spend.manifest_block` writes
+`accounts_measured_utc`; `export_static_demo.date_the_spend` fills it in for a
+manifest written before that field existed, from the run's own timestamp and
+never from today's.
+
+## Embedding it in a blog post
+
+The flowchart (`docs/flow/`, served at `/TargetRing/flow/`) is a standalone page
+built to be dropped into a post:
+
+```html
+<iframe src="https://hotsoupisgood.github.io/TargetRing/flow/"
+        title="targetring: how a disease name becomes a GO / NO-GO verdict"
+        width="100%" height="900" loading="lazy"
+        style="border:1px solid #d9dce1;border-radius:8px"></iframe>
+```
+
+It is self-contained: D3 v7 from a CDN, its numbers read from `flow.json` beside
+it, no cookies, no storage, nothing to configure. The tool itself embeds the
+same way at `https://hotsoupisgood.github.io/TargetRing/`, though it wants more
+height (`1400`) — it is a working surface rather than a diagram.
+
 `docs/` is what GitHub Pages serves from `main`; `docs/index.html` redirects to
 `docs/demo/`, and `docs/.nojekyll` keeps Pages from re-processing the tree.
 
@@ -52,11 +109,13 @@ The shim does three things:
 
 ## What works
 
-- The landing: four run cards with their `figure.png`, the same list
-  `/api/runs` gave.
-- Opening a run (`?run=<id>`): its grid, its drop ledger, its invariants, its
-  "What this is not" caveats, its evidence surface, and its own exported
-  `figure.png` / `figure.svg`.
+- The landing **is** the run (v4.0): the inlined, clickable circle, the gene
+  grid, the drop ledger, the invariant results, the evidence surface and the
+  dated **Paid calls** table, with the disease, contrast, region and gene order
+  that produced it filled into the controls above.
+- Opening another run by `?run=<id>` still works for a box whose
+  `TARGETRING_DEMO_RUNS` lists more than one; the published site lists one, so
+  there is no second run to reach.
 - Every gene the grid makes clickable opens its **baked drawer**: the GO /
   NO-GO / INSUFFICIENT verdict with its three criteria, the `phenotype
   (Claude)` flag and its per-term MGI models, the LLM evidence summary with its
@@ -76,9 +135,10 @@ The shim does three things:
 
 ## Size
 
-16.1 MB, 102 files, 4 runs, 46 baked drawers. Most of it is the five images per
-run (`figure.png`, `figure.svg`, `figure-web.svg`, `legend.png`, `legend.svg`
-≈ 3.2 MB each).
+4.6 MB, 34 files, 1 run, 11 baked drawers (v4.0; it was 16.1 MB and 102 files
+across four runs). Most of it is still the five images for the run
+(`figure.png`, `figure.svg`, `figure-web.svg`, `legend.png`, `legend.svg`
+≈ 3.2 MB together).
 
 ## What is published, that somebody should look at before it is
 

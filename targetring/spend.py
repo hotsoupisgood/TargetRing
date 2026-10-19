@@ -459,6 +459,16 @@ class SpendLedger:
         return {
             "accounts": {a: s.as_dict() for a, s in self.states().items()},
             "lines": [s.line for s in self.states().values()],
+            # v4.0, Puck 2026-10-19: "just date it because the costs all
+            # change". A dollar total folded out of an append-only ledger is a
+            # MEASUREMENT, and a measurement with no date -- rendered beside a
+            # price table that has one -- reads as current forever.
+            #
+            # This is the instant the fold happened, which is NOT the run's
+            # timestamp and must not be read off it: the ledger keeps growing
+            # after a run ends, so re-reading an old manifest's block through
+            # this method gives today's balances under yesterday's run id.
+            "accounts_measured_utc": _utc_now(),
             "model": model,
             "prompt_hash": prompt_hash,
             "price_table": {m: dict(row) for m, row

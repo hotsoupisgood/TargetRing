@@ -2,6 +2,17 @@
 
 let RUN = null;
 
+// v4.0. The one run a tool-mode demo opens in (`/api/health.featured_run`).
+//
+// It is NOT assigned to `RUN`, and the distinction is load-bearing. `RUN` means
+// "this session drew this figure and the server still holds its cells": it is
+// what `redrawForThisWindow` POSTs `/web-figure` for on every resize, what
+// `showTab` reloads the grid from, and what the live `/gene/` drawer is fetched
+// against. None of that is true of a run read off disk — two of those three
+// routes are refused outright on a demo box — so a disk run gets its own name
+// and the code that needs a live run keeps asking for one.
+let TOOL_RUN = "";
+
 // v3.5. The window the last figure was drawn for, as [panel px, viewport px], so
 // a resize that changes nothing costs nothing.
 let DREW_FOR = null;
@@ -83,8 +94,35 @@ async function init() {
       // reader's machine, and on a demo box it is somebody else's. Say what
       // this box actually is.
       const note = $("#local-note");
-      if (note) note.textContent =
-        "Read-only demo — finished runs, served as files; nothing is computed here.";
+      if (note) note.textContent = h.featured_run
+        // v4.0. In tool mode this is one clause, not a blurb: "no 'read-only
+        // demo' prose; the page is the tool". It still has to SAY that nothing
+        // runs here, because the masthead's other sentence ("nothing leaves
+        // this machine") is a claim about the reader's machine and on this box
+        // it is somebody else's — but the explanation of what a demo is belongs
+        // in Puck's blog post, not above his figure.
+        ? "Served from one finished run's files; nothing is computed here."
+        : "Read-only demo — finished runs, served as files; nothing is computed here.";
+      // v4.0, Puck 2026-10-19: "i want the target ring to be interactive too
+      // also make it the same as the final site will be so just have one
+      // example" and "its supposed to be a tool, explanations will be on my
+      // blog post".
+      //
+      // So a demo box that names ONE run opens IN it. `body.tool` is what the
+      // CSS hangs the difference on: no card index to choose from, no
+      // "read-only demo" paragraph above the work, and the analyse controls
+      // left VISIBLE rather than hidden — they are what the tool is, and the
+      // server already answers each of them with `DEMO_REFUSAL` in words
+      // (`app._demo_gate`, `tests/test_demo.py`). A refusal a reader can read
+      // is a truer description of this box than a control that is not there.
+      //
+      // `featured_run` is the server's, not this page's: a page that picked
+      // its own run could open one the gate would then refuse.
+      if (h.featured_run) {
+        document.body.classList.add("tool");
+        TOOL_RUN = h.featured_run;
+        relabelToolTabs();
+      }
       const r = await fetch("/api/runs").then((x) => x.json());
       $("#demo-runs").innerHTML = (r.runs || []).map((x) => {
         const src = x.contrast
@@ -166,7 +204,11 @@ async function init() {
     $("#table").focus();
   };
 
-  const wanted = new URLSearchParams(location.search).get("run");
+  // v4.0. In tool mode the featured run IS the landing, so a demo with no
+  // `?run=` opens the same page a deep link does rather than a list of cards.
+  // The query parameter still wins: a reader who asked for a particular run
+  // gets that one.
+  const wanted = new URLSearchParams(location.search).get("run") || TOOL_RUN;
   if (wanted) {
     // A deep link lands on a result, so it was never a landing.
     leaveLanding();
@@ -185,13 +227,24 @@ async function init() {
        Its rendered figure is
        <a href="/api/run/${esc(wanted)}/figure.svg" target="_blank" rel="noopener">
        figure.svg</a>.</p>`;
-    showDiskRunFigure(wanted);
-    showTab("table");
     picker.value = wanted;
     // The evidence pane's picker too, so switching to that tab opens the run
     // the reader deep-linked rather than asking for one again.
     $("#evidence-run").value = wanted;
     loadTable(wanted);
+    // v4.0, Puck: "i want the target ring to be interactive too". The run's own
+    // `figure-web.svg` is INLINED rather than shown as an `<img>`, which is the
+    // whole of the interactivity: the cells in that file carry
+    // `id="cell|<ring>|<i>|<gene>"` — the same handles the invariant checks
+    // used — so `wireFigure` can make every cell and every spoke label open
+    // that gene's baked drawer. A PNG cannot be clicked, and the sentence above
+    // was all a disk-loaded run used to get.
+    //
+    // Nothing is redrawn and nothing is fetched from a source: the SVG on disk
+    // is the one this run drew, and the drawer is the baked file beside it.
+    showToolFigure(wanted).then(() => showTab("figure"),
+                                () => showTab("table"));
+    if (TOOL_RUN === wanted) showToolInputs(wanted);
   }
 
   // v3.5. The figure is sized for the window it is read in, so the window
@@ -388,6 +441,195 @@ async function showDiskRunFigure(runId) {
     loading="lazy"><span class="hint">This run's own exported figure.png, read
     from disk; the interactive circle is drawn only in the session that ran it.</span>`;
   $("#figure").appendChild(slot);
+}
+
+// v4.0. The one tab whose name stops being true in tool mode. `renderCaveats`
+// draws only the dated spend table there, so the tab says so.
+//
+// Relabelled in JS rather than in `index.html` because the local app keeps the
+// pane it has: the prose in it is this build's own statement of what it does not
+// claim (AGENTS.md, "What is not claimed"), and the name is asserted on the
+// figure's own footer by `figure.caveats_for_the_page` ("every caveat this run
+// carries is in the What this is not tab"), which the local render still draws.
+function relabelToolTabs() {
+  const t = document.querySelector('.tab[data-tab="caveats"]');
+  if (t) t.textContent = "Paid calls";
+}
+
+// v4.0. A run read off DISK, drawn as the live circle it was, and clickable.
+// Puck, 2026-10-19: "i want the target ring to be interactive too".
+//
+// Three facts make this possible without re-running or re-rendering anything:
+//
+// 1. `figure-web.svg` is already on disk beside the run, and its cells carry
+//    `id="cell|<ring>|<index>|<gene>"` — the same handles `invariants.py`
+//    audited. Inlined as SVG rather than shown in an `<img>`, every one of them
+//    is an element this page can bind a click to. That is the whole mechanism:
+//    no canvas, no re-layout, no second renderer.
+// 2. the drawer each click opens is the BAKED file (`/api/run/{id}/drawer/
+//    {gene}`), a file read, which is why this works on a box that refuses every
+//    route that fetches.
+// 3. `/api/run/{id}/scales` answers from `values.csv` since v4.0, so the decode
+//    panel beside the circle — the four cell states and the ring scales — is
+//    the same data the Table tab pivots.
+//
+// It returns a promise that REJECTS when the run exported no web SVG, so the
+// caller can fall back to the grid instead of leaving an empty figure pane.
+// `RUN` is deliberately not set; see its declaration.
+async function showToolFigure(runId) {
+  const url = `/api/run/${encodeURIComponent(runId)}/figure-web.svg`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${runId} exported no figure-web.svg`);
+  const svg = await res.text();
+  $("#figure").innerHTML = svg;
+  // The genes this circle actually drew, read off the spoke labels in the file
+  // rather than taken from a payload: `wireFigure` is deciding which text
+  // elements are gene labels, and the SVG in front of it is the only thing that
+  // knows what it drew. A gene in the manifest that the render dropped must not
+  // become a clickable label here.
+  wireFigure(spokeGenesInSvg());
+  // The decode panel, so the two boxes beside the circle are not empty. Puck's
+  // phone screenshot, 2026-10-19: "an empty white rounded box and an empty dark
+  // box above The 12 ring scales" — they were the cell-state box and the wedge
+  // note (named by id in exactly one place each, which a test counts),
+  // populated only by `renderDecode`, which only the live path ever called.
+  try {
+    const s = await fetch(`/api/run/${encodeURIComponent(runId)}/scales`)
+      .then((x) => (x.ok ? x.json() : null));
+    if (s) renderDecode(s);
+  } catch (e) { /* the panel keeps whatever it had; the figure is the point */ }
+  hideEmptyDecodeBoxes();
+  // The sentence that says what to do with the circle now that it is one.
+  // Set here rather than in `loadTable` because this function is the only thing
+  // that knows the inline succeeded — and because the sentence it replaces
+  // ("No figure is drawn in this session") was false on this surface.
+  const hint = $("#figure-click-hint");
+  const cells = $("#figure").querySelectorAll('[id^="cell|"]').length;
+  if (hint && cells) {
+    hint.classList.remove("unavailable");
+    hint.textContent = "Click a gene label or any of its cells to open the "
+      + "drawer — the verdict, the summary and the phenotype models, read from "
+      + "this run's own files.";
+  }
+}
+
+// v4.0. The controls, filled in with what this run was actually asked.
+//
+// The brief: "Disease field pre-filled with Crohn's disease, chosen contrast
+// shown". The point is not decoration — it is that the figure below did not
+// appear from nowhere. A reader seeing the disease, the contrast, the region and
+// the gene order that produced the circle can tell what the tool takes as input,
+// which is the one thing a static page otherwise cannot show.
+//
+// Every value comes from the RUN'S OWN MANIFEST, never from a constant here.
+// Hard-coding "Crohn's disease" in the page would be a label that stops being
+// true the first time `DEMO_FEATURED_RUN` points at another disease — a
+// plausible wrong figure made out of HTML.
+//
+// The controls stay live. Typing in the box, or pressing Draw the figure, goes
+// to the server and comes back as `DEMO_REFUSAL` in the page's own error
+// surface; that refusal is what this box is, said by the thing that enforces it.
+async function showToolInputs(runId) {
+  let m;
+  try {
+    m = await fetch(`/api/run/${encodeURIComponent(runId)}/manifest.json`)
+      .then((x) => (x.ok ? x.json() : null));
+  } catch (e) { return; }
+  if (!m) return;
+  const c = m.contrast;
+  const box = $("#disease");
+  // The disease as the run recorded it, in the order the manifest is most
+  // specific. `contrast.name` is built by `ContrastRef` as `'<test>' vs
+  // '<reference>' in '<factor>'`, so the clause before `' vs '` is the test
+  // group's own disease name -- where `test_label` is the Atlas group label and
+  // carries the classification clause with it ("A1a Paris classification;
+  // Crohn's disease").
+  //
+  // Split on the SEPARATOR, not on the quotes. A `/'([^']+)'/` match reads
+  // "Crohn" out of "'Crohn's disease' vs ..." because the apostrophe in the
+  // disease's own name closes the group — and a disease field that says "Crohn"
+  // is a wrong label on a correct figure, which is the class of defect this
+  // build exists to refuse. Found by the UI audit, 2026-10-19.
+  //
+  // Parsed from the manifest rather than written here: a literal would stop
+  // being true the first time `DEMO_FEATURED_RUN` names another disease.
+  const name = (c && c.name) || "";
+  const head = name.includes("' vs '") ? name.slice(0, name.indexOf("' vs '")) : "";
+  const disease = m.disease_label || m.disease
+    || head.replace(/^'/, "") || (c ? c.test_label : "");
+  if (box && disease) box.value = disease;
+  if (c) {
+    $("#disease-chosen").hidden = false;
+    $("#disease-chosen").innerHTML =
+      `<div class="note"><b>${esc(c.name || "")}</b><br>
+        Expression Atlas <code>${esc(c.accession || "")}</code>
+        contrast <code>${esc(c.contrast_id || "")}</code> ·
+        n=${esc(c.n_test ?? "")} vs ${esc(c.n_ref ?? "")} ·
+        ${esc(c.platform || "")} · ${esc(c.pipeline || "")} ·
+        Ensembl ${esc(c.ensembl_release || "")}
+        <br><span class="hint">${esc(c.sign_sentence || "")}</span></div>`;
+  }
+  // The region select shows the tissue the ring was actually read against, and
+  // `#region-inferred` the chooser's sentence if that is how it was decided --
+  // the same note the live path draws, for the same reason: a reader who did not
+  // pick the tissue will not notice it was picked unless it is said.
+  const region = m.region || "";
+  const sel = $("#region");
+  if (sel && region) {
+    if (![...sel.options].some((o) => o.value === region || o.text === region)) {
+      sel.add(new Option(region, region));
+    }
+    sel.value = region;
+  }
+  const inferred = (m.run_conditions || [])
+    .map((x) => x.condition || "")
+    .filter((s) => s.toLowerCase().includes("inferred from the disease"));
+  if (inferred.length) {
+    $("#region-inferred").hidden = false;
+    $("#region-inferred").textContent = inferred.join(" ");
+  }
+  // And the gene order, which is rule 7's "decided, stated on the figure and
+  // checked in the artefact" -- so the control says the same thing the figure's
+  // own footer does.
+  const ord = $("#ordering");
+  if (ord && m.ordering) {
+    const hit = [...ord.options].find((o) => o.value === m.ordering);
+    if (hit) ord.value = m.ordering;
+  }
+}
+
+// Every gene symbol this SVG drew a spoke label for. The same pattern
+// `wireFigure` matches with, applied once so the two cannot disagree about what
+// a label looks like — the chromosome suffix (v4.0, `NOD2 · 16`) sits between
+// the symbol and the `(k=` that anchors it, and this is the regex that has to
+// know that.
+function spokeGenesInSvg() {
+  const out = [];
+  $("#figure").querySelectorAll("text").forEach((t) => {
+    const m = (t.textContent || "").match(SPOKE_LABEL_RE);
+    if (m) out.push(m[1]);
+  });
+  return out;
+}
+
+// A box with a border and nothing in it reads as a broken panel, and two of
+// them were the finding in Puck's screenshot. The rule is one line: if it has no
+// text, it is not drawn.
+//
+// The wedge note is deliberately NOT in this list, and is deliberately not
+// named here either. It has exactly one producer — `drawFigureCaveats`, which
+// hides it when the render gave it no `where` clause — and
+// `test_it_is_drawn_once_and_the_strip_below_no_longer_has_it` enforces that by
+// counting the places in this file that name its id at all, for the reason
+// round 2's A6 exists. Its empty case is handled in CSS instead, by `:empty`,
+// which adds no second producer and no second mention.
+function hideEmptyDecodeBoxes() {
+  ["#cell-states", "#figure-caveats", "#scales"].forEach((sel) => {
+    const el = $(sel);
+    if (!el) return;
+    const inner = sel === "#scales" ? $("#scale-rows") : el;
+    el.hidden = !(inner && inner.textContent.trim());
+  });
 }
 
 // The region the app falls back to, captured at init so a disease with no
@@ -1641,7 +1883,18 @@ function drawFigureCaveats(clauses) {
   }
 }
 
-function wireFigure() {
+// A drawn spoke label, as a pattern: the ⚠ marker, the symbol, v4.0's optional
+// ` · <chromosome>` suffix, then the `(k=` that makes it a spoke label and not
+// some other text in the file. The chromosome group is non-capturing — this
+// regex exists to name the GENE, and `figure._chromosome_suffix` is the only
+// thing that decides what the suffix looks like.
+const SPOKE_LABEL_RE = /^[⚠\s]*([A-Za-z0-9._-]+)(?:\s*·\s*[A-Za-z0-9._-]+)?\s*\(k=/;
+
+// `genes`: the gene symbols a label may name. Defaults to the live run's order,
+// which is every caller but the disk path — where there is no `RUN` and the
+// list comes from the SVG itself (`showToolFigure`).
+function wireFigure(genes) {
+  const known = genes || (RUN ? RUN.gene_order : []);
   // Cells carry id="cell|<ring>|<index>|<gene>" — the same handle the invariant
   // checks use, so what is clickable is exactly what was audited.
   $("#figure").querySelectorAll('[id^="cell|"]').forEach((el) => {
@@ -1650,9 +1903,9 @@ function wireFigure() {
     el.addEventListener("click", () => openDrawer(gene));
   });
   $("#figure").querySelectorAll("text").forEach((t) => {
-    const m = (t.textContent || "").match(/^[⚠\s]*([A-Za-z0-9._-]+)\s*\(k=/);
+    const m = (t.textContent || "").match(SPOKE_LABEL_RE);
     if (!m) return;
-    if (!RUN.gene_order.includes(m[1])) return;
+    if (!known.includes(m[1])) return;
     t.style.cursor = "pointer";
     t.addEventListener("click", () => openDrawer(m[1]));
   });
@@ -1709,6 +1962,21 @@ function renderInvariants(b) {
 }
 
 function renderCaveats(b) {
+  // v4.0. In tool mode this pane is the SPEND pane and nothing else. Puck,
+  // 2026-10-19: "its supposed to be a tool, explanations will be on my blog
+  // post" — and, separately, that the spend accounts stay visible and dated.
+  // So the prose about what the figure is not goes (the blog post is where it
+  // belongs, and every caveat that is about THIS run is already on the figure's
+  // own footer, in `#figure-caveats` and in the Invariants tab), and the one
+  // thing in here that is a measurement rather than an explanation stays.
+  //
+  // The tab is relabelled to match, in `relabelToolTabs`: a tab called "What
+  // this is not" over a spend table is a worse label than no label.
+  if (document.body.classList.contains("tool")) {
+    $("#caveats").innerHTML = llmAccountsHtml(b.llm) ||
+      `<p class="hint">This run's manifest records no spend accounts.</p>`;
+    return;
+  }
   $("#caveats").innerHTML =
     `<div class="note warn"><b>This figure is internally consistent and auditable.
      Nothing on it is ranked or scored.</b> It is your gene set, the evidence rings,
@@ -1937,8 +2205,20 @@ function llmAccountsHtml(llm) {
   // 2026-10-09. A hardcoded count beside a rendered list is a caption that
   // goes stale the moment the list grows.
   const nAcc = Object.keys(llm.accounts || {}).length;
+  // v4.0, Puck 2026-10-19: "just date it because the costs all change". The
+  // date goes in the HEADING, beside the word "spent", rather than in the
+  // paragraph of small print below — a reader who reads one line of this box
+  // reads the heading, and an undated dollar figure is the thing being fixed.
+  // `accounts_measured_utc` is written by `spend.manifest_block`; a manifest
+  // from before v4.0 has no such key and the heading simply carries no date
+  // rather than inventing one from the run's timestamp.
+  const when = (llm.accounts_measured_utc || "").slice(0, 10);
   return `<h4>Paid calls — ${nAcc} cap${nAcc === 1 ? "" : "s"}, ${nAcc} counter${
-    nAcc === 1 ? "" : "s"}</h4>
+    nAcc === 1 ? "" : "s"}${when ? `, measured ${esc(when)}` : ""}</h4>
+    ${when ? `<p class="hint">Every dollar below is the total spent up to
+      <b>${esc(when)}</b>, folded from the ledger on that date. Model prices
+      change and this build's are a pinned constant, so read these as a record
+      of what this project cost by then, not as a current price list.</p>` : ""}
     <table><thead><tr><th>account</th><th>spent</th><th>calls</th>
       <th>what it pays for</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="hint">No account borrows from another and all are separate
@@ -2008,7 +2288,12 @@ async function openDrawer(gene) {
   // run, and the drawer says so on its face (`d.baked`). Which one is never
   // guessed from the page's state alone: `renderTable` only makes a label
   // clickable when the payload named it (`in_memory` or `baked_drawers`).
-  const runId = RUN ? RUN.run_id : TABLE.run_id;
+  // v4.0: `TOOL_RUN` is the last fallback, for the one window where the grid's
+  // own fetch has not landed yet. In tool mode the circle is clickable as soon
+  // as its SVG is inlined, and `loadTable` — which is what sets `TABLE.run_id`
+  // — is a separate request in flight beside it. Without this, a click in that
+  // window asked `/api/run/undefined/drawer/MUC1`.
+  const runId = RUN ? RUN.run_id : (TABLE.run_id || TOOL_RUN);
   const route = RUN ? "gene" : "drawer";
   const r = await fetch(`/api/run/${encodeURIComponent(runId)}/${route}/${encodeURIComponent(gene)}`);
   const d = await r.json().catch(() => ({}));
@@ -2272,6 +2557,28 @@ function wireSummaryHighlight(d) {
   });
 }
 
+// v4.0. The chromosome, first in the drawer's identifier line, spelled out as
+// "chr 16" because there is room here and the rim only has room for the number.
+// The three non-value states say so IN WORDS rather than going blank the way
+// the rim does: the drawer is where a reader comes to find out why a suffix was
+// missing, so this is the surface that has to name the state. `detail` carries
+// the adapter's own sentence and is the hover.
+const CHROMOSOME_MISSING = {
+  no_data: "no chromosome on record",
+  not_applicable: "not on a numbered chromosome",
+  failed: "chromosome lookup FAILED",
+};
+
+function chromosomeHint(c) {
+  if (!c) return "";                       // a drawer baked before v4.0
+  const title = c.detail ? ` title="${esc(c.detail)}"` : "";
+  if (c.state === "value" && c.text) {
+    return `<span class="chr"${title}>chr ${esc(c.text)}</span>`;
+  }
+  const said = CHROMOSOME_MISSING[c.state] || "chromosome unknown";
+  return `<span class="chr chr-missing"${title}>${esc(said)}</span>`;
+}
+
 function drawerHtml(d) {
   const drugs = d.drugs || [];
   const lit = d.literature || {};
@@ -2280,7 +2587,8 @@ function drawerHtml(d) {
   // on the render path. `null` means not fetched yet, never "nothing there".
 
   let h = `<h3>${esc(d.gene)}</h3>
-    <p class="hint">${d.ensembl_id ? "Ensembl " + esc(d.ensembl_id) : ""}${d.uniprot
+    <p class="hint">${chromosomeHint(d.chromosome)}${d.ensembl_id
+      ? (d.chromosome ? " · " : "") + "Ensembl " + esc(d.ensembl_id) : ""}${d.uniprot
       ? " · UniProt " + esc(d.uniprot) : ""}${d.gencode_id
       ? " · GTEx " + esc(d.gencode_id) : ""}</p>`;
 
@@ -2641,12 +2949,43 @@ let TABLE = { run_id: null, sort: [], dim: [], data: null };
 
 // `#e8e8e8` and `#385b5c` both come back as cell fills, so the label on top of a
 // swatch has to pick its own side. Rec. 601 luma, the usual mid-point.
+// v4.0. WCAG relative luminance, and the ink that actually wins against this
+// fill — not a perceived-brightness approximation with a hand-picked cut.
+//
+// The cell's background is not negotiable: it is the colour `values.csv`
+// recorded, which is the colour the arc was painted, and the table is not
+// choosing a palette (see `.grid td.st-value` in app.css). So the only thing
+// that can move is the ink, and it has to move by the right measure.
+//
+// The old version used 0.299/0.587/0.114 over a 0.6 threshold, which is neither
+// of WCAG's two formulas. The UI audit measured what that shipped: white on
+// rgb(117,146,230) at 3.00:1, on rgb(143,155,100) at 2.98:1, on rgb(186,132,165)
+// at 3.03:1 — six value cells under AA's 4.5:1 at 12.5 px, every one of which
+// black clears comfortably (7.0:1, 7.0:1, 5.1:1). The threshold was wrong, not
+// the idea.
+//
+// Both candidates are computed and the better one is returned, so a mid-tone
+// fill where neither reaches 4.5:1 still gets the most legible of the two rather
+// than whichever side of a constant it fell on.
+function wcagLuminance(r, g, b) {
+  const f = (c) => {
+    c /= 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
 function inkOn(hex) {
   const m = /^#([0-9a-f]{6})$/i.exec(String(hex || ""));
   if (!m) return "var(--ink)";
   const n = parseInt(m[1], 16);
-  const l = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return l > 0.6 ? "#16181d" : "#ffffff";
+  const bg = wcagLuminance((n >> 16) & 255, (n >> 8) & 255, n & 255);
+  // #16181d is `--tr-ink`; its luminance is computed rather than written down so
+  // the two cannot drift apart.
+  const inkL = wcagLuminance(0x16, 0x18, 0x1d);
+  const withDark = (Math.max(bg, inkL) + 0.05) / (Math.min(bg, inkL) + 0.05);
+  const withWhite = (1.0 + 0.05) / (bg + 0.05);
+  return withDark >= withWhite ? "#16181d" : "#ffffff";
 }
 
 // Four significant figures, trailing zeros dropped: `2.81`, `5`, `0.02312`. The
@@ -2719,17 +3058,70 @@ async function loadTable(runId) {
     // payload carries `not_attempted`, `ordering_note` and `llm` from the
     // run's own manifest for exactly this.
     renderCaveats(d);
-    // The figure pane's "click a gene" sentence is about a figure this session
-    // did not draw. Say what IS clickable, greyed, instead of an instruction
-    // that nothing on the page honours.
+    // v4.0: and its downloads. `render()` is what normally fills the three
+    // download menus, and it never runs on this path — so every item in them
+    // had `href=null` and the "every download" the demo claims was ten dead
+    // links (UI audit, 2026-10-19). The URLs are the artefact routes for THIS
+    // run id, which is the same shape `view.py` builds them in.
+    diskRunDownloads(d.run_id, d.artefacts);
+    // The figure pane's "click a gene" sentence. v4.0 inlines the run's own
+    // `figure-web.svg`, so on the tool path the circle IS clickable and the old
+    // sentence ("No figure is drawn in this session") was false on the one
+    // surface that matters most. `showToolFigure` is what knows whether the
+    // inline succeeded, so it sets this; here we only handle the case where it
+    // did not run or had nothing to draw.
     const hint = $("#figure-click-hint");
-    if (hint) {
+    if (hint && !$("#figure").querySelector('[id^="cell|"]')) {
       hint.classList.add("unavailable");
       hint.textContent = (d.baked_drawers || []).length
         ? "No figure is drawn in this session. Open a gene from the Table tab — its drawer is read from disk."
         : "No figure is drawn in this session, and the per-gene drawer needs the run in memory, so nothing here opens one.";
     }
   }
+}
+
+// v4.0. The three download menus, for a run read off disk.
+//
+// `render()` fills them from the analyse response's own `*_url` fields and never
+// runs on this path, so every item in them carried `href=null`: ten links that
+// looked like links and did nothing, on a page whose list of what works says
+// "every download". Found by the UI audit, 2026-10-19.
+//
+// Which files exist is read from the payload's own `artefacts` list
+// (`table.artefacts_on_disk`), not probed from here: ten HEAD requests to find
+// out put two 404s in the console of a page whose claim is that it fetches
+// nothing. An item whose file the run never wrote is REMOVED rather than left
+// pointing at a 404 — the slide pair is an optional export, and a menu item
+// that 404s is the dead link this function exists to fix, one step on.
+function diskRunDownloads(runId, artefacts) {
+  if (!runId) return;
+  const base = `/api/run/${encodeURIComponent(runId)}`;
+  const files = {
+    "dl-png": "figure.png", "dl-svg": "figure.svg",
+    "dl-slide": "figure-slide.svg", "dl-slide-png": "figure-slide.png",
+    "dl-caption": "caption.txt",
+    "dl-legend-png": "legend.png", "dl-legend": "legend.svg",
+    "dl-csv": "values.csv", "dl-ledger": "ledger.csv",
+    "dl-manifest": "manifest.json",
+  };
+  // No list at all (a payload from before v4.0) is not a reason to delete the
+  // whole menu: the hrefs are set and whatever is missing 404s on click, which
+  // is what it did before this function existed.
+  const have = artefacts === undefined || artefacts === null
+    ? null : new Set(artefacts);
+  for (const [id, name] of Object.entries(files)) {
+    const el = $("#" + id);
+    if (!el) continue;
+    if (have && !have.has(name)) { el.remove(); continue; }
+    el.href = `${base}/${name}`;
+  }
+  // A menu left with nothing in it is an empty box, which is the other half of
+  // this audit. The whole `<details>` goes.
+  document.querySelectorAll("#pane-figure details.dl").forEach((d) => {
+    if (!d.querySelector(".dl-menu a")) d.remove();
+  });
+  const run = $("#dl-run");
+  if (run) run.textContent = `All downloads are run ${runId}.`;
 }
 
 function renderTable(d) {

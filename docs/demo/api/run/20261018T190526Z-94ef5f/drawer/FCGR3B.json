@@ -593,5 +593,10 @@
     }
    ]
   }
- ]
+ ],
+ "chromosome": {
+  "state": "value",
+  "text": "1",
+  "detail": "chromosome 1 \u2014 Open Targets genomicLocation.chromosome for ENSG00000162747 (GRCh38)"
+ }
 }

@@ -32,7 +32,22 @@ DEMO_RUNS: tuple[str, ...] = tuple(
         "20261018T190619Z-e52d65,20261018T190650Z-df1587",
     ).split(",") if s.strip())
 
-USER_AGENT = "targetring/1.0 (local research prototype; contact: repo owner)"
+#: v4.0. The ONE run a published demo lands on. Puck, 2026-10-19: "just have
+#: one example" and "its supposed to be a tool, explanations will be on my blog
+#: post". The flagship of `docs/DEMO-RUN-ALLOWLIST.md` -- the run whose region
+#: was inferred from the disease by the cached chooser answer and stamped on the
+#: figure, which is the one that shows the most of what the tool does.
+#:
+#: A separate name from `DEMO_RUNS`, not a slice of it, because the two answer
+#: different questions. `DEMO_RUNS` is the GATE: which run ids a demo box will
+#: answer for at all, enforced in `app._demo_gate` and enumerated by
+#: `tests/test_demo.py`. This is the LANDING: which one the page opens. A box
+#: may be allowed four and still open on one; the static export sets both to
+#: this single id, so the published site has no second run to reach.
+DEMO_FEATURED_RUN = os.environ.get(
+    "TARGETRING_DEMO_FEATURED_RUN", DEMO_RUNS[0] if DEMO_RUNS else "")
+
+USER_AGENT ="targetring/1.0 (local research prototype; contact: repo owner)"
 
 # --- endpoints, all verified live 2026-09-23/24 -----------------------------
 OPENTARGETS_URL = "https://api.platform.opentargets.org/api/v4/graphql"

@@ -101,6 +101,14 @@
     var ev = /^\/api\/run\/([^/]+)\/evidence$/.exec(path);
     if (ev) return "api/run/" + ev[1] + "/evidence.json";
 
+    // v4.0. The ring scales and the four cell states, for the decode panel
+    // beside the circle. The route answers from `values.csv` since v4.0, so a
+    // run read off disk has them — which is why they are exported now, and why
+    // the published page no longer shows two empty bordered boxes where the
+    // cell states and the scales belong (UI audit, 2026-10-19).
+    var sc = /^\/api\/run\/([^/]+)\/scales$/.exec(path);
+    if (sc) return "api/run/" + sc[1] + "/scales.json";
+
     // The flat payloads.
     if (/^\/api\/(runs|regions|orderings|example|health)$/.test(path)) {
       return "api" + path.slice(4) + ".json";

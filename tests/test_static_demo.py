@@ -16,6 +16,8 @@ from pathlib import Path
 
 import pytest
 
+from targetring import config
+
 REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 DEMO = DOCS / "demo"
@@ -24,9 +26,11 @@ pytestmark = pytest.mark.skipif(
     not (DEMO / "index.html").exists(),
     reason="docs/demo not exported; run scripts/export_static_demo.py")
 
-# The four Crohn's runs, `docs/DEMO-RUN-ALLOWLIST.md`.
-RUN_IDS = ("20261018T190526Z-94ef5f", "20261018T190549Z-81475c",
-           "20261018T190619Z-e52d65", "20261018T190650Z-df1587")
+# v4.0: ONE run, not the four. Puck, 2026-10-19: "just have one example".
+# `docs/DEMO-RUN-ALLOWLIST.md` still documents four on disk -- that doc is about
+# what may be served, and this is about what IS -- and the one exported is the
+# flagship, which is what `config.DEMO_FEATURED_RUN` names.
+RUN_IDS = (config.DEMO_FEATURED_RUN,)
 
 PER_RUN = ("values.json", "evidence.json", "figure.png", "figure.svg",
            "manifest.json", "values.csv", "ledger.csv", "caption.txt",
@@ -38,6 +42,38 @@ def test_the_exported_runs_are_the_allowlist():
               json.loads((DEMO / "api" / "runs.json").read_text())["runs"]]
     assert sorted(listed) == sorted(RUN_IDS)
     assert sorted(p.name for p in (DEMO / "api" / "run").iterdir()) == sorted(RUN_IDS)
+
+
+def test_the_published_site_offers_exactly_one_run():
+    """The honest version of "no run-card list": there is no second run to
+    reach. A page with the card index hidden by CSS over a four-run export would
+    still be four runs one URL apart."""
+    assert len(RUN_IDS) == 1
+    assert len(list((DEMO / "api" / "run").iterdir())) == 1
+
+
+def test_the_figure_the_page_inlines_was_exported():
+    """`showToolFigure` inlines `figure-web.svg` to make the circle clickable.
+    Without that file the tool view falls back to the grid and the page the
+    owner asked for is not there."""
+    assert (DEMO / "api" / "run" / RUN_IDS[0] / "figure-web.svg").exists()
+
+
+def test_every_published_dollar_carries_its_measured_date():
+    """Puck: "just date it because the costs all change". Both surfaces: the
+    manifest a reader downloads AND `values.json`, which is where the spend
+    table the page actually draws comes from."""
+    base = DEMO / "api" / "run" / RUN_IDS[0]
+    for name in ("manifest.json", "values.json"):
+        llm = json.loads((base / name).read_text()).get("llm") or {}
+        if not llm.get("accounts"):
+            continue
+        when = llm.get("accounts_measured_utc") or ""
+        assert when.startswith("20"), f"{name} publishes undated dollars"
+        # The date must be the measurement's, never the export's: re-exporting
+        # tomorrow must not relabel these balances as current.
+        assert when <= json.loads((base / name).read_text())["timestamp_utc"] \
+            or when == json.loads((base / name).read_text())["timestamp_utc"]
 
 
 @pytest.mark.parametrize("run_id", RUN_IDS)

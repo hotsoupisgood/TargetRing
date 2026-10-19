@@ -1557,6 +1557,18 @@
    "url": "/api/run/20261018T190526Z-94ef5f/manifest.json"
   }
  ],
+ "artefacts": [
+  "figure.png",
+  "figure.svg",
+  "figure-slide.svg",
+  "figure-slide.png",
+  "caption.txt",
+  "legend.png",
+  "legend.svg",
+  "values.csv",
+  "ledger.csv",
+  "manifest.json"
+ ],
  "not_attempted": [
   "Measured rate limits under parallel load \u2014 unmeasured for every source. Concurrency is capped at 4 per host and any 429 is a hard run failure (QA \u00a75).",
   "LLM triage gold set \u2014 labelling ~20 abstracts is human work. Triage precision is UNMEASURED (QA S2 item 5).",
@@ -1623,7 +1635,9 @@
   },
   "price_table_cached_utc": "2026-06-24",
   "attempted": false,
-  "note": "no paid call is on the render path; both accounts are folded from the append-only spend ledger, not assumed to be zero"
+  "note": "no paid call is on the render path; both accounts are folded from the append-only spend ledger, not assumed to be zero",
+  "accounts_measured_utc": "2026-10-18T19:05:48+00:00",
+  "accounts_measured_note": "this manifest predates the measured-date field; the totals are the ledger as folded when this run was written, so the run's own timestamp is when they were measured"
  },
  "evidence_note": "Evidence per target, in the order this run drew its spokes. This surface does not rank or score genes. The GO / NO-GO line is the owner's explicit three-part rule, shown for each gene; it never orders or filters the figure.",
  "evidence_empty_note": "No finding is not the same as no problem: a rule whose rings have no measurement is reported as unevaluable, never as clear.",

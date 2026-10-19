@@ -41,7 +41,15 @@
   --tr-ink: #16181d;
   --tr-ink-2: #3f434b;
   --tr-ink-3: #5d636e;
-  --tr-ink-4: #767d89;
+  /* v4.0. Was #767d89, which is 3.94:1 on `--tr-paper` and 3.67:1 on
+     `--tr-surface-sunk` — under AA's 4.5:1 everywhere it was used, and it is
+     used at 12-12.5 px where AA's large-text exemption does not apply.
+     #656b76 is 5.09:1 on paper, 4.75:1 on the sunk surface and 5.36:1 on white,
+     so it clears AA against all three surfaces this build paints, and it is
+     still a step lighter than `--tr-ink-3`. Measured by
+     `scripts/ui_audit.py`, which reads the COMPOSITED colour rather than the
+     declared one — the difference is what let 3.94:1 ship. */
+  --tr-ink-4: #656b76;
   --tr-rule: #e4e5e8;
   --tr-rule-strong: #c7cad1;
 
@@ -370,6 +378,13 @@ main { padding: 20px 26px 60px; }
    column as the circle and would otherwise float away from it. */
 .dl-row { max-width: var(--prose); }
 .hint { color: var(--muted); font-size: 12.5px; margin: 4px 0; }
+
+/* v4.0. The chromosome in the drawer's identifier line. A real chromosome is
+   set in the body ink because it is a fact about the gene; the three non-value
+   states stay muted and italic, so "no chromosome on record" cannot be
+   skim-read as a chromosome called "no". */
+.chr { font-weight: 600; }
+.chr-missing { font-weight: 400; font-style: italic; }
 
 textarea {
   width: 100%; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -838,6 +853,75 @@ ul.tight li { margin: 2px 0; }
   #decode { flex: 1 1 auto; width: 100%; }
 }
 
+/* v4.0 — the phone. Measured at 390 px by `scripts/ui_audit.py`, which reports
+   an element whose right edge is past the viewport: `main` was laying out 551 px
+   of content in a 390 px box, so the whole page scrolled sideways and the tab
+   bar and the download menus hung off the right edge. Three causes, three fixes.
+   Not a cosmetic pass: a page that scrolls horizontally on a phone means a
+   reader dragging the figure left to find the tabs, and the two things that may
+   never be behind a click were off-screen rather than behind anything. */
+@media (max-width: 760px) {
+  main { padding-left: 14px; padding-right: 14px; }
+  /* 1. The tab bar. Six tabs is 446 px of flex row that `display:flex` will not
+     break. The ROW scrolls as a strip instead of pushing the document wide --
+     the tabs stay in one line, which is what makes them readable as a set. */
+  .tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin; }
+  .tab { padding: 8px 10px; white-space: nowrap; flex: 0 0 auto; }
+  /* 2. The three download menus. `min-width: 21rem` is 336 px, absolutely
+     positioned under a summary that can sit 200 px in, so the menu's right edge
+     landed at 551 px. Sized to the viewport and anchored to the row's left. */
+  .dl-menu { min-width: 0; width: calc(100vw - 40px); max-width: 24rem; left: 0; right: auto; }
+  .dl-row { flex-wrap: wrap; }
+  /* 3. A long unbroken token -- a run id, an Ensembl id, a URL in a ledger
+     reason -- wraps rather than widening its parent. */
+  code, #dl-run { overflow-wrap: anywhere; }
+
+  /* 4. The two drop-ledger tables. Measured at 459 px and 534 px in a 390 px
+     viewport: the `reason` column is a sentence, `white-space: nowrap` is not on
+     it, but an unbroken Ensembl id inside one was enough to set the table's
+     minimum width past the screen. These tables are PROSE in a grid -- the
+     reason is the point of the ledger -- so they wrap rather than scroll, which
+     the fourteen-column value grid does instead.
+     Every table in a prose pane gets this, not only the two the audit happened
+     to name first: the invariants table (432 px) and the paid-calls table
+     (403 px) are the same shape of content and failed the same way one pass
+     later. The fourteen-column VALUE grid is deliberately excluded -- it
+     scrolls, inside `.scroll-x`, because its columns are numbers that have to
+     stay aligned with each other. */
+  #ledger table, #table-ledger-body table,
+  #invariants table, #caveats table, #evidence table {
+    table-layout: fixed; width: 100%;
+  }
+  #ledger td, #ledger th, #table-ledger-body td, #table-ledger-body th,
+  #invariants td, #invariants th, #caveats td, #caveats th,
+  #evidence td, #evidence th { overflow-wrap: anywhere; }
+}
+
+/* v4.0 — a number drawn ON a value cell's own colour.
+
+   The fill may not move: it is the colour `values.csv` recorded, which is the
+   colour the arc was painted, and this table is not choosing a palette. So for
+   two of the twelve ring ramps' mid-steps -- measured rgb(145,119,41) and
+   rgb(96,128,129) -- NEITHER black nor white reaches AA's 4.5:1 at 12.5 px
+   (white is 4.31:1 and 4.28:1, black 3.95:1 and 4.02:1). `inkOn` picks the
+   better of the two, and that is as far as an ink choice can get.
+   A halo in the opposite ink is what closes it, and it is the standard solution
+   for type over an arbitrary fill rather than a trick: it raises the local
+   contrast at every glyph edge, where legibility is actually decided. WCAG's
+   formula models a flat background and cannot see it, so `scripts/ui_audit.py`
+   still reports those two cells -- recorded, with this measurement, in
+   `docs/reviews/UI-AUDIT-2026-10-19.md`. The number is also in the cell's
+   `title`, in `values.csv` and on the figure. */
+.grid td.st-value { paint-order: stroke; }
+.grid td.st-value[style*="color:#ffffff"],
+.grid td.st-value[style*="color: #ffffff"] {
+  text-shadow: 0 0 2px rgba(0, 0, 0, .75), 0 1px 0 rgba(0, 0, 0, .55);
+}
+.grid td.st-value[style*="color:#16181d"],
+.grid td.st-value[style*="color: #16181d"] {
+  text-shadow: 0 0 2px rgba(255, 255, 255, .8), 0 1px 0 rgba(255, 255, 255, .6);
+}
+
 /* ---------------------------------------------------------------------------
    v3.6 — the table view.
 
@@ -893,8 +977,11 @@ ul.tight li { margin: 2px 0; }
                  max-width: 118px; white-space: normal; line-height: 1.25; }
 .grid th.sortable { cursor: pointer; }
 .grid th.sortable:hover { background: #e4e9ef; color: var(--ink); }
-.grid th.unsortable { color: #8a909b; }
-.grid .rn { display: inline-block; min-width: 15px; color: #8a909b; font-weight: 400; }
+/* v4.0. Both were #8a909b: 3.05:1 on paper and 2.84:1 on the column head's
+   own #f2f1ee, at 12 px. #5d636e is 5.74:1 / 5.35:1 and still reads as the
+   quiet layer the number and the greyed head are meant to be. */
+.grid th.unsortable { color: #5d636e; }
+.grid .rn { display: inline-block; min-width: 15px; color: #5d636e; font-weight: 400; }
 /* Which key this column is, when there are several. */
 .grid .krank { display: inline-block; margin-left: 4px; background: var(--accent); color: #fff;
                border-radius: 999px; padding: 0 6px; font-size: 12px; font-weight: 600; }
@@ -1093,7 +1180,8 @@ ul.tight li { margin: 2px 0; }
    in a 86-110 px column. The link is in `#table-sources`. */
 .grid thead th .src {
   display: block; font-size: 12px; font-weight: 400; letter-spacing: .02em;
-  color: #6c7280; margin-top: 3px; cursor: inherit; text-decoration: none;
+  /* v4.0: was #6c7280, 4.27:1 on the head's #f2f1ee at 12 px. */
+  color: #565c67; margin-top: 3px; cursor: inherit; text-decoration: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -1548,6 +1636,51 @@ body.demo #demo-panel { display: block !important; }
    does not sit above this run's tabs. 2026-10-18 walkthrough item g. */
 body.viewing-run #demo-panel { display: none !important; }
 .disk-run-figure img { max-width: 100%; display: block; margin: 12px 0 6px; }
+
+/* v4.0 — TOOL MODE. `body.tool` is added when /api/health names a
+   `featured_run`: one worked example, opened in, and the page is the tool.
+   Puck, 2026-10-19: "its supposed to be a tool, explanations will be on my
+   blog post".
+   It is the inverse of the `body.demo` rule three lines above, and the reversal
+   is the point. `body.demo` hides the disease search and the analyse form
+   because "a button that leads to a refusal is a worse landing than no button",
+   which was right for a page whose landing was a list of cards. It is wrong for
+   a page that is the tool: the controls ARE the tool, their refusal is a
+   sentence the server writes (`app.DEMO_REFUSAL`) and the page renders, and a
+   reader who cannot see what the thing would ask for cannot tell what it does.
+   So they come back, and the index of cards goes.
+   What stays hidden is only what is about the demo rather than about the work:
+   the card list and the landing's own lede and paste link. */
+body.tool #demo-panel { display: none !important; }
+body.tool #find-panel, body.tool #input-panel { display: block !important; }
+body.tool #landing-lede, body.tool #landing-paste { display: none !important; }
+/* The analyse form opens closed here. On this surface it is the control
+   surface, not the next thing to fill in — the figure is already drawn and is
+   what the reader came for, and 1,053 px of help text above it is B7's finding
+   restored. The `<details>` summary still says what is behind it. */
+body.tool #controls > .reveal { display: none; }
+body.tool #controls > summary { list-style: none; }
+/* The disease panel's teaching paragraph goes with it. Puck: "its supposed to
+   be a tool, explanations will be on my blog post". Four sentences about what a
+   contrast is and when the index was built are exactly that explanation, and on
+   this page they sit between the masthead and the contrast the run actually
+   used — which is the thing a reader is here to see. The contrast box below it
+   (`#disease-chosen`) states the same facts AS THIS RUN'S, with its n, its
+   pipeline and its sign convention, so nothing true is lost. */
+body.tool #find .reveal > p.hint:first-of-type,
+body.tool #index-note { display: none; }
+/* A box with a border and nothing in it reads as a broken panel. Two of them —
+   `#cell-states` and `#wedge-note` — were the finding in Puck's 2026-10-19
+   phone screenshot; `hideEmptyDecodeBoxes` sets `hidden` on any that came back
+   empty, and this makes `hidden` actually hide elements the base rules give a
+   `display` to. */
+#cell-states[hidden], #wedge-note[hidden], #figure-caveats[hidden], #scales[hidden] { display: none !important; }
+/* The wedge note's own empty case, in CSS rather than in JS: it has exactly one
+   producer (`drawFigureCaveats`) and keeping it that way is what
+   `test_it_is_drawn_once_and_the_strip_below_no_longer_has_it` is counting. A
+   `:empty` rule cannot go stale against that producer because it is not a
+   second one -- it is the absence of content, read directly. */
+#wedge-note:empty, #figure-caveats:empty { display: none; }
 .demo-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
              margin: 10px 0; background: var(--card); }
 .demo-card .row { margin: 6px 0 0; }

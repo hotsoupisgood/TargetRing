@@ -1123,28 +1123,73 @@ async def scales(run_id: str) -> JSONResponse:
     The **export is unchanged**: `figure.svg`, `figure-slide.svg` and
     `legend.svg` all still carry the column, and the tests that hold A5 on those
     renders are untouched.
+
+    v4.0: it answers for a run read off DISK too. It used to 404 for all ~250
+    runs under `runs/` (and so for every run a demo serves), and the cost of
+    that 404 was two empty boxes in the decode panel beside the figure -- the
+    four cell states and the ring scales -- which is what Puck's phone
+    screenshot of 2026-10-19 is a picture of. The disk answer is built from
+    `values.csv` through `table.load`, the same pivot the Table tab reads, so a
+    scale here is decoded from the cells that were actually drawn.
+
+    `figure_caveats` is `[]` on the disk path, deliberately. Those clauses are
+    what a particular render handed over about its own geometry; re-deriving
+    them for a figure drawn last week would be a second implementation of a
+    sentence about angles this process did not draw (COUNCIL V5). The exported
+    `figure.png` carries every one of them in its own footer, and the page hides
+    the strip rather than filling it with a guess.
     """
     r = _runs.get(run_id)
-    if r is None:
-        raise HTTPException(404, f"run {run_id} is not in memory; re-submit the table")
+    if r is not None:
+        cells = r.cells_by_ring
+        manifest = r.manifest.as_dict()
+        caveats = r.web_caveats
+    else:
+        try:
+            t = table_mod.load(run_id)
+        except table_mod.TableUnavailable as e:
+            raise HTTPException(404, str(e)) from e
+        cells, manifest, caveats = t.cells_by_ring(), t.manifest, []
+    try:
+        rings = scale_rows(cells, sources_mod.DESource.from_manifest(manifest))
+    except AssertionError as e:
+        # v4.0. `scale_rows` asserts every value lies inside its ring's declared
+        # domain, because a value outside it would be CLIPPED and drawn in a
+        # colour that means a different number (`figure.py`, the domain check).
+        # On the live path that assertion must stop the render and does.
+        #
+        # On the disk path it means something else: this run was written against
+        # ring specs that have since changed shape -- found 2026-10-19 on a run
+        # whose `rodent` ring holds a raw count of 181 where the current spec
+        # declares [0, 1]. Its cells are not wrong, they are a different
+        # instrument, and no honest scale can be drawn for them.
+        #
+        # So it is refused, in words, rather than 500ing or -- far worse --
+        # drawing a scale that decodes this run's colours against another
+        # build's ranges. The page hides the panel and the figure, which carries
+        # its own scale column, is unaffected.
+        if r is not None:
+            raise
+        raise HTTPException(409, f"run {run_id} was drawn against ring scales this "
+                                 f"build no longer declares, so no scale can be "
+                                 f"shown for it: {e}") from e
     return JSONResponse({
         "run_id": run_id,
         "comparability": COMPARABILITY_CLAIM,
+        "in_memory": r is not None,
         # v3.2 / UX v3 round 2 A4. The caveat clauses the app render handed over
         # so that its circle would fit one 1440 x 900 viewport. The page draws
         # them at 13 px directly under the figure and never behind a click --
         # A2's trade for the scale column, applied to the one remaining block
         # that was forcing the canvas taller than the window.
-        "figure_caveats": r.web_caveats,
+        "figure_caveats": caveats,
         "states": [{"key": k, "label": s["label"], "fill": s["fc"],
                     "hatch": s["hatch"], "edge": s["ec"]}
                    for k, s in STATE_STYLE.items()],
         # The web scales panel resolves rings 1 and 2 from the run's own
         # manifest, like every other surface, so it cannot be the one place
         # still calling an Atlas contrast's logFC "yours".
-        "rings": scale_rows(
-            r.cells_by_ring,
-            sources_mod.DESource.from_manifest(r.manifest.as_dict())),
+        "rings": rings,
     })
 
 
@@ -1521,6 +1566,12 @@ async def artefact(run_id: str, filename: str) -> FileResponse:
 async def health() -> dict[str, Any]:
     if config.DEMO_MODE:
         return {"status": "ok", "demo": True, "demo_runs": list(config.DEMO_RUNS),
+                # v4.0. The run the page opens on, so the demo is the tool with
+                # a worked example in it rather than a list of cards to choose
+                # from (Puck, 2026-10-19: "just have one example"). The page
+                # treats it exactly as a `?run=` deep link, which is a path that
+                # already existed and is already read-only.
+                "featured_run": config.DEMO_FEATURED_RUN,
                 "note": DEMO_REFUSAL}
     return {"status": "ok", "demo": False,
             "note": "local only; nothing is published anywhere"}
