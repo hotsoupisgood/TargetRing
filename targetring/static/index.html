@@ -255,11 +255,14 @@
     <div id="counts" class="counts"></div>
 
     <div class="tabs">
-      <button class="tab active" data-tab="figure">Figure</button>
+      <!-- v4.2, Puck 2026-10-19: "the table should be default then the 2nd tab
+           should just be circlos". The grid is first and active; the circle is
+           second and is called by its name. -->
       <!-- v3.6. The same run, as a grid. Not a second analysis and not a second
            reading of the sources: it is a pivot of `values.csv`, the artefact
            invariant 1 already asserts is cell-for-cell what was drawn. -->
-      <button class="tab" data-tab="table">Table</button>
+      <button class="tab active" data-tab="table">Table</button>
+      <button class="tab" data-tab="figure">Circos</button>
       <!-- The go/no-go surface. Named "Evidence" and not "Go / no-go" because it
            does not produce one: rule 7 forbids ranking, scoring and eligibility,
            and a verdict is that machinery renamed. It states what each source
@@ -272,7 +275,7 @@
       <button class="tab" data-tab="caveats">What this is not</button>
     </div>
 
-    <div class="tabpane" id="pane-figure">
+    <div class="tabpane" id="pane-figure" hidden>
       <!-- v3.0. Was a row of six and v3.0 adds three artefacts, which would
            have made it nine. Three menus instead, grouped by what you are
            trying to walk away with rather than by file type: the figure, the
@@ -412,7 +415,7 @@
          The run is addressed by id rather than taken from `RUN`, so the 250
          runs already under `runs/` are viewable and a reload does not lose the
          one on screen. `?run=<id>` opens straight to it. -->
-    <div class="tabpane" id="pane-table" hidden>
+    <div class="tabpane" id="pane-table">
       <div class="row table-pick">
         <label for="table-run">Run</label>
         <input id="table-run" list="table-runs" spellcheck="false"

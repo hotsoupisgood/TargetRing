@@ -13,6 +13,15 @@ let RUN = null;
 // and the code that needs a live run keeps asking for one.
 let TOOL_RUN = "";
 
+// v4.2. The run this page is SHOWING from disk, whether it came from `?run=` or
+// from `TOOL_RUN`. Distinct from both: `RUN` means "this session computed it"
+// and `TOOL_RUN` means "the server named it as the one to open", and neither
+// answers the question "is there a figure on screen that a button must not
+// blank?". That question is this variable, and it is what makes "Draw the
+// figure" a REDRAW rather than a refusal (Puck, 2026-10-19: "draw the figure
+// breaks everything").
+let DISK_RUN = "";
+
 // v3.5. The window the last figure was drawn for, as [panel px, viewport px], so
 // a resize that changes nothing costs nothing.
 let DREW_FOR = null;
@@ -212,12 +221,25 @@ async function init() {
     }
   } catch (e) { /* not a demo, or health unreachable: the normal landing stands */ }
 
-  $("#load-example").onclick = async () => {
-    $("#table").value = (await fetch("/api/example").then((x) => x.json())).realistic;
+  // v4.2. Both loaders fill the textarea and touch nothing else — in
+  // particular they never clear `#result`, so a figure already on screen
+  // survives loading an example beneath it. A payload without the key is said
+  // rather than written into the box as the string "undefined".
+  const loadExample = async (which) => {
+    let body;
+    try {
+      const res = await fetch("/api/example");
+      body = res.ok ? await res.json() : null;
+    } catch (e) { body = null; }
+    const text = body && typeof body[which] === "string" ? body[which] : "";
+    if (!text) { failSoft("The example table could not be loaded."); return; }
+    $("#table").value = text;
+    $("#status").className = "";
+    $("#status").textContent = "";
+    leaveLanding();
   };
-  $("#load-broken").onclick = async () => {
-    $("#table").value = (await fetch("/api/example").then((x) => x.json())).broken;
-  };
+  $("#load-example").onclick = () => loadExample("realistic");
+  $("#load-broken").onclick = () => loadExample("broken");
   wireDiseaseSearch();
   $("#go").onclick = analyse;
   $("#drawer-close").onclick = closeDrawer;
@@ -286,6 +308,9 @@ async function init() {
     // run's figure (2026-10-18 walkthrough, item g). `body.viewing-run` hides
     // the index; the run's own figure, if it exported one, is shown instead.
     document.body.classList.add("viewing-run");
+    // v4.2. From here on there is a figure on screen that no control may blank;
+    // see `redrawLoadedRun`.
+    DISK_RUN = wanted;
     $("#result").hidden = false;
     $("#banner").hidden = true;
     $("#counts").innerHTML = "";
@@ -314,7 +339,7 @@ async function init() {
     // below, so a `#ledger` or `#figure/BRAF` link would otherwise be painted
     // and then immediately overwritten by the figure tab.
     showToolFigure(wanted).then(() => showTab(currentView().tab),
-                                () => showTab("table"));
+                                () => showTab(DEFAULT_TAB));
     if (TOOL_RUN === wanted) showToolInputs(wanted);
   }
 
@@ -1360,6 +1385,15 @@ function loadHeatmapStep() {
 
 async function makeSpokes() {
   const t = GENE_TABLE;
+  // v4.2, the same guard as "Draw the figure": with no contrast loaded there is
+  // nothing to analyse, and on a page showing a run from disk this read
+  // `t.contrast` off null and threw where a figure was already on screen.
+  if (!t || !t.contrast) {
+    if (DISK_RUN) return redrawLoadedRun(DISK_RUN);
+    const s = $("#make-spokes-status");
+    if (s) s.textContent = "No comparison is loaded — press “Use this comparison” first.";
+    return;
+  }
   const btn = $("#make-spokes");
   btn.disabled = true;
   const prog = await startProgress("#make-spokes-status");
@@ -1446,11 +1480,15 @@ async function makeSpokes() {
 // back to the figure rather than painting a blank pane, because a stale link
 // in someone's notes should degrade to the tool, not to nothing.
 // ---------------------------------------------------------------------------
-const TABS = ["figure", "table", "ledger", "evidence", "invariants", "caveats"];
+// v4.2, Puck: "the table should be default then the 2nd tab should just be
+// circlos". The grid is the landing view and the default hash, so a bare
+// `#` or an unknown tab lands on the numbers rather than on the circle.
+const TABS = ["table", "figure", "ledger", "evidence", "invariants", "caveats"];
+const DEFAULT_TAB = "table";
 
 function currentView() {
   const [tab, gene] = decodeURIComponent(location.hash.slice(1)).split("/");
-  return {tab: TABS.includes(tab) ? tab : "figure", gene: gene || null};
+  return {tab: TABS.includes(tab) ? tab : DEFAULT_TAB, gene: gene || null};
 }
 
 function hashFor(tab, gene) {
@@ -1659,8 +1697,79 @@ function startProgress(slot) {
   });
 }
 
+// v4.2. The figure on screen, drawn again from the run's own files.
+//
+// Puck, 2026-10-19: "draw the figure breaks everything". On a page showing a run
+// read off disk, pressing the button cleared `#result`, nulled `RUN` and then
+// failed with the paste message, so the figure and all six tabs vanished until
+// a reload. The button is the most prominent control on the page and it
+// destroyed the thing the page exists to show.
+//
+// So on that page the button does the nearest REAL thing instead: it re-inlines
+// the run's own `figure-web.svg`, resets the view to the default tab and scrolls
+// back to it. Nothing is fetched from a source, nothing is computed, nothing is
+// cleared — a redraw of what is already there is both honest and what "draw the
+// figure" means when the figure is already drawn.
+async function redrawLoadedRun(runId) {
+  const btn = $("#go");
+  if (btn) btn.disabled = true;
+  $("#status").className = "";
+  $("#status").textContent = "";
+  $("#result").hidden = false;
+  try {
+    await showToolFigure(runId);
+  } catch (e) {
+    // The run exported no web SVG. The pane keeps whatever it already had —
+    // which is the one thing this function must never take away.
+  }
+  goTab(DEFAULT_TAB);
+  $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (btn) btn.disabled = false;
+}
+
+// The status line, without clearing the figure. `fail()` hides `#result`, which
+// is right when a run was attempted and wrong for a pre-check that happens
+// before anything was touched.
+function failSoft(msg) {
+  $("#status").className = "err";
+  $("#status").textContent = msg;
+}
+
 async function analyse() {
   const btn = $("#go");
+
+  // THE PRE-CHECK COMES FIRST, before anything on the page is cleared.
+  //
+  // It used to come after `#result` was hidden and `RUN` nulled, so the one
+  // path that cannot produce a figure was also the one path that destroyed the
+  // figure already on screen (Puck: "draw the figure breaks everything"). The
+  // order is the whole fix: decide whether this button can do anything, and
+  // only then start taking the previous answer down.
+  //
+  // This button draws the PASTED table. On the disease path the genes come
+  // from the picked contrast instead and `syncPasteSection` hides this button
+  // — but only once the gene table has loaded, and the gene table only loads
+  // when the reader clicks "Use this comparison". Between the pick landing and
+  // that click, this button is visible, enabled, and posts an empty table.
+  // Observed 2026-10-09: the reader scrolled past the chosen contrast, pressed
+  // the button they could see, and got a 400 and a spinner.
+  //
+  // Naming the button that does work is the whole content of the message. A
+  // bare "give me a table" would be true and useless: there is no table to
+  // give, the app already has the genes, and the reader is one click away.
+  if (!$("#table").value.trim() && !$("#file").files[0]) {
+    // A run is on screen: redraw it rather than refuse. Nothing is cleared.
+    if (DISK_RUN) return redrawLoadedRun(DISK_RUN);
+    const picked = $("#use-picked");
+    failSoft(picked
+      ? "This button draws a table you pasted, and there isn't one. Your "
+        + "genes are coming from the gene expression comparison chosen above "
+        + "— press “Use this comparison” there to load them."
+      : "Paste a differential expression table, or upload one, first.");
+    if (picked) picked.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+
   btn.disabled = true;
   $("#status").className = "";
 
@@ -1676,31 +1785,6 @@ async function analyse() {
   // what it was doing. This is the stage list, driven by real events.
   clearInterval(TICKER);
   $("#status").textContent = "";
-
-  // Refuse here, before the progress bar exists.
-  //
-  // This button draws the PASTED table. On the disease path the genes come
-  // from the picked contrast instead and `syncPasteSection` hides this button
-  // — but only once the gene table has loaded, and the gene table only loads
-  // when the reader clicks "Use this comparison". Between the pick landing and
-  // that click, this button is visible, enabled, and posts an empty table.
-  // Observed 2026-10-09: the reader scrolled past the chosen contrast, pressed
-  // the button they could see, and got a 400 and a spinner.
-  //
-  // Naming the button that does work is the whole content of the message. A
-  // bare "give me a table" would be true and useless: there is no table to
-  // give, the app already has the genes, and the reader is one click away.
-  if (!$("#table").value.trim() && !$("#file").files[0]) {
-    const picked = $("#use-picked");
-    fail(picked
-      ? "This button draws a table you pasted, and there isn't one. Your "
-        + "genes are coming from the gene expression comparison chosen above "
-        + "— press “Use this comparison” there to load them."
-      : "Paste a differential expression table, or upload one, first.");
-    if (picked) picked.scrollIntoView({ behavior: "smooth", block: "center" });
-    btn.disabled = false;
-    return;
-  }
 
   const prog = await startProgress("#run-progress");
 
