@@ -23,6 +23,8 @@ FIELD_SNAPSHOT: frozenset[str] = frozenset({
     "safetyLiabilities", "isEssential", "depMapEssentiality", "geneticConstraint",
     "obsoleteSymbols", "mousePhenotypes", "drugAndClinicalCandidates", "proteinIds",
     "homologues", "chemicalProbes",
+    # v4.0: the chromosome on the rim. Introspected again 2026-10-19.
+    "genomicLocation",
 })
 
 PRIORITISATION_KEYS_SNAPSHOT: frozenset[str] = frozenset({

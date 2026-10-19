@@ -1118,6 +1118,27 @@ class Layout:
     # floor, met deliberately, by a number that does not move when a ring label
     # grows a caveat.
     claim_size: float | None = None
+    # v4.0. Whether the chromosome is drawn on the rim, after the gene symbol.
+    #
+    # It is not a preference and no caller sets it by hand: a spoke label runs
+    # radially, ` · 22` advances about 19 px at 8 pt, and whether those 19 px
+    # exist is a property of the canvas and of the longest gene name on it. So
+    # the suffix is DRAWN and kept only if the geometry assertions accept it --
+    # the same arrangement `wedge_labels_in_svg` is decided by in
+    # `render_naming_the_rings_if_they_fit`, for the same reason: the binding
+    # budget is a measurement and a threshold written down here would be wrong
+    # the first time a run arrived with an eight-character symbol.
+    #
+    # Measured, the 13-gene Crohn's demo run on the app canvas: the
+    # comparability banner's bottom edge is at y=778 px and `APOBEC3A (k=5/9)`
+    # reaches y=773 -- 5 px of clearance, against the 4 px
+    # `LABEL_CLEARANCE_PX` requires. The audit canvas has 145 px of the same
+    # clearance. One run, two surfaces, two honest answers, and each render says
+    # which it drew (`_CHR_NOTE` / `_CHR_OFF_NOTE`).
+    #
+    # Default True: a layout added later carries the fact unless the geometry
+    # takes it away.
+    chromosomes_on_rim: bool = True
 
 
 # v2.6 widens the audit canvas from 17.5 to 19.5 in and narrows the axes box to
@@ -1532,14 +1553,45 @@ def render_naming_the_rings_if_they_fit(
     """
     wanted = web_layout_for_viewport(panel_px, viewport_px, name_the_rings=True)
     try:
-        return render_one(wanted), wanted
+        return render_with_the_chromosomes_if_they_fit(render_one, wanted)
     except RingNamesDoNotFit:
         # The failed render never reached `savefig`, so nothing was written; it
         # did leave its matplotlib figure open, and this is a server that draws
         # one figure at a time and runs for weeks.
         plt.close("all")
     without = dc_replace(wanted, wedge_labels_in_svg=False)
-    return render_one(without), without
+    return render_with_the_chromosomes_if_they_fit(render_one, without)
+
+
+def render_with_the_chromosomes_if_they_fit(
+    render_one: "Callable[[Layout], FigureResult]", layout: "Layout",
+) -> tuple["FigureResult", "Layout"]:
+    """v4.0. Draw the chromosome on the rim if this canvas has room, or without
+    it if it has not. Returns the result and the layout that produced it.
+
+    The same arrangement as `render_naming_the_rings_if_they_fit`, which is the
+    point: **the suffix is not decided by a threshold here.** It is drawn, and it
+    is kept only if every geometry assertion accepts it. None of them is
+    relaxed, widened or special-cased; the only thing that is new is what
+    happens when one refuses, and what happens is that the rim loses the suffix
+    and the figure prints `_CHR_OFF_NOTE` instead of `_CHR_NOTE`.
+
+    Measured, which is why it is a retry rather than a rule: on the 13-gene
+    Crohn's demo run, `APOBEC3A (k=5/9)` clears the app canvas's comparability
+    banner by 5 px and ` · 22` advances 19 px -- while the same label on the
+    audit canvas has 145 px of the same clearance. A gene-count rule would have
+    had to be wrong on one of those two, and an eight-character symbol is not a
+    thing a figure can refuse to draw.
+
+    The cost is one extra render, about a second, and only on the canvases where
+    the suffix does not fit.
+    """
+    try:
+        return render_one(layout), layout
+    except ChromosomesDoNotFit:
+        plt.close("all")
+    bare = dc_replace(layout, chromosomes_on_rim=False)
+    return render_one(bare), bare
 
 
 @dataclass
@@ -1589,6 +1641,13 @@ def render(
     # resized `web` is still the `web` render to every branch and every sentence.
     layout: "str | Layout" = "audit",
     gene_ids: dict[str, str] | None = None,
+    # v4.0, Puck: "add which chromosome each gene is on next to the gene text on
+    # the ring". `{gene: TextCell}`, four states like every other source: a
+    # `value` prints as ` · 16` after the symbol, and the three non-values print
+    # NOTHING at all. See `_chromosome_suffix` for why the blank is allowed here
+    # and nowhere else, and `_CHR_NOTE` for the sentence that tells the reader a
+    # missing suffix is not a gene with no chromosome.
+    gene_chromosomes: "dict[str, Any] | None" = None,
     invariant_summary: str = "",
     # Stage 5. The contrast this run's genes came from, as whole sentences
     # ready to draw -- built by the caller (`run.py`) from the `ContrastRef`,
@@ -1751,7 +1810,13 @@ def render(
         # v2.9: the Ensembl id is deliberately absent from here. See `_ID_NOTE`
         # for the measurement, and `assert_the_id_rule_is_kept` for the check
         # that stops it drifting back in without the footer changing with it.
-        label = f"{liab}{gene} (k={k}/{EXTERNAL_RING_COUNT}){unf}"
+        # v4.0. The chromosome sits against the symbol, before k, because that
+        # is where Puck asked for it ("next to the gene text") and because k and
+        # the ~ marker are statements about this figure while the chromosome is
+        # a fact about the gene. Empty for every state but `value`.
+        chrom = (_chromosome_suffix((gene_chromosomes or {}).get(gene))
+                 if lay.chromosomes_on_rim else "")
+        label = f"{liab}{gene}{chrom} (k={k}/{EXTERNAL_RING_COUNT}){unf}"
         spoke_labels.append(label)
         size = lay.label_size * (0.82 if len(genes) > 18 else 1.0)
         sector.text(label, r=r_outer + 3, size=size,
@@ -1811,8 +1876,17 @@ def render(
     # about its own method. Every sentence it is about to draw is checked against
     # what this render is actually doing, before any of it reaches the canvas.
     wnote, clock = wedge_note(lay, len(genes), space), clock_phrase(lay)
+    # Three states, not two: this render drew the suffix, or it had chromosomes
+    # and this canvas could not carry them, or there were none to draw. The
+    # middle one has to be SAID -- a reader comparing the app figure with the
+    # downloaded one must not conclude the rim lost a fact nobody mentioned.
+    drew_chromosomes = any(_CHR_SEP in l for l in spoke_labels)
+    have_chromosomes = any(
+        getattr(c, "state", None) == "value" for c in (gene_chromosomes or {}).values())
     notes = _stamp_notes(ordering_note, filter_notes, region, cells_by_ring,
-                         gene_flags, subtitle, wnote, clock)
+                         gene_flags, subtitle, wnote, clock,
+                         chromosomes=drew_chromosomes,
+                         chromosomes_off_rim=have_chromosomes and not drew_chromosomes)
     # Stage 5: appended rather than folded into `_stamp_notes` itself, which
     # `render_legend` also calls with no contrast in scope. Present on both the
     # audit and the slide footer (plan: "slide footer"; audit gets it too
@@ -1827,7 +1901,9 @@ def render(
     if invariant_summary:
         notes.insert(0, invariant_summary)
     cap = caption(rings, norms, region, provenance, ordering_note, filter_notes,
-                  gene_flags, dropped_names, wnote, clock, invariant_summary)
+                  gene_flags, dropped_names, wnote, clock, invariant_summary,
+                  chromosomes=drew_chromosomes,
+                  chromosomes_off_rim=have_chromosomes and not drew_chromosomes)
     assert_footer_is_true(notes + cap.splitlines(), ordering_note, filter_notes,
                           wnote)
     assert_the_id_rule_is_kept(spoke_labels, notes)
@@ -1854,7 +1930,8 @@ def render(
     web_caveats: list[str] = []
     if not lay.draw_footer and not lay.scales_in_svg:
         footer_line, web_caveats = caveats_for_the_page(
-            ordering_note, filter_notes, wshort)
+            ordering_note, filter_notes, wshort,
+            chromosomes_off_rim=have_chromosomes and not drew_chromosomes)
     stamps = _draw_stamps(fig, notes, provenance, lay, footer_line)
     text_blocks += _draw_legend(fig, rings, norms, cmaps,
                                 _column_above_the_footer(fig, lay, stamps),
@@ -1870,6 +1947,69 @@ def render(
     # overprinted the coloured arcs; and the footer block occupied y=983-1028
     # with `CDKN2A (k=8) *` sitting at y=995 inside it. Both are geometry, so
     # both are checked geometrically instead of by eye.
+    # v4.0. Every assertion from here down measures a drawn string against
+    # another drawn string, so every one of them can be the one that refuses a
+    # chromosome suffix. The suffix is offered to the geometry and taken away by
+    # it -- `_chromosome_blamed` decides whether the refusal names a spoke label
+    # this render had just lengthened, and anything else is re-raised unchanged.
+    try:
+        _assert_the_geometry(
+            fig, ax, text_blocks, centre_blocks, wedge_labels, rings, lay,
+            r_outer=r_outer, band=band, wedge=wedge,
+            input_count=input_count, rendered_count=rendered_count,
+            filter_notes=filter_notes)
+    except AssertionError as e:
+        if drew_chromosomes and _chromosome_blamed(e, spoke_labels):
+            raise ChromosomesDoNotFit(str(e)) from e
+        raise
+
+    out_svg.parent.mkdir(parents=True, exist_ok=True)
+    # `bbox_inches=None` is not enough: matplotlib resolves a None kwarg from
+    # the rcParam, which pycirclize has already set to "tight". The canvas is now
+    # exactly what the Layout declares.
+    with plt.rc_context(SAVE_RC):
+        fig.savefig(out_svg, format="svg")
+    _add_wedge_tooltips(out_svg, rings, {
+        "regional_specificity":
+            f"this run: {region} TPM ÷ median across "
+            f"{gtex_panel_size(cells_by_ring) or 'the GTEx panel'}",
+    })
+    if out_png is not None:
+        # Convenience only. SVG plus the CSV is the export that matters for v1
+        # (PLAN §5); this exists so a run can be eyeballed without a browser.
+        with plt.rc_context(SAVE_RC):
+            fig.savefig(out_png, format="png", dpi=110)
+    plt.close(fig)
+    return FigureResult(out_svg, csv_rows, cell_ids, len(cell_ids),
+                        caption=cap,
+                        ordering_note=ordering_note,
+                        filter_notes=list(filter_notes),
+                        web_caveats=web_caveats)
+
+
+def _chromosome_blamed(e: AssertionError, spoke_labels: Sequence[str]) -> bool:
+    """Did the geometry refuse one of the labels the chromosome lengthened?
+
+    The assertions quote the offending strings, truncated. So the test is
+    whether the message names a spoke label that is carrying a suffix -- on the
+    label's own first 20 characters, which survives every truncation in this
+    module (24, 30, 34, 40 and 44). A collision between the footer and the scale
+    column mentions neither, and is re-raised as the refusal it is.
+    """
+    body = str(e)
+    return any(l[:20] in body for l in spoke_labels if _CHR_SEP in l)
+
+
+def _assert_the_geometry(fig, ax, text_blocks, centre_blocks, wedge_labels,
+                         rings, lay, *, r_outer, band, wedge,
+                         input_count: int, rendered_count: int,
+                         filter_notes: Sequence[str]) -> None:
+    """The measured half of a render, lifted out of `render` unchanged.
+
+    One function so that `render` has one place to catch a refusal from, and so
+    the order -- which is load-bearing, each comment below says why -- is read
+    in one piece.
+    """
     assert_text_within_canvas(fig, text_blocks)
     assert_no_text_over_the_rings(fig, ax, text_blocks, wedge_labels)
     # The innermost ring's inner edge, as a fraction of the plotted radius.
@@ -1901,29 +2041,6 @@ def render(
     assert_figure_states_the_minimum(
         "\n".join(t.get_text() for t in text_blocks + centre_blocks),
         input_count, rendered_count, filter_notes, lay.name)
-
-    out_svg.parent.mkdir(parents=True, exist_ok=True)
-    # `bbox_inches=None` is not enough: matplotlib resolves a None kwarg from
-    # the rcParam, which pycirclize has already set to "tight". The canvas is now
-    # exactly what the Layout declares.
-    with plt.rc_context(SAVE_RC):
-        fig.savefig(out_svg, format="svg")
-    _add_wedge_tooltips(out_svg, rings, {
-        "regional_specificity":
-            f"this run: {region} TPM ÷ median across "
-            f"{gtex_panel_size(cells_by_ring) or 'the GTEx panel'}",
-    })
-    if out_png is not None:
-        # Convenience only. SVG plus the CSV is the export that matters for v1
-        # (PLAN §5); this exists so a run can be eyeballed without a browser.
-        with plt.rc_context(SAVE_RC):
-            fig.savefig(out_png, format="png", dpi=110)
-    plt.close(fig)
-    return FigureResult(out_svg, csv_rows, cell_ids, len(cell_ids),
-                        caption=cap,
-                        ordering_note=ordering_note,
-                        filter_notes=list(filter_notes),
-                        web_caveats=web_caveats)
 
 
 def _rings_norms_cmaps(cells_by_ring, de_source=None):
@@ -2838,9 +2955,63 @@ _ID_NOTE = (
 )
 
 
+# v4.0. The chromosome suffix, and the two reasons it is this short.
+#
+# Measured on the audit canvas, the same 121 px between the circle's edge and
+# the scale column that `_ID_NOTE` records: `GENE001 (k=9/9)` advances 69 px at
+# 8 pt. ` · 16` adds 19 px and ` chr16` adds 30 px, so both fit at this gene
+# count -- but only the dot form still fits a 2-digit chromosome on a
+# fifty-gene run, where the label is already at 6.56 pt and 94 px of the column
+# clearance is spent. The separator is the same ` · ` the contrast line and the
+# pipeline summary already use, so the rim reads as one idiom.
+#
+# `chr` is dropped because the footer says what the number is, once, instead of
+# repeating a three-letter prefix on every spoke -- and the drawer header, where
+# there is room, spells it out as "chr 16".
+_CHR_SEP = " · "
+
+_CHR_NOTE = (
+    "Chromosome per gene: the number after the symbol on the rim, from Open Targets "
+    "genomicLocation (GRCh38). NO suffix means Open Targets had no chromosome for that "
+    "gene, or placed it on an unplaced scaffold — never that the gene has none; the "
+    "drawer header names which. It is a label: it orders nothing, is not a ring and is "
+    "not counted in k."
+)
+
+
+_CHR_OFF_NOTE = (
+    "Chromosome per gene: NOT on the rim of this render — a spoke label runs radially and "
+    "this canvas has no room for the suffix beside its longest gene name. It is in the "
+    "click-drawer header and in the drawer file, and the exported figure.png draws it on "
+    "the rim. A bare symbol here says nothing about the gene."
+)
+
+
+def _chromosome_suffix(cell: "Any | None") -> str:
+    """` · 16` for a value, and the empty string for everything else.
+
+    The one place in this build where a non-value state renders as nothing at
+    all. It is deliberate and it is bounded: the figure states the rule in
+    `_CHR_NOTE`, so a reader cannot mistake a bare symbol for a gene with no
+    chromosome, and the state itself is in the drawer header and in the drawer
+    JSON with the sentence that says which of the three it was. The alternative
+    -- `MUC1 · — (k=9/9)` on every unplaced gene -- spends rim width on a dash
+    that says less than the footer already says.
+    """
+    if cell is None:
+        return ""
+    state = getattr(cell, "state", None)
+    text = getattr(cell, "text", None)
+    if state != "value" or not text:
+        return ""
+    return f"{_CHR_SEP}{text}"
+
+
 def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
                  cells_by_ring, gene_flags=None, subtitle: str = "",
-                 wedge: str = "", clock: str = "") -> list[str]:
+                 wedge: str = "", clock: str = "",
+                 chromosomes: bool = False,
+                 chromosomes_off_rim: bool = False) -> list[str]:
     """The footer's sentences, built once so `assert_footer_is_true` checks
     exactly the text that gets drawn rather than a copy of it."""
     n_tissues = gtex_panel_size(cells_by_ring)
@@ -2869,6 +3040,12 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
         "indication sets no phase; those genes are drawn 'not applicable', not 'low'.",
     ]
     notes.append(_ID_NOTE)
+    # Only when a suffix was actually drawn. A figure whose every gene came back
+    # without a chromosome must not print a rule about a mark it does not carry.
+    if chromosomes:
+        notes.append(_CHR_NOTE)
+    elif chromosomes_off_rim:
+        notes.append(_CHR_OFF_NOTE)
     if wedge:
         notes.append(wedge)
     if filter_notes:
@@ -2929,7 +3106,8 @@ def slide_line(ordering_note: str, filter_notes: Sequence[str],
 
 
 def caveats_for_the_page(ordering_note: str, filter_notes: Sequence[str],
-                        wedge_short: str = "") -> tuple[str, list[str]]:
+                        wedge_short: str = "",
+                        chromosomes_off_rim: bool = False) -> tuple[str, list[str]]:
     """v3.2 / UX v3 round 2 A4. Split the app render's caveat line in two: what
     the circle keeps, and what the page draws in HTML beside it.
 
@@ -2998,6 +3176,17 @@ def caveats_for_the_page(ordering_note: str, filter_notes: Sequence[str],
             ("how", ordering_note)]
     if wedge_short:
         page.append(("where", wedge_short[0].upper() + wedge_short[1:]))
+    # v4.0. The web render draws no footer, so `_CHR_OFF_NOTE` has nowhere to go
+    # on this surface and the page has to carry it. Without this clause the app
+    # figure would be missing a label the downloaded one has, with nothing
+    # anywhere saying so -- COUNCIL V5 by omission, and the exact defect
+    # `_ID_NOTE` exists to avoid.
+    if chromosomes_off_rim:
+        page.append(("where",
+                     "The chromosome is not on this render's rim: a spoke label runs "
+                     "radially and this canvas has no room for it beside the longest "
+                     "gene name. It is in each gene's drawer, and on the downloaded "
+                     "figure."))
     page.append(("how", "Every caveat this run carries is in the "
                         "What this is not tab."))
     return keep, [{"kind": k, "text": t} for k, t in page if t]
@@ -3610,7 +3799,8 @@ def assert_renders_agree(a_svg: Path, b_svg: Path) -> None:
 
 def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
             gene_flags=None, dropped_names=(), wedge="", clock="",
-            invariant_summary="") -> str:
+            invariant_summary="", chromosomes=False,
+            chromosomes_off_rim=False) -> str:
     """UX A4. Everything the slide render drops, as text to paste underneath.
 
     The full audit stamps stay on the audit render, which is the right artefact
@@ -3664,6 +3854,14 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
         # slide's reader would be the one person not told where the ids are.
         _ID_NOTE,
     ]
+    # v4.0, the same reason the line above is here: the slide draws no footer,
+    # so the caption is where its reader is told what the number after a gene
+    # symbol is -- and, where the suffix did not fit, that its absence is about
+    # the canvas and not about the gene.
+    if chromosomes:
+        lines.append(_CHR_NOTE)
+    elif chromosomes_off_rim:
+        lines.append(_CHR_OFF_NOTE)
     if wedge:
         lines += ["", wedge]
     if filter_notes:
@@ -3836,6 +4034,23 @@ class RingNamesDoNotFit(AssertionError):
     of the fourteen other things this render asserts. A bare `except
     AssertionError` there would have swallowed a genuine collision and drawn a
     figure with no names and no complaint, which is this repo's one rule.
+    """
+
+
+class ChromosomesDoNotFit(AssertionError):
+    """v4.0. This canvas has no room for the chromosome suffix on the rim.
+
+    Raised in place of the geometry assertion that refused, and only when the
+    string that refused is a spoke label this render had just put a chromosome
+    on -- so a genuine collision between two unrelated blocks still arrives as
+    the `AssertionError` it is, and still stops the render. Same discipline as
+    `RingNamesDoNotFit`, and for the same reason: a bare `except AssertionError`
+    in the retry would swallow a real overprint and draw a clean-looking figure,
+    which is `AGENTS.md:17`.
+
+    The caller that catches it is
+    `render_with_the_chromosomes_if_they_fit`, which re-draws without them and
+    lets the figure say where the chromosome is instead.
     """
 
 
@@ -4274,6 +4489,7 @@ __all__ = ["render", "RING_SPECS", "RingSpec", "STATE_STYLE", "VALUE_CMAP",
            "WEDGE_TEXT_MARGIN_DEG", "WEDGE_MIN_SCALE", "wedge_note",
            "fit_wedge_labels", "assert_wedge_labels_fit",
            "assert_wedge_names_clear_the_floor", "RingNamesDoNotFit",
+           "ChromosomesDoNotFit", "render_with_the_chromosomes_if_they_fit",
            "RingNamesUnderTheFloor", "web_layout_for_viewport", "web_circle_px",
            "render_naming_the_rings_if_they_fit", "WEB_PX_PER_IN", "WEB_CSS_SCALE",
            "WEB_REFERENCE_PANEL_PX", "WEB_REFERENCE_VIEWPORT_PX",

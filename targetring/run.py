@@ -37,6 +37,7 @@ from .adapters.opentargets import (
     OpenTargetsAdapter,
     OTRecord,
     chemical_probe_cell,
+    chromosome_cell,
     clinical_activity_cell,
     clinical_phase_cell,
     drug_pipeline_rows,
@@ -429,6 +430,11 @@ async def run_analysis(
     lit_by_gene: dict[str, LiteratureRecord] = dict(zip(genes, lit_records))
     pharos_by_gene: dict[str, PharosRecord] = {g: pharos_records[g] for g in genes}
     drug_names_by_gene = {g: ot_by_gene[g].drug_names() for g in genes}
+    # v4.0. Deliberately NOT in `cells_by_ring`: that dict is what k is counted
+    # over, what the invariants pivot and what `values.csv` is written from, and
+    # a chromosome is a label on the spoke rather than a measurement on a scale.
+    # Its own dict, with the same four states.
+    chromosome_by_gene = {g: chromosome_cell(ot_by_gene[g]) for g in genes}
 
     import math
 
@@ -688,10 +694,10 @@ async def run_analysis(
             # many" without the manifest open beside it.
             contrast_notes.append(selection_accounting.selection_line())
 
-    def do_render(failures: list[str], conds: list[str] = [],
-                  layout: "str | figure.Layout" = "audit", svg: Path | None = None,
-                  png: Path | None = None, write_png: bool = True,
-                  invariant_summary: str = "") -> figure.FigureResult:
+    def _render_once(failures: list[str], conds: list[str] = [],
+                     layout: "str | figure.Layout" = "audit", svg: Path | None = None,
+                     png: Path | None = None, write_png: bool = True,
+                     invariant_summary: str = "") -> figure.FigureResult:
         return figure.render(
             genes=gene_order,
             cells_by_ring=cells_by_ring,
@@ -725,10 +731,30 @@ async def run_analysis(
             # for `values.csv` and for the footer sentence that says where they
             # are. They are deliberately NOT on the rim -- see `_ID_NOTE`.
             gene_ids={g: by_gene[g][1].ensembl_id for g in gene_order},
+            # v4.0: on the rim, next to the symbol. Four states; only a value
+            # draws a suffix, and the figure states that rule itself.
+            gene_chromosomes={g: chromosome_by_gene[g] for g in gene_order},
             invariant_summary=invariant_summary,
             contrast_notes=contrast_notes,
             de_source=de_source,
         )
+
+    def do_render(failures: list[str], conds: list[str] = [],
+                  layout: "str | figure.Layout" = "audit", **kw) -> figure.FigureResult:
+        """`_render_once`, with the chromosome suffix offered to the geometry.
+
+        v4.0. A spoke label runs radially, so whether ` · 22` fits beside the
+        longest gene name is a property of the canvas, not of the run. The
+        suffix is drawn and kept only if every geometry assertion accepts it;
+        where one refuses, the rim loses it and the figure says where the
+        chromosome is instead. The app render goes through
+        `render_naming_the_rings_if_they_fit`, which does the same retry itself,
+        so it calls `_render_once` directly rather than nesting two of them.
+        """
+        lay = layout if isinstance(layout, figure.Layout) else figure.LAYOUTS[layout]
+        result, _ = figure.render_with_the_chromosomes_if_they_fit(
+            lambda candidate: _render_once(failures, conds, layout=candidate, **kw), lay)
+        return result
 
     fig_result = do_render([])
     timings["render_s"] = round(time.time() - t, 2)
@@ -802,9 +828,9 @@ async def run_analysis(
         different" safe to have said yes to.
         """
         result, lay = figure.render_naming_the_rings_if_they_fit(
-            lambda candidate: do_render(banner, conds, layout=candidate, svg=web_svg,
-                                        write_png=False,
-                                        invariant_summary=inv_summary),
+            lambda candidate: _render_once(banner, conds, layout=candidate, svg=web_svg,
+                                           write_png=False,
+                                           invariant_summary=inv_summary),
             panel_px=panel, viewport_px=window_h)
         figure.assert_renders_agree(svg_path, web_svg)
         return result, lay
@@ -928,6 +954,10 @@ async def run_analysis(
             "gencode_id": res.gencode_id,
             "resolution_status": res.status,
             "resolution_note": res.note,
+            # v4.0. The same four-state reading the rim's suffix was drawn
+            # from, with its sentence -- so a gene whose rim carries no suffix
+            # says here which of the three non-values it was.
+            "chromosome": chromosome_by_gene[g].as_dict(),
             "logfc": row.logfc,
             "padj": row.padj,
             "k": stats[g].k,

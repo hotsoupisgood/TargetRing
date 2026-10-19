@@ -203,6 +203,15 @@ class _FakeOTRecord:
     associations_error = None
     safety_liabilities: list = []
     mouse_phenotypes: list = []
+    # v4.0. What `chromosome_cell` reads: a target Open Targets holds and has no
+    # genomicLocation for, which is `no_data` and so draws no suffix on the rim.
+    # Stated rather than left to a missing attribute, so this double stands in
+    # for the real record's contract instead of for part of it.
+    error = None
+    found = True
+    ensembl_id = ""
+    chromosome = None
+    chromosome_asked = True
 
     def drug_names(self) -> list:
         return []

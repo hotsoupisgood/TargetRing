@@ -20,7 +20,10 @@ from typing import Any
 from ..cache import Cache
 from ..config import OPENTARGETS_URL
 from ..http import Http, describe, graphql
-from ..states import Cell, failed, no_data, not_applicable, value
+from ..states import (
+    Cell, TextCell, failed, no_data, not_applicable, text_failed, text_no_data,
+    text_not_applicable, text_value, value,
+)
 
 # --- the pinned production query -------------------------------------------
 # COUNCIL D1's published version of this query is invalid: `diseases{disease}`
@@ -31,6 +34,7 @@ TARGET_QUERY = """query TargetRings($ids:[String!]!){
     id
     approvedSymbol
     biotype
+    genomicLocation{chromosome}
     prioritisation{items{key value}}
     tractability{label modality value}
     safetyLiabilities{event datasource url}
@@ -336,6 +340,15 @@ class OTRecord:
     found: bool
     approved_symbol: str | None = None
     biotype: str | None = None
+    # v4.0. `genomicLocation.chromosome`, verbatim: "16", "X", "MT", or an
+    # unplaced-scaffold name. `None` means Open Targets answered for this target
+    # and carried no location -- which `chromosome_cell` renders as `no_data`,
+    # never as a blank that reads like a chromosome nobody printed.
+    chromosome: str | None = None
+    # Whether the payload this record was built from carried the
+    # `genomicLocation` key at all. A cache entry written before the field was
+    # in the query has no key, and that is "not asked", not "no location".
+    chromosome_asked: bool = True
     prioritisation: dict[str, float] = field(default_factory=dict)
     tractability: list[dict[str, Any]] = field(default_factory=list)
     safety_liabilities: list[dict[str, Any]] = field(default_factory=list)
@@ -401,7 +414,15 @@ class OpenTargetsAdapter:
         pending: list[str] = []
         for eid in wanted:
             hit = self.cache.get(self.source, f"rings|{eid}")
-            if hit is None:
+            # v4.0. `genomicLocation` joined the query after ~250 runs had
+            # already cached a payload without it. The cache key is not
+            # versioned, so a hit has to be checked against the query that is
+            # being asked NOW: a payload with no `genomicLocation` key was
+            # never asked the question, and serving it would turn "we did not
+            # ask" into `no_data` -- a chromosome that silently reads as "Open
+            # Targets does not know where this gene is". Re-fetched instead,
+            # per gene, which is one free request and then the cache is current.
+            if hit is None or not has_genomic_location_key(hit):
                 pending.append(eid)
             else:
                 out[eid] = _from_payload(eid, hit)
@@ -492,6 +513,65 @@ class OpenTargetsAdapter:
                 r.associations = {}
 
 
+# v4.0. The names a human chromosome actually has in Open Targets' answer,
+# checked live 2026-10-19 (MUC1 -> "1", BRAF -> "7"). Ensembl's primary
+# assembly also carries unplaced and patch scaffolds, and a gene on one of
+# those is NOT on a numbered chromosome -- `chromosome_cell` renders those
+# `not_applicable` with the scaffold name in the detail rather than printing
+# `NOD2 · KI270734.1` on the rim and calling it a chromosome.
+HUMAN_CHROMOSOMES: frozenset[str] = frozenset(
+    [str(i) for i in range(1, 23)] + ["X", "Y", "MT"]
+)
+
+
+def has_genomic_location_key(payload: Any) -> bool:
+    """Did the payload this record came from ever ask for a location?
+
+    The discriminator between "Open Targets has no location for this target"
+    and "this cache entry predates the field", and the reason `fetch` can keep
+    the existing cache instead of versioning the key and re-fetching 250 runs'
+    worth of genes. Same distinction `has_prioritisation_record` draws for the
+    prioritisation block: an absent key is not a zero.
+    """
+    return isinstance(payload, dict) and "genomicLocation" in payload
+
+
+def chromosome_cell(rec: OTRecord) -> TextCell:
+    """Which chromosome this gene is on. Four states, same as every ring.
+
+    Puck, 2026-10-19: "add which chromosome each gene is on next to the gene
+    text on the ring". It drives no ring, is on no colour scale and is not
+    counted in *k* (`order.EXTERNAL_RINGS` is unchanged): it is a label, and
+    `TextCell` exists so that it is a label with states rather than a string
+    that is empty for four different reasons.
+    """
+    if rec.error:
+        return text_failed(
+            f"the Open Targets gene query failed for {rec.ensembl_id}, so this gene's "
+            f"chromosome was not read: {rec.error}")
+    if not rec.found:
+        return text_no_data(
+            f"{rec.ensembl_id} is absent from the Open Targets release this run queried, "
+            f"so it has no genomicLocation here (it is not 'on no chromosome')")
+    if not rec.chromosome_asked:
+        return text_failed(
+            f"the cached Open Targets payload for {rec.ensembl_id} predates the "
+            f"genomicLocation field, so the question was never asked of this gene — "
+            f"which is not the same as Open Targets having no location for it")
+    if not rec.chromosome:
+        return text_no_data(
+            f"Open Targets holds {rec.ensembl_id} but reports no genomicLocation for it")
+    if rec.chromosome not in HUMAN_CHROMOSOMES:
+        return text_not_applicable(
+            f"Open Targets places {rec.ensembl_id} on {rec.chromosome!r}, which is not one "
+            f"of the 24 chromosomes or MT — an unplaced or patch scaffold, so there is no "
+            f"chromosome number to print")
+    return text_value(
+        rec.chromosome,
+        f"chromosome {rec.chromosome} — Open Targets genomicLocation.chromosome for "
+        f"{rec.ensembl_id} (GRCh38)")
+
+
 def _from_payload(eid: str, payload: dict[str, Any] | None) -> OTRecord:
     if payload is None:
         # Requested, absent from the response. Explicitly missing, never
@@ -503,11 +583,15 @@ def _from_payload(eid: str, payload: dict[str, Any] | None) -> OTRecord:
         if (v := _as_float(i.get("value"))) is not None
     }
     dac = payload.get("drugAndClinicalCandidates") or {}
+    loc = payload.get("genomicLocation") or {}
+    chrom = loc.get("chromosome")
     return OTRecord(
         ensembl_id=eid,
         found=True,
         approved_symbol=payload.get("approvedSymbol"),
         biotype=payload.get("biotype"),
+        chromosome=str(chrom) if chrom not in (None, "") else None,
+        chromosome_asked=has_genomic_location_key(payload),
         prioritisation=prio,
         tractability=payload.get("tractability") or [],
         safety_liabilities=payload.get("safetyLiabilities") or [],
@@ -1420,6 +1504,8 @@ __all__ = [
     "attributable_indications", "mechanistic_evidence", "severe_liabilities",
     "per_indication_stages",
     "has_prioritisation_record",
+    # v4.0: the chromosome suffix on the rim. A label, not a ring.
+    "HUMAN_CHROMOSOMES", "chromosome_cell", "has_genomic_location_key",
     # v2.4: the trial rows, read off the gene query instead of a per-drug hop.
     "SOURCE_LABEL", "LIVE_STATUSES", "STOPPED_STATUSES", "INERT_STATUSES",
     "ACTIVE_STATUSES", "FOR_CAUSE_CATEGORIES", "UNINFORMATIVE_CATEGORIES",
