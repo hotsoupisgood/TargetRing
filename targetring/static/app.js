@@ -1632,6 +1632,10 @@ function startHistory() {
 }
 
 function showTab(name) {
+  // v4.2. The pointer can leave the circle without a `mouseleave` — a tab
+  // switch, a drawer opening, a keyboard route — and a tooltip left behind
+  // describes a cell that is no longer on screen.
+  hideCellTip();
   document.querySelectorAll(".tab").forEach((x) =>
     x.classList.toggle("active", x.dataset.tab === name));
   document.querySelectorAll(".tabpane").forEach((p) => { p.hidden = true; });
@@ -2643,6 +2647,7 @@ async function openDrawer(gene, push = true) {
   // touched. `applyHash` and `goGene` pass false: they are already answering
   // or writing the entry themselves.
   if (push) { goGene(gene); return; }
+  hideCellTip();
   // v4.2. Whichever surface opened it — a row, the gene button, a cell on the
   // circle or a `#table/<gene>` link — the grid marks the row the drawer is
   // about. One highlight, set in one place, so the two routes cannot disagree.

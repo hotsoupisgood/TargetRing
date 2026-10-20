@@ -1,0 +1,38 @@
+{
+ "heading": "GO / NO-GO: three criteria, all must hold",
+ "criteria": [
+  {
+   "n": 1,
+   "key": "expressed",
+   "name": "Expressed",
+   "met_when": "GTEx median TPM >= 1 in the run's region (fallback: tissue-distribution ring > 0 if GTEx is absent)",
+   "source": "GTEx median TPM, Open Targets prioritisation"
+  },
+  {
+   "n": 2,
+   "key": "dysregulated",
+   "name": "Dysregulated in this study",
+   "met_when": "|logFC| >= 1 and adjusted p <= 0.05",
+   "source": "the submitted DE table"
+  },
+  {
+   "n": 3,
+   "key": "phenotype",
+   "name": "Phenotype in a model",
+   "met_when": "mouse-KO ring > 0, or >= 1 abnormal mouse phenotype term(s)",
+   "source": "Open Targets mousePhenotypes"
+  }
+ ],
+ "go": "GO when all three are met.",
+ "no_go": "NO-GO when any one is not met.",
+ "insufficient": "INSUFFICIENT DATA when none is not met but any is no data.",
+ "never_a_criterion": "Druggability, safety and pipeline never change the verdict.",
+ "rule_version": "bdc70c8fc230",
+ "thresholds": {
+  "min_tpm": 1.0,
+  "min_abs_logfc": 1.0,
+  "max_q": 0.05,
+  "min_phenotypes": 1,
+  "specific_ratio": 5.0
+ }
+}

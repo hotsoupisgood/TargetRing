@@ -13,6 +13,15 @@ let RUN = null;
 // and the code that needs a live run keeps asking for one.
 let TOOL_RUN = "";
 
+// v4.2. The run this page is SHOWING from disk, whether it came from `?run=` or
+// from `TOOL_RUN`. Distinct from both: `RUN` means "this session computed it"
+// and `TOOL_RUN` means "the server named it as the one to open", and neither
+// answers the question "is there a figure on screen that a button must not
+// blank?". That question is this variable, and it is what makes "Draw the
+// figure" a REDRAW rather than a refusal (Puck, 2026-10-19: "draw the figure
+// breaks everything").
+let DISK_RUN = "";
+
 // v3.5. The window the last figure was drawn for, as [panel px, viewport px], so
 // a resize that changes nothing costs nothing.
 let DREW_FOR = null;
@@ -159,15 +168,20 @@ async function init() {
       // reader's machine, and on a demo box it is somebody else's. Say what
       // this box actually is.
       const note = $("#local-note");
+      // v4.2, Puck 2026-10-19: "no published version please" — no sentence on
+      // this page may call it a demo, a read-only copy, a static export or a
+      // published version, or explain that there is no server behind it. The
+      // page is the tool.
+      //
+      // So in tool mode the clause is EMPTY rather than reworded: the masthead's
+      // default ("nothing leaves this machine") is a claim about the reader's
+      // machine and is not this box's to make, and anything that replaced it
+      // would be a sentence about hosting above a figure. What a control cannot
+      // do is said by that control, in its own tooltip
+      // (`disableServerOnlyControls`), where a reader meets it.
       if (note) note.textContent = h.featured_run
-        // v4.0. In tool mode this is one clause, not a blurb: "no 'read-only
-        // demo' prose; the page is the tool". It still has to SAY that nothing
-        // runs here, because the masthead's other sentence ("nothing leaves
-        // this machine") is a claim about the reader's machine and on this box
-        // it is somebody else's — but the explanation of what a demo is belongs
-        // in Puck's blog post, not above his figure.
-        ? "Served from one finished run's files; nothing is computed here."
-        : "Read-only demo — finished runs, served as files; nothing is computed here.";
+        ? ""
+        : "Finished runs, served from their artefacts.";
       // v4.0, Puck 2026-10-19: "i want the target ring to be interactive too
       // also make it the same as the final site will be so just have one
       // example" and "its supposed to be a tool, explanations will be on my
@@ -212,12 +226,25 @@ async function init() {
     }
   } catch (e) { /* not a demo, or health unreachable: the normal landing stands */ }
 
-  $("#load-example").onclick = async () => {
-    $("#table").value = (await fetch("/api/example").then((x) => x.json())).realistic;
+  // v4.2. Both loaders fill the textarea and touch nothing else — in
+  // particular they never clear `#result`, so a figure already on screen
+  // survives loading an example beneath it. A payload without the key is said
+  // rather than written into the box as the string "undefined".
+  const loadExample = async (which) => {
+    let body;
+    try {
+      const res = await fetch("/api/example");
+      body = res.ok ? await res.json() : null;
+    } catch (e) { body = null; }
+    const text = body && typeof body[which] === "string" ? body[which] : "";
+    if (!text) { failSoft("The example table could not be loaded."); return; }
+    $("#table").value = text;
+    $("#status").className = "";
+    $("#status").textContent = "";
+    leaveLanding();
   };
-  $("#load-broken").onclick = async () => {
-    $("#table").value = (await fetch("/api/example").then((x) => x.json())).broken;
-  };
+  $("#load-example").onclick = () => loadExample("realistic");
+  $("#load-broken").onclick = () => loadExample("broken");
   wireDiseaseSearch();
   $("#go").onclick = analyse;
   $("#drawer-close").onclick = closeDrawer;
@@ -286,6 +313,9 @@ async function init() {
     // run's figure (2026-10-18 walkthrough, item g). `body.viewing-run` hides
     // the index; the run's own figure, if it exported one, is shown instead.
     document.body.classList.add("viewing-run");
+    // v4.2. From here on there is a figure on screen that no control may blank;
+    // see `redrawLoadedRun`.
+    DISK_RUN = wanted;
     $("#result").hidden = false;
     $("#banner").hidden = true;
     $("#counts").innerHTML = "";
@@ -314,7 +344,7 @@ async function init() {
     // below, so a `#ledger` or `#figure/BRAF` link would otherwise be painted
     // and then immediately overwritten by the figure tab.
     showToolFigure(wanted).then(() => showTab(currentView().tab),
-                                () => showTab("table"));
+                                () => showTab(DEFAULT_TAB));
     if (TOOL_RUN === wanted) showToolInputs(wanted);
   }
 
@@ -326,9 +356,106 @@ async function init() {
     RESIZE_TIMER = setTimeout(redrawForThisWindow, RESIZE_SETTLE_MS);
   });
 
+  // v4.2. The three GO / NO-GO criteria and their bounds, at the top of the
+  // Table tab. Fetched once at boot: it is the build's rule, not the run's, and
+  // it does not change while the page is open.
+  fetch("/api/criteria").then((x) => (x.ok ? x.json() : null))
+    .then((c) => { if (c) renderCriteria(c); })
+    .catch(() => { /* an older server has no such route; the tab is unchanged */ });
+
+  // After every control is wired, so the disabling is not undone by a later
+  // assignment.
+  disableServerOnlyControls();
+
   // Last, so the hash is read after every control above is wired and can be
   // painted into. It replaces rather than pushes; the comment on it says why.
   startHistory();
+}
+
+// v4.2, Puck 2026-10-19: "on the top of the table page the main part should say
+// there are 3 go no go criteria, and a numbered list. and the bounds we are
+// looking for in them. the other stuff is less important. and say a note like
+// full descriptions are at the bottom."
+//
+// Two renderings of one payload: the numbered list with the bounds at the top of
+// the Table tab, and the rule in full at the bottom, under the anchor the note
+// links to. Both come from `/api/criteria`, i.e. `recommend.criteria_block()`,
+// which reads `current_thresholds()` — so neither can state a bound the drawers
+// were not computed against.
+function renderCriteria(c) {
+  const top = $("#table-criteria");
+  const bottom = $("#full-descriptions");
+  if (!c || !(c.criteria || []).length) return;
+  if (top) {
+    top.innerHTML =
+      `<h3 class="pane-h">${esc(c.heading)}</h3>
+       <ol class="criteria">` +
+      c.criteria.map((x) => `<li><b>${esc(x.name)}</b> —
+         <span class="bound">${esc(x.met_when)}</span></li>`).join("") +
+      `</ol>
+       <p class="pane-lede">${esc(c.never_a_criterion)}</p>
+       <p class="pane-lede"><a href="#full-descriptions" id="to-full-descriptions">Full
+         descriptions are at the bottom of this page</a>.</p>`;
+    // An in-page anchor, scrolled rather than navigated: the hash is the tab
+    // router's (`#<tab>` / `#<tab>/<gene>`), and writing `#full-descriptions`
+    // into it would send the router to its unknown-tab fallback.
+    const link = $("#to-full-descriptions");
+    if (link) link.onclick = (ev) => {
+      ev.preventDefault();
+      bottom.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+  }
+  if (bottom) {
+    bottom.innerHTML =
+      `<h3 class="pane-h">The GO / NO-GO rule in full</h3>
+       <table><thead><tr><th>#</th><th>Criterion</th><th>Met when</th>
+         <th>Source</th></tr></thead><tbody>` +
+      c.criteria.map((x) => `<tr><td>${esc(x.n)}</td><td>${esc(x.name)}</td>
+        <td class="reason">${esc(x.met_when)}</td>
+        <td class="reason">${esc(x.source)}</td></tr>`).join("") +
+      `</tbody></table>
+       <p class="pane-lede">${esc(c.go)} ${esc(c.no_go)} ${esc(c.insufficient)}
+         ${esc(c.never_a_criterion)}
+         <span class="hint">Rule version <code>${esc(c.rule_version)}</code>.</span></p>
+       <p class="pane-lede">Each column's full name, its units and its source
+         are in the strip below; the colour each value was drawn as is on the
+         Circos tab, scale by scale.</p>`;
+  }
+}
+
+// v4.2. True when this copy of the page has no analysis server behind it —
+// `scripts/static_demo_shim.js` sets the flag, so the served app never takes
+// this branch and `tests/test_demo.py` still enumerates the server's behaviour
+// unchanged.
+function noServerHere() {
+  return !!window.TARGETRING_STATIC_DEMO;
+}
+
+// v4.2, Puck 2026-10-19: a control that cannot act says so in a short plain
+// tooltip, on itself. Not a banner, not a paragraph, and never a sentence about
+// what kind of copy of the page this is.
+//
+// The list is only what genuinely needs the server: a disease search is a live
+// query, a pasted table is a new analysis. "Draw the figure" is deliberately
+// NOT here — it redraws the run on screen, which is a real thing it can do.
+function serverOnly(sel, why) {
+  const el = typeof sel === "string" ? $(sel) : sel;
+  if (!el) return;
+  el.disabled = true;
+  el.title = why;
+}
+
+function disableServerOnlyControls() {
+  if (!noServerHere()) return;
+  serverOnly("#disease", "Searching for a disease needs the analysis server.");
+  serverOnly("#table", "Drawing a new figure needs the analysis server.");
+  serverOnly("#file", "Drawing a new figure needs the analysis server.");
+  serverOnly("#load-example", "Drawing a new figure needs the analysis server.");
+  serverOnly("#load-broken", "Drawing a new figure needs the analysis server.");
+  serverOnly("#ordering", "The spoke order is set when a figure is drawn.");
+  serverOnly("#filters", "Threshold filters are applied when a figure is drawn.");
+  serverOnly("#drop-no-data", "Threshold filters are applied when a figure is drawn.");
+  serverOnly("#region", "The region is set when a figure is drawn.");
 }
 
 // ---------- stage 1: disease search ----------
@@ -1360,6 +1487,15 @@ function loadHeatmapStep() {
 
 async function makeSpokes() {
   const t = GENE_TABLE;
+  // v4.2, the same guard as "Draw the figure": with no contrast loaded there is
+  // nothing to analyse, and on a page showing a run from disk this read
+  // `t.contrast` off null and threw where a figure was already on screen.
+  if (!t || !t.contrast) {
+    if (DISK_RUN) return redrawLoadedRun(DISK_RUN);
+    const s = $("#make-spokes-status");
+    if (s) s.textContent = "No comparison is loaded — press “Use this comparison” first.";
+    return;
+  }
   const btn = $("#make-spokes");
   btn.disabled = true;
   const prog = await startProgress("#make-spokes-status");
@@ -1446,11 +1582,15 @@ async function makeSpokes() {
 // back to the figure rather than painting a blank pane, because a stale link
 // in someone's notes should degrade to the tool, not to nothing.
 // ---------------------------------------------------------------------------
-const TABS = ["figure", "table", "ledger", "evidence", "invariants", "caveats"];
+// v4.2, Puck: "the table should be default then the 2nd tab should just be
+// circlos". The grid is the landing view and the default hash, so a bare
+// `#` or an unknown tab lands on the numbers rather than on the circle.
+const TABS = ["table", "figure", "ledger", "evidence", "invariants", "caveats"];
+const DEFAULT_TAB = "table";
 
 function currentView() {
   const [tab, gene] = decodeURIComponent(location.hash.slice(1)).split("/");
-  return {tab: TABS.includes(tab) ? tab : "figure", gene: gene || null};
+  return {tab: TABS.includes(tab) ? tab : DEFAULT_TAB, gene: gene || null};
 }
 
 function hashFor(tab, gene) {
@@ -1492,6 +1632,10 @@ function startHistory() {
 }
 
 function showTab(name) {
+  // v4.2. The pointer can leave the circle without a `mouseleave` — a tab
+  // switch, a drawer opening, a keyboard route — and a tooltip left behind
+  // describes a cell that is no longer on screen.
+  hideCellTip();
   document.querySelectorAll(".tab").forEach((x) =>
     x.classList.toggle("active", x.dataset.tab === name));
   document.querySelectorAll(".tabpane").forEach((p) => { p.hidden = true; });
@@ -1659,8 +1803,79 @@ function startProgress(slot) {
   });
 }
 
+// v4.2. The figure on screen, drawn again from the run's own files.
+//
+// Puck, 2026-10-19: "draw the figure breaks everything". On a page showing a run
+// read off disk, pressing the button cleared `#result`, nulled `RUN` and then
+// failed with the paste message, so the figure and all six tabs vanished until
+// a reload. The button is the most prominent control on the page and it
+// destroyed the thing the page exists to show.
+//
+// So on that page the button does the nearest REAL thing instead: it re-inlines
+// the run's own `figure-web.svg`, resets the view to the default tab and scrolls
+// back to it. Nothing is fetched from a source, nothing is computed, nothing is
+// cleared — a redraw of what is already there is both honest and what "draw the
+// figure" means when the figure is already drawn.
+async function redrawLoadedRun(runId) {
+  const btn = $("#go");
+  if (btn) btn.disabled = true;
+  $("#status").className = "";
+  $("#status").textContent = "";
+  $("#result").hidden = false;
+  try {
+    await showToolFigure(runId);
+  } catch (e) {
+    // The run exported no web SVG. The pane keeps whatever it already had —
+    // which is the one thing this function must never take away.
+  }
+  goTab(DEFAULT_TAB);
+  $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (btn) btn.disabled = false;
+}
+
+// The status line, without clearing the figure. `fail()` hides `#result`, which
+// is right when a run was attempted and wrong for a pre-check that happens
+// before anything was touched.
+function failSoft(msg) {
+  $("#status").className = "err";
+  $("#status").textContent = msg;
+}
+
 async function analyse() {
   const btn = $("#go");
+
+  // THE PRE-CHECK COMES FIRST, before anything on the page is cleared.
+  //
+  // It used to come after `#result` was hidden and `RUN` nulled, so the one
+  // path that cannot produce a figure was also the one path that destroyed the
+  // figure already on screen (Puck: "draw the figure breaks everything"). The
+  // order is the whole fix: decide whether this button can do anything, and
+  // only then start taking the previous answer down.
+  //
+  // This button draws the PASTED table. On the disease path the genes come
+  // from the picked contrast instead and `syncPasteSection` hides this button
+  // — but only once the gene table has loaded, and the gene table only loads
+  // when the reader clicks "Use this comparison". Between the pick landing and
+  // that click, this button is visible, enabled, and posts an empty table.
+  // Observed 2026-10-09: the reader scrolled past the chosen contrast, pressed
+  // the button they could see, and got a 400 and a spinner.
+  //
+  // Naming the button that does work is the whole content of the message. A
+  // bare "give me a table" would be true and useless: there is no table to
+  // give, the app already has the genes, and the reader is one click away.
+  if (!$("#table").value.trim() && !$("#file").files[0]) {
+    // A run is on screen: redraw it rather than refuse. Nothing is cleared.
+    if (DISK_RUN) return redrawLoadedRun(DISK_RUN);
+    const picked = $("#use-picked");
+    failSoft(picked
+      ? "This button draws a table you pasted, and there isn't one. Your "
+        + "genes are coming from the gene expression comparison chosen above "
+        + "— press “Use this comparison” there to load them."
+      : "Paste a differential expression table, or upload one, first.");
+    if (picked) picked.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+
   btn.disabled = true;
   $("#status").className = "";
 
@@ -1676,31 +1891,6 @@ async function analyse() {
   // what it was doing. This is the stage list, driven by real events.
   clearInterval(TICKER);
   $("#status").textContent = "";
-
-  // Refuse here, before the progress bar exists.
-  //
-  // This button draws the PASTED table. On the disease path the genes come
-  // from the picked contrast instead and `syncPasteSection` hides this button
-  // — but only once the gene table has loaded, and the gene table only loads
-  // when the reader clicks "Use this comparison". Between the pick landing and
-  // that click, this button is visible, enabled, and posts an empty table.
-  // Observed 2026-10-09: the reader scrolled past the chosen contrast, pressed
-  // the button they could see, and got a 400 and a spinner.
-  //
-  // Naming the button that does work is the whole content of the message. A
-  // bare "give me a table" would be true and useless: there is no table to
-  // give, the app already has the genes, and the reader is one click away.
-  if (!$("#table").value.trim() && !$("#file").files[0]) {
-    const picked = $("#use-picked");
-    fail(picked
-      ? "This button draws a table you pasted, and there isn't one. Your "
-        + "genes are coming from the gene expression comparison chosen above "
-        + "— press “Use this comparison” there to load them."
-      : "Paste a differential expression table, or upload one, first.");
-    if (picked) picked.scrollIntoView({ behavior: "smooth", block: "center" });
-    btn.disabled = false;
-    return;
-  }
 
   const prog = await startProgress("#run-progress");
 
@@ -1959,6 +2149,10 @@ async function redrawForThisWindow() {
 // scales. Read the CSS beside `.figure-row` for why only one of the three is
 // allowed to collapse.
 function renderDecode(s) {
+  // The legend's own words for each ring, which are what a cell's hover says
+  // it measures (v4.2). The scales route carries the linked source text, so it
+  // is the better of the two sources for `RING_INFO`.
+  rememberRings(s.rings);
   // v3.2 / round 2 A6: no amber band here any more. The render draws the
   // comparability sentence at 16.55 px in its own top-left corner and that is
   // the copy the reader meets; a second one 8 px above it was the same claim
@@ -2060,6 +2254,7 @@ const SPOKE_LABEL_RE = /^[⚠\s]*([A-Za-z0-9._-]+)(?:\s*·\s*[A-Za-z0-9._-]+)?\s
 // list comes from the SVG itself (`showToolFigure`).
 function wireFigure(genes) {
   const known = genes || (RUN ? RUN.gene_order : []);
+  wireFigureTooltips();
   // Cells carry id="cell|<ring>|<index>|<gene>" — the same handle the invariant
   // checks use, so what is clickable is exactly what was audited.
   $("#figure").querySelectorAll('[id^="cell|"]').forEach((el) => {
@@ -2452,6 +2647,11 @@ async function openDrawer(gene, push = true) {
   // touched. `applyHash` and `goGene` pass false: they are already answering
   // or writing the entry themselves.
   if (push) { goGene(gene); return; }
+  hideCellTip();
+  // v4.2. Whichever surface opened it — a row, the gene button, a cell on the
+  // circle or a `#table/<gene>` link — the grid marks the row the drawer is
+  // about. One highlight, set in one place, so the two routes cannot disagree.
+  highlightRowFor(gene);
   // Two routes, one drawer. A run in memory has adapters behind it and
   // `/gene/` fetches ChEMBL and Europe PMC on this click. A run read from disk
   // has none; `/drawer/` is the file `scripts/bake_drawers.py` wrote beside the
@@ -2486,6 +2686,33 @@ async function openDrawer(gene, push = true) {
 function closeDrawerPaint() {
   $("#drawer").hidden = true;
   $("#scrim").hidden = true;
+  // v4.2. The row highlight is the drawer's: it says which row the panel on
+  // screen is about, so it goes when the panel does.
+  clearRowHighlight();
+}
+
+// v4.2, Puck 2026-10-19: "when you click on a row, it should highlight the
+// whole row and then bring up the table thing". One row at a time, cleared
+// when the drawer closes — a highlight left behind after the drawer is a row
+// claiming to be the subject of a panel that is no longer there.
+function clearRowHighlight() {
+  document.querySelectorAll("#table-grid tr.row-selected")
+    .forEach((tr) => tr.classList.remove("row-selected"));
+}
+
+function highlightRow(tr) {
+  clearRowHighlight();
+  if (tr) tr.classList.add("row-selected");
+}
+
+function highlightRowFor(gene) {
+  let found = null;
+  document.querySelectorAll("#table-grid tbody tr").forEach((tr) => {
+    const label = tr.querySelector(".gene");
+    if (!label) return;
+    if ((label.dataset.gene || label.textContent.trim()) === gene) found = tr;
+  });
+  highlightRow(found);
 }
 
 // The user's half, behind the ×, the scrim and Escape. Closing the drawer is
@@ -3181,6 +3408,127 @@ const num = (v) => String(Number((+v).toPrecision(4)));
 // Never blank, never zero (AGENTS.md rule 1). Every non-value state gets a word.
 const STATE_WORD = { no_data: "no data", not_applicable: "n/a", failed: "FAILED" };
 
+// ---------------------------------------------------------------------------
+// ONE CELL TOOLTIP, for both renderings of the same cell (v4.2).
+//
+// Puck, 2026-10-19: "the value should show on hover" and the cells "should also
+// have tool tips that show the value and an explanation of the cell". A ring
+// cell on the circle and the same cell in the grid are the same measurement, so
+// there is one function that writes what a cell says and two ways of showing it
+// — `title` on the table's `<td>`, a positioned box over the SVG, which has no
+// `title` a browser will render.
+//
+// Every word in it is somebody else's: the ring's own label, units and source
+// name come from the payload (`view.table_payload`'s rings, or the scales route
+// that feeds the legend beside the circle), and the last line is the adapter's
+// own `detail` for that cell. Nothing here describes a ring in words this file
+// invented — a second description of a measurement is the drift this build
+// refuses everywhere else.
+// ---------------------------------------------------------------------------
+
+// ring key -> what the legend and the column head say about that ring.
+let RING_INFO = {};
+// "<ring>|<gene>" -> the cell as `values.csv` recorded it.
+let CELL_INFO = {};
+
+function rememberRings(rings) {
+  (rings || []).forEach((r) => {
+    const was = RING_INFO[r.key] || {};
+    RING_INFO[r.key] = {
+      n: r.n ?? was.n,
+      label: r.label || was.label || r.key,
+      column_label: r.column_label || was.column_label || r.label || r.key,
+      units: r.units || was.units || "",
+      transform: r.transform || was.transform || "",
+      // The grid calls it `source_name`; the scales route calls it
+      // `source_text` and that is the longer, linked form. Either is the
+      // source, and whichever arrived last is the one with more in it.
+      source: r.source_text || r.source_name || was.source || "",
+    };
+  });
+}
+
+function rememberCells(genes) {
+  (genes || []).forEach((g) => {
+    Object.entries(g.cells || {}).forEach(([key, c]) => {
+      if (c) CELL_INFO[`${key}|${g.gene}`] = c;
+    });
+  });
+}
+
+// The value with its unit, or the state in words. Never a bare number: a cell
+// whose unit is not on the hover is a number a reader has to guess at.
+function cellValueWords(c, ring) {
+  if (!c) return "no cell";
+  if (c.state !== "value") return STATE_WORD[c.state] || c.state;
+  const u = (ring && ring.units) || "";
+  return num(c.value) + (u ? " " + u : "");
+}
+
+function cellTooltip(ringKey, gene) {
+  const r = RING_INFO[ringKey] || { column_label: ringKey, label: ringKey,
+                                    units: "", source: "" };
+  const c = CELL_INFO[`${ringKey}|${gene}`];
+  const head = `${r.n ? r.n + ". " : ""}${r.column_label} · ${gene}`;
+  const value = cellValueWords(c, r);
+  // The one sentence: what this ring measures, in the words the legend uses,
+  // and where the number came from.
+  const measures = `${r.label}${r.units ? ", in " + r.units : ""}${
+    r.transform ? " (" + r.transform + ")" : ""}${
+    r.source ? " — source: " + r.source : ""}.`;
+  const detail = c && c.detail ? c.detail : "";
+  return [head, value, measures, detail].filter(Boolean).join("\n");
+}
+
+// The SVG half. A `<title>` child inside an inlined SVG does render as a
+// tooltip, but only after the browser's own delay and with no control over
+// where it lands on a 900 px circle, so the box is positioned at the pointer.
+function cellTipBox() {
+  let el = $("#cell-tip");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "cell-tip";
+    el.hidden = true;
+    el.setAttribute("role", "tooltip");
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function showCellTip(text, x, y) {
+  const el = cellTipBox();
+  el.textContent = text;
+  el.hidden = false;
+  // Clamped, so a cell at the right or bottom edge of the circle does not put
+  // its own explanation off the screen.
+  const box = el.getBoundingClientRect();
+  const left = Math.min(x + 14, window.innerWidth - box.width - 8);
+  const top = Math.min(y + 16, window.innerHeight - box.height - 8);
+  el.style.left = Math.max(8, left) + "px";
+  el.style.top = Math.max(8, top) + "px";
+}
+
+function hideCellTip() {
+  const el = $("#cell-tip");
+  if (el) el.hidden = true;
+}
+
+// Wired once on `#figure`, which survives every `innerHTML` the figure pane
+// gets, so a redraw does not need re-wiring and cannot double-wire.
+function wireFigureTooltips() {
+  const fig = $("#figure");
+  if (!fig || fig.dataset.tipWired) return;
+  fig.dataset.tipWired = "1";
+  fig.addEventListener("mousemove", (e) => {
+    const el = e.target && e.target.closest ? e.target.closest('[id^="cell|"]') : null;
+    if (!el) { hideCellTip(); return; }
+    const bits = el.id.split("|");
+    showCellTip(cellTooltip(bits[1], bits[3]), e.clientX, e.clientY);
+  });
+  fig.addEventListener("mouseleave", hideCellTip);
+  addEventListener("scroll", hideCellTip, { passive: true });
+}
+
 function tableSortSpec() {
   return TABLE.sort.map((k) => k.ordering + (k.reverse ? ":asc" : ":desc")).join(",");
 }
@@ -3312,6 +3660,10 @@ function diskRunDownloads(runId, artefacts) {
 
 function renderTable(d) {
   const ring = (k) => d.rings.find((r) => r.key === k);
+  // v4.2. What every cell says on hover, here and on the circle, is written
+  // from these two — see `cellTooltip`.
+  rememberRings(d.rings);
+  rememberCells(d.genes);
   // v3.7 item 4. `column_label`, so a sort chip names the column the way the
   // column head does and the way the scale column names the same ring.
   const ringLabel = (o) => o === "alphabetical" ? "gene symbol"
@@ -3484,13 +3836,29 @@ function renderTable(d) {
           : `<span class="gene">${esc(g.gene)}</span>`}
         <div class="ens">${esc(g.ensembl_id)}</div>${dimTag}</th>
       <td class="kcell">${esc(g.k)}<span class="of">/${esc(d.k_max)}</span></td>`
-      + d.rings.map((r) => cellHtml(g.cells[r.key])).join("")
+      + d.rings.map((r) => cellHtml(g.cells[r.key], r.key, g.gene)).join("")
       + `</tr>`;
   }).join("");
 
   $("#table-grid").innerHTML = `<table class="grid">
     <thead>${head}</thead><tbody>${body}</tbody></table>`;
 
+  // v4.2. Re-sorting and dimming are `order.py`'s and `dim.classify`'s, both
+  // server-side on purpose — a second definition of either in this file is the
+  // drift the app's own comments refuse. With no server the column heads stop
+  // being click targets and say why in one clause, rather than offering a sort
+  // that answers with a refusal.
+  const sortless = noServerHere();
+  if (sortless) {
+    $("#table-grid").querySelectorAll("th.sortable").forEach((th) => {
+      th.classList.remove("sortable");
+      th.classList.add("unsortable");
+      th.title = (th.title ? th.title + " — " : "")
+        + "sorting needs the analysis server; this is the order the run drew.";
+    });
+    const clear = $("#table-clear");
+    if (clear) serverOnly(clear, "This is already the order the run drew.");
+  }
   $("#table-grid").querySelectorAll("th.sortable").forEach((th) => {
     th.onclick = (ev) => {
       const o = th.dataset.ordering;
@@ -3511,6 +3879,31 @@ function renderTable(d) {
   });
   $("#table-grid").querySelectorAll("button.gene").forEach((b) => {
     if (!b.disabled) b.onclick = () => openDrawer(b.dataset.gene);
+  });
+
+  // v4.2, Puck: "when you click on a row, it should highlight the whole row and
+  // then bring up the table thing". The whole row is the click target, so a
+  // reader who lands on a number gets the same drawer as a reader who lands on
+  // the gene name — which is already how a cell on the circle behaves, and the
+  // grid was the one surface where only the first column was live.
+  //
+  // The gene BUTTON keeps its own handler: it is the keyboard route into the
+  // drawer and must not depend on a row click. The row handler skips a click
+  // on a link or on a control, so the dim tag's tooltip, the `<a>` in a cell
+  // and the gene button are not intercepted by it.
+  $("#table-grid").querySelectorAll("tbody tr").forEach((tr) => {
+    const label = tr.querySelector(".gene");
+    if (!label) return;                        // the "no value" divider row
+    const gene = label.dataset.gene || label.textContent.trim();
+    tr.classList.add("rowlink");
+    tr.addEventListener("click", (ev) => {
+      if (ev.target.closest("a, button.gene")) return;
+      highlightRow(tr);
+      // A gene with no drawer on this run still highlights: the row is the
+      // reader's place in the grid either way, and a click that did nothing at
+      // all would read as a broken table.
+      if (d.in_memory || (d.baked_drawers || []).includes(gene)) openDrawer(gene);
+    });
   });
   wireSummaryHighlight(d);
 
@@ -3610,6 +4003,14 @@ function renderDimBar(d) {
        on is neither a match nor an exclusion and gets its own treatment — no value
        is not a low value. To actually remove genes, use
        <b>threshold filters</b> on the analyse form, which ledger what they drop.</p>`;
+
+  // v4.2. `dim.classify` decides a dim filter and it is server-side on purpose,
+  // so with no server the control is disabled with one clause rather than left
+  // to answer with a refusal.
+  if (noServerHere()) {
+    const why = "Dim filters are decided by the analysis server.";
+    ["#dim-col", "#dim-op", "#dim-thr", "#dim-add"].forEach((s) => serverOnly(s, why));
+  }
 
   $("#dim-add").onclick = () => {
     const thr = $("#dim-thr").value.trim();
@@ -3740,15 +4141,21 @@ function renderTableSources(d) {
 // that are not measurements carry a word as well as a pattern, so the table is
 // readable in greyscale, in a screenshot, and by a reader who cannot tell the
 // hatches apart. A `no_data` cell is never blank and never 0.
-function cellHtml(c) {
+// v4.2. `ringKey` and `gene` are passed so the hover is the SAME sentence the
+// circle's cells show — ring name, gene, the value with its unit or the state
+// word, what the ring measures and its source, then the cell's own record.
+// `title` is enough on a `<td>`; the SVG needs the positioned box because it
+// has no `title` a browser renders.
+function cellHtml(c, ringKey, gene) {
   if (!c) {
     // `table.load` refuses a non-rectangular pivot, so this is unreachable —
     // and if it ever is reached it says so rather than drawing an empty box.
     return `<td class="st-missing">NO CELL</td>`;
   }
+  const tip = ringKey && gene ? cellTooltip(ringKey, gene) : (c.detail || "");
   if (c.state === "value") {
     return `<td class="st-value" style="background:${esc(c.fill)};color:${
-      inkOn(c.fill)}" title="${esc(c.detail)}">${esc(num(c.value))}</td>`;
+      inkOn(c.fill)}" title="${esc(tip)}">${esc(num(c.value))}</td>`;
   }
   // v3.7 item 3. A `failed` cell's hover says where to look, and where not to.
   // The column's source link answers `no_data` — "is this gene really absent

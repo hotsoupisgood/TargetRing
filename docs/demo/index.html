@@ -83,14 +83,6 @@
        paste link and the form, and shows this. Nothing on this box runs an
        analysis: every card is a finished run read from its artefacts, and the
        figure shown is the PNG the run exported. -->
-  <section id="demo-panel" hidden>
-    <p class="landing-only"><b>Read-only demo.</b>
-      <span class="hint">These are finished runs, served from their artefacts.
-        Nothing here fetches, analyses or calls a model — clone the
-        repository to draw your own. Open a run for its table, its evidence
-        surface, its drop ledger and every download.</span></p>
-    <div id="demo-runs"></div>
-  </section>
 
   <section id="find-panel">
     <details id="find" open>
@@ -255,11 +247,14 @@
     <div id="counts" class="counts"></div>
 
     <div class="tabs">
-      <button class="tab active" data-tab="figure">Figure</button>
+      <!-- v4.2, Puck 2026-10-19: "the table should be default then the 2nd tab
+           should just be circlos". The grid is first and active; the circle is
+           second and is called by its name. -->
       <!-- v3.6. The same run, as a grid. Not a second analysis and not a second
            reading of the sources: it is a pivot of `values.csv`, the artefact
            invariant 1 already asserts is cell-for-cell what was drawn. -->
-      <button class="tab" data-tab="table">Table</button>
+      <button class="tab active" data-tab="table">Table</button>
+      <button class="tab" data-tab="figure">Circos</button>
       <!-- The go/no-go surface. Named "Evidence" and not "Go / no-go" because it
            does not produce one: rule 7 forbids ranking, scoring and eligibility,
            and a verdict is that machinery renamed. It states what each source
@@ -272,7 +267,7 @@
       <button class="tab" data-tab="caveats">What this is not</button>
     </div>
 
-    <div class="tabpane" id="pane-figure">
+    <div class="tabpane" id="pane-figure" hidden>
       <!-- v3.0. Was a row of six and v3.0 adds three artefacts, which would
            have made it nine. Three menus instead, grouped by what you are
            trying to walk away with rather than by file type: the figure, the
@@ -412,7 +407,16 @@
          The run is addressed by id rather than taken from `RUN`, so the 250
          runs already under `runs/` are viewable and a reload does not lose the
          one on screen. `?run=<id>` opens straight to it. -->
-    <div class="tabpane" id="pane-table" hidden>
+    <div class="tabpane" id="pane-table">
+      <!-- v4.2, Puck 2026-10-19: "on the top of the table page the main part
+           should say there are 3 go no go criteria, and a numbered list. and
+           the bounds we are looking for in them. the other stuff is less
+           important. and say a note like full descriptions are at the bottom."
+           Filled by `renderCriteria` from `/api/criteria`, which is
+           `recommend.criteria_block()` — every bound in the list is read from
+           `recommend.current_thresholds()` at call time, so the list and the
+           verdicts in the drawers cannot state different numbers. -->
+      <div id="table-criteria"></div>
       <div class="row table-pick">
         <label for="table-run">Run</label>
         <input id="table-run" list="table-runs" spellcheck="false"
@@ -456,6 +460,14 @@
            its sources on screen. `#scales`, in `#pane-figure`, is populated from
            `/api/run/{id}/scales`, which reads the in-process `_runs` dict and so
            404s for all ~250 runs under `runs/`. -->
+      <!-- v4.2. "Full descriptions are at the bottom of this page" points
+           here. It holds the rule in full — each criterion with its bound and
+           its source, and how the three combine into GO / NO-GO /
+           INSUFFICIENT DATA — directly above the per-column source strip,
+           which is this tab's copy of the ring scales (full ring label, units
+           and a source link per column). Written by `renderCriteria` from the
+           same payload the short list at the top is. -->
+      <div id="full-descriptions"></div>
       <div id="table-sources"></div>
       <div id="table-ledger"></div>
     </div>
@@ -477,7 +489,20 @@
       <div id="evidence"></div>
     </div>
 
-    <div class="tabpane" id="pane-ledger" hidden><div id="ledger"></div></div>
+    <!-- v4.2, Puck 2026-10-19: "Under the drop ledger, have a 1 sentence
+         description of what the ledger is". It is in the markup rather than in
+         `renderLedger` because it is true of the ledger with no run loaded too,
+         and the sentence matches what the ledger ACTUALLY holds: `renamed` and
+         `possible_mouse` rows are on the figure and are listed because the
+         symbol changed, which is why this does not simply say "not on the
+         figure" (see the status order in `renderLedger`). -->
+    <div class="tabpane" id="pane-ledger" hidden>
+      <h3 class="pane-h">Drop ledger</h3>
+      <p class="pane-lede">Every input gene the figure does not draw, with the
+        rule that removed it — plus the genes it does draw under a changed
+        symbol — so a gene can never leave the figure silently.</p>
+      <div id="ledger"></div>
+    </div>
     <div class="tabpane" id="pane-invariants" hidden><div id="invariants"></div></div>
     <div class="tabpane" id="pane-caveats" hidden><div id="caveats"></div></div>
   </section>

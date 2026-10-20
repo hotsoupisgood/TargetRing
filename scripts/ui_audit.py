@@ -275,7 +275,15 @@ def audit_page(page, url: str, size: dict, label: str) -> dict:
 
     findings: list[dict] = []
     tabs = page.query_selector_all(".tab")
-    panes = [None] + [t.get_attribute("data-tab") for t in tabs]
+    # v4.2. The opening view IS a tab now — Table is both the landing pane and
+    # the first tab — so `[None] + every tab` audited it twice and reported
+    # every finding on it twice. The tab that is already active on load is
+    # dropped: `None` has measured it.
+    opening = page.evaluate(
+        """() => { const t = document.querySelector('.tab.active');
+                   return t ? t.dataset.tab : null; }""")
+    panes = [None] + [t.get_attribute("data-tab") for t in tabs
+                      if t.get_attribute("data-tab") != opening]
     for want in panes:
         if want:
             t = page.query_selector(f'.tab[data-tab="{want}"]')

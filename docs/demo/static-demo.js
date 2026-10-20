@@ -37,12 +37,20 @@
   window.TARGETRING_API_BASE = BASE;
   window.TARGETRING_STATIC_DEMO = true;
 
-  // Verbatim `app.DEMO_REFUSAL`. Asserted equal by the export script, so the
-  // two cannot drift silently.
-  var REFUSAL = "This is a read-only demo: it serves finished runs and makes no " +
-    "requests and no model calls. Clone the repo to run analyses.";
-  var STATIC_NOTE = "This copy is a static export: there is no server behind it " +
-    "at all, only the files four finished runs wrote.";
+  // Verbatim `app.DEMO_REFUSAL`, carried so `export_static_demo.
+  // check_shim_refusal` can assert the server's sentence and this file have not
+  // drifted. It is NOT shown on the page.
+  //
+  // v4.2, Puck 2026-10-19: "no published version please", and remove every
+  // sentence that calls this a demo, a read-only copy or a static export. The
+  // page is the tool. So the refusal the server writes stays the server's
+  // (`app.DEMO_REFUSAL`, `tests/test_demo.py`), the controls that genuinely
+  // need a server are disabled with a short plain tooltip by `app.js`
+  // (`disableServerOnlyControls`, keyed off `TARGETRING_STATIC_DEMO` below),
+  // and what little is left to say in a JSON body says only what is missing.
+  var SERVER_REFUSAL = "This is a read-only demo: it serves finished runs and " +
+    "makes no requests and no model calls. Clone the repo to run analyses.";
+  var NEEDS_SERVER = "This needs the analysis server.";
 
   // `app._DEMO_FORBIDDEN_*`, same four shapes, same order.
   var FORBIDDEN_EXACT = {
@@ -70,7 +78,7 @@
 
   function refusal(message, status, error) {
     return Promise.resolve(new Response(
-      JSON.stringify({ error: error || "demo_mode", message: message, note: STATIC_NOTE }),
+      JSON.stringify({ error: error || "demo_mode", message: message }),
       { status: status || 403, headers: { "Content-Type": "application/json" } }));
   }
 
@@ -110,7 +118,7 @@
     if (sc) return "api/run/" + sc[1] + "/scales.json";
 
     // The flat payloads.
-    if (/^\/api\/(runs|regions|orderings|example|health)$/.test(path)) {
+    if (/^\/api\/(runs|regions|orderings|example|health|criteria)$/.test(path)) {
       return "api" + path.slice(4) + ".json";
     }
 
@@ -138,17 +146,16 @@
     // BASE: strip the prefix back off so one set of rules sees one shape.
     if (BASE !== "/" && path.indexOf(BASE) === 0) path = "/" + path.slice(BASE.length);
 
-    if (method !== "GET" && method !== "HEAD") return refusal(REFUSAL);
-    if (forbids(path)) return refusal(REFUSAL);
+    if (method !== "GET" && method !== "HEAD") return refusal(NEEDS_SERVER);
+    if (forbids(path)) return refusal(NEEDS_SERVER);
 
     var file = fileFor(path, url.search.replace(/^\?/, ""));
     if (file === false) {
       return refusal(
-        "Re-sorting and dim filters are decided by the server (order.py and the " +
-        "dim rules), so a static copy serves only the order this run drew its " +
-        "spokes in. " + STATIC_NOTE, 403, "static_demo");
+        "Re-sorting and dim filters are decided by the server, so this page " +
+        "shows the order this run drew its spokes in.", 403, "static_demo");
     }
-    if (file === null) return refusal(REFUSAL, 404, "unknown_route");
+    if (file === null) return refusal(NEEDS_SERVER, 404, "unknown_route");
     return realFetch(BASE + file, init);
   };
 
@@ -172,11 +179,10 @@
       var panel = document.querySelector(sel) || document.querySelector("#phenotype-panel");
       if (!panel) return;
       panel.innerHTML =
-        '<div class="note">' + REFUSAL + " " + STATIC_NOTE +
-        " The per-paper MGI table is the one surface that was never baked into a " +
-        "run's artefacts — it fetches and then spends on every click. The mouse " +
-        "phenotype terms for this gene, and the biological models under each of " +
-        "them, are above.</div>";
+        '<div class="note">The per-paper MGI table is fetched and paid for on ' +
+        "every click, so it needs the analysis server. The mouse phenotype terms " +
+        "for this gene, and the biological models under each of them, are " +
+        "above.</div>";
     };
   });
 
