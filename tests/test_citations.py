@@ -379,14 +379,18 @@ class TestTheTableAndTheLegendAgreeOnEveryRingName:
         assertions are written against the flag, not against its key.
         """
         restating = [s for s in RING_SPECS if s.table_restates]
-        assert [s.key for s in restating] == ["neg_log10_padj"], restating
+        assert sorted(s.key for s in restating) == ["literature",
+                                                    "neg_log10_padj"], restating
         for spec in restating:
-            assert spec.column_label == "adjusted p (yours)", spec.column_label
-            assert "log10" not in spec.column_label
-            # The bound keeps the ring's own name, in the ring's own units, so
-            # the dim control cannot read "adjusted p" over a box taking 10.
+            assert "log10" not in spec.column_label.lower(), spec.key
+            # The bound keeps the ring's own name, and the units beside it are
+            # the FILE's, so the dim control cannot read "adjusted p" over a
+            # box taking 10 or "PubTator3 records" over a box taking 4.6.
+            # `tests/test_counts.py` is where the pair is spelled out ring by
+            # ring; this is the rule they both have to satisfy.
             assert spec.bound_label == spec.label
-            assert "log10" in spec.bound_label
+            assert "log10" in spec.bound_units, spec.key
+            assert spec.printed_units != spec.bound_units, spec.key
             assert citations.bound_label(spec, spec.label) == spec.label
             # And a legacy run keeps the label its own numbers were recorded
             # under, exactly as `column_label` does.

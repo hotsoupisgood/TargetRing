@@ -29,6 +29,9 @@ What it holds, in the order Puck asked for it:
 12. the Table tab's column 2 prints the adjusted p: the head reads "adjusted
     p", every cell on the demo run reads "<0.05" (every demo gene is far below
     the cutoff), and the hover still carries the drawn −log10 padj.
+13. the Table tab's column 11 prints the PubTator3 record count with
+    thousands separators ("40,606", not "4.609"), the hover carries both that
+    count and the drawn log, and the dim control states the stored units.
 
     python3 scripts/ui_checks.py --base http://127.0.0.1:8911/TargetRing
     python3 scripts/ui_checks.py --shots docs/showcase
@@ -295,6 +298,96 @@ def p_column_checks(page, base: str) -> None:
           f"and none in a tooltip, and {RAW_PADJ} is nowhere on it ({thits[:3]})")
 
 
+def literature_column_checks(page, base: str) -> None:
+    """13. Column 11, which had column 2's defect.
+
+    Review of 2026-10-20: MUC1's Literature cell printed `4.609` under a head
+    whose units read "PubTator3 records", with "40606 PubTator3 records" in the
+    cell's own detail. Same fix as column 2 — the column prints the count with
+    thousands separators, the band keeps its log colour scale and its record
+    ticks, and the hover carries both numbers.
+    """
+    page.set_viewport_size(DESK)
+    page.goto(f"{base}/demo/", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+
+    col = page.evaluate("""() => {
+      const heads = [...document.querySelectorAll(
+        '#table-grid thead tr:not(.colgroups) th')];
+      const i = heads.findIndex(
+        (th) => th.dataset.ordering === 'ring:literature');
+      if (i < 0) return null;
+      const rows = [...document.querySelectorAll('#table-grid tbody tr')];
+      const cell = (tr) => tr.children[i];
+      const muc1 = rows.find(
+        (tr) => (tr.querySelector('.gene') || {}).textContent.trim() === 'MUC1');
+      return {
+        n: (heads[i].querySelector('.rn') || {}).textContent,
+        head: heads[i].innerText.replace(/\\s+/g, ' ').trim(),
+        title: heads[i].getAttribute('title') || '',
+        cells: rows.map(cell).filter(Boolean).map((td) => td.innerText.trim()),
+        muc1: muc1 ? cell(muc1).innerText.trim() : null,
+        muc1_tip: muc1 ? cell(muc1).getAttribute('title') : null,
+        fill: muc1 ? cell(muc1).style.background : null,
+      };
+    }""")
+    check(bool(col), "the grid has a literature column to check")
+    if not col:
+        return
+    check(col["n"] == "11", f"it is column 11 ({col['n']!r})")
+
+    # The worked case, by name: the number in the cell is the count.
+    check(col["muc1"] == "40,606",
+          f"MUC1's literature cell reads '40,606' (got {col['muc1']!r})")
+    # And no cell in the column is still printing the stored log. Every demo
+    # gene has four or five digits of records, so a value under 10 is one.
+    logs = sorted(c for c in col["cells"]
+                  if re.fullmatch(r"\d\.\d+", c or ""))
+    check(not logs, f"no cell in column 11 prints the stored log10 ({logs[:3]})")
+    # Grouped, not a digit string.
+    ungrouped = sorted(c for c in col["cells"] if re.fullmatch(r"\d{4,}", c or ""))
+    check(not ungrouped,
+          f"every count over 999 is grouped in threes ({ungrouped[:3]})")
+
+    # The hover carries BOTH numbers, each with its own unit.
+    tip = col["muc1_tip"] or ""
+    check("40,606 PubTator3 records" in tip,
+          f"the hover leads with the count and its unit ({tip.splitlines()[1] if tip else None!r})")
+    check("log10(1 + PubTator3 records)" in tip,
+          "and keeps the drawn log value, in the units the file holds")
+    # The ring is untouched: the cell is still filled by the renderer on the log
+    # scale, so the grid and the band are the same colour for the same gene.
+    check(bool(col["fill"]) and col["fill"] not in ("", "none"),
+          f"the cell keeps the renderer's fill ({col['fill']!r})")
+    # The ring's full name is still on the surface, as column 2's is.
+    check("Literature volume" in col["title"],
+          f"the ring's own label is in the column's title ({col['title'][:50]!r})")
+
+    # The DIM control offers this column in the units a bound is COMPARED
+    # against, which is the file's and not the head's.
+    opt = page.evaluate("""() => {
+      const o = [...document.querySelectorAll('#dim-col option')]
+        .find((e) => e.value === 'literature');
+      return o ? o.textContent.replace(/\\s+/g, ' ').trim() : null;
+    }""")
+    check(bool(opt) and "log10(1 + PubTator3 records)" in (opt or ""),
+          f"the dim dropdown states the stored units for column 11 ({opt!r})")
+
+    # The drawer's own count is grouped too.
+    page.goto(f"{base}/demo/#table/MUC1", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+    rec = page.evaluate("""() => {
+      const dts = [...document.querySelectorAll('#drawer dl.kv dt')];
+      const dt = dts.find((d) => d.textContent.trim() === 'PubTator3 records');
+      return dt && dt.nextElementSibling
+        ? dt.nextElementSibling.textContent.trim() : null;
+    }""")
+    check(bool(rec) and rec.startswith("40,606"),
+          f"the drawer's PubTator3 count is grouped ({rec!r})")
+    dtext = page.inner_text("#drawer")
+    check("40606" not in dtext, "no ungrouped 40606 is left in the drawer")
+
+
 #: The contrast facts the block above the grid has to carry. Atlas's own
 #: strings, as the manifest stores them — nothing here is a paraphrase.
 DE_FACTS = ("E-GEOD-101794", "g2_g1", "n=61 vs 13", "RNA-seq", "DESeq2 1.10.1",
@@ -435,6 +528,8 @@ def main(argv: list[str]) -> int:
         p_format_checks(page, args.base)
         print("=== the p column ===")
         p_column_checks(page, args.base)
+        print("=== the literature column ===")
+        literature_column_checks(page, args.base)
         print("=== the Gene expression box ===")
         gene_expression_checks(page, args.base)
         print("=== the flowchart ===")

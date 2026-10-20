@@ -132,12 +132,19 @@ function provenanceLine(c) {
 //: and `tests/test_table.py` asserts the two lists are the same.
 const DE_RING_KEYS = ["logfc", "neg_log10_padj"];
 
-//: The one ring whose grid column prints something other than the number the
+//: The first ring whose grid column prints something other than the number the
 //: band draws: the column shows the adjusted p (`fmtP`), the ring stays on its
 //: -log10 colour scale, and the hover carries both. Mirrors
 //: `figure.RingSpec.table_restates` — Puck, 2026-10-19, after the drawer and
 //: the GO box got `<0.05`: "i didn't see it in the table".
 const PADJ_RING = "neg_log10_padj";
+
+//: The second, found by the review of 2026-10-20: the Literature column printed
+//: the stored `log10(1 + n)`, so MUC1 read "4.609" under a head whose units say
+//: "PubTator3 records" while "40606 PubTator3 records" sat in the cell's own
+//: detail. The column now prints the count with thousands separators, the ring
+//: keeps its log colour scale and its record ticks, and the hover carries both.
+const LIT_RING = "literature";
 
 //: The whole compact block: the heading, the comparison, the provenance line
 //: and the sign sentence, from a manifest-shaped contrast record.
@@ -3211,11 +3218,13 @@ function drawerHtml(d) {
     encodeURIComponent(lit.europepmc_query || "");
   h += `<h4>literature</h4><dl class="kv">
     <dt>PubTator3 records</dt><dd>
-      <a href="${esc(ptUrl)}" target="_blank" rel="noopener">${lit.pubtator_count ?? "—"}</a>
+      <a href="${esc(ptUrl)}" target="_blank" rel="noopener">${
+        esc(fmtCount(lit.pubtator_count))}</a>
       <span class="hint">gene-id resolved — opens the result list</span></dd>
     <dt>query</dt><dd><code>${esc(lit.pubtator_query || "")}</code></dd>
     <dt>Europe PMC</dt><dd>
-      <a href="${esc(epmcUrl)}" target="_blank" rel="noopener">${lit.europepmc_count ?? "—"}</a>
+      <a href="${esc(epmcUrl)}" target="_blank" rel="noopener">${
+        esc(fmtCount(lit.europepmc_count))}</a>
       ${lit.europepmc_error ? `<span class="hint">— ${esc(lit.europepmc_error)}</span>` : ""}
       ${lit.europepmc_echo_live === false
         ? `<span class="hint">— replayed from cache, not checked this run</span>` : ""}
@@ -3225,7 +3234,7 @@ function drawerHtml(d) {
   const years = Object.entries(lit.years || {}).sort((a, b) => b[0].localeCompare(a[0]));
   if (years.length) {
     h += `<p class="hint">by year: ${years.slice(0, 8)
-      .map(([y, n]) => `${esc(y)}: ${n}`).join(" · ")}</p>`;
+      .map(([y, n]) => `${esc(y)}: ${esc(fmtCount(n))}`).join(" · ")}</p>`;
   }
 
   // --- rodent lead (COUNCIL M4) ---
@@ -3295,7 +3304,7 @@ function drawerHtml(d) {
       <td><span class="pill ${c.state === "value" ? "ok"
         : c.state === "failed" ? "bad" : "grey"}">${esc(c.state)}</span></td>
       <td>${c.value == null ? "—" : (+c.value).toPrecision(4)}</td>
-      <td class="reason">${esc(fmtPInText(c.detail))}</td></tr>`).join("") +
+      <td class="reason">${esc(fmtNumsInText(c.detail))}</td></tr>`).join("") +
     `</tbody></table>`;
   return h;
 }
@@ -3463,6 +3472,30 @@ function inkOn(hex) {
 // drawer prints `toPrecision(4)` and this is the same number without the `5.000`.
 const num = (v) => String(Number((+v).toPrecision(4)));
 
+// A COUNT, grouped in threes: `40606` -> `40,606`. Review of 2026-10-20: the
+// page printed `65217` and `40606` as digit strings, which a reader has to count
+// on the screen.
+//
+// Written out rather than `toLocaleString()`: that reads the browser's locale, so
+// the same run would print `40.606` in Berlin and `40 606` in Paris, and
+// `scripts/ui_checks.py` asserts the rendered text. This is the same output as
+// Python's `f"{n:,}"`, which is the house idiom server-side
+// (`contrast.py`, `app.py`), and `tests/test_counts.py` runs both halves over the
+// same cases. Not for measurements: a count has no significant-figure question,
+// and `num` stays the formatter for a ring value.
+function fmtCount(n, missing) {
+  const miss = missing === undefined ? "—" : missing;
+  if (n === null || n === undefined || n === "" || typeof n === "boolean") return miss;
+  const v = Number(n);
+  if (!Number.isFinite(v)) return miss;
+  const sign = v < 0 ? "-" : "";
+  const [whole, frac] = String(Math.abs(v)).split(".");
+  // `replace` with a lookahead rather than a loop: groups of three counted from
+  // the right, so `1000` is `1,000` and `100` is untouched.
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return sign + grouped + (frac ? "." + frac : "");
+}
+
 // ---------------------------------------------------------------------------
 // An adjusted p, as a reader reads one (v4.2).
 //
@@ -3550,6 +3583,26 @@ function fmtPInText(s) {
   });
 }
 
+// The same move for a COUNT inside a recorded string: the literature cell's
+// detail is "40606 PubTator3 records for '@GENE_MUC1' (log10(1+n) = 4.61); …",
+// written by the adapter and read back as data by `cellLitCount`, so the
+// grouping happens HERE, on the way to the screen, and never on disk.
+const COUNT_IN_TEXT = /\b(\d{4,}) (PubTator3 records|records)\b/g;
+
+function fmtCountInText(s) {
+  return String(s == null ? "" : s).replace(COUNT_IN_TEXT, (whole, n, unit) => {
+    const v = Number(n);
+    return Number.isFinite(v) ? fmtCount(v) + " " + unit : whole;
+  });
+}
+
+// Both, for a cell `detail` on its way to a hover or a reason column: one call
+// site rather than two, so a surface cannot get the p reformatted and miss the
+// count.
+function fmtNumsInText(s) {
+  return fmtCountInText(fmtPInText(s));
+}
+
 // The submitted adjusted p behind a `neg_log10_padj` cell. THE SAME TWO STEPS
 // AS `drawer_bake._padj`, which is the Python half of this: the run writes the
 // exact number into the cell's own detail ("adjusted p 2.19538e-22 (submitted)")
@@ -3572,6 +3625,50 @@ function cellPadj(c) {
     if (Number.isFinite(x)) return Math.pow(10, -x);
   }
   return null;
+}
+
+// The PubTator3 record count behind a `literature` cell — the same two steps as
+// `cellPadj` above, for the same reason. The adapter writes the count into the
+// cell's own detail ("40606 PubTator3 records for '@GENE_MUC1' (log10(1+n) =
+// 4.61); …", `adapters/literature.literature_cell`) and that string is the
+// carrier, so it is read back out of there and only back-transformed from the
+// drawn value where a run is too old to carry it.
+//
+// `Math.round` on the back-transform: `10 ** 4.6086 - 1` is 40605.99…, and a
+// count printed with a fraction would read as a measurement. Null where the cell
+// has neither number, which `fmtCount` prints as the em dash.
+const LIT_IN_TEXT = /^(\d+) PubTator3 records\b/;
+
+function cellLitCount(c) {
+  if (!c) return null;
+  const m = LIT_IN_TEXT.exec(c.detail || "");
+  if (m) {
+    const v = Number(m[1]);
+    if (Number.isFinite(v)) return v;
+  }
+  if (c.state === "value" && c.value !== null && c.value !== undefined) {
+    const x = Number(c.value);
+    if (Number.isFinite(x)) return Math.round(Math.pow(10, x) - 1);
+  }
+  return null;
+}
+
+// What a `value` cell PRINTS, for both renderings of the grid and for the lead
+// of its own hover. `num(c.value)` for ten rings; for the two that restate, the
+// measurement in the units the column head states — and null from either reader
+// falls back to the drawn number rather than to a dash, because a cell in state
+// `value` has a value and printing a dash over one would be the plausible-wrong
+// output AGENTS.md's one rule is about.
+function cellShown(c, ringKey) {
+  if (ringKey === PADJ_RING) {
+    const p = cellPadj(c);
+    if (p !== null) return fmtP(p);
+  }
+  if (ringKey === LIT_RING) {
+    const n = cellLitCount(c);
+    if (n !== null) return fmtCount(n);
+  }
+  return num(c.value);
 }
 
 // Never blank, never zero (AGENTS.md rule 1). Every non-value state gets a word.
@@ -3608,6 +3705,11 @@ function rememberRings(rings) {
       label: r.label || was.label || r.key,
       column_label: r.column_label || was.column_label || r.label || r.key,
       units: r.units || was.units || "",
+      // v4.3. Both default to `units` server-side, so a payload that predates
+      // them (or a route that does not publish them) keeps the old hover
+      // exactly — see `cellValueWords`.
+      printed_units: r.printed_units || was.printed_units || "",
+      bound_units: r.bound_units || was.bound_units || "",
       transform: r.transform || was.transform || "",
       // The grid calls it `source_name`; the scales route calls it
       // `source_text` and that is the longer, linked form. Either is the
@@ -3630,15 +3732,26 @@ function rememberCells(genes) {
 function cellValueWords(c, ring, ringKey) {
   if (!c) return "no cell";
   if (c.state !== "value") return STATE_WORD[c.state] || c.state;
-  const u = (ring && ring.units) || "";
-  const raw = num(c.value) + (u ? " " + u : "");
-  // v4.2. Column 2's cell prints the p, so the hover leads with the same string
-  // the cell does — and keeps the drawn -log10 value after it, unchanged and
-  // with its unit. The colour on this band is on that scale and `<0.05` is a
-  // bound rather than a magnitude, so the exact number stays one hover away.
-  if (ringKey === PADJ_RING) {
-    const p = cellPadj(c);
-    if (p !== null) return fmtP(p) + " adjusted p · " + raw;
+  const r = ring || {};
+  // v4.3. Three unit strings, from the payload rather than written here: the
+  // STORED number's unit (`bound_units`), the PRINTED number's unit
+  // (`printed_units`) and the ring's own `units`, which is both for the ten
+  // rings that print what they store. `figure.RingSpec.printed_units` /
+  // `.bound_units` decide them, so the page cannot name a unit the server
+  // disagrees with. Fall back to `units` so an older payload still reads.
+  const rawUnit = r.bound_units || r.units || "";
+  const raw = num(c.value) + (rawUnit ? " " + rawUnit : "");
+  // v4.2/v4.3. A restating cell's hover leads with the same string the cell
+  // prints and keeps the drawn number after it, unchanged and with its own
+  // unit: column 2 shows `<0.05`, a bound rather than a magnitude, and column
+  // 11 shows the record count the band draws the log of. The colour is on the
+  // stored scale either way, so the exact number stays one hover away.
+  if (ringKey === PADJ_RING || ringKey === LIT_RING) {
+    const shown = cellShown(c, ringKey);
+    const shownUnit = r.printed_units || r.units || "";
+    if (shown !== num(c.value)) {
+      return shown + (shownUnit ? " " + shownUnit : "") + " · " + raw;
+    }
   }
   return raw;
 }
@@ -3661,7 +3774,7 @@ function cellTooltip(ringKey, gene) {
   // and keeps the drawn −log10 number after it (Puck, 2026-10-19: "i didn't
   // see it in the table"), so this line still names the source of the p —
   // "(submitted)" — and the two cannot print different numbers.
-  const detail = c && c.detail ? fmtPInText(c.detail) : "";
+  const detail = c && c.detail ? fmtNumsInText(c.detail) : "";
   return [head, value, measures, detail].filter(Boolean).join("\n");
 }
 
@@ -4203,19 +4316,24 @@ function renderDimBar(d) {
   $("#table-dim").innerHTML =
     `<div class="dimbar">
        <span class="lbl">Dim rows where</span>
-       ${/* v4.2. `dim_label`, not `column_label`: the bound below is compared
-             against the column's own raw `values.csv` number "in the units its
-             label states", and on column 2 the HEAD no longer states those
-             units — it prints the adjusted p while the file and the band hold
-             −log10(padj). So this entry keeps the ring's own name, the bound
-             stays in −log10, and the column number is the bridge to the grid.
-             `citations.bound_label` is where that choice is made; the page does
-             not decide it, and the server's own count line uses the same
-             string. */""}
+       ${/* v4.2, extended v4.3. `dim_label` and `bound_units`, not
+             `column_label` and `units`: the bound below is compared against the
+             column's own raw `values.csv` number "in the units its label
+             states", and on the two restating columns the HEAD states the units
+             of the PRINT instead — column 2 prints the adjusted p over a file
+             holding −log10(padj), column 11 prints PubTator3 records over a file
+             holding log10(1 + records). So this entry keeps the ring's own name
+             and the file's own units, the bound stays in the stored scale, and
+             the column number is the bridge to the grid.
+             `citations.bound_label` and `figure.RingSpec.bound_units` are where
+             those choices are made; the page does not decide them, and the
+             server's own count line uses the same strings. */""}
        <select id="dim-col">${dimmable.map((r) =>
         `<option value="${esc(r.key)}"${r.key === draft.ring ? " selected" : ""}>${
           esc(r.n)}. ${esc(r.dim_label || r.column_label)}${
-          r.units ? " (" + esc(r.units) + ")" : ""}</option>`).join("")}</select>
+          r.bound_units || r.units
+            ? " (" + esc(r.bound_units || r.units) + ")" : ""}</option>`)
+        .join("")}</select>
        <select id="dim-op">
          <option value="ge"${draft.op === "ge" ? " selected" : ""}>is at least</option>
          <option value="le"${draft.op === "le" ? " selected" : ""}>is at most</option>
@@ -4391,14 +4509,16 @@ function cellHtml(c, ringKey, gene) {
   }
   const tip = ringKey && gene ? cellTooltip(ringKey, gene) : (c.detail || "");
   if (c.state === "value") {
-    // v4.2, Puck 2026-10-19: "format the p value in the table". Column 2 prints
-    // the adjusted p through the same `fmtP` the drawer and the GO box use —
-    // `<0.05` under the rule's own cutoff, two significant digits above it. The
-    // FILL is untouched: it is `c.fill`, computed by the renderer on the ring's
-    // −log10 scale, so the grid and the band are still the same colour for the
-    // same gene and only the printed number differs. `cellPadj` reads the p out
-    // of the cell's own detail, so nothing here recomputes a measurement.
-    const shown = ringKey === PADJ_RING ? fmtP(cellPadj(c)) : num(c.value);
+    // v4.2, Puck 2026-10-19: "format the p value in the table"; v4.3, the same
+    // defect found in column 11 by the 2026-10-20 review. A restating column
+    // prints the measurement in the units its head states — the adjusted p
+    // through the same `fmtP` the drawer and the GO box use, the PubTator3
+    // count with thousands separators — and the FILL is untouched: it is
+    // `c.fill`, computed by the renderer on the ring's own log scale, so the
+    // grid and the band are still the same colour for the same gene and only
+    // the printed number differs. Both readers take the number out of the
+    // cell's own detail, so nothing here recomputes a measurement.
+    const shown = cellShown(c, ringKey);
     return `<td class="st-value" style="background:${esc(c.fill)};color:${
       inkOn(c.fill)}" title="${esc(tip)}">${esc(shown)}</td>`;
   }

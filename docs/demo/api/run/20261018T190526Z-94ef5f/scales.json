@@ -34,6 +34,8 @@
    "short_label": "logFC (Atlas)",
    "column_label": "logFC (Atlas)",
    "units": "log2 fold change",
+   "printed_units": "log2 fold change",
+   "bound_units": "log2 fold change",
    "transform": "diverging, anchored at 0 and symmetric; neither direction is drawn as the good one",
    "stepped": false,
    "colours": [
@@ -97,6 +99,8 @@
    "short_label": "\u2212log10 padj (Atlas)",
    "column_label": "adjusted p (Atlas)",
    "units": "-log10 adjusted p",
+   "printed_units": "adjusted p",
+   "bound_units": "-log10 adjusted p",
    "transform": "log-spaced: colour is log10(1 + x), ticks are x",
    "stepped": false,
    "colours": [
@@ -155,6 +159,8 @@
    "short_label": "Tractability (suggested)",
    "column_label": "Tractability",
    "units": "mean of 3 keys, each 0 or 1",
+   "printed_units": "mean of 3 keys, each 0 or 1",
+   "bound_units": "mean of 3 keys, each 0 or 1",
    "transform": "fixed 0\u20131, same colour in every run",
    "stepped": false,
    "colours": [
@@ -213,6 +219,8 @@
    "short_label": "Chemical probe (yes/no)",
    "column_label": "Chemical probe available",
    "units": "probe: no / yes",
+   "printed_units": "probe: no / yes",
+   "bound_units": "probe: no / yes",
    "transform": "binary; absent key is hatched, never 0",
    "stepped": true,
    "colours": [
@@ -241,6 +249,8 @@
    "short_label": "Safety flags \u2260 safe",
    "column_label": "Safety flags \u2014 NOT evidence of safety",
    "units": "mean of 4 keys, each in [-1, 1]",
+   "printed_units": "mean of 4 keys, each in [-1, 1]",
+   "bound_units": "mean of 4 keys, each in [-1, 1]",
    "transform": "fixed \u22121\u2026+1, diverging at 0; amber arm is the bad one",
    "stepped": false,
    "colours": [
@@ -304,6 +314,8 @@
    "short_label": "Region TPM \u00f7 median",
    "column_label": "Regional specificity",
    "units": "\u00d7 median across the GTEx panel",
+   "printed_units": "\u00d7 median across the GTEx panel",
+   "bound_units": "\u00d7 median across the GTEx panel",
    "transform": "log10; ticks are the raw ratio. Range moves with the submitted set \u2014 unbounded above",
    "stepped": false,
    "colours": [
@@ -362,6 +374,8 @@
    "short_label": "Furthest trial phase",
    "column_label": "Pipeline: furthest phase",
    "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+   "printed_units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+   "bound_units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
    "transform": "6 discrete stages, fixed; no value between two stages",
    "stepped": true,
    "colours": [
@@ -410,6 +424,8 @@
    "short_label": "Trial activity now",
    "column_label": "Pipeline: current activity",
    "units": "three named states, no order implied by colour",
+   "printed_units": "three named states, no order implied by colour",
+   "bound_units": "three named states, no order implied by colour",
    "transform": "categorical \u2014 not a ramp, and not comparable to one",
    "stepped": true,
    "colours": [
@@ -447,6 +463,8 @@
    "short_label": "TDL \u2014 knowledge",
    "column_label": "Target development level",
    "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+   "printed_units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+   "bound_units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
    "transform": "4 discrete levels, fixed",
    "stepped": true,
    "colours": [
@@ -485,6 +503,8 @@
    "short_label": "Mouse phenotype",
    "column_label": "Mouse phenotype lead",
    "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+   "printed_units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+   "bound_units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
    "transform": "binary; 'not phenotyped' is hatched, never 0",
    "stepped": true,
    "colours": [
@@ -511,8 +531,10 @@
    "key": "literature",
    "label": "Literature volume",
    "short_label": "Literature count",
-   "column_label": "Literature volume",
+   "column_label": "Literature records",
    "units": "PubTator3 records",
+   "printed_units": "PubTator3 records",
+   "bound_units": "log10(1 + PubTator3 records)",
    "transform": "the adapter stores log10(1 + records); ticks are records. Range moves with the submitted set",
    "stepped": false,
    "colours": [
@@ -571,6 +593,8 @@
    "short_label": "k of 9 rings",
    "column_label": "k \u2014 external rings",
    "units": "rings with a real value, of 9",
+   "printed_units": "rings with a real value, of 9",
+   "bound_units": "rings with a real value, of 9",
    "transform": "a completeness gauge: it orders nothing and selects nothing, and is drawn muted to say so",
    "stepped": true,
    "colours": [

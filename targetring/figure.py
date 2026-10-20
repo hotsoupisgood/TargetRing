@@ -262,6 +262,16 @@ class RingSpec:
     #: column is compared against the RAW value, so the control that takes one
     #: must name the ring in the raw units and not in the column head's.
     table_restates: bool = False
+    #: Units of the number the GRID PRINTS, where that is not the number
+    #: `values.csv` holds. Empty means the two are one number and `units`
+    #: describes both. Written only on a `table_restates` ring.
+    table_units: str = ""
+    #: Units of the number IN `values.csv` -- what a dim bound is compared
+    #: against -- where `units` describes the restated print instead. Empty
+    #: means `units` is already the raw unit, which is true of every ring whose
+    #: column prints the stored number AND of `neg_log10_padj`, whose `units`
+    #: is "-log10 adjusted p" and whose column head is the restatement.
+    raw_units: str = ""
 
     @property
     def wedge_label(self) -> str:
@@ -294,6 +304,31 @@ class RingSpec:
         mismatch this property exists to refuse.
         """
         return self.label if self.table_restates else self.column_label
+
+    @property
+    def printed_units(self) -> str:
+        """The units of the number the GRID PRINTS.
+
+        `units` for eleven rings, because the grid prints the stored number.
+        `table_units` for a `table_restates` ring, whose column prints
+        something else: column 2 prints an adjusted p out of a file holding
+        -log10(padj), and column 11 prints PubTator3 records out of a file
+        holding log10(1 + records).
+        """
+        return self.table_units or self.units
+
+    @property
+    def bound_units(self) -> str:
+        """The units a RAW-VALUE bound on this ring is set in -- the units of
+        the number in `values.csv`, which is what `dim.py` compares against.
+
+        The pair to `bound_label`: that property picks the NAME the dim control
+        shows and this one picks the UNITS beside it, and both exist because a
+        restating column's head describes the print and not the file. A
+        dropdown offering "Literature volume (PubTator3 records)" over a box
+        that takes 4.6 is the mismatch this refuses.
+        """
+        return self.raw_units or self.units
 
     @property
     def source_doc(self):
@@ -457,7 +492,11 @@ RING_SPECS: tuple[RingSpec, ...] = (
              short_source="yours",
              short_label="−log10 padj (yours)",
              table_label="adjusted p (yours)",
-             table_restates=True),
+             table_restates=True,
+             # `raw_units` is left empty on purpose: `units` above is already
+             # the unit of the number in `values.csv`, so a bound on this
+             # column keeps reading "-log10 adjusted p" exactly as it did.
+             table_units="adjusted p"),
     # v2.3 item 1 / COUNCIL M7/V8. One ring became two, and the labels say which
     # claim each one makes: the dense three-key ring is not the sparse probe key,
     # and a hatched probe cell must not take tractability down with it.
@@ -577,13 +616,24 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # The adapter already stores log10(1 + n), so the ring's *value* is the
     # transform (V6's own prescription, applied upstream in v1). The scale prints
     # the ticks as raw PubTator3 records, which is the number a reader has.
+    #
+    # v4.3, review of 2026-10-20: the grid printed the STORED number under a head
+    # whose units say records -- MUC1 read "4.609" in a column of "PubTator3
+    # records" while its own cell detail said 40,606. Same fix as column 2 and the
+    # same three names: the column prints the count with thousands separators, the
+    # ring keeps its log colour scale and its record ticks, and the hover carries
+    # both numbers. `raw_units` is what the DIM control states, because a bound on
+    # this column is still compared against the log in `values.csv`.
     RingSpec("literature", "Literature volume",
              "PubTator3, gene-id resolved, log10(1+n)",
              family="knowledge", units="PubTator3 records", scale="prelog1p",
              transform="the adapter stores log10(1 + records); ticks are "
                        "records. Range moves with the submitted set",
              short_source="PubTator3",
-             short_label="Literature count"),
+             short_label="Literature count",
+             table_label="Literature records",
+             table_restates=True,
+             raw_units="log10(1 + PubTator3 records)"),
     # V13: k over external rings only, on a fixed 0..K domain. It is a gauge and
     # not evidence, which is why it is the one ring drawn at a third of the
     # chroma the others use -- a deliberately muted instrument rather than a
@@ -2537,6 +2587,13 @@ def scale_rows(cells_by_ring, de_source=None) -> list[dict]:
             # does instead of the way the wedge does.
             "column_label": spec.column_label,
             "units": spec.units,
+            # v4.3. The circle's cell hover is the SAME sentence the grid's is
+            # (`cellValueWords`), so the two rings whose print is a restatement
+            # of what they store need their two units here as well — or a cell
+            # hovered on the figure would read "4.609 PubTator3 records" while
+            # the identical cell in the grid read "40,606 PubTator3 records".
+            "printed_units": spec.printed_units,
+            "bound_units": spec.bound_units,
             "transform": spec.transform or "",
             "stepped": stepped,
             "colours": ring_swatches(spec) if stepped

@@ -249,6 +249,17 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
              "source_name": (specs[r["key"]].short_source if r["key"] in specs
                              else citations_mod.RETIRED_RING_NAME),
              "units": specs[r["key"]].units if r["key"] in specs else "",
+             # v4.3. Two rings print something other than the number
+             # `values.csv` holds, so "the units" is two questions. `units`
+             # above is the ring's own, unchanged, and these two say which
+             # number each surface is about: the grid cell prints
+             # `printed_units` and a dim bound goes on in `bound_units`. They
+             # are the same string as `units` for the other ten rings, so a
+             # reader of this payload can use either there.
+             "printed_units": (specs[r["key"]].printed_units
+                               if r["key"] in specs else ""),
+             "bound_units": (specs[r["key"]].bound_units
+                             if r["key"] in specs else ""),
              # Sortable exactly where `/api/orderings` offers a `ring:` ordering,
              # so the table can never sort by something the circle cannot.
              # `completeness` is deliberately absent: ordering by k would order

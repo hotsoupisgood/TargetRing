@@ -115,6 +115,8 @@
    "dim_label": "logFC (Atlas)",
    "source_name": "Expression Atlas",
    "units": "log2 fold change",
+   "printed_units": "log2 fold change",
+   "bound_units": "log2 fold change",
    "sortable": true,
    "dimmable": true
   },
@@ -127,6 +129,8 @@
    "dim_label": "-log10 padj (Atlas)",
    "source_name": "Expression Atlas",
    "units": "-log10 adjusted p",
+   "printed_units": "adjusted p",
+   "bound_units": "-log10 adjusted p",
    "sortable": true,
    "dimmable": true
   },
@@ -139,6 +143,8 @@
    "dim_label": "Tractability",
    "source_name": "Open Targets",
    "units": "mean of 3 keys, each 0 or 1",
+   "printed_units": "mean of 3 keys, each 0 or 1",
+   "bound_units": "mean of 3 keys, each 0 or 1",
    "sortable": true,
    "dimmable": true
   },
@@ -151,6 +157,8 @@
    "dim_label": "Chemical probe available",
    "source_name": "Open Targets",
    "units": "probe: no / yes",
+   "printed_units": "probe: no / yes",
+   "bound_units": "probe: no / yes",
    "sortable": true,
    "dimmable": true
   },
@@ -163,6 +171,8 @@
    "dim_label": "Safety flags \u2014 NOT evidence of safety",
    "source_name": "Open Targets",
    "units": "mean of 4 keys, each in [-1, 1]",
+   "printed_units": "mean of 4 keys, each in [-1, 1]",
+   "bound_units": "mean of 4 keys, each in [-1, 1]",
    "sortable": true,
    "dimmable": true
   },
@@ -175,6 +185,8 @@
    "dim_label": "Regional specificity",
    "source_name": "GTEx v8",
    "units": "\u00d7 median across the GTEx panel",
+   "printed_units": "\u00d7 median across the GTEx panel",
+   "bound_units": "\u00d7 median across the GTEx panel",
    "sortable": true,
    "dimmable": true
   },
@@ -187,6 +199,8 @@
    "dim_label": "Pipeline: furthest phase",
    "source_name": "Open Targets",
    "units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+   "printed_units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
+   "bound_units": "0 none \u00b7 1 Ph1 \u00b7 2 Ph1/2 \u00b7 3 Ph2 \u00b7 4 Ph3 \u00b7 5 approved",
    "sortable": true,
    "dimmable": true
   },
@@ -199,6 +213,8 @@
    "dim_label": "Pipeline: current activity",
    "source_name": "Open Targets",
    "units": "three named states, no order implied by colour",
+   "printed_units": "three named states, no order implied by colour",
+   "bound_units": "three named states, no order implied by colour",
    "sortable": true,
    "dimmable": true
   },
@@ -211,6 +227,8 @@
    "dim_label": "Target development level",
    "source_name": "Pharos",
    "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+   "printed_units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
+   "bound_units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
    "sortable": true,
    "dimmable": true
   },
@@ -223,6 +241,8 @@
    "dim_label": "Mouse phenotype lead",
    "source_name": "Open Targets",
    "units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+   "printed_units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
+   "bound_units": "0 no abnormal \u00b7 1 abnormal \u00b7 hatched not phenotyped",
    "sortable": true,
    "dimmable": true
   },
@@ -231,10 +251,12 @@
    "key": "literature",
    "label": "Literature volume",
    "short_label": "Literature count",
-   "column_label": "Literature volume",
+   "column_label": "Literature records",
    "dim_label": "Literature volume",
    "source_name": "PubTator3",
    "units": "PubTator3 records",
+   "printed_units": "PubTator3 records",
+   "bound_units": "log10(1 + PubTator3 records)",
    "sortable": true,
    "dimmable": true
   },
@@ -247,6 +269,8 @@
    "dim_label": "k \u2014 external rings",
    "source_name": "derived",
    "units": "rings with a real value, of 9",
+   "printed_units": "rings with a real value, of 9",
+   "bound_units": "rings with a real value, of 9",
    "sortable": false,
    "dimmable": false
   }
