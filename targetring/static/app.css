@@ -1040,6 +1040,23 @@ ul.tight li { margin: 2px 0; }
                  max-width: 118px; white-space: normal; line-height: 1.25; }
 .grid th.sortable { cursor: pointer; }
 .grid th.sortable:hover { background: #e4e9ef; color: var(--ink); }
+
+/* v4.2. The grouped header over columns 1-2 — "Gene expression" spanning the
+   two rings that ARE the submitted differential expression. Centred, with a
+   rule under the span so it reads as a bracket over both columns rather than
+   as a label on the first; the ungrouped cells either side draw no border at
+   all, so the only line on this row is the one under the group. */
+.grid thead tr.colgroups th { border: 0; padding: 2px 8px 3px; background: #fff;
+                              vertical-align: bottom; max-width: none; }
+.grid thead tr.colgroups th.group {
+  text-align: center; font-size: 12px; font-weight: 600; color: var(--ink);
+  background: #f2f3f5; border-bottom: 2px solid var(--accent); }
+
+/* The run's contrast facts, directly above the grid. `.note` already carries
+   the panel's own look; this only stops it running the full width of a
+   fourteen-column pane, where the sign sentence would be one long line. */
+#table-de { margin: 0 0 8px; }
+#table-de .note.de-facts { max-width: 68ch; }
 /* v4.0. Both were #8a909b: 3.05:1 on paper and 2.84:1 on the column head's
    own #f2f1ee, at 12 px. #5d636e is 5.74:1 / 5.35:1 and still reads as the
    quiet layer the number and the greyed head are meant to be. */

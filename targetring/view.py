@@ -206,6 +206,16 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
         "region": t.region,
         "timestamp_utc": m.get("timestamp_utc", ""),
         "git_sha": m.get("git_sha", ""),
+        # v4.2, Puck 2026-10-19: "that gene expression expansion should be
+        # organised with the gene expression data not arbitrary". The run's
+        # contrast facts -- the comparison, the Atlas accession and contrast
+        # id, the two group sizes, the platform, the pipeline, the Ensembl
+        # release and the sign sentence -- are what columns 1 and 2 ARE, so
+        # they travel with the grid rather than being read from a second
+        # request. Straight off the manifest, unrewritten: the block above the
+        # grid prints the same strings the `#find` panel does, and the offline
+        # export gets them because it calls this builder too.
+        "contrast": dict(m.get("contrast") or {}),
         # Ring 1 is the outermost band (PANEL P1). On a table that stops being a
         # thing a reader has to know, because the column is named — but the
         # number is carried so the two renderings can be checked against each

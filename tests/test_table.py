@@ -674,3 +674,59 @@ def _empty_report():
     from targetring.invariants import InvariantReport
 
     return InvariantReport()
+
+
+# ---------------------------------------------------------------------------
+# v4.2 — the Gene expression group over columns 1 and 2
+#
+# Puck, 2026-10-19: "that gene expression expansion should be organised with
+# the gene expression data not arbitrary". The grid's grouped header is
+# computed from a ring-key list in `app.js` rather than written as a literal
+# `colspan=2`, so the two lists have to be the same list.
+# ---------------------------------------------------------------------------
+
+
+class TestTheGeneExpressionGroup:
+    def test_the_js_de_ring_keys_are_the_figures_own(self) -> None:
+        import re
+
+        from targetring.figure import DE_INPUT_RINGS
+
+        js = (REPO / "targetring" / "static" / "app.js").read_text()
+        m = re.search(r"^const DE_RING_KEYS = \[(.*?)\];", js, re.M)
+        assert m, "app.js no longer declares a top-level `const DE_RING_KEYS`"
+        keys = tuple(re.findall(r'"([^"]+)"', m.group(1)))
+        assert keys == tuple(DE_INPUT_RINGS), (keys, DE_INPUT_RINGS)
+
+    def test_they_are_the_first_two_columns_of_a_real_payload(self, client,
+                                                              run_id) -> None:
+        """A group drawn over columns 1-2 is only right if those ARE the two.
+
+        The header's span is computed from the payload, so this is the fact the
+        computation reads: the DE rings lead the ring order and are contiguous.
+        """
+        from targetring.figure import DE_INPUT_RINGS
+
+        d = client.get(f"/api/run/{run_id}/values").json()
+        assert [r["key"] for r in d["rings"][:2]] == list(DE_INPUT_RINGS)
+        assert [r["n"] for r in d["rings"][:2]] == [1, 2]
+
+    def test_the_payload_carries_the_runs_contrast_facts(self, client,
+                                                         run_id) -> None:
+        """The block above the grid is built from the payload, not a second
+        request — and from the manifest's own strings, unrewritten."""
+        d = client.get(f"/api/run/{run_id}/values").json()
+        c = d["contrast"]
+        m = table_mod.load(run_id).manifest
+        assert c == (m.get("contrast") or {})
+        for key in ("accession", "contrast_id", "n_ref", "n_test", "platform",
+                    "pipeline", "ensembl_release", "name", "sign_sentence"):
+            assert key in c, key
+
+    def test_a_run_with_no_contrast_block_still_answers(self, client) -> None:
+        """`contrast` is always a dict, so the page never reads `undefined`;
+        `geneExpressionNoteHtml` draws nothing when it is empty."""
+        from targetring import view as view_mod
+
+        d = view_mod.table_payload(a_real_run(), "", "", in_memory=False)
+        assert isinstance(d["contrast"], dict)

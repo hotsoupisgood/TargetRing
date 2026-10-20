@@ -126,6 +126,40 @@ function provenanceLine(c) {
   return parts.join(" · ");
 }
 
+//: The two grid columns that ARE the submitted differential expression, in the
+//: payload's own ring-key spelling. Mirrors `figure.DE_INPUT_RINGS`; the grid's
+//: grouped header is computed from it rather than from a hard-coded colspan,
+//: and `tests/test_table.py` asserts the two lists are the same.
+const DE_RING_KEYS = ["logfc", "neg_log10_padj"];
+
+//: The whole compact block: the heading, the comparison, the provenance line
+//: and the sign sentence, from a manifest-shaped contrast record.
+//:
+//: v4.2, Puck 2026-10-19: "that gene expression expansion should be organised
+//: with the gene expression data not arbitrary". Two surfaces print these four
+//: strings now — `#disease-chosen`, where a chosen run's input is echoed, and
+//: `#table-de`, directly above the grid columns the numbers are IN. So it is
+//: ONE builder, for the same reason `provenanceLine` above is one: the moment
+//: there are two of these the pair drifts, and a card that disagrees with the
+//: figure is the plausible-wrong-output this build refuses.
+//:
+//: Nothing here rewords Atlas. `name`, `accession`, `contrast_id`, `n_test`,
+//: `n_ref`, `platform`, `pipeline`, `ensembl_release` and `sign_sentence` are
+//: printed as the configuration file states them; `plainComparison`,
+//: `platformWord` and `pipelineWord` only choose which part is shown.
+function geneExpressionNoteHtml(c, cls) {
+  if (!c || !(c.accession || c.name || c.contrast_id)) return "";
+  // The comparison falls back to the manifest's own `name` if it is not in the
+  // `'A' vs 'B' in 'factor'` shape, because a card that silently drops what
+  // was compared is worse than a quoted one.
+  const comparison = plainComparison(c.name) || c.name || "";
+  const sign = c.sign_sentence || "";
+  return `<div class="note${cls ? " " + cls : ""}"><b>Gene expression</b><br>
+    Differential expression: ${esc(comparison)}
+    <br><span class="hint">${provenanceLine(c)}</span>
+    ${sign ? `<br><span class="hint">${esc(sign)}</span>` : ""}</div>`;
+}
+
 // The server reports a refusal two ways and the page must read both. The
 // hand-built `JSONResponse` paths — 422 no_selection, 502 source_failure —
 // carry `message`. Every `raise HTTPException` instead serialises as FastAPI's
@@ -456,6 +490,20 @@ function disableServerOnlyControls() {
   serverOnly("#filters", "Threshold filters are applied when a figure is drawn.");
   serverOnly("#drop-no-data", "Threshold filters are applied when a figure is drawn.");
   serverOnly("#region", "The region is set when a figure is drawn.");
+
+  // v4.2, Puck 2026-10-19: "that gene expression expansion should be organised
+  // with the gene expression data not arbitrary". On the published page the
+  // run is already chosen, so the top `Gene expression` box is not an input
+  // form — it is this run's contrast facts sitting above everything, away from
+  // the two columns they describe. Those facts are now printed in `#table-de`,
+  // directly above grid columns 1-2 and under the same grouped header, so the
+  // box is REMOVED rather than disabled: a disabled search field is still a
+  // search field, and there is nothing here to search.
+  //
+  // Removed only on this branch. The local app keeps `#find`, where it is the
+  // input form and the only way in.
+  const find = $("#find-panel") || $("#find");
+  if (find) find.remove();
 }
 
 // ---------- stage 1: disease search ----------
@@ -760,18 +808,14 @@ async function showToolInputs(runId) {
   const disease = m.disease_label || m.disease
     || head.replace(/^'/, "") || (c ? c.test_label : "");
   if (box && disease) box.value = disease;
-  if (c) {
-    $("#disease-chosen").hidden = false;
-    // Heading, comparison, provenance — the three layers, see
-    // `plainComparison()`. The comparison falls back to the manifest's own
-    // `name` if it is not in the `'A' vs 'B' in 'factor'` shape, because a
-    // card that silently drops what was compared is worse than a quoted one.
-    const comparison = plainComparison(c.name) || c.name || "";
-    $("#disease-chosen").innerHTML =
-      `<div class="note"><b>Gene expression</b><br>
-        Differential expression: ${esc(comparison)}
-        <br><span class="hint">${provenanceLine(c)}</span>
-        <br><span class="hint">${esc(c.sign_sentence || "")}</span></div>`;
+  // Heading, comparison, provenance, sign — the four layers, from the one
+  // builder (`geneExpressionNoteHtml`). `#disease-chosen` lives inside `#find`,
+  // which the published page removes now that these facts sit above the grid
+  // columns they belong to, so the element is looked up rather than assumed.
+  const chosen = $("#disease-chosen");
+  if (c && chosen) {
+    chosen.hidden = false;
+    chosen.innerHTML = geneExpressionNoteHtml(c);
   }
   // The region select shows the tissue the ring was actually read against, and
   // `#region-inferred` the chooser's sentence if that is how it was decided --
@@ -3863,6 +3907,42 @@ function renderTable(d) {
     return i < 0 ? "" : `<span class="krank">${i + 1}</span>`;
   };
 
+  // v4.2, Puck 2026-10-19: "that gene expression expansion should be organised
+  // with the gene expression data not arbitrary". Columns 1 and 2 are the
+  // submitted differential expression and nothing else is, so they get a
+  // header of their own spanning both, and the run's contrast facts sit
+  // directly above the grid under the same words (`#table-de`).
+  //
+  // The span is COMPUTED from the ring keys rather than written as `colspan=2`:
+  // `DE_RING_KEYS` mirrors `figure.DE_INPUT_RINGS`, and a run whose payload
+  // carries one of them, or neither, gets a header that matches its own grid
+  // instead of a group drawn over somebody else's column.
+  const deStart = d.rings.findIndex((r) => DE_RING_KEYS.includes(r.key));
+  let deAfter = deStart < 0 ? -1 : deStart;
+  while (deAfter >= 0 && deAfter < d.rings.length
+         && DE_RING_KEYS.includes(d.rings[deAfter].key)) deAfter++;
+  const deSpan = deStart < 0 ? 0 : deAfter - deStart;
+  const tail = deSpan ? d.rings.length - deStart - deSpan : 0;
+  // Concatenated rather than written across a template literal: every
+  // continuation line here is indented on purpose, because
+  // `test_the_export_neutralises_only_the_bootstrap` reads this file for
+  // top-level statements by looking for a letter in column 0.
+  const groupTitle = `Columns ${deStart + 1}–${deStart + deSpan}: the `
+    + "differential expression submitted to this run. The comparison, its "
+    + "Atlas provenance and which way log2FC points are stated directly "
+    + "above the grid.";
+  // `+ 2`: the Gene and k columns, which are not rings and are in no group.
+  const groupRow = !deSpan ? "" : `<tr class="colgroups">
+    <th colspan="${2 + deStart}" class="nogroup"></th>
+    <th colspan="${deSpan}" class="group group-de"
+        title="${esc(groupTitle)}">Gene expression</th>
+    ${tail > 0 ? `<th colspan="${tail}" class="nogroup"></th>` : ""}
+  </tr>`;
+
+  // `groupRow` is prepended at the `<thead>` below rather than here. Three
+  // tests in `test_citations.py` read the column-head markup by slicing this
+  // file between two literals, the first of which is the next line; that slice
+  // is about what ONE column head contains, and the group spans two of them.
   let head = `<tr>
     <th class="sortable gene-col" data-ordering="alphabetical">Gene${
       esc(dirOf("alphabetical"))}${rank("alphabetical")}</th>
@@ -3934,8 +4014,15 @@ function renderTable(d) {
       + `</tr>`;
   }).join("");
 
+  // The run's contrast facts, directly above the grid and under the same
+  // heading the grouped column header carries. Built from the payload's own
+  // `contrast` block (`view.table_payload`), which is the manifest's, so the
+  // block and the numbers in columns 1-2 are the same run's or neither is.
+  const de = $("#table-de");
+  if (de) de.innerHTML = geneExpressionNoteHtml(d.contrast, "de-facts");
+
   $("#table-grid").innerHTML = `<table class="grid">
-    <thead>${head}</thead><tbody>${body}</tbody></table>`;
+    <thead>${groupRow}${head}</thead><tbody>${body}</tbody></table>`;
 
   // v4.2. Re-sorting and dimming are `order.py`'s and `dim.classify`'s, both
   // server-side on purpose — a second definition of either in this file is the

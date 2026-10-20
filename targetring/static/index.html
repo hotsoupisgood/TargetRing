@@ -452,6 +452,14 @@
            self-describing. -->
       <div id="table-dim"></div>
       <div id="table-dim-counts"></div>
+      <!-- v4.2, Puck 2026-10-19: "that gene expression expansion should be
+           organised with the gene expression data not arbitrary". Columns 1
+           and 2 of the grid ARE the submitted differential expression, so the
+           run's contrast facts sit directly above them, under the same heading
+           the grouped column header carries. Filled by `renderGeneExpression`
+           from the payload's own `contrast` block — the same strings the
+           `#find` panel prints, with Atlas's wording unaltered. -->
+      <div id="table-de"></div>
       <div id="table-grid" class="scroll-x"></div>
       <!-- v3.7 item 1. "Where these N columns come from" — one row per column,
            numbered to match the column numbers, with the ring's source as a real

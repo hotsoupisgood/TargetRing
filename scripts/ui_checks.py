@@ -22,6 +22,9 @@ What it holds, in the order Puck asked for it:
 9. the MUC1 drawer prints its adjusted p as "<0.05", not as `2.19538e-22`.
 10. no p anywhere on the page — body text or tooltip — is in scientific
     notation. Column 2 keeps its −log10 padj numbers, which are not ps.
+11. the Table tab's grid carries a "Gene expression" header spanning columns
+    1-2, and the run's contrast facts sit directly above the grid; the
+    published page no longer carries the top `#find` box.
 
     python3 scripts/ui_checks.py --base http://127.0.0.1:8911/TargetRing
     python3 scripts/ui_checks.py --shots docs/showcase
@@ -219,6 +222,77 @@ def p_format_checks(page, base: str) -> None:
           f"the column-2 tooltip says 'adjusted p <0.05' ({(tip or '')[:60]!r})")
 
 
+#: The contrast facts the block above the grid has to carry. Atlas's own
+#: strings, as the manifest stores them — nothing here is a paraphrase.
+DE_FACTS = ("E-GEOD-101794", "g2_g1", "n=61 vs 13", "RNA-seq", "DESeq2 1.10.1",
+            "Ensembl 95")
+
+
+def gene_expression_checks(page, base: str) -> None:
+    """11. The Gene expression box, with the gene expression data.
+
+    Puck, 2026-10-19: "that gene expression expansion should be organised with
+    the gene expression data not arbitrary". So the run's contrast facts sit
+    directly above grid columns 1-2, under a header spanning both, and the
+    published page drops the top `#find` box those facts used to live in.
+    """
+    page.set_viewport_size(DESK)
+    page.goto(f"{base}/demo/", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+
+    # The top box is gone from the published page.
+    check(page.query_selector("#find") is None,
+          "the published page has no top #find box")
+    check(page.query_selector("#find-panel") is None,
+          "and no empty #find-panel left behind it")
+
+    # The grouped header, spanning exactly the two DE columns.
+    group = page.query_selector("#table-grid thead tr.colgroups th.group")
+    check(bool(group), "the grid has a grouped column header")
+    check(bool(group) and group.inner_text().strip() == "Gene expression",
+          f"it reads 'Gene expression' ({group.inner_text().strip() if group else None!r})")
+    span = group.get_attribute("colspan") if group else None
+    check(span == "2", f"it spans exactly two columns (colspan={span!r})")
+
+    # And it sits over columns 1 and 2, not over somebody else's column.
+    over = page.evaluate("""() => {
+      const g = document.querySelector('#table-grid thead tr.colgroups th.group');
+      if (!g) return null;
+      let before = 0;
+      for (const th of g.parentElement.children) {
+        if (th === g) break;
+        before += Number(th.getAttribute('colspan') || 1);
+      }
+      const heads = [...document.querySelectorAll('#table-grid thead tr:not(.colgroups) th')];
+      return heads.slice(before, before + Number(g.getAttribute('colspan') || 1))
+                  .map((th) => th.innerText.replace(/\\s+/g, ' ').trim());
+    }""")
+    check(bool(over) and len(over) == 2 and "logFC" in over[0]
+          and "padj" in over[1],
+          f"the span covers logFC and -log10 padj ({over})")
+
+    # The facts, directly above the grid.
+    de = page.query_selector("#table-de")
+    text = de.inner_text() if de else ""
+    check(bool(de) and "Gene expression" in text,
+          "a Gene expression block sits above the grid")
+    for fact in DE_FACTS:
+        check(fact in text, f"the block states {fact!r}")
+    check("Differential expression:" in text and "Crohn's disease" in text,
+          "it states the comparison")
+    check("positive log2FC" in text, "it says which way log2FC points")
+    check(bool(de) and page.evaluate("""() => {
+      const de = document.querySelector('#table-de');
+      const grid = document.querySelector('#table-grid');
+      return !!de && !!grid
+        && (de.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    }"""), "the block is above the grid, not below it")
+
+    # 3 of the brief: the two controls Puck is deciding separately stay.
+    check(bool(page.query_selector("#go")), "the Draw the figure button is still there")
+    check(bool(page.query_selector("#controls")), "the #controls box is still there")
+
+
 def flow_checks(page, base: str) -> None:
     page.set_viewport_size(DESK)
     page.goto(f"{base}/flow/", wait_until="networkidle")
@@ -286,6 +360,8 @@ def main(argv: list[str]) -> int:
         tool_checks(page, args.base)
         print("=== the p format ===")
         p_format_checks(page, args.base)
+        print("=== the Gene expression box ===")
+        gene_expression_checks(page, args.base)
         print("=== the flowchart ===")
         flow_checks(page, args.base)
         check(not errors, f"no console errors ({errors[:3]})")
