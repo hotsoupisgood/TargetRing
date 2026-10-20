@@ -476,14 +476,13 @@
            its sources on screen. `#scales`, in `#pane-figure`, is populated from
            `/api/run/{id}/scales`, which reads the in-process `_runs` dict and so
            404s for all ~250 runs under `runs/`. -->
-      <!-- v4.2. "Full descriptions are at the bottom of this page" points
-           here. It holds the rule in full — each criterion with its bound and
-           its source, and how the three combine into GO / NO-GO /
-           INSUFFICIENT DATA — directly above the per-column source strip,
-           which is this tab's copy of the ring scales (full ring label, units
-           and a source link per column). Written by `renderCriteria` from the
-           same payload the short list at the top is. -->
-      <div id="full-descriptions"></div>
+      <!-- v4.3, review of 2026-10-20 item 4: the rule rendered TWICE on this
+           tab, as the numbered block in `#table-criteria` at the top and as a
+           four-column table here at the bottom, with a link down to it. The
+           bottom copy is gone. What it carried and the top did not -- the
+           source per criterion, and what the three verdicts mean -- is a
+           `<details id="criteria-detail">` under the criteria themselves,
+           which is where a reader asking "measured where?" is looking. -->
       <div id="table-sources"></div>
       <div id="table-ledger"></div>
     </div>

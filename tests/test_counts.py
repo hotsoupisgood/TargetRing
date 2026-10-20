@@ -193,3 +193,24 @@ class TestRestatingColumns:
             if key in ("literature", "neg_log10_padj"):
                 continue
             assert row["printed_units"] == row["units"] == row["bound_units"], key
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="no node on this box")
+def test_the_app_js_parses():
+    """`node --check` over the real file, and over the exported copy.
+
+    v4.3. `${/* … */""}` is this file's own comment idiom and it is only valid
+    INSIDE a template literal; written one line above the backtick it is a
+    `SyntaxError` that stops `app.js` dead. It happened twice in one afternoon,
+    and both times the page came up with ten behaviour FAILs and a clean "no
+    console errors" above them — an uncaught exception is not a console
+    message. `scripts/ui_checks.py` now listens for `pageerror` too; this is
+    the cheap half, and it runs without a browser.
+    """
+    for path in (STATIC / "app.js",
+                 config.REPO_ROOT / "docs" / "demo" / "app.js"):
+        if not path.is_file():
+            continue
+        out = subprocess.run(["node", "--check", str(path)],
+                             capture_output=True, text=True, timeout=60)
+        assert out.returncode == 0, f"{path.name}: {out.stderr[:400]}"

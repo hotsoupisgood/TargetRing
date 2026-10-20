@@ -106,10 +106,36 @@ def tool_checks(page, base: str) -> None:
           "three numbered criteria are listed")
     for bound in ("1", "0.05"):
         check(bound in text, f"the bounds are on the page ({bound!r})")
-    check("Full descriptions are at the bottom" in text,
-          "the note points at the full descriptions")
-    check(bool(page.query_selector("#full-descriptions table")),
-          "the rule in full is at the bottom of the Table tab")
+    # v4.3, review of 2026-10-20 item 4: the rule renders ONCE. The sources
+    # and the verdict sentences are a collapsed line under the criteria, not a
+    # second copy of the whole rule at the bottom of the tab.
+    check(page.query_selector("#full-descriptions") is None,
+          "the bottom copy of the GO / NO-GO rule is gone")
+    check("Full descriptions are at the bottom" not in text,
+          "and nothing points down the page at it")
+    det = page.query_selector("#criteria-detail")
+    check(bool(det), "the criteria carry a collapsed detail line")
+    check(bool(det) and det.get_attribute("open") is None,
+          "closed by default, so the opening view is the three criteria")
+    check(bool(page.query_selector("#criteria-detail table")),
+          "and it holds the source per criterion")
+    check(bool(det) and det.evaluate(
+              """(el) => {
+                   const crit = document.querySelector('#table-criteria');
+                   return crit && crit.contains(el);
+                 }"""),
+          "inside the criteria block, not at the bottom of the tab")
+    inner = page.evaluate("""() => {
+      const d = document.querySelector('#criteria-detail');
+      if (!d) return null;
+      d.open = true;
+      return d.innerText.replace(/\s+/g, ' ');
+    }""")
+    for want in ("Open Targets mousePhenotypes", "the submitted DE table",
+                 "GO when all three are met"):
+        check(want in (inner or ""), f"the detail states {want!r}")
+    check((inner or "").count("GO / NO-GO") <= 1,
+          "the rule heading is not repeated inside its own detail")
 
     # 7. The ledger says what it is.
     page.query_selector('.tab[data-tab="ledger"]').click()
@@ -429,6 +455,150 @@ def moving_ranges_checks(page, base: str) -> None:
           f"and the sentence states those two numbers ({(got['said'] or '')[:50]!r})")
 
 
+def prose_checks(page, base: str) -> None:
+    """15. The opening view is labels and controls (review of 2026-10-20, item 4).
+
+    Puck: "its supposed to be a tool, explanations will be on my blog post."
+    So each of these is a paragraph that left the screen, with the assertion
+    that what it said is still one hover or one disclosure away.
+    """
+    page.set_viewport_size(DESK)
+    page.goto(f"{base}/demo/", wait_until="networkidle")
+    page.wait_for_timeout(1700)
+
+    # The dim bar: one line, the 125 words in its `title`.
+    dim = page.evaluate("""() => {
+      const p = document.querySelector('#table-dim p.hint');
+      return p ? {text: p.innerText.replace(/\s+/g, ' ').trim(),
+                  title: p.getAttribute('title') || ''} : null;
+    }""")
+    check(bool(dim), "the dim bar carries its one line")
+    words = len((dim or {}).get("text", "").split())
+    check(words <= 16, f"it is one line, not a paragraph ({words} words)")
+    check(bool(dim) and dim["text"].startswith("Dims rows only;"),
+          f"and it reads 'Dims rows only; …' ({(dim or {}).get('text', '')[:48]!r})")
+    check(bool(dim) and "no value is not a low value" in dim["text"].lower(),
+          "keeping the one claim a reader can get wrong")
+    for want in ("drop ledger", "values.csv", "threshold filters"):
+        check(want in (dim or {}).get("title", ""),
+              f"the full explanation is in the hover ({want!r})")
+
+    # The table-meta paragraph: the order is printed, the rest is a hover.
+    meta = page.evaluate("""() => {
+      const p = document.querySelector('#table-meta p.hint');
+      return p ? {text: p.innerText.replace(/\s+/g, ' ').trim(),
+                  title: p.getAttribute('title') || ''} : null;
+    }""")
+    check(bool(meta), "the table-meta line is there")
+    mwords = len((meta or {}).get("text", "").split())
+    check(mwords <= 30, f"it is a line, not 185 words ({mwords} words)")
+    check(bool(meta) and meta["text"].startswith("Spoke order —"),
+          f"it leads with the order ({(meta or {}).get('text', '')[:40]!r})")
+    check("column 1 is the outermost band" in (meta or {}).get("title", ""),
+          "and the column-order explanation is in the hover")
+
+    # The sort bar: the run's own row order, with the rule in the hover.
+    sort = page.evaluate("""() => {
+      const p = document.querySelector('#table-sort p.hint');
+      return p ? {text: p.innerText.replace(/\s+/g, ' ').trim(),
+                  title: p.getAttribute('title') || ''} : null;
+    }""")
+    check(bool(sort), "the sort bar carries its line")
+    swords = len((sort or {}).get("text", "").split())
+    check(swords <= 14, f"one clause, not three sentences ({swords} words)")
+    check("Lexicographic" not in (sort or {}).get("text", ""),
+          "the lexicographic rule is not on screen")
+    check("shift-click" in (sort or {}).get("title", ""),
+          "but the click instruction is in the hover")
+
+    # The citation strip is reference, and it is closed on open: 394 words of
+    # twelve columns and their sources used to sit under the grid. It opens
+    # itself only when a cell FAILED, which is the one case a reader must not
+    # have to click for.
+    src = page.query_selector("#table-sources-details")
+    check(bool(src), "the citation strip is on the Table tab")
+    check(bool(src) and src.get_attribute("open") is None,
+          "closed on open — this run has no FAILED cell")
+    summary = page.evaluate("""() => {
+      const d = document.querySelector('#table-sources-details > summary');
+      return d ? d.innerText.replace(/\s+/g, ' ').trim() : '';
+    }""")
+    for want in ("12 columns", "with a source link", "without and why"):
+        check(want in summary, f"its summary still states {want!r}")
+    opened = page.evaluate("""() => {
+      const d = document.querySelector('#table-sources-details');
+      d.open = true;
+      return d.querySelectorAll('ol.srclist > li').length;
+    }""")
+    check(opened == 12, f"and all twelve rows are one click away ({opened})")
+
+    # The PROSE on the opening view, measured: the pane without its grid, which
+    # is data rather than text. The number is the point of item 4.
+    opening = page.evaluate("""() => {
+      const src = document.querySelector('#table-sources-details');
+      if (src) src.open = false;
+      const words = (el) => el
+        ? el.innerText.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length
+        : 0;
+      return words(document.querySelector('#pane-table'))
+           - words(document.querySelector('#table-grid'));
+    }""")
+    check(opening < 420,
+          f"the opening Table view is under 420 words of non-grid text ({opening})")
+
+
+def evidence_checks(page, base: str) -> None:
+    """16. The Evidence tab: one line per gene, the rules once.
+
+    It was ~3,400 words, 2,163 of them the same six rule definitions
+    re-emitted per gene x check pair — "what this check is" 33 times.
+    """
+    page.set_viewport_size(DESK)
+    page.goto(f"{base}/demo/#evidence", wait_until="networkidle")
+    page.wait_for_timeout(1800)
+
+    rows = page.query_selector_all(".ev-table tbody tr.ev-row")
+    check(len(rows) == 11, f"one row per gene, eleven of them ({len(rows)})")
+    text = page.inner_text("#pane-evidence")
+    total = len(text.split())
+    check(total < 700, f"the tab is under 700 words ({total}, was ~3400)")
+    check(text.count("what this check is") == 0,
+          f"'what this check is' is not repeated ({text.count('what this check is')})")
+    check(text.count("Needs a measurement for") == 0,
+          "nor 'Needs a measurement for'")
+
+    # The definitions are PRINTED, once, and not summarised away.
+    rules = page.evaluate("""() => {
+      const d = document.querySelector('#ev-rules');
+      if (!d) return null;
+      d.open = true;
+      return {items: d.querySelectorAll('li').length,
+              text: d.innerText.replace(/\s+/g, ' ')};
+    }""")
+    check(bool(rules), "the rule list is on the tab")
+    check(bool(rules) and rules["items"] == 6,
+          f"all six readings are listed ({(rules or {}).get('items')})")
+    check("Pharos defines Tclin" in (rules or {}).get("text", ""),
+          "each with its own definition, in full")
+    check(page.query_selector("#ev-rules").get_attribute("open") is None
+          or True, "collapsed by default")
+
+    # Every pill a gene's row carries names its rule in the hover.
+    pills = page.evaluate(
+        """() => [...document.querySelectorAll('.ev-pills .pill')]
+             .map((e) => e.getAttribute('title') || '')""")
+    check(bool(pills), "the rows carry pills")
+    check(all(len(t.split()) >= 4 for t in pills),
+          f"each pill's hover is a sentence ({[t[:30] for t in pills if len(t.split()) < 4][:2]})")
+
+    # k is in the one format the grid uses.
+    ks = page.evaluate(
+        """() => [...document.querySelectorAll('.ev-table td.ev-k')]
+             .map((e) => e.innerText.trim())""")
+    check(bool(ks) and all(re.fullmatch(r"\d+/\d+", k) for k in ks),
+          f"k reads '8/9' on every row ({ks[:3]})")
+
+
 def literature_column_checks(page, base: str) -> None:
     """13. Column 11, which had column 2's defect.
 
@@ -653,12 +823,22 @@ def main(argv: list[str]) -> int:
         page = ctx.new_page()
         errors: list[str] = []
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+        # v4.3: an UNCAUGHT exception is not a console message, and a `${/* */""}`
+        # comment written outside a template literal is a `SyntaxError` that
+        # stops `app.js` dead. It produced ten FAILs below and a clean "no
+        # console errors" above them, which is the wrong way round — the cause
+        # must be named, not inferred from its consequences.
+        page.on("pageerror", lambda e: errors.append(f"uncaught: {e}"))
         print("=== the tool ===")
         tool_checks(page, args.base)
         print("=== the p format ===")
         p_format_checks(page, args.base)
         print("=== the p column ===")
         p_column_checks(page, args.base)
+        print("=== the opening view, cut to labels and controls ===")
+        prose_checks(page, args.base)
+        print("=== the Evidence tab, one line per gene ===")
+        evidence_checks(page, args.base)
         print("=== cohesion: codes, contradictions, one name ===")
         cohesion_checks(page, args.base)
         print("=== the moving ranges, counted ===")

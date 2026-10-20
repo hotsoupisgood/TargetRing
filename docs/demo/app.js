@@ -132,6 +132,21 @@ function provenanceLine(c) {
 //: and `tests/test_table.py` asserts the two lists are the same.
 const DE_RING_KEYS = ["logfc", "neg_log10_padj"];
 
+//: What dimming does, in full, for the hover on the dim bar's one line. It was
+//: a 125-word paragraph on the opening Table view until the 2026-10-20 review;
+//: nothing in it is lost, it is one hover away. Plain text, not markup: it is a
+//: `title` attribute.
+const DIM_TITLE =
+  "Every gene stays on the grid, in the same order, with the same cells. "
+  + "Nothing is recomputed, and no run, figure, artefact, values.csv or "
+  + "manifest is touched. Nothing is added to the drop ledger either \u2014 the "
+  + "ledger is for genes that are genuinely not on the figure. The bound is "
+  + "compared against the column's own raw value in values.csv, in the units "
+  + "its label states, never a rank or a colour position. A gene with no value "
+  + "on the column you dim on is neither a match nor an exclusion and gets its "
+  + "own treatment. To actually remove genes, use the threshold filters on the "
+  + "analyse form, which ledger what they drop.";
+
 //: The first ring whose grid column prints something other than the number the
 //: band draws: the column shows the adjusted p (`fmtP`), the ring stays on its
 //: -log10 colour scale, and the hover carries both. Mirrors
@@ -432,6 +447,8 @@ async function init() {
 // were not computed against.
 function renderCriteria(c) {
   const top = $("#table-criteria");
+  // v4.3: the rule renders once, in `top`. `bottom` is the retired container
+  // for the second copy (`#full-descriptions`), kept only to empty it.
   const bottom = $("#full-descriptions");
   if (!c || !(c.criteria || []).length) return;
   if (top) {
@@ -441,34 +458,32 @@ function renderCriteria(c) {
       c.criteria.map((x) => `<li><b>${esc(x.name)}</b> —
          <span class="bound">${esc(x.met_when)}</span></li>`).join("") +
       `</ol>
+       ${/* Review of 2026-10-20, item 4. The rule used to render TWICE on this
+             tab: this numbered block at the top, and a four-column table of
+             the same three criteria at the bottom with a link down to it. One
+             copy now. What the bottom carried and the top did not is the
+             SOURCE per criterion and the three verdict sentences, and both are
+             here, collapsed, directly under the criteria they are about. */""}
        <p class="pane-lede">${esc(c.never_a_criterion)}</p>
-       <p class="pane-lede"><a href="#full-descriptions" id="to-full-descriptions">Full
-         descriptions are at the bottom of this page</a>.</p>`;
-    // An in-page anchor, scrolled rather than navigated: the hash is the tab
-    // router's (`#<tab>` / `#<tab>/<gene>`), and writing `#full-descriptions`
-    // into it would send the router to its unknown-tab fallback.
-    const link = $("#to-full-descriptions");
-    if (link) link.onclick = (ev) => {
-      ev.preventDefault();
-      bottom.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-  }
-  if (bottom) {
-    bottom.innerHTML =
-      `<h3 class="pane-h">The GO / NO-GO rule in full</h3>
-       <table><thead><tr><th>#</th><th>Criterion</th><th>Met when</th>
-         <th>Source</th></tr></thead><tbody>` +
+       <details id="criteria-detail" class="sources">
+         <summary><span class="chev" aria-hidden="true">▾</span>
+           where each criterion is measured, and what the verdicts mean</summary>
+         <div class="reveal">
+           <table><thead><tr><th>#</th><th>Criterion</th><th>Met when</th>
+             <th>Source</th></tr></thead><tbody>` +
       c.criteria.map((x) => `<tr><td>${esc(x.n)}</td><td>${esc(x.name)}</td>
         <td class="reason">${esc(x.met_when)}</td>
         <td class="reason">${esc(x.source)}</td></tr>`).join("") +
       `</tbody></table>
-       <p class="pane-lede">${esc(c.go)} ${esc(c.no_go)} ${esc(c.insufficient)}
-         ${esc(c.never_a_criterion)}
-         <span class="hint">Rule version <code>${esc(c.rule_version)}</code>.</span></p>
-       <p class="pane-lede">Each column's full name, its units and its source
-         are in the strip below; the colour each value was drawn as is on the
-         Circos tab, scale by scale.</p>`;
+           <p class="pane-lede">${esc(c.go)} ${esc(c.no_go)} ${esc(c.insufficient)}
+             <span class="hint">Rule version <code>${esc(c.rule_version)}</code>.</span></p>
+         </div>
+       </details>`;
   }
+  // The bottom copy's container was removed from `index.html` with this
+  // change. If an older shell still has it, it is emptied rather than left
+  // holding a stale second copy of the rule.
+  if (bottom) bottom.innerHTML = "";
 }
 
 // v4.2. True when this copy of the page has no analysis server behind it —
@@ -2482,47 +2497,46 @@ const GAP_WORDS = {
   not_applicable: ["does not apply to this gene", "grey"],
 };
 
-function evidenceFindingHtml(f, labels) {
-  const rings = (f.rings || []).map((r) =>
-    `<code>${esc(labels[r] || r)}</code>`).join(" + ");
-  // The definition that makes this a finding, behind a disclosure so the card
-  // stays scannable — but always present, never summarised by the page.
-  //
-  // The summary is worded off the OUTCOME, not off the kind: "why this is a
-  // disagreement" over a reading that could not be run claims a disagreement
-  // was found, which is the opposite of what `unevaluable` means.
-  const summary = f.outcome !== "fires" ? "what this check is"
-    : f.kind === "contradiction" ? "why this is a disagreement" : "why this is flagged";
-  const why = `<details class="ev-why"><summary>${summary}</summary>
-    <p class="reason">${esc(f.why)}</p>
-    <p class="hint">Reads ${rings}</p></details>`;
+// ONE LINE PER GENE (v4.3, review of 2026-10-20 item 4).
+//
+// This surface was ~3,400 words, and 2,163 of them were the same six rule
+// definitions re-emitted once per gene x check pair -- "what this check is"
+// thirty-three times, "Needs a measurement for:" thirty-three times. The
+// definitions have not changed and have not been summarised: they are printed
+// ONCE, in "What was checked" at the top, and every pill on a gene's line
+// carries its rule's own sentence in the hover.
+//
+// So a reader scanning eleven genes reads eleven lines, and a reader who stops
+// on one gets the whole rule without leaving the row. Puck: "its supposed to be
+// a tool, explanations will be on my blog post."
 
-  if (f.outcome === "fires") {
-    return `<li class="ev-fires ev-${esc(f.kind)}">
-      <span class="pill ${f.kind === "contradiction" ? "bad" : "warn"}">${
-        f.kind === "contradiction" ? "sources disagree" : "flag"}</span>
-      <span class="ev-headline">${esc(f.headline)}</span>${why}</li>`;
-  }
-  if (f.outcome === "unevaluable") {
-    const missing = (f.missing_rings || []).map((r) => {
-      const st = (f.missing_states || {})[r];
-      const nd = (f.not_drawn || []).includes(r);
-      const word = nd ? "this run did not draw it"
-        : (GAP_WORDS[st] ? GAP_WORDS[st][0] : esc(st));
-      return `<code>${esc(labels[r] || r)}</code> — ${esc(word)}`;
-    }).join("; ");
-    // The rule's NAME, muted and prefixed — not phrased as the headline a
-    // firing rule gets. "approved but not tclin" set like a finding reads as
-    // one, which is the one thing an unevaluable reading has not established.
-    return `<li class="ev-unevaluable">
-      <span class="pill grey">cannot be checked</span>
-      <span class="ev-rulename">check: ${esc(f.rule.replace(/_/g, " "))}</span>
-      <p class="reason">Needs a measurement for: ${missing}.</p>${why}</li>`;
-  }
-  return "";  // `clear` is counted, not listed — see rule 2 above.
+//: What a firing finding's pill says, by kind.
+const FIRE_WORD = { contradiction: "sources disagree", flag: "flag" };
+
+//: `rule_name` -> "approved but not tclin". The payload's key is the name.
+function ruleWords(key) {
+  return String(key || "").replace(/_/g, " ");
 }
 
-function evidenceGeneHtml(g, d) {
+//: The missing rings behind one unevaluable finding, as plain text for a
+//: hover: "chemical probe - the source says nothing; tdl - the call broke".
+function missingWords(f, labels) {
+  return (f.missing_rings || []).map((r) => {
+    const st = (f.missing_states || {})[r];
+    const nd = (f.not_drawn || []).includes(r);
+    const word = nd ? "this run did not draw it"
+      : (GAP_WORDS[st] ? GAP_WORDS[st][0] : st);
+    return `${labels[r] || r} \u2014 ${word}`;
+  }).join("; ");
+}
+
+//: One pill. `why` is the rule's own sentence and it is never truncated: the
+//: hover is the whole of it, which is what lets the line be one line.
+function evPill(cls, text, title) {
+  return `<span class="pill ${cls}" title="${esc(title)}">${esc(text)}</span>`;
+}
+
+function evidenceGeneRow(g, d) {
   const labels = d.ring_labels || {};
   const findings = d.findings[g.gene] || [];
   const gaps = d.gaps[g.gene] || {};
@@ -2530,51 +2544,50 @@ function evidenceGeneHtml(g, d) {
   const unevaluable = findings.filter((f) => f.outcome === "unevaluable");
   const clear = findings.filter((f) => f.outcome === "clear");
 
-  // Contradictions before flags before unevaluable. Within the firing group a
-  // source disagreement outranks a history, because only one of the two says
-  // the figure's own numbers may be wrong.
+  // Contradictions before flags: only one of the two says the figure's own
+  // numbers may be wrong. Same order the cards used.
   const ordered = [
     ...fires.filter((f) => f.kind === "contradiction"),
     ...fires.filter((f) => f.kind === "flag"),
-    ...unevaluable,
   ];
+  const pills = ordered.map((f) => evPill(
+    f.kind === "contradiction" ? "bad" : "warn",
+    FIRE_WORD[f.kind] || f.kind,
+    `${f.headline} \u2014 ${ruleWords(f.rule)}. ${f.why}`)).join(" ");
 
-  const gapHtml = Object.entries(gaps)
+  // The unevaluable readings collapse to ONE pill with a count. Which rules,
+  // and which ring each is waiting on, are in the hover.
+  const cannot = unevaluable.length
+    ? evPill("grey", `${unevaluable.length} cannot be checked`,
+             unevaluable.map((f) =>
+               `${ruleWords(f.rule)}: needs ${missingWords(f, labels)}.`)
+               .join(" "))
+    : "";
+
+  // The rings with no measurement at all, in ONE pill per state.
+  const gapPills = Object.entries(gaps)
     .filter(([, keys]) => keys.length)
-    .map(([state, keys]) => `<li><span class="pill ${
-      GAP_WORDS[state] ? GAP_WORDS[state][1] : "grey"}">${esc(state)}</span>
-      ${esc(GAP_WORDS[state] ? GAP_WORDS[state][0] : "")} —
-      ${keys.map((k) => `<code>${esc(labels[k] || k)}</code>`).join(", ")}</li>`)
-    .join("");
+    .map(([state, keys]) => evPill(
+      GAP_WORDS[state] ? GAP_WORDS[state][1] : "grey",
+      `${keys.length} ${esc(state).replace(/_/g, " ")}`,
+      `${GAP_WORDS[state] ? GAP_WORDS[state][0] : state}: `
+      + keys.map((k) => labels[k] || k).join(", ")))
+    .join(" ");
 
-  // A <div>, NOT a <header>: `app.css`'s masthead rule is the bare element
-  // selector `header`, so a <header> here inherits min-height 128px, the
-  // masthead padding and its bottom rule — and would inherit the watercolour
-  // wash too, once `header-wash.css` has its PNG. It rendered as a 65 px void
-  // and a stray line above every card.
-  return `<article class="ev-card">
-    <div class="ev-head">
-      <h4>${esc(g.gene)}</h4>
-      ${g.ensembl_id ? `<code class="ev-ens">${esc(g.ensembl_id)}</code>` : ""}
-      <span class="ev-k">k = ${esc(g.k)} of ${esc(d.k_max)} external rings
-        measured</span>
-    </div>
-    ${/* The heading names its scope. The nine external rings are what `k` on
-          the line above counts and what every rule reads; logFC and adjusted p
-          are this run's INPUT rather than evidence about the target, so they
-          are not scanned here and the card does not imply they were. */""}
-    ${gapHtml ? `<div class="ev-gaps"><h5>No measurement — of the ${
-      esc(d.k_max)} external rings</h5>
-      <ul class="tight">${gapHtml}</ul></div>` : ""}
-    ${ordered.length ? `<ul class="ev-findings">${
-      ordered.map((f) => evidenceFindingHtml(f, labels)).join("")}</ul>`
-      : `<p class="hint">No rule fired and none was unevaluable.</p>`}
-    ${clear.length ? `<details class="ev-clear"><summary>${clear.length} reading${
-      clear.length === 1 ? "" : "s"} checked and did not hold</summary>
-      <ul class="tight">${clear.map((f) =>
-        `<li>${esc(f.rule.replace(/_/g, " "))}</li>`).join("")}</ul></details>`
-      : ""}
-  </article>`;
+  const headline = ordered.length
+    ? ordered[0].headline
+    : (unevaluable.length ? "" : "no rule fired");
+
+  return `<tr class="ev-row">
+    <th scope="row"><b>${esc(g.gene)}</b>${g.ensembl_id
+      ? ` <code class="ev-ens" title="Ensembl id">${esc(g.ensembl_id)}</code>` : ""}</th>
+    <td class="ev-k" title="k \u2014 how many of the ${esc(d.k_max)} external rings have a real measurement for this gene. Your own logFC and adjusted p are not counted.">${
+      esc(g.k)}/${esc(d.k_max)}</td>
+    <td class="ev-pills">${pills} ${cannot} ${gapPills}</td>
+    <td class="ev-headline">${esc(headline)}</td>
+    <td class="ev-clear" title="readings that ran and did not hold">${
+      clear.length ? esc(clear.length) + " clear" : "\u2014"}</td>
+  </tr>`;
 }
 
 function renderEvidence(d) {
@@ -2600,14 +2613,28 @@ function renderEvidence(d) {
           ? ` <span class="src">${esc(d.ordering_note_drift)}</span>` : ""}</p>
      </div>
      ${counts}
-     <h4>What was checked</h4>
-     <ul class="tight ev-rules">${(d.rules || []).map((r) =>
+     ${/* The six rule definitions, ONCE. Each rule's own sentence is on its
+           line, in the hover, and the whole list is behind a disclosure: the
+           reader who wants the instrument reads it here, the reader scanning
+           eleven genes reads the table below. */""}
+     <details class="sources" id="ev-rules">
+       <summary><span class="chev" aria-hidden="true">▾</span>
+         what was checked \u2014 ${esc((d.rules || []).length)} readings, and what
+         each one means</summary>
+       <div class="reveal"><ul class="tight ev-rules">${(d.rules || []).map((r) =>
        `<li><span class="pill ${r.kind === "contradiction" ? "bad" : "warn"}">${
-         esc(r.kind)}</span> ${esc(r.key.replace(/_/g, " "))}</li>`).join("")}</ul>
-     <div class="ev-cards">${d.order.map((name) => {
+         esc(r.kind)}</span> <b>${esc(ruleWords(r.key))}</b> \u2014 reads ${
+         (r.rings || []).map((k) => `<code>${esc((d.ring_labels || {})[k] || k)}</code>`)
+           .join(" + ")}<br><span class="reason">${esc(r.why)}</span></li>`)
+       .join("")}</ul></div>
+     </details>
+     <table class="ev-table"><thead><tr>
+       <th>gene</th><th title="k — external rings with a measurement">k</th>
+       <th>what the readings say</th><th>finding</th><th>clear</th>
+     </tr></thead><tbody>${d.order.map((name) => {
        const g = d.genes.find((x) => x.gene === name);
-       return g ? evidenceGeneHtml(g, d) : "";
-     }).join("")}</div>`;
+       return g ? evidenceGeneRow(g, d) : "";
+     }).join("")}</tbody></table>`;
 }
 
 // Stage 0. Two paid features, two caps, two counters, and BOTH lines every time.
@@ -4030,27 +4057,28 @@ function renderTable(d) {
       ? `<div class="note warn"><b>Filtered — this is not the whole submitted set.</b>
          ${d.filters.map((f) => `<code>${esc(f.expression)}</code>`).join(" · ")}</div>`
       : "") +
-    `<p class="hint">The circle for this run was drawn with —
-       <b>${esc(d.ordering_note || d.ordering)}</b>. Columns are the rings in the
-       figure's own radial order: <b>column 1 is the outermost band</b>.
-       ${/* Said, not resolved silently (`citations._drift`'s rule). The
-             sentence above is re-resolved from the run's own contrast block,
-             so a reader with this run's manifest.json open must be told why
-             the two disagree rather than finding it. */
-         d.ordering_note_drift
-          ? `<br><span class="src">${esc(d.ordering_note_drift)}</span>` : ""}
-       ${d.submitted_order_source === "drawn"
-        ? `This run predates <code>submitted_order</code> in the manifest, so the
-           tie-break and the no-value block use the order it was drawn in.` : ""}
-       ${/* v4.0. The sentence and the links are the payload's, not this file's.
-             They used to be three hardcoded `/api/…` hrefs, which are correct in
-             the app and dead in the offline export -- a file opened from `file://`
-             has nothing serving them, and a dead link is the thing the citation
-             strip refuses one block further down. `view.table_payload` authors
-             what this surface can and cannot do; `export.py` authors the other
-             answer. See `view.DRAWER_ON_DISK_NOTE`. */
-         esc(d.drawer_note || "")}
-       ${(d.artefact_links || []).map((a) =>
+    // Review of 2026-10-20, item 4. This was a 185-word paragraph on the
+    // opening view. What a reader needs from it is the ORDER -- a fact about
+    // the figure, printed -- and the artefact links, which are controls. Those
+    // stay. The explanatory clauses (what the columns are, the manifest-drift
+    // note, the predates-`submitted_order` note and the drawer note) go in the
+    // `title`: they answer a question rather than state a fact. Puck: no
+    // explanatory prose on the tool.
+    `<p class="hint" title="${esc(
+       "Columns are the rings in the figure's own radial order: column 1 is the "
+       + "outermost band."
+       + (d.ordering_note_drift ? " " + d.ordering_note_drift : "")
+       + (d.submitted_order_source === "drawn"
+          ? " This run predates submitted_order in the manifest, so the "
+            + "tie-break and the no-value block use the order it was drawn in."
+          : "")
+       + (d.drawer_note ? " " + d.drawer_note : ""))}">Spoke order —
+       <b>${esc(d.ordering_note || d.ordering)}</b>.
+       ${/* v4.0. The links are the payload's, not this file's: three hardcoded
+             `/api/…` hrefs are correct in the app and dead in the offline
+             export, and a dead link is what the citation strip below refuses.
+             `view.table_payload` authors what this surface can do. */
+         (d.artefact_links || []).map((a) =>
          `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.label)}</a>`)
          .join(" · ")}
      </p>`;
@@ -4078,8 +4106,9 @@ function renderTable(d) {
       : `<span class="hint">unsorted — the order this run drew the spokes in</span>`) +
       `<button id="table-clear" class="ghost">reset to the circle's order</button>
      </div>
-     <p class="hint">${esc(d.sort_note)}
-       Click a column to sort by it; <b>shift-click</b> to add it as a further key.</p>`;
+     <p class="hint" title="${esc((d.sort_note || "")
+       + " Click a column to sort by it; shift-click to add it as a further "
+       + "key.")}">${esc((d.sort_note || "").split(" Lexicographic")[0].trim())}</p>`;
 
   $("#table-sort").querySelectorAll("button.dir").forEach((b) => {
     b.onclick = () => {
@@ -4391,16 +4420,13 @@ function renderDimBar(d) {
       ? `<button id="dim-clear" class="ghost">show all rows at full strength</button>`
       : "") +
     `</div>
-     <p class="hint"><b>This dims; it does not filter.</b> Every gene stays on the
-       grid, in the same order, with the same cells — nothing is recomputed, no run,
-       figure, artefact, <code>values.csv</code> or manifest is touched, and
-       <b>nothing is added to the drop ledger</b>: the ledger is for genes that are
-       genuinely not on the figure. The bound is compared against the column's own
-       raw value in <code>values.csv</code>, in the units its label states, never a
-       rank or a colour position. A gene with <b>no value</b> on the column you dim
-       on is neither a match nor an exclusion and gets its own treatment — no value
-       is not a low value. To actually remove genes, use
-       <b>threshold filters</b> on the analyse form, which ledger what they drop.</p>`;
+     ${/* Review of 2026-10-20, item 4. This was 125 words on the opening view,
+           about a control most readers never touch. It is one line now and the
+           whole of what it said is in the `title`: a reader who wants to know
+           whether dimming removes a gene asks for it. Puck: "its supposed to
+           be a tool, explanations will be on my blog post." */""}
+     <p class="hint" title="${esc(DIM_TITLE)}"><b>Dims rows only;</b> nothing is
+       filtered or recomputed. No value is not a low value.</p>`;
 
   // v4.2. `dim.classify` decides a dim filter and it is server-side on purpose,
   // so with no server the control is disabled with one clause rather than left
@@ -4497,7 +4523,16 @@ function renderTableSources(d) {
   // triangle is most of that finding again. It is a `<details>` so a reader who
   // has read it once can put it away, which is the other half of what was asked.
   $("#table-sources").innerHTML =
-    `<details id="table-sources-details" class="sources" open>
+    // v4.3, review of 2026-10-20 item 4: CLOSED by default. The strip is 394
+    // words of reference -- twelve columns, each with its source, its units and
+    // its link -- and it opened on the opening view, under the grid, where it
+    // was most of what a reader scrolled past. Every word of it is still here,
+    // one click away, and the summary still states the counts that make the
+    // strip auditable at a glance: how many columns have a source link, how
+    // many do not, and whether any cell FAILED. Nothing is removed; a reader
+    // who wants the sources asks.
+    `<details id="table-sources-details" class="sources"${
+       withFailures.length ? " open" : ""}>
        <summary><span class="chev" aria-hidden="true">▾</span>
          <b>Where these ${rows.length} columns come from</b> —
          ${rows.filter((r) => r.linked).length} with a source link,

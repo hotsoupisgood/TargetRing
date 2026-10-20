@@ -508,7 +508,10 @@ label.check input { margin-right: 6px; }
 ol.criteria { margin: 0 0 10px; padding-left: 22px; max-width: 80ch; }
 ol.criteria li { margin: 0 0 3px; }
 ol.criteria .bound { color: var(--tr-ink-3, inherit); }
-#full-descriptions { margin: 18px 0 0; }
+/* v4.3: `#full-descriptions` was the bottom copy of the GO/NO-GO rule and
+   is gone (review of 2026-10-20, item 4). `#criteria-detail` is the
+   collapsed line that replaced it, under the criteria it is about. */
+#criteria-detail { margin: 10px 0 0; }
 
 #figure svg { width: 100%; height: auto; background: #fff; border: 1px solid var(--line);
               border-radius: 6px; }
@@ -1615,76 +1618,66 @@ td.cell-no-data, .grid td.no-data {
 .ev-counts b { color: var(--tr-ink); font-variant-numeric: tabular-nums; }
 .ev-rules { margin-bottom: var(--tr-s-5); }
 
-.ev-cards { display: grid; gap: var(--tr-s-4); }
-
-.ev-card { border: 1px solid var(--tr-rule); border-radius: var(--tr-radius);
-           padding: var(--tr-s-4); background: var(--tr-surface); }
-
-/* The gene is the heading and `k` sits on the same line as a measured fact
-   rather than a badge: it orders nothing and selects nothing (its own
-   RingSpec), and a pill would make it look like a grade. */
-.ev-head { display: flex; align-items: baseline; gap: var(--tr-s-3);
-           flex-wrap: wrap; margin-bottom: var(--tr-s-3); }
-.ev-head h4 { margin: 0; font-size: var(--tr-t-h3); font-weight: 600;
-              letter-spacing: var(--tr-tracking-tight); }
+/* v4.3, review of 2026-10-20 item 4. One ROW per gene, not one card: the cards
+   re-emitted the same six rule definitions once per gene x check pair -- 2,163
+   of the tab's ~3,400 words. The definitions are printed once, above, and every
+   pill carries its rule's own sentence in its `title`. So the tab is a table a
+   reader scans and a hover they ask for, which is what the rest of this page
+   already is. */
+.ev-table { width: 100%; border-collapse: collapse; margin: var(--tr-s-3) 0 0;
+            font-size: var(--tr-t-small); }
+.ev-table thead th { text-align: left; padding: var(--tr-s-2) var(--tr-s-3);
+                     border-bottom: 1px solid var(--tr-rule-strong);
+                     color: var(--tr-ink-3); font-size: var(--tr-t-micro);
+                     text-transform: uppercase; font-weight: 600;
+                     letter-spacing: var(--tr-tracking-caps); }
+.ev-row > th, .ev-row > td { padding: var(--tr-s-2) var(--tr-s-3);
+                             border-bottom: 1px solid var(--tr-rule);
+                             vertical-align: baseline; text-align: left;
+                             font-weight: 400; }
+.ev-row > th { white-space: nowrap; }
 .ev-ens { color: var(--tr-ink-4); font-size: var(--tr-t-micro); }
-.ev-k { margin-left: auto; color: var(--tr-ink-3);
-        font-size: var(--tr-t-micro); font-variant-numeric: tabular-nums; }
 
-.ev-gaps { margin-bottom: var(--tr-s-3); }
-.ev-card h5 { margin: 0 0 var(--tr-s-2); font-size: var(--tr-t-h4);
-              text-transform: uppercase;
-              letter-spacing: var(--tr-tracking-caps);
-              color: var(--tr-ink-3); font-weight: 600; }
+/* `k` is a measured fact, not a badge: it orders nothing and selects nothing
+   (its own RingSpec), and a pill would make it look like a grade. */
+.ev-k { color: var(--tr-ink-3); font-variant-numeric: tabular-nums;
+        white-space: nowrap; }
 
-.ev-findings { list-style: none; margin: 0; padding: 0;
-               display: grid; gap: var(--tr-s-2); }
-.ev-findings > li { border-left: 3px solid var(--tr-rule-strong);
-                    padding: var(--tr-s-2) var(--tr-s-3);
-                    border-radius: var(--tr-radius-sm);
-                    background: var(--tr-surface-sunk); }
-.ev-findings > li.ev-contradiction {
-  border-left-color: var(--tr-status-critical);
-  background: var(--tr-status-critical-wash); }
-.ev-findings > li.ev-flag {
-  border-left-color: var(--tr-status-serious);
-  background: var(--tr-status-serious-wash); }
-/* Unevaluable keeps the sunk surface and a full-strength rule. It is not an
-   error and must not be drawn as one; it is not a pass either. */
-.ev-findings > li.ev-unevaluable { border-left-color: var(--tr-ink-4); }
+.ev-pills { white-space: normal; }
+.ev-pills .pill { margin: 0 var(--tr-s-1) var(--tr-s-1) 0; }
 
-.ev-headline { font-size: var(--tr-t-body); color: var(--tr-ink);
-               line-height: var(--tr-lh-snug); }
-.ev-fires .ev-headline { font-weight: 600; }
+.ev-headline { color: var(--tr-ink); line-height: var(--tr-lh-snug);
+               max-width: var(--tr-measure); }
 
-/* The name of a check that could not be run. Muted and set apart from
-   `.ev-headline` on purpose: a rule name set like a finding reads as a finding,
-   and "approved but not tclin" is exactly the sentence an unevaluable reading
-   has NOT established. */
-.ev-rulename { font-size: var(--tr-t-micro); color: var(--tr-ink-3);
-               font-variant: small-caps; letter-spacing: 0.02em; }
+/* Cleared readings are a count and are not coloured. A green tick would let a
+   gene with one cleared rule and five unevaluable ones read as a pass -- rule
+   1's defect wearing a tick. */
+.ev-clear { color: var(--tr-ink-4); font-size: var(--tr-t-micro);
+            white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+/* Still used by the contrast block's "how this was chosen" disclosure
+   (`app.js`'s `autopickHtml`), which is not on this tab. */
 .ev-why { margin-top: var(--tr-s-2); font-size: var(--tr-t-micro); }
 .ev-why > summary { cursor: pointer; color: var(--tr-ink-3); }
 .ev-why > summary:hover { color: var(--tr-ink); }
 .ev-why .reason { margin: var(--tr-s-2) 0 0; color: var(--tr-ink-2);
                   max-width: var(--tr-measure); }
 
-/* Cleared readings collapse. A green tick per card would let a gene with one
-   cleared rule and five unevaluable ones read as a pass — rule 1's defect
-   wearing a tick — so the count is the whole headline and it is not coloured. */
-.ev-clear { margin-top: var(--tr-s-3); font-size: var(--tr-t-micro); }
-.ev-clear > summary { cursor: pointer; color: var(--tr-ink-4); }
-.ev-clear > summary:hover { color: var(--tr-ink-2); }
+.ev-rules { margin: 0; }
+.ev-rules .reason { color: var(--tr-ink-2); max-width: var(--tr-measure); }
 
-/* Two columns once there is room for two measures side by side. */
-@media (min-width: 72rem) {
-  .ev-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Phone: the finding column is the one that can wrap to three lines, so it is
+   the one that goes. Its text is on the pill's own hover and in the rule list
+   above, so nothing is lost -- and five columns at 390 px is a horizontal
+   scroll on the one tab that exists to be scanned. */
+@media (max-width: 760px) {
+  .ev-table { font-size: var(--tr-t-micro); }
+  .ev-row > th, .ev-row > td { padding: var(--tr-s-2); }
+  .ev-table thead th:nth-child(4), .ev-row > td:nth-child(4) { display: none; }
 }
 
 @media print {
-  .ev-card { break-inside: avoid; }
-  .ev-why > summary, .ev-clear > summary { color: var(--tr-ink-2); }
+  .ev-row { break-inside: avoid; }
 }
 
 /* --- 12. The chosen contrast.
