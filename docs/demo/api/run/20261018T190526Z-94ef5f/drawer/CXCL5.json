@@ -224,8 +224,8 @@
      "logfc": 2.9,
      "padj": 7.09723e-15
     },
-    "shown": "logFC 2.9, adjusted p 7.1e-15",
-    "bare": "logFC +2.9, p 7.1e-15",
+    "shown": "logFC 2.9, adjusted p <0.05",
+    "bare": "logFC +2.9, p <0.05",
     "threshold": "|logFC| >= 1 and adjusted p <= 0.05",
     "source": "submitted DE table"
    },

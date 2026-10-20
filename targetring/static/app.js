@@ -1411,6 +1411,10 @@ function cssId(ensemblId) { return ensemblId.replace(/[^A-Za-z0-9]/g, "_"); }
 function geneRowHtml(row) {
   // Rule 5: never the literal "nan". `no_match`/`ambiguous` are states shown
   // as themselves, not blanks (§10's "real cell states" requirement).
+  // v4.2. The adj p cell is `fmtP` — `<.0001` rather than `2.2e-22`. The SORT
+  // is unchanged and still compares `row.pvalue`, the number
+  // (`renderGeneTable`'s comparator), so the rows this collapses to one string
+  // are still ordered by the p they were ordered by before.
   const stateNote = row.resolution_status === "ok" || row.resolution_status === "renamed"
     ? "" : `<span class="pill ${row.resolution_status === "ambiguous" ? "warn" : "bad"}">
         ${esc(row.resolution_status)}</span>`;
@@ -1418,7 +1422,7 @@ function geneRowHtml(row) {
     <td><code>${esc(row.display_symbol)}</code> ${stateNote}
       ${TERSE_TABLE ? "" : `<br><span class="hint">${esc(row.ensembl_id)}</span>`}</td>
     <td>${row.log2fc >= 0 ? "+" : ""}${row.log2fc.toFixed(2)}</td>
-    <td>${row.pvalue < 0.0001 ? row.pvalue.toExponential(1) : row.pvalue.toFixed(4)}</td>
+    <td>${fmtP(row.pvalue)}</td>
     ${TERSE_TABLE ? "" : `<td class="hint">${esc(row.resolution_note || row.resolution_status)}</td>`}
     <td><input type="checkbox" id="gsel-${cssId(row.ensembl_id)}"
         ${SELECTED.has(row.ensembl_id) ? "checked" : ""}></td>
@@ -3025,9 +3029,12 @@ function drawerHtml(d) {
   if (d.recommendation) h += recommendationHtml(d.recommendation, false, d.phenotype_llm,
                                                d.phenotype_terms);
 
+  // v4.2. "your measurement" prints the adjusted p as `fmtP` — `<.0001`, not
+  // `2.19538e-22`. `d.padj` itself is untouched in the payload and on disk;
+  // this is the one line that showed the raw float to a reader.
   h += `<h4>your measurement</h4><dl class="kv">
     <dt>logFC</dt><dd>${d.logfc}</dd>
-    <dt>adjusted p</dt><dd>${d.padj}</dd>
+    <dt>adjusted p</dt><dd>${fmtP(d.padj)}</dd>
     <dt>rings with a real value (k)</dt><dd>${d.k} of ${d.k_max}
       <span class="hint">completeness only — k orders nothing and selects nothing</span></dd>
     <dt>Pharos TDL</dt><dd>${d.tdl && d.tdl.state === "value"
@@ -3237,7 +3244,7 @@ function drawerHtml(d) {
       <td><span class="pill ${c.state === "value" ? "ok"
         : c.state === "failed" ? "bad" : "grey"}">${esc(c.state)}</span></td>
       <td>${c.value == null ? "—" : (+c.value).toPrecision(4)}</td>
-      <td class="reason">${esc(c.detail)}</td></tr>`).join("") +
+      <td class="reason">${esc(fmtPInText(c.detail))}</td></tr>`).join("") +
     `</tbody></table>`;
   return h;
 }
@@ -3405,6 +3412,87 @@ function inkOn(hex) {
 // drawer prints `toPrecision(4)` and this is the same number without the `5.000`.
 const num = (v) => String(Number((+v).toPrecision(4)));
 
+// ---------------------------------------------------------------------------
+// An adjusted p, as a reader reads one (v4.2).
+//
+// Puck, 2026-10-19 18:03 PDT: "the small ps should just show less than the cut
+// off: <0.05 (or whatever is standard for this kind of analysis)". 0.05 is the
+// standard FDR cutoff for differential expression and it is already this
+// build's own rule, so under it the print is the inequality: `2.19538e-22` is
+// an exponent nobody acts on in the place he reads the number. At or above it,
+// the real decimal at two significant digits — never an exponent.
+//
+// This is the same format and the same cutoff as `targetring/pvalue.py`, which
+// writes the p into the verdict sentences server-side. Two implementations of
+// one format is a thing that drifts, so the pair is asserted equal in
+// `tests/test_pvalue.py` — the test reads THIS file and runs the cases through
+// both. Display only: nothing sorts on it, no rule is evaluated against it,
+// and no stored number is replaced by it.
+//
+// `P_CUTOFF` MIRRORS `config.RECOMMEND_MAX_Q` (= `pvalue.P_CUTOFF`), which is
+// also the bound `/api/criteria` publishes as `thresholds.max_q`. It is a
+// constant rather than a read of that payload because `fmtP` runs inside the
+// first synchronous render, before the fetch resolves — a cell must not print
+// one cutoff and then another. `tests/test_pvalue.py` asserts the mirror.
+const P_CUTOFF = 0.05;
+const P_SIG_DIGITS = 2;
+const P_MISSING = "—";
+
+// The cutoff as it appears inside `<0.05`: the bound with the rule's own
+// digits, not padded out to two significant ones.
+function pCutoffText(cutoff) {
+  return String(Number(cutoff === undefined ? P_CUTOFF : cutoff));
+}
+
+// `v` to `sig` significant digits as a plain decimal, never an exponent.
+// `toPrecision` would give `5.0e-2` for 0.05, which is the one thing the spec
+// rules out, so the decimal count is computed and `toFixed` does the printing.
+function pDecimal(v, sig) {
+  const n = sig === undefined ? P_SIG_DIGITS : sig;
+  const exp = Math.floor(Math.log10(v));
+  let s = v.toFixed(Math.max(0, n - 1 - exp));
+  // Rounding can cross a power of ten (0.0999 -> "0.100", three digits shown
+  // for two digits of information). Re-measure and print at its own magnitude.
+  const rounded = Number(s);
+  if (rounded > 0) {
+    const exp2 = Math.floor(Math.log10(rounded));
+    if (exp2 !== exp) s = rounded.toFixed(Math.max(0, n - 1 - exp2));
+  }
+  return s;
+}
+
+// Declared with `function` rather than `const`: it is called from
+// `geneRowHtml` and `drawerHtml`, both above this line.
+function fmtP(p, missing) {
+  const miss = missing === undefined ? P_MISSING : missing;
+  if (p === null || p === undefined || p === "" || typeof p === "boolean") return miss;
+  const v = Number(p);
+  if (!Number.isFinite(v)) return miss;
+  // Not a p-value. `de_input` rejects these on the way in, so one cannot get
+  // here; if one does it prints as itself rather than as a plausible `<0.05`.
+  if (v < 0 || v > 1) return String(v);
+  if (v >= 1) return "1";
+  if (v < P_CUTOFF) return "<" + pCutoffText();
+  const s = pDecimal(v);
+  // 0.999 rounds to "1.0", the one output with a non-zero digit before the
+  // point. It is a 1.
+  return s.startsWith("1") ? "1" : s;
+}
+
+// The same p, inside a sentence somebody else wrote. `run.py` records the
+// `neg_log10_padj` cell as "adjusted p 2.19538e-22 (submitted)" and that string
+// is the CARRIER — `drawer_bake._padj` and `summary_llm.build_facts` read the
+// exact number back out of it, so it is never reformatted on disk. It is
+// reformatted here, on the way to the screen, in the one place it is read.
+const P_IN_TEXT = /\badjusted p ([0-9][0-9.eE+-]*)/g;
+
+function fmtPInText(s) {
+  return String(s == null ? "" : s).replace(P_IN_TEXT, (whole, n) => {
+    const v = Number(n);
+    return Number.isFinite(v) && v >= 0 && v <= 1 ? "adjusted p " + fmtP(v) : whole;
+  });
+}
+
 // Never blank, never zero (AGENTS.md rule 1). Every non-value state gets a word.
 const STATE_WORD = { no_data: "no data", not_applicable: "n/a", failed: "FAILED" };
 
@@ -3476,7 +3564,13 @@ function cellTooltip(ringKey, gene) {
   const measures = `${r.label}${r.units ? ", in " + r.units : ""}${
     r.transform ? " (" + r.transform + ")" : ""}${
     r.source ? " — source: " + r.source : ""}.`;
-  const detail = c && c.detail ? c.detail : "";
+  // `fmtPInText`: the `neg_log10_padj` cell's detail is "adjusted p 2.19538e-22
+  // (submitted)", written by `run.py` and read back as data by
+  // `drawer_bake._padj`, so it is reformatted HERE, on the way to the screen,
+  // and never on disk. The cell's own VALUE above is untouched — column 2
+  // keeps its −log10 padj number, because the table prints the drawn ring
+  // values (Puck, 2026-10-19).
+  const detail = c && c.detail ? fmtPInText(c.detail) : "";
   return [head, value, measures, detail].filter(Boolean).join("\n");
 }
 

@@ -76,6 +76,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import config
+from .pvalue import format_p
 
 RULE_TEXT = "expressed AND dysregulated AND phenotype"
 RULE_NOTE = "not used to order or filter the figure"
@@ -575,12 +576,16 @@ def _dysregulated(f: Facts, t: Thresholds) -> dict[str, Any]:
                           f"no {' or '.join(missing)} in the submitted table", thr,
                           "submitted DE table",
                           bare=f"no {' or '.join(missing)}")
+    # The threshold `thr` above keeps `{t.max_q:g}` -- "adjusted p <= 0.05" is
+    # the RULE as Puck wrote it and `criteria_spec` prints the same string, so
+    # it is not a measured p and is not reformatted (Puck, 2026-10-19).
+    # `value` keeps both numbers exactly; only the two sentences are formatted.
     ok = abs(f.logfc) >= t.min_abs_logfc and f.padj <= t.max_q
     return _criterion("dysregulated", "dysregulated in the study", MET if ok else NOT_MET,
                       {"logfc": f.logfc, "padj": f.padj},
-                      f"logFC {f.logfc:g}, adjusted p {f.padj:.3g}", thr,
+                      f"logFC {f.logfc:g}, adjusted p {format_p(f.padj)}", thr,
                       "submitted DE table",
-                      bare=f"logFC {f.logfc:+g}, p {f.padj:.2g}")
+                      bare=f"logFC {f.logfc:+g}, p {format_p(f.padj)}")
 
 
 def _phenotype(f: Facts, t: Thresholds) -> dict[str, Any]:

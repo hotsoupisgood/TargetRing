@@ -106,7 +106,11 @@ class TestTheTrimmedBox:
     def test_each_criterion_carries_a_bare_value_with_no_sentence(self) -> None:
         rec = r.recommend(r.Facts(**BASE), T)
         assert crit(rec, "expressed")["bare"] == "19.06 TPM"
-        assert crit(rec, "dysregulated")["bare"] == "logFC +3.1, p 2.2e-22"
+        # The p is printed against the cutoff rather than as an exponent (Puck,
+        # 2026-10-19 18:03: "the small ps should just show less than the cut
+        # off: <0.05"). `tests/test_pvalue.py` owns the format; this line is
+        # here because the bare string is what the box prints.
+        assert crit(rec, "dysregulated")["bare"] == "logFC +3.1, p <0.05"
         assert crit(rec, "phenotype")["bare"] == "6 abnormal terms"
         for c in rec["criteria"]:
             # No sentence: short, no prose clause, nothing about the tissue.

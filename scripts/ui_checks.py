@@ -19,6 +19,9 @@ What it holds, in the order Puck asked for it:
 6. a click anywhere on a row highlights that row and opens its drawer.
 7. the Drop ledger pane says in one sentence what the ledger is.
 8. every flow box is titled verb-first.
+9. the MUC1 drawer prints its adjusted p as "<0.05", not as `2.19538e-22`.
+10. no p anywhere on the page — body text or tooltip — is in scientific
+    notation. Column 2 keeps its −log10 padj numbers, which are not ps.
 
     python3 scripts/ui_checks.py --base http://127.0.0.1:8911/TargetRing
     python3 scripts/ui_checks.py --shots docs/showcase
@@ -29,6 +32,7 @@ Needs a Playwright with chromium (`~/ytpt/.venv` has one), like `ui_audit.py`.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -39,6 +43,18 @@ DESK = {"width": 1280, "height": 900}
 
 BANNED = ("read-only demo", "static copy", "static export", "published version",
           "there is no server", "nothing is computed here")
+
+#: A p printed as an exponent: "adjusted p 2.19538e-22", "p 2.2e-22", "p=1e-5".
+#: Deliberately anchored on the word, because the page is ALLOWED other
+#: scientific numbers — column 2 prints −log10 padj, and `num()` may reach for
+#: an exponent on a tiny TPM. Only a *p* is under the rule.
+P_SCIENTIFIC = re.compile(
+    r"\b(?:adjusted\s+p|adj\s*\.?\s*p|p)\s*(?:[<>=]+\s*)?"
+    r"-?\d+(?:\.\d+)?[eE][+-]?\d+")
+
+#: MUC1's submitted adjusted p in the demo contrast. It must survive on disk
+#: and in the payload, and must appear nowhere a reader can see.
+RAW_PADJ = "2.19538e-22"
 
 VERB_FIRST = ("Enter", "Search", "Pick", "Choose", "Load", "Keep", "Join",
               "Mark", "Check", "Draw", "Decide", "Bake")
@@ -141,6 +157,68 @@ def tool_checks(page, base: str) -> None:
           "closing the drawer clears the highlight")
 
 
+def p_format_checks(page, base: str) -> None:
+    """9 and 10. The p format, on the page a reader actually opens.
+
+    Puck, 2026-10-19 18:03 PDT: "the small ps should just show less than the
+    cut off: <0.05". MUC1 is the worked case — `2.19538e-22` is what the drawer
+    used to print under "your measurement".
+    """
+    page.set_viewport_size(DESK)
+    # The tab router takes `#<tab>/<gene>`, so the drawer can be opened by URL
+    # rather than by finding MUC1's row in a scrolled grid.
+    page.goto(f"{base}/demo/#table/MUC1", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+
+    drawer = page.query_selector("#drawer:not([hidden])")
+    check(bool(drawer), "the MUC1 drawer opens from #table/MUC1")
+    dtext = drawer.inner_text() if drawer else ""
+    check("MUC1" in dtext, "the drawer is MUC1's")
+
+    # 9. "your measurement -> adjusted p".
+    measured = page.evaluate("""() => {
+      const dts = [...document.querySelectorAll('#drawer dl.kv dt')];
+      const dt = dts.find((d) => d.textContent.trim() === 'adjusted p');
+      return dt && dt.nextElementSibling ? dt.nextElementSibling.textContent.trim() : null;
+    }""")
+    check(measured == "<0.05",
+          f"the MUC1 drawer prints adjusted p as '<0.05' (got {measured!r})")
+
+    # The verdict sentence in the GO box, which is baked, not computed here.
+    verdict = page.evaluate("""() => {
+      const el = document.querySelector('#drawer .rec, #drawer .recommendation');
+      return el ? el.innerText : '';
+    }""")
+    check("p <0.05" in (verdict or dtext),
+          "the GO box reads 'p <0.05' rather than an exponent")
+
+    # 10. No p in scientific notation: body text, then every tooltip on the
+    # page, because the column-2 cell carries its p in a `title`.
+    body = page.inner_text("body")
+    hits = P_SCIENTIFIC.findall(body)
+    check(not hits, f"no p in the page text is scientific ({hits[:3]})")
+    check(RAW_PADJ not in body, f"{RAW_PADJ} is not in the page text")
+
+    titles = page.evaluate(
+        """() => [...document.querySelectorAll('[title]')]
+             .map((e) => e.getAttribute('title'))""")
+    joined = "\n".join(t for t in titles if t)
+    thits = P_SCIENTIFIC.findall(joined)
+    check(not thits, f"no p in any tooltip is scientific ({thits[:3]})")
+    check(RAW_PADJ not in joined, f"{RAW_PADJ} is not in any tooltip")
+
+    # The column-2 tooltip is the one the p was asked for by name, and its own
+    # number stays: the table prints the drawn ring values.
+    tip = page.evaluate("""() => {
+      const el = document.querySelector('#table-grid [id^="cell|neg_log10_padj|"][title]')
+              || [...document.querySelectorAll('#table-grid td[title]')]
+                   .find((e) => (e.getAttribute('title') || '').includes('adjusted p'));
+      return el ? el.getAttribute('title') : null;
+    }""")
+    check(bool(tip) and "adjusted p <0.05" in tip,
+          f"the column-2 tooltip says 'adjusted p <0.05' ({(tip or '')[:60]!r})")
+
+
 def flow_checks(page, base: str) -> None:
     page.set_viewport_size(DESK)
     page.goto(f"{base}/flow/", wait_until="networkidle")
@@ -206,6 +284,8 @@ def main(argv: list[str]) -> int:
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         print("=== the tool ===")
         tool_checks(page, args.base)
+        print("=== the p format ===")
+        p_format_checks(page, args.base)
         print("=== the flowchart ===")
         flow_checks(page, args.base)
         check(not errors, f"no console errors ({errors[:3]})")
