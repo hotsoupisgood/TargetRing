@@ -425,7 +425,12 @@ class TestDiskRunFigure:
         js = (STATIC / "app.js").read_text()
         css = (STATIC / "app.css").read_text()
         deep = js[js.index('new URLSearchParams(location.search).get("run")'):]
-        deep = deep[:deep.index('showTab("table")')]
+        # The block ends where the deep-link path hands the view over to the
+        # tab router. That used to be the literal `showTab("table")`; 6a2e352
+        # ("Table is the default tab") made the fallback `showTab(DEFAULT_TAB)`
+        # with `DEFAULT_TAB = "table"` — the same handover, named.
+        deep = deep[:deep.index("showTab(DEFAULT_TAB)")]
+        assert 'const DEFAULT_TAB = "table";' in js
         assert 'document.body.classList.add("viewing-run")' in deep
         assert "body.viewing-run #demo-panel { display: none !important; }" in css
         # v4.0. The deep-link path now draws THIS run's own `figure-web.svg`,

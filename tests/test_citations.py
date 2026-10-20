@@ -418,10 +418,16 @@ class TestTheConstraintsThisWorkWasGiven:
         who saw it per cell would read a per-cell fact that is not there."""
         js = (STATIC / "app.js").read_text()
         section = js.split("// ---------- table view (v3.6) ----------", 1)[1]
-        # `\.source\b` is the cell's own field; `source_name` and `short_source`
-        # are the ring's, which is a different fact and the one this work uses.
-        assert not re.search(r"\.source\b", section), re.findall(
-            r".{0,40}\.source\b.{0,20}", section)
+        # The CELL's own field is what is banned; `source_name` and
+        # `short_source` are the ring's, which is a different fact and the one
+        # this work uses. A bare `\.source\b` stopped separating the two when
+        # 6ff7d4a's `rememberRings` normalised the ring's `source_text` /
+        # `source_name` down to one `source` key on `RING_INFO` — `r.source`
+        # and `was.source` are that RING field, read off `RING_INFO`, never a
+        # cell. So the pattern names the cell variables instead: `c` in
+        # `cellTooltip` / `cellValueWords`, and any `cell.source`.
+        banned = re.findall(r".{0,40}\b(?:c|cell)\.source\b.{0,20}", section)
+        assert not banned, banned
         assert "source_name" in section and "citations" in section
         cit = (REPO / "targetring" / "citations.py").read_text()
         assert not re.search(r"\.source\b|\[.source.\]", cit)
@@ -466,7 +472,10 @@ class TestTheConstraintsThisWorkWasGiven:
         # Sources tab or a thirteenth column, and the evidence tab is neither.
         # It adds no column to the grid, and both assertions below still hold
         # unchanged.
-        assert tabs == ["figure", "table", "evidence", "ledger", "invariants",
+        # Table moved to the front 2026-10-19 at Puck's request (6a2e352,
+        # "Table is the default tab"). Updated by hand, as the note above
+        # requires, and still an exact list: the same six tabs, reordered.
+        assert tabs == ["table", "figure", "evidence", "ledger", "invariants",
                         "caveats"]
         assert "sources" not in tabs
         run_id = _loadable()[-1]

@@ -582,7 +582,14 @@ class TestNothingIsFetchedAndNothingIsExternal:
         assert not found, f"the export carries dead server routes: {found}"
 
     def test_every_in_document_anchor_resolves(self, html) -> None:
-        for a in {h for h in re.findall(r'href="(#[^"]*)"', html)}:
+        # MARKUP only. The export inlines the whole of `static/app.js`, and
+        # that file contains `href="#..."` inside HTML it builds for the TOOL
+        # page -- `renderCriteria`'s link to `#full-descriptions`, which lives
+        # in `static/index.html` and is never rendered here (the export's boot
+        # calls `renderInvariants` and `loadTable`, not `boot()`). Scanning the
+        # script source was finding anchors this document never emits.
+        markup = re.sub(r"<script\b.*?</script>", "", html, flags=re.S)
+        for a in {h for h in re.findall(r'href="(#[^"]*)"', markup)}:
             assert f'id="{a[1:]}"' in html, f"{a} points at nothing in this file"
         # And the one the citation strip generates at runtime.
         assert f'id="{export_mod.MANIFEST_ANCHOR[1:]}"' in html
