@@ -928,11 +928,21 @@ ul.tight li { margin: 2px 0; }
    never be behind a click were off-screen rather than behind anything. */
 @media (max-width: 760px) {
   main { padding-left: 14px; padding-right: 14px; }
-  /* 1. The tab bar. Six tabs is 446 px of flex row that `display:flex` will not
-     break. The ROW scrolls as a strip instead of pushing the document wide --
-     the tabs stay in one line, which is what makes them readable as a set. */
-  .tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin; }
-  .tab { padding: 8px 10px; white-space: nowrap; flex: 0 0 auto; }
+  /* 1. The tab bar. Six tabs is 446 px of flex row that `display:flex` will
+     not break.
+
+     v4.3, review of 2026-10-20 item 6: it WRAPS. It used to scroll as a strip
+     (`overflow-x: auto`), which kept the tabs on one line and put "Paid calls"
+     off the right edge of a 390 px screen with no cue that it was there -- and
+     a scrollbar on a six-item row is not a cue, because a touch browser does
+     not draw one until the row is already moving. Two rows of three are all
+     six, visible, with nothing behind a gesture. The strip's own bottom rule
+     goes with it: a single line under a wrapped row would sit halfway up the
+     control. */
+  .tabs { flex-wrap: wrap; row-gap: 0; border-bottom: none; }
+  .tab { padding: 8px 10px; white-space: nowrap; flex: 0 0 auto;
+         border-bottom: 2px solid var(--tr-rule); }
+  .tab.active { border-bottom-color: var(--accent); }
   /* 2. The three download menus. `min-width: 21rem` is 336 px, absolutely
      positioned under a summary that can sit 200 px in, so the menu's right edge
      landed at 551 px. Sized to the viewport and anchored to the row's left. */

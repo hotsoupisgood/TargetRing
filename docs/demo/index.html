@@ -246,28 +246,34 @@
     <div id="conditions" hidden></div>
     <div id="counts" class="counts"></div>
 
-    <div class="tabs">
+    <!-- v4.3, review of 2026-10-20 item 6. `role="tablist"` and its three
+         companions, which this strip never had: tab state was carried by the
+         `.active` class alone, so a screen reader was told "six buttons" and
+         nothing about which view it was in or which pane each button opens.
+         `showTab` keeps `aria-selected` with the class, and every pane carries
+         `role="tabpanel"` and names the tab that labels it. -->
+    <div class="tabs" role="tablist" aria-label="views of this run">
       <!-- v4.2, Puck 2026-10-19: "the table should be default then the 2nd tab
            should just be circlos". The grid is first and active; the circle is
            second and is called by its name. -->
       <!-- v3.6. The same run, as a grid. Not a second analysis and not a second
            reading of the sources: it is a pivot of `values.csv`, the artefact
            invariant 1 already asserts is cell-for-cell what was drawn. -->
-      <button class="tab active" data-tab="table">Table</button>
-      <button class="tab" data-tab="figure">Circos</button>
+      <button class="tab active" role="tab" id="tab-table" data-tab="table" aria-selected="true" aria-controls="pane-table">Table</button>
+      <button class="tab" role="tab" id="tab-figure" data-tab="figure" aria-selected="false" aria-controls="pane-figure">Circos</button>
       <!-- The go/no-go surface. Named "Evidence" and not "Go / no-go" because it
            does not produce one: rule 7 forbids ranking, scoring and eligibility,
            and a verdict is that machinery renamed. It states what each source
            found per target, what it did not, and where two of them disagree.
            See `evidence.py` for the rules and why each one is a fact rather
            than a judgement. -->
-      <button class="tab" data-tab="evidence">Evidence</button>
-      <button class="tab" data-tab="ledger">Drop ledger</button>
-      <button class="tab" data-tab="invariants">Invariants</button>
-      <button class="tab" data-tab="caveats">What this is not</button>
+      <button class="tab" role="tab" id="tab-evidence" data-tab="evidence" aria-selected="false" aria-controls="pane-evidence">Evidence</button>
+      <button class="tab" role="tab" id="tab-ledger" data-tab="ledger" aria-selected="false" aria-controls="pane-ledger">Drop ledger</button>
+      <button class="tab" role="tab" id="tab-invariants" data-tab="invariants" aria-selected="false" aria-controls="pane-invariants">Invariants</button>
+      <button class="tab" role="tab" id="tab-caveats" data-tab="caveats" aria-selected="false" aria-controls="pane-caveats">What this is not</button>
     </div>
 
-    <div class="tabpane" id="pane-figure" hidden>
+    <div class="tabpane" role="tabpanel" id="pane-figure" aria-labelledby="tab-figure" hidden>
       <!-- v3.0. Was a row of six and v3.0 adds three artefacts, which would
            have made it nine. Three menus instead, grouped by what you are
            trying to walk away with rather than by file type: the figure, the
@@ -407,7 +413,7 @@
          The run is addressed by id rather than taken from `RUN`, so the 250
          runs already under `runs/` are viewable and a reload does not lose the
          one on screen. `?run=<id>` opens straight to it. -->
-    <div class="tabpane" id="pane-table">
+    <div class="tabpane" role="tabpanel" id="pane-table" aria-labelledby="tab-table">
       <!-- v4.2, Puck 2026-10-19: "on the top of the table page the main part
            should say there are 3 go no go criteria, and a numbered list. and
            the bounds we are looking for in them. the other stuff is less
@@ -484,7 +490,7 @@
          `runs/` and not only the one in memory. `evidence-status` is where a
          refusal is printed — an empty surface with no sentence reads as a
          broken tab. -->
-    <div class="tabpane" id="pane-evidence" hidden>
+    <div class="tabpane" role="tabpanel" id="pane-evidence" aria-labelledby="tab-evidence" hidden>
       <div class="row table-pick">
         <label for="evidence-run">Run</label>
         <input id="evidence-run" list="evidence-runs" spellcheck="false"
@@ -503,15 +509,15 @@
          `possible_mouse` rows are on the figure and are listed because the
          symbol changed, which is why this does not simply say "not on the
          figure" (see the status order in `renderLedger`). -->
-    <div class="tabpane" id="pane-ledger" hidden>
+    <div class="tabpane" role="tabpanel" id="pane-ledger" aria-labelledby="tab-ledger" hidden>
       <h3 class="pane-h">Drop ledger</h3>
       <p class="pane-lede">Every input gene the figure does not draw, with the
         rule that removed it — plus the genes it does draw under a changed
         symbol — so a gene can never leave the figure silently.</p>
       <div id="ledger"></div>
     </div>
-    <div class="tabpane" id="pane-invariants" hidden><div id="invariants"></div></div>
-    <div class="tabpane" id="pane-caveats" hidden><div id="caveats"></div></div>
+    <div class="tabpane" role="tabpanel" id="pane-invariants" aria-labelledby="tab-invariants" hidden><div id="invariants"></div></div>
+    <div class="tabpane" role="tabpanel" id="pane-caveats" aria-labelledby="tab-caveats" hidden><div id="caveats"></div></div>
   </section>
 </main>
 

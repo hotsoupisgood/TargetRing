@@ -32,7 +32,11 @@ What it holds, in the order Puck asked for it:
 13. the Table tab's column 11 prints the PubTator3 record count with
     thousands separators ("40,606", not "4.609"), the hover carries both that
     count and the drawn log, and the dim control states the stored units.
-14. no internal build code ("COUNCIL V13", "AGENTS.md rule 7") is in the page
+14. all six tabs are inside a 390 px viewport and the strip does not scroll;
+    role=tablist/tab/tabpanel, aria-selected and aria-controls, and
+    aria-selected moves when a tab is clicked.
+15. the published page has no "Draw the figure" button. The local app keeps it.
+16. no internal build code ("COUNCIL V13", "AGENTS.md rule 7") is in the page
     text or in any tooltip, while the facts those codes hung off still are;
     I7 does not say "survives the ranking" under a tagline reading "Nothing
     here is ranked or scored"; I5 says which Europe PMC call went live and the
@@ -169,17 +173,27 @@ def tool_checks(page, base: str) -> None:
     check(bool(shown) and len((shown or "").splitlines()) >= 3,
           "a ring cell shows a positioned tooltip with its value and source")
 
-    # 1. The button that used to blank the page.
+    # 1. v4.3, review of 2026-10-20 item 7: the button is GONE from this page.
+    #
+    # It used to be here and the reason was good -- it redraws the run on
+    # screen, which is a real thing it can do, and check 1 was the regression
+    # that it no longer blanks the figure. But on a page with no form, no input
+    # and one run already drawn, the most prominent control on the page can
+    # only re-draw what the reader is already looking at, which reads as dead.
+    # The LOCAL app keeps it and keeps its redraw behaviour; `tests/test_demo.py`
+    # and `tests/test_back_button.py` are where that half is held.
+    #
+    # Absent, not hidden: a `hidden` button is still in the tab order.
     page.query_selector('.tab[data-tab="table"]').click()
     page.wait_for_timeout(300)
-    page.query_selector("#go").click()
-    page.wait_for_timeout(1400)
+    check(page.query_selector("#go") is None,
+          "the published page has no Draw the figure button")
     check(not page.query_selector("#result").is_hidden(),
-          "#result is still visible after clicking Draw the figure")
+          "#result is visible without it")
     check(len(page.query_selector_all('#figure [id^="cell|"]')) > 0,
-          "the figure still carries its cells after Draw the figure")
+          "the figure carries its cells")
     check(len(page.query_selector_all(".tab")) == 6,
-          "the six tabs survive Draw the figure")
+          "all six tabs are on the page")
 
     # 6. A click anywhere on a row.
     page.query_selector('.tab[data-tab="table"]').click()
@@ -621,6 +635,77 @@ UNGROUPED = re.compile(r"(?<![\w.,/:#-])\d{4,}(?![\d,/:-]|\w)")
 STRAY_TARGET = re.compile(r"(?<!Open )\btargets?\b(?![-\w])")
 
 
+def phone_tab_checks(page, base: str) -> None:
+    """18. All six tabs reachable and visibly so at 390 px, with ARIA.
+
+    Review of 2026-10-20, item 6: the strip scrolled (`overflow-x: auto`), so
+    "Paid calls" was off the right edge with no cue -- and a touch browser does
+    not draw a scrollbar until the row is already moving. It wraps now.
+    """
+    page.set_viewport_size(PHONE)
+    page.goto(f"{base}/demo/", wait_until="networkidle")
+    page.wait_for_timeout(1700)
+
+    tabs = page.evaluate("""() => {
+      const strip = document.querySelector('.tabs');
+      const sb = strip.getBoundingClientRect();
+      return {
+        overflows: strip.scrollWidth > strip.clientWidth + 1,
+        rows: new Set([...strip.querySelectorAll('.tab')]
+          .map((t) => Math.round(t.getBoundingClientRect().top))).size,
+        role: strip.getAttribute('role'),
+        tabs: [...strip.querySelectorAll('.tab')].map((t) => {
+          const r = t.getBoundingClientRect();
+          return {
+            label: t.innerText.trim(),
+            role: t.getAttribute('role'),
+            selected: t.getAttribute('aria-selected'),
+            controls: t.getAttribute('aria-controls'),
+            inside: r.left >= -1 && r.right <= window.innerWidth + 1,
+            visible: r.width > 0 && r.height > 0,
+          };
+        }),
+      };
+    }""")
+    check(len(tabs["tabs"]) == 6, f"six tabs ({len(tabs['tabs'])})")
+    names = [t["label"] for t in tabs["tabs"]]
+    check("Paid calls" in names, f"the sixth is 'Paid calls' ({names[-1]!r})")
+    off = [t["label"] for t in tabs["tabs"] if not (t["inside"] and t["visible"])]
+    check(not off, f"every tab is inside a 390 px viewport ({off})")
+    check(not tabs["overflows"],
+          "the strip does not scroll sideways — nothing is behind a gesture")
+    check(tabs["rows"] >= 2, f"it wraps onto {tabs['rows']} rows at this width")
+
+    # ARIA. None of this existed: tab state was the `.active` class alone.
+    check(tabs["role"] == "tablist", f"the strip is a tablist ({tabs['role']!r})")
+    check(all(t["role"] == "tab" for t in tabs["tabs"]),
+          f"every button is a tab ({[t['role'] for t in tabs['tabs']][:3]})")
+    sel = [t["label"] for t in tabs["tabs"] if t["selected"] == "true"]
+    check(sel == ["Table"], f"exactly one is aria-selected, the open one ({sel})")
+    bad = [t["label"] for t in tabs["tabs"]
+           if not t["controls"] or not page.query_selector("#" + t["controls"])]
+    check(not bad, f"each tab's aria-controls names a pane that exists ({bad})")
+    panels = page.evaluate(
+        """() => [...document.querySelectorAll('.tabpane')].map((p) => [
+             p.id, p.getAttribute('role'), p.getAttribute('aria-labelledby')])""")
+    check(all(r == "tabpanel" for _, r, _ in panels),
+          f"every pane is a tabpanel ({[r for _, r, _ in panels][:3]})")
+    check(all(lab and page.query_selector("#" + lab) for _, _, lab in panels),
+          "and names the tab that labels it")
+
+    # aria-selected MOVES with the class, which is the whole point of it.
+    page.query_selector('.tab[data-tab="caveats"]').click()
+    page.wait_for_timeout(500)
+    after = page.evaluate(
+        """() => [...document.querySelectorAll('.tab')]
+             .filter((t) => t.getAttribute('aria-selected') === 'true')
+             .map((t) => t.dataset.tab)""")
+    check(after == ["caveats"], f"clicking a tab moves aria-selected ({after})")
+    check(not page.query_selector("#pane-caveats").is_hidden(),
+          "and opens its pane")
+    page.set_viewport_size(DESK)
+
+
 def one_name_checks(page, base: str) -> None:
     """17. One name and one format each (review of 2026-10-20, item 5).
 
@@ -877,8 +962,10 @@ def gene_expression_checks(page, base: str) -> None:
         && (de.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
     }"""), "the block is above the grid, not below it")
 
-    # 3 of the brief: the two controls Puck is deciding separately stay.
-    check(bool(page.query_selector("#go")), "the Draw the figure button is still there")
+    # v4.3 item 7: `#go` is gone from this page (see `tool_checks`). The
+    # `#controls` box stays -- it is this run's own settings, read-only.
+    check(page.query_selector("#go") is None,
+          "no Draw the figure button on the published page")
     check(bool(page.query_selector("#controls")), "the #controls box is still there")
 
 
@@ -965,6 +1052,8 @@ def main(argv: list[str]) -> int:
         cohesion_checks(page, args.base)
         print("=== the moving ranges, counted ===")
         moving_ranges_checks(page, args.base)
+        print("=== the phone tab strip ===")
+        phone_tab_checks(page, args.base)
         print("=== one name, one format ===")
         one_name_checks(page, args.base)
         print("=== the literature column ===")

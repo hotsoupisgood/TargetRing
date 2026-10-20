@@ -533,6 +533,26 @@ function disableServerOnlyControls() {
   // input form and the only way in.
   const find = $("#find-panel") || $("#find");
   if (find) find.remove();
+
+  // v4.3, review of 2026-10-20 item 7. "Draw the figure" is REMOVED on this
+  // branch, not disabled.
+  //
+  // v4.2 kept it, and the reason was good: it redraws the run on screen, which
+  // is a real thing it can do (`redrawLoadedRun`, and the regression it fixed
+  // -- the button used to blank the figure and all six tabs). But on a page
+  // with no form, no input and one run already drawn, the most prominent
+  // control on the page can only re-draw what the reader is already looking
+  // at. That reads as dead, and a control whose only effect is invisible is
+  // worse than one that is not there.
+  //
+  // The LOCAL APP keeps it, with its redraw behaviour: there it sits under the
+  // form it acts on and "draw the figure" is what it does.
+  //
+  // Removed rather than hidden, for the reason `#find` is: a `hidden` button
+  // is still in the tab order and still reachable by a script, and
+  // `scripts/ui_checks.py` asserts it is absent rather than invisible.
+  const go = $("#go");
+  if (go) go.remove();
 }
 
 // ---------- stage 1: disease search ----------
@@ -1713,8 +1733,13 @@ function showTab(name) {
   // switch, a drawer opening, a keyboard route — and a tooltip left behind
   // describes a cell that is no longer on screen.
   hideCellTip();
-  document.querySelectorAll(".tab").forEach((x) =>
-    x.classList.toggle("active", x.dataset.tab === name));
+  // v4.3: `aria-selected` beside the class, in the one place the class is
+  // set, so the two cannot disagree about which view the reader is in.
+  document.querySelectorAll(".tab").forEach((x) => {
+    const on = x.dataset.tab === name;
+    x.classList.toggle("active", on);
+    x.setAttribute("aria-selected", on ? "true" : "false");
+  });
   document.querySelectorAll(".tabpane").forEach((p) => { p.hidden = true; });
   $("#pane-" + name).hidden = false;
   // Fetched on first view rather than on every render: the grid is the same run
