@@ -610,13 +610,38 @@ class TestTheGridSaysItIsFiltered:
         assert f"All {len(d['genes'])} genes are still on the grid" in line
         assert "nothing was removed" in line and "drop ledger" in line
 
-    def test_the_count_line_names_the_column_the_way_the_column_head_does(
+    def test_the_count_line_names_the_column_the_way_the_control_does(
             self, client, run_id, loaded) -> None:
+        """The sentence names the column in the words the dim CONTROL uses, which
+        is the column head's name on every ring whose head states the units of
+        its own raw values — eleven of twelve. Column 2 is the exception and the
+        reason this reads `dim_label`: its head prints the adjusted p while the
+        bound in this sentence is compared against the −log10 in `values.csv`, so
+        naming it "adjusted p ... is at least 10" would state the wrong units for
+        the number the reader typed (`citations.bound_label`).
+        """
         key, thr = a_column_with_both(loaded)
         d = client.get(f"/api/run/{run_id}/values",
                        params={"dim": f"{key} >= {thr}"}).json()
-        head = [r["column_label"] for r in d["rings"] if r["key"] == key][0]
-        assert head in d["dim_count_line"]
+        ring = [r for r in d["rings"] if r["key"] == key][0]
+        assert ring["dim_label"] in d["dim_count_line"]
+        # And the two names are the same name wherever the head is in the raw
+        # units, so this is not a licence for a second name per column.
+        if key not in ("neg_log10_padj",):
+            assert ring["dim_label"] == ring["column_label"]
+            assert ring["column_label"] in d["dim_count_line"]
+
+    def test_the_control_and_the_count_line_use_one_name_per_column(
+            self, client, run_id) -> None:
+        """`dim_label` is on the payload and the page reads it — the dropdown and
+        the server's sentence cannot name one column two ways."""
+        d = client.get(f"/api/run/{run_id}/values").json()
+        assert all("dim_label" in r for r in d["rings"])
+        js = _js()
+        bar = js[js.index("function renderDimBar"):]
+        bar = bar[:bar.index("\n}")]
+        assert "r.dim_label" in bar, "the dim control reads the column head again"
+        assert "esc(r.column_label)" not in bar
 
     def test_the_line_is_the_servers_sentence_not_the_pages(self) -> None:
         """One place authors the numbers and the words about them, so they cannot

@@ -132,6 +132,13 @@ function provenanceLine(c) {
 //: and `tests/test_table.py` asserts the two lists are the same.
 const DE_RING_KEYS = ["logfc", "neg_log10_padj"];
 
+//: The one ring whose grid column prints something other than the number the
+//: band draws: the column shows the adjusted p (`fmtP`), the ring stays on its
+//: -log10 colour scale, and the hover carries both. Mirrors
+//: `figure.RingSpec.table_restates` — Puck, 2026-10-19, after the drawer and
+//: the GO box got `<0.05`: "i didn't see it in the table".
+const PADJ_RING = "neg_log10_padj";
+
 //: The whole compact block: the heading, the comparison, the provenance line
 //: and the sign sentence, from a manifest-shaped contrast record.
 //:
@@ -3530,11 +3537,41 @@ function fmtP(p, missing) {
 // reformatted here, on the way to the screen, in the one place it is read.
 const P_IN_TEXT = /\badjusted p ([0-9][0-9.eE+-]*)/g;
 
+//: The same pattern, matched ONCE and off its own lastIndex — `P_IN_TEXT` is
+//: `/g` and stateful, so `exec`ing it from a second caller would start partway
+//: through a string. Built from `.source` rather than written twice: one
+//: pattern, read two ways.
+const P_IN_TEXT_ONCE = new RegExp(P_IN_TEXT.source);
+
 function fmtPInText(s) {
   return String(s == null ? "" : s).replace(P_IN_TEXT, (whole, n) => {
     const v = Number(n);
     return Number.isFinite(v) && v >= 0 && v <= 1 ? "adjusted p " + fmtP(v) : whole;
   });
+}
+
+// The submitted adjusted p behind a `neg_log10_padj` cell. THE SAME TWO STEPS
+// AS `drawer_bake._padj`, which is the Python half of this: the run writes the
+// exact number into the cell's own detail ("adjusted p 2.19538e-22 (submitted)")
+// and that string is the carrier, so it is read back out of there and only
+// back-transformed from the drawn value where a run is too old to carry it.
+//
+// `10 ** -x` rather than a stored second number: the cell holds one measurement
+// and inventing a second field for it is how two numbers come to disagree. Null
+// where the cell has neither, and `fmtP` prints that as the em dash — never as
+// a small p.
+function cellPadj(c) {
+  if (!c) return null;
+  const m = P_IN_TEXT_ONCE.exec(c.detail || "");
+  if (m) {
+    const v = Number(m[1]);
+    if (Number.isFinite(v)) return v;
+  }
+  if (c.state === "value" && c.value !== null && c.value !== undefined) {
+    const x = Number(c.value);
+    if (Number.isFinite(x)) return Math.pow(10, -x);
+  }
+  return null;
 }
 
 // Never blank, never zero (AGENTS.md rule 1). Every non-value state gets a word.
@@ -3590,11 +3627,20 @@ function rememberCells(genes) {
 
 // The value with its unit, or the state in words. Never a bare number: a cell
 // whose unit is not on the hover is a number a reader has to guess at.
-function cellValueWords(c, ring) {
+function cellValueWords(c, ring, ringKey) {
   if (!c) return "no cell";
   if (c.state !== "value") return STATE_WORD[c.state] || c.state;
   const u = (ring && ring.units) || "";
-  return num(c.value) + (u ? " " + u : "");
+  const raw = num(c.value) + (u ? " " + u : "");
+  // v4.2. Column 2's cell prints the p, so the hover leads with the same string
+  // the cell does — and keeps the drawn -log10 value after it, unchanged and
+  // with its unit. The colour on this band is on that scale and `<0.05` is a
+  // bound rather than a magnitude, so the exact number stays one hover away.
+  if (ringKey === PADJ_RING) {
+    const p = cellPadj(c);
+    if (p !== null) return fmtP(p) + " adjusted p · " + raw;
+  }
+  return raw;
 }
 
 function cellTooltip(ringKey, gene) {
@@ -3602,7 +3648,7 @@ function cellTooltip(ringKey, gene) {
                                     units: "", source: "" };
   const c = CELL_INFO[`${ringKey}|${gene}`];
   const head = `${r.n ? r.n + ". " : ""}${r.column_label} · ${gene}`;
-  const value = cellValueWords(c, r);
+  const value = cellValueWords(c, r, ringKey);
   // The one sentence: what this ring measures, in the words the legend uses,
   // and where the number came from.
   const measures = `${r.label}${r.units ? ", in " + r.units : ""}${
@@ -3611,9 +3657,10 @@ function cellTooltip(ringKey, gene) {
   // `fmtPInText`: the `neg_log10_padj` cell's detail is "adjusted p 2.19538e-22
   // (submitted)", written by `run.py` and read back as data by
   // `drawer_bake._padj`, so it is reformatted HERE, on the way to the screen,
-  // and never on disk. The cell's own VALUE above is untouched — column 2
-  // keeps its −log10 padj number, because the table prints the drawn ring
-  // values (Puck, 2026-10-19).
+  // and never on disk. The value line above now leads with that same `<0.05`
+  // and keeps the drawn −log10 number after it (Puck, 2026-10-19: "i didn't
+  // see it in the table"), so this line still names the source of the p —
+  // "(submitted)" — and the two cannot print different numbers.
   const detail = c && c.detail ? fmtPInText(c.detail) : "";
   return [head, value, measures, detail].filter(Boolean).join("\n");
 }
@@ -4156,9 +4203,18 @@ function renderDimBar(d) {
   $("#table-dim").innerHTML =
     `<div class="dimbar">
        <span class="lbl">Dim rows where</span>
+       ${/* v4.2. `dim_label`, not `column_label`: the bound below is compared
+             against the column's own raw `values.csv` number "in the units its
+             label states", and on column 2 the HEAD no longer states those
+             units — it prints the adjusted p while the file and the band hold
+             −log10(padj). So this entry keeps the ring's own name, the bound
+             stays in −log10, and the column number is the bridge to the grid.
+             `citations.bound_label` is where that choice is made; the page does
+             not decide it, and the server's own count line uses the same
+             string. */""}
        <select id="dim-col">${dimmable.map((r) =>
         `<option value="${esc(r.key)}"${r.key === draft.ring ? " selected" : ""}>${
-          esc(r.n)}. ${esc(r.column_label)}${
+          esc(r.n)}. ${esc(r.dim_label || r.column_label)}${
           r.units ? " (" + esc(r.units) + ")" : ""}</option>`).join("")}</select>
        <select id="dim-op">
          <option value="ge"${draft.op === "ge" ? " selected" : ""}>is at least</option>
@@ -4335,8 +4391,16 @@ function cellHtml(c, ringKey, gene) {
   }
   const tip = ringKey && gene ? cellTooltip(ringKey, gene) : (c.detail || "");
   if (c.state === "value") {
+    // v4.2, Puck 2026-10-19: "format the p value in the table". Column 2 prints
+    // the adjusted p through the same `fmtP` the drawer and the GO box use —
+    // `<0.05` under the rule's own cutoff, two significant digits above it. The
+    // FILL is untouched: it is `c.fill`, computed by the renderer on the ring's
+    // −log10 scale, so the grid and the band are still the same colour for the
+    // same gene and only the printed number differs. `cellPadj` reads the p out
+    // of the cell's own detail, so nothing here recomputes a measurement.
+    const shown = ringKey === PADJ_RING ? fmtP(cellPadj(c)) : num(c.value);
     return `<td class="st-value" style="background:${esc(c.fill)};color:${
-      inkOn(c.fill)}" title="${esc(tip)}">${esc(num(c.value))}</td>`;
+      inkOn(c.fill)}" title="${esc(tip)}">${esc(shown)}</td>`;
   }
   // v3.7 item 3. A `failed` cell's hover says where to look, and where not to.
   // The column's source link answers `no_data` — "is this gene really absent

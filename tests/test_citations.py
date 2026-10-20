@@ -346,8 +346,18 @@ class TestTheTableAndTheLegendAgreeOnEveryRingName:
         the column head's words are a subsequence of the full label's words and
         start on the same word. So it is the same NAME, cut at word boundaries —
         never a truncation (QA-v2-retest §5) and never a second name for one ring.
+
+        `table_restates` is the one exemption, and it is a different claim rather
+        than a hole in this one: that column does not print the ring's number at
+        all. Puck, 2026-10-19: "format the p value in the table" — column 2 shows
+        the adjusted p and the band draws −log10(padj), so a head cut out of
+        "-log10 padj" would name the *colour scale* over a column of ps. The
+        compensating half is below: the ring's full label is still on the surface,
+        in the column's `title` and in the citation strip's row for it.
         """
         for spec in RING_SPECS:
+            if spec.table_restates:
+                continue
             full, col = self._words(spec.label), self._words(spec.column_label)
             assert col, spec.key
             assert col[0] == full[0], (
@@ -358,6 +368,33 @@ class TestTheTableAndTheLegendAgreeOnEveryRingName:
             assert all(w in it for w in col), (
                 f"{spec.key}: {spec.column_label!r} is not {spec.label!r}'s own "
                 f"words in its own order")
+
+    def test_a_restating_column_is_named_for_what_its_cells_print(self) -> None:
+        """The exemption above, as its own rule rather than as an absence.
+
+        A `table_restates` column prints a RESTATEMENT of the ring's number, so
+        its head must name the restatement ("adjusted p") and must not name the
+        transform the band is drawn on — and a bound set on it goes on in the raw
+        units, which is what `bound_label` keeps. One ring has this today; the
+        assertions are written against the flag, not against its key.
+        """
+        restating = [s for s in RING_SPECS if s.table_restates]
+        assert [s.key for s in restating] == ["neg_log10_padj"], restating
+        for spec in restating:
+            assert spec.column_label == "adjusted p (yours)", spec.column_label
+            assert "log10" not in spec.column_label
+            # The bound keeps the ring's own name, in the ring's own units, so
+            # the dim control cannot read "adjusted p" over a box taking 10.
+            assert spec.bound_label == spec.label
+            assert "log10" in spec.bound_label
+            assert citations.bound_label(spec, spec.label) == spec.label
+            # And a legacy run keeps the label its own numbers were recorded
+            # under, exactly as `column_label` does.
+            assert citations.bound_label(spec, "Some older label") == "Some older label"
+        # Every other ring sets its bound in the name its column head carries.
+        for spec in RING_SPECS:
+            if not spec.table_restates:
+                assert spec.bound_label == spec.column_label, spec.key
 
     def test_the_full_label_is_on_the_table_surface_too(self, client) -> None:
         """"Recognisably the same name" is only half of it: the full label has to

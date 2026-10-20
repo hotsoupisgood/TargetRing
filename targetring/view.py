@@ -185,7 +185,11 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
     # rather than on screen (AGENTS.md rule 3 — a dimmed gene is still rendered).
     dim_out = dim_mod.classify(order, cells_by_ring, dims)
     dim_mod.assert_nothing_left(order, dim_out)
-    ring_labels_for_dim = {r["key"]: citations_mod.column_label(
+    # `bound_label`, not `column_label`: this names the column in a sentence
+    # about a bound compared against the raw `values.csv` number, and column 2's
+    # head no longer states those units — it prints the adjusted p while the
+    # band and the file hold -log10(padj). See `citations.bound_label`.
+    ring_labels_for_dim = {r["key"]: citations_mod.bound_label(
         specs.get(r["key"]), r["label"]) for r in t.rings}
 
     # The genes whose drawer is a file beside the run. Looked up here, not
@@ -230,6 +234,13 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
              # `citations.column_label` for what happens on a legacy run.
              "column_label": citations_mod.column_label(specs.get(r["key"]),
                                                         r["label"]),
+             # v4.2. What the DIM control calls this column, which is the same
+             # string for eleven of twelve rings and the ring's own label for
+             # column 2 -- whose head prints the adjusted p while a bound on it
+             # is compared against the -log10 in `values.csv`. One name per
+             # surface, each stating the units of the number it is about.
+             "dim_label": citations_mod.bound_label(specs.get(r["key"]),
+                                                    r["label"]),
              # v3.7 item 2. The source as a LABEL, small and muted, on a third
              # header line. Not a link: it would put a click target inside a
              # click-to-sort target, and `platform-docs.opentargets.org` renders

@@ -254,6 +254,14 @@ class RingSpec:
     short_label: str = ""
     wedge_tooltip: bool = False
     table_label: str = ""
+    #: The grid prints this ring's measurement RESTATED rather than the number
+    #: the ring draws -- `neg_log10_padj`, whose column prints the adjusted p
+    #: while the band is coloured on -log10(padj) (Puck, 2026-10-19: "format the
+    #: p value in the table"). It is a flag rather than an inference from
+    #: `table_label` because the consequence is specific: a bound set on this
+    #: column is compared against the RAW value, so the control that takes one
+    #: must name the ring in the raw units and not in the column head's.
+    table_restates: bool = False
 
     @property
     def wedge_label(self) -> str:
@@ -270,6 +278,22 @@ class RingSpec:
         than making the column head a truncation of a name.
         """
         return self.table_label or self.label
+
+    @property
+    def bound_label(self) -> str:
+        """The name a RAW-VALUE bound on this ring is set in — the dim control's
+        dropdown and the count line it writes (`dim.DimFilter.phrase`).
+
+        The column head where the two can differ, because a dim bound is
+        compared against the number in `values.csv` "in the units its label
+        states" (`dim.py`) and column 2's head no longer states those units: it
+        prints the adjusted p and the band is drawn on -log10(padj). So the
+        control keeps the ring's own label, the bounds stay in -log10, and the
+        column number is the bridge between the two. The alternative -- a
+        dropdown reading "adjusted p" over a box that takes 10 -- is the unit
+        mismatch this property exists to refuse.
+        """
+        return self.label if self.table_restates else self.column_label
 
     @property
     def source_doc(self):
@@ -421,11 +445,19 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # range is V6's collapse with different numbers. log10(1+x) rather than a
     # second log10, because padj=1 gives -log10 padj = 0 and log10(0) is not a
     # colour. The ticks on the scale are printed in raw -log10 padj.
+    # v4.2, Puck 2026-10-19: "format the p value in the table" — "i didn't see
+    # it in the table" after the drawer and the GO box got `<0.05`. So the
+    # COLUMN prints the adjusted p through `pvalue.format_p` and the ring is
+    # untouched: same band, same -log10 colour scale, same ticks. `table_label`
+    # is the head for that column and `table_restates` is what the dim control
+    # reads to keep its bounds in -log10 (see `RingSpec.bound_label`).
     RingSpec("neg_log10_padj", "-log10 padj (yours)", "submitted DE table",
              family="padj", units="-log10 adjusted p", scale="log1p",
              transform="log-spaced: colour is log10(1 + x), ticks are x",
              short_source="yours",
-             short_label="−log10 padj (yours)"),
+             short_label="−log10 padj (yours)",
+             table_label="adjusted p (yours)",
+             table_restates=True),
     # v2.3 item 1 / COUNCIL M7/V8. One ring became two, and the labels say which
     # claim each one makes: the dense three-key ring is not the sparse probe key,
     # and a hatched probe cell must not take tractability down with it.
@@ -601,15 +633,23 @@ def ring_specs_for(de: "SOURCES.DESource | None" = None) -> tuple[RingSpec, ...]
         # The label's bracketed qualifier is rebuilt rather than string-patched:
         # "logFC (yours)" -> "logFC (Atlas)" by regex would silently do nothing
         # the day the label is reworded.
+        #
+        # `table_label` is rebuilt the same way and for the same reason: it is
+        # the Table tab's head for the column, so an Atlas run heading column 2
+        # "adjusted p (yours)" would be the defect this whole function exists to
+        # remove, one surface further on.
         base = spec.label.split(" (")[0]
         short_base = spec.short_label.split(" (")[0] if spec.short_label else ""
+        table_base = spec.table_label.split(" (")[0] if spec.table_label else ""
         out.append(dc_replace(
             spec,
             label=f"{base} ({source.label_qualifier})",
             source=source.source_phrase,
             short_source=source.short_source,
             short_label=(f"{short_base} ({source.label_qualifier})"
-                         if short_base else spec.short_label)))
+                         if short_base else spec.short_label),
+            table_label=(f"{table_base} ({source.label_qualifier})"
+                         if table_base else spec.table_label)))
     return tuple(out)
 
 

@@ -482,12 +482,12 @@ class DESource:
                 "(`input.columns.logfc`) and `values.csv` carries the value "
                 "per gene"),
             padj_reason=(
-                "the adjusted-p column of the DE table you submitted, drawn "
-                "as −log10(padj) so that more significant is larger — your "
-                "own measurement, with that one transform and nothing else. "
-                "The run's manifest records which header it was read from "
-                "(`input.columns.padj`) and the cell detail prints the "
-                "original p back"),
+                "the adjusted-p column of the DE table you submitted — your "
+                "own measurement, with one transform and nothing else. The "
+                "table shows the adjusted p; the ring draws −log10(padj), so "
+                "that more significant is larger. The run's manifest records "
+                "which header it was read from (`input.columns.padj`) and the "
+                "cell detail prints the original p back"),
         )
 
     @staticmethod
@@ -521,11 +521,12 @@ class DESource:
             padj_reason=(
                 f"the `{contrast_id}.p-value` column of "
                 f"{accession}-analytics.tsv, read from Expression Atlas{release} "
-                f"for contrast {contrast_id}{how} and drawn as −log10(padj) so "
-                f"that more significant is larger — that one transform and "
-                f"nothing else. Not a table you submitted. The run's manifest "
-                f"records the file's URL under `contrast.analytics_url` and the "
-                f"cell detail prints the original p back"),
+                f"for contrast {contrast_id}{how} — that one column and nothing "
+                f"else. The table shows the adjusted p; the ring draws "
+                f"−log10(padj), so that more significant is larger. Not a table "
+                f"you submitted. The run's manifest records the file's URL under "
+                f"`contrast.analytics_url` and the cell detail prints the "
+                f"original p back"),
         )
 
     @staticmethod

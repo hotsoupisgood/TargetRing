@@ -95,7 +95,7 @@
    "key": "neg_log10_padj",
    "label": "-log10 padj (Atlas)",
    "short_label": "\u2212log10 padj (Atlas)",
-   "column_label": "-log10 padj (Atlas)",
+   "column_label": "adjusted p (Atlas)",
    "units": "-log10 adjusted p",
    "transform": "log-spaced: colour is log10(1 + x), ticks are x",
    "stepped": false,

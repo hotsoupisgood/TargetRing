@@ -206,6 +206,22 @@ def column_label(spec: Any, artefact_label: str) -> str:
     return spec.column_label
 
 
+def bound_label(spec: Any, artefact_label: str) -> str:
+    """The name of this ring where a RAW-VALUE bound is set on it — the dim
+    control's dropdown, and the count line that control writes.
+
+    `column_label` for every ring whose column head states the units its own
+    `values.csv` numbers are in, and the ring's full label for the one whose
+    head restates them: column 2 prints the adjusted p and `values.csv` holds
+    -log10(padj) (`RingSpec.bound_label`). Same legacy rule as `column_label` —
+    a run this build has renamed the ring since keeps its own label, which is
+    the label the numbers in that artefact were recorded under.
+    """
+    if spec is None or spec.label != artefact_label:
+        return artefact_label
+    return spec.bound_label
+
+
 def citation_rows(run_id: str, rings: list[dict[str, str]],
                   cells: dict[str, dict[str, Any]],
                   specs: dict[str, Any],
@@ -273,4 +289,5 @@ def _drift(ring_key: str, recorded: dict[str, str]) -> str:
 
 
 __all__ = ["RETIRED_RING_NAME", "RETIRED_RINGS", "FAILED_NOTE", "NO_DATA_NOTE",
-           "unlinked_reason", "cell_provenance", "column_label", "citation_rows"]
+           "unlinked_reason", "cell_provenance", "column_label", "bound_label",
+           "citation_rows"]

@@ -270,7 +270,10 @@ def dim_probes(t: table_mod.RunTable) -> list[dict[str, Any]]:
     cells = t.cells_by_ring()
     specs = {s.key: s
              for s in ring_specs_for(SOURCES.DESource.from_manifest(t.manifest))}
-    labels = {r["key"]: citations_mod.column_label(specs.get(r["key"]), r["label"])
+    # `bound_label`, the same name `view.table_payload` hands `dim.count_line`:
+    # these probes are the baked answer the export's own grid is checked
+    # against, so a second label here would be a mismatch inside the artefact.
+    labels = {r["key"]: citations_mod.bound_label(specs.get(r["key"]), r["label"])
               for r in t.rings}
     genes = list(t.genes)
     out: list[dict[str, Any]] = []

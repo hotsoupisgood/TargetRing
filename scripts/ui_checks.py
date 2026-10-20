@@ -21,10 +21,14 @@ What it holds, in the order Puck asked for it:
 8. every flow box is titled verb-first.
 9. the MUC1 drawer prints its adjusted p as "<0.05", not as `2.19538e-22`.
 10. no p anywhere on the page — body text or tooltip — is in scientific
-    notation. Column 2 keeps its −log10 padj numbers, which are not ps.
+    notation. The page is allowed other scientific numbers; only a *p* is
+    under the rule.
 11. the Table tab's grid carries a "Gene expression" header spanning columns
     1-2, and the run's contrast facts sit directly above the grid; the
     published page no longer carries the top `#find` box.
+12. the Table tab's column 2 prints the adjusted p: the head reads "adjusted
+    p", every cell on the demo run reads "<0.05" (every demo gene is far below
+    the cutoff), and the hover still carries the drawn −log10 padj.
 
     python3 scripts/ui_checks.py --base http://127.0.0.1:8911/TargetRing
     python3 scripts/ui_checks.py --shots docs/showcase
@@ -49,8 +53,9 @@ BANNED = ("read-only demo", "static copy", "static export", "published version",
 
 #: A p printed as an exponent: "adjusted p 2.19538e-22", "p 2.2e-22", "p=1e-5".
 #: Deliberately anchored on the word, because the page is ALLOWED other
-#: scientific numbers — column 2 prints −log10 padj, and `num()` may reach for
-#: an exponent on a tiny TPM. Only a *p* is under the rule.
+#: scientific numbers — `num()` may reach for an exponent on a tiny TPM, and
+#: column 2's hover carries the drawn −log10 padj beside the p. Only a *p* is
+#: under the rule.
 P_SCIENTIFIC = re.compile(
     r"\b(?:adjusted\s+p|adj\s*\.?\s*p|p)\s*(?:[<>=]+\s*)?"
     r"-?\d+(?:\.\d+)?[eE][+-]?\d+")
@@ -210,8 +215,8 @@ def p_format_checks(page, base: str) -> None:
     check(not thits, f"no p in any tooltip is scientific ({thits[:3]})")
     check(RAW_PADJ not in joined, f"{RAW_PADJ} is not in any tooltip")
 
-    # The column-2 tooltip is the one the p was asked for by name, and its own
-    # number stays: the table prints the drawn ring values.
+    # The column-2 tooltip is the one the p was asked for by name. The cell now
+    # prints the p too (12, below); this is the line that names its source.
     tip = page.evaluate("""() => {
       const el = document.querySelector('#table-grid [id^="cell|neg_log10_padj|"][title]')
               || [...document.querySelectorAll('#table-grid td[title]')]
@@ -220,6 +225,74 @@ def p_format_checks(page, base: str) -> None:
     }""")
     check(bool(tip) and "adjusted p <0.05" in tip,
           f"the column-2 tooltip says 'adjusted p <0.05' ({(tip or '')[:60]!r})")
+
+
+def p_column_checks(page, base: str) -> None:
+    """12. The Table tab's column 2, which is where Puck looked for it.
+
+    Puck, 2026-10-19 23:05 PDT, about the `<0.05` already live in the drawer and
+    the GO box: "i didn't see it in the table". So the column prints the p, the
+    head says so, and the band keeps its −log10 colour scale — the magnitude is
+    one hover away rather than in the cell.
+    """
+    page.set_viewport_size(DESK)
+    page.goto(f"{base}/demo/", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+
+    # The column is found by its RING KEY and the cells are read at that index,
+    # so nothing here can pass by matching some other column that happens to
+    # say "adjusted p". `n` is the ring number the grid prints in the head.
+    col = page.evaluate("""() => {
+      const heads = [...document.querySelectorAll(
+        '#table-grid thead tr:not(.colgroups) th')];
+      const i = heads.findIndex(
+        (th) => th.dataset.ordering === 'ring:neg_log10_padj');
+      if (i < 0) return null;
+      return {
+        i,
+        n: (heads[i].querySelector('.rn') || {}).textContent,
+        head: heads[i].innerText.replace(/\\s+/g, ' ').trim(),
+        cells: [...document.querySelectorAll('#table-grid tbody tr')]
+          .map((tr) => tr.children[i]).filter(Boolean)
+          .map((td) => td.innerText.trim()),
+        tip: [...document.querySelectorAll('#table-grid tbody tr')]
+          .map((tr) => tr.children[i]).filter(Boolean)
+          .map((td) => td.getAttribute('title'))[0],
+      };
+    }""")
+    check(bool(col), "the grid has a neg_log10_padj column to check")
+    if not col:
+        return
+    check(col["n"] == "2", f"it is column 2 ({col['n']!r})")
+    check("adjusted p" in col["head"],
+          f"column 2's head reads 'adjusted p' ({col['head']!r})")
+    check("log10" not in col["head"],
+          f"and no longer names the transform the band is drawn on ({col['head']!r})")
+
+    # Every cell, not one: the demo contrast's genes are all far below the
+    # cutoff, so a column with one stray −log10 number in it is a FAIL.
+    odd = sorted({c for c in col["cells"] if c != "<0.05"})
+    check(bool(col["cells"]) and not odd,
+          f"all {len(col['cells'])} column-2 cells read '<0.05' ({odd[:3]})")
+
+    # And the drawn value is still reachable, with its unit, on the hover.
+    tip = col["tip"] or ""
+    check("-log10 adjusted p" in tip,
+          f"the cell's hover still carries the −log10 padj value "
+          f"({tip.splitlines()[1] if tip else None!r})")
+
+    # 10 again, on this page rather than on `#table/MUC1`: the column is new
+    # text and it is the text a p would escape through.
+    body = page.inner_text("body")
+    hits = P_SCIENTIFIC.findall(body)
+    check(not hits, f"no p on the Table tab is scientific ({hits[:3]})")
+    titles = page.evaluate(
+        """() => [...document.querySelectorAll('[title]')]
+             .map((e) => e.getAttribute('title'))""")
+    joined = "\n".join(t for t in titles if t)
+    thits = P_SCIENTIFIC.findall(joined)
+    check(not thits and RAW_PADJ not in joined and RAW_PADJ not in body,
+          f"and none in a tooltip, and {RAW_PADJ} is nowhere on it ({thits[:3]})")
 
 
 #: The contrast facts the block above the grid has to carry. Atlas's own
@@ -268,8 +341,8 @@ def gene_expression_checks(page, base: str) -> None:
                   .map((th) => th.innerText.replace(/\\s+/g, ' ').trim());
     }""")
     check(bool(over) and len(over) == 2 and "logFC" in over[0]
-          and "padj" in over[1],
-          f"the span covers logFC and -log10 padj ({over})")
+          and "adjusted p" in over[1],
+          f"the span covers logFC and adjusted p ({over})")
 
     # The facts, directly above the grid.
     de = page.query_selector("#table-de")
@@ -360,6 +433,8 @@ def main(argv: list[str]) -> int:
         tool_checks(page, args.base)
         print("=== the p format ===")
         p_format_checks(page, args.base)
+        print("=== the p column ===")
+        p_column_checks(page, args.base)
         print("=== the Gene expression box ===")
         gene_expression_checks(page, args.base)
         print("=== the flowchart ===")
