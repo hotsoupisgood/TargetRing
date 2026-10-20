@@ -507,8 +507,11 @@ async def run_analysis(
             stats[g].unfiltered_rings = rings_unfiltered
     cells_by_ring["completeness"] = {
         g: value(float(stats[g].k),
-                 f"{stats[g].k} of {EXTERNAL_RING_COUNT} external rings have a real "
-                 f"measurement (your own logFC and padj are not counted)")
+                 # v4.3: "8/9", the one printed form for k (review of
+                 # 2026-10-20, item 5). This read "8 of 9 external rings" in
+                 # the drawer beside a grid cell reading "8/9".
+                 f"k = {stats[g].k}/{EXTERNAL_RING_COUNT} external rings with a "
+                 f"real measurement (your own logFC and padj are not counted)")
         for g in genes
     }
     ordering = normalise_ordering(ordering, cells_by_ring)

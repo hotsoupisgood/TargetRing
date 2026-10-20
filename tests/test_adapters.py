@@ -273,7 +273,7 @@ class TestV14PipelineSummaryReadsStraight:
             _row("APPROVAL", "MONDO_OWN"), _row("APPROVAL", "MONDO_OTHER")])
         rec.associations = {"MONDO_OWN": {"genetic_association": 0.9},
                             "MONDO_OTHER": {"clinical": 0.9}}
-        assert "1 indicated for a disease attributable to this target" \
+        assert "1 indicated for a disease attributable to this gene" \
             in pipeline_summary(rec)
 
 

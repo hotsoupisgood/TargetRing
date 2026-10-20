@@ -513,6 +513,20 @@ ol.criteria .bound { color: var(--tr-ink-3, inherit); }
    collapsed line that replaced it, under the criteria it is about. */
 #criteria-detail { margin: 10px 0 0; }
 
+/* The house disclosure: the `.chev` IS the marker, so the browser's own one is
+   hidden or the summary shows two. `#controls`, `#scales` and `.dl` each do
+   this for themselves; `details.sources` is the class the citation strip and
+   the criteria detail share, so it gets the rule once. */
+details.sources > summary,
+#table-ledger-details > summary { list-style: none; cursor: pointer;
+                                  font-size: var(--tr-t-small); }
+details.sources > summary::-webkit-details-marker,
+#table-ledger-details > summary::-webkit-details-marker { display: none; }
+details.sources:not([open]) > summary .chev { transform: rotate(-90deg); }
+details.sources > summary .chev,
+#table-ledger-details > summary .chev { display: inline-block;
+                                        transition: transform 120ms ease; }
+
 #figure svg { width: 100%; height: auto; background: #fff; border: 1px solid var(--line);
               border-radius: 6px; }
 #figure [id^="cell|"], #figure text { cursor: pointer; }
@@ -1676,14 +1690,23 @@ td.cell-no-data, .grid td.no-data {
 .ev-rules { margin: 0; }
 .ev-rules .reason { color: var(--tr-ink-2); max-width: var(--tr-measure); }
 
-/* Phone: the finding column is the one that can wrap to three lines, so it is
-   the one that goes. Its text is on the pill's own hover and in the rule list
-   above, so nothing is lost -- and five columns at 390 px is a horizontal
-   scroll on the one tab that exists to be scanned. */
+/* Phone: three columns, not five. Gene, k, and what the readings say.
+   Everything dropped here is reachable without it -- the Ensembl id is an
+   identifier and is on the gene's hover, the finding sentence is on the pill's
+   own hover and in the rule list above, and the clear count is a count of
+   readings that did NOT hold. Five columns at 390 px squeezed `k` to nothing
+   and wrapped a header over four lines, on the one tab that exists to be
+   scanned. */
 @media (max-width: 760px) {
-  .ev-table { font-size: var(--tr-t-micro); }
-  .ev-row > th, .ev-row > td { padding: var(--tr-s-2); }
-  .ev-table thead th:nth-child(4), .ev-row > td:nth-child(4) { display: none; }
+  .ev-table { font-size: var(--tr-t-micro); table-layout: fixed; }
+  .ev-row > th, .ev-row > td { padding: var(--tr-s-2);
+                               white-space: normal; overflow-wrap: anywhere; }
+  .ev-table thead th:nth-child(4), .ev-row > td:nth-child(4),
+  .ev-table thead th:nth-child(5), .ev-row > td:nth-child(5) { display: none; }
+  .ev-table thead th:nth-child(1) { width: 34%; }
+  .ev-table thead th:nth-child(2) { width: 14%; }
+  .ev-table thead th:nth-child(3) { width: 52%; }
+  .ev-ens { display: none; }
 }
 
 @media print {

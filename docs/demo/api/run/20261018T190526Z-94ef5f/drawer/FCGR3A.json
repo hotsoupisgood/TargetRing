@@ -10,7 +10,7 @@
  "padj": 4.19826e-20,
  "k": 7,
  "k_max": 9,
- "k_note": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
+ "k_note": "k = 7/9 external rings with a real measurement (your own logFC and padj are not counted)",
  "unfiltered_rings": [],
  "pipeline_summary": "2 agents \u00b7 1 with an active trial \u00b7 0 with \u22651 trial stopped for cause \u00b7 0 indicated for a disease attributable to this gene",
  "severe_liabilities": [],
@@ -468,7 +468,7 @@
   "completeness": {
    "state": "value",
    "value": 7.0,
-   "detail": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)"
+   "detail": "k = 7/9 external rings with a real measurement (your own logFC and padj are not counted)"
   }
  },
  "triage": null,
@@ -738,7 +738,7 @@
      "ring": "completeness",
      "state": "value",
      "value": 7.0,
-     "detail": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)"
+     "detail": "k = 7/9 external rings with a real measurement (your own logFC and padj are not counted)"
     }
    ],
    "rings_without_a_value": [

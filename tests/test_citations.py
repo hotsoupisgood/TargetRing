@@ -502,7 +502,11 @@ class TestTheConstraintsThisWorkWasGiven:
     def test_there_is_no_sources_tab_and_no_thirteenth_column(
             self, client) -> None:
         html = (STATIC / "index.html").read_text()
-        tabs = re.findall(r'class="tab[^"]*" data-tab="([a-z]+)"', html)
+        # v4.3 put `role="tab"` and an `id` between the class and
+        # `data-tab` (review of 2026-10-20, item 6), so the pattern finds the
+        # attribute wherever it sits on the button rather than next to the
+        # class. Still exact, still a tripwire.
+        tabs = re.findall(r'<button class="tab[^>]*?data-tab="([a-z]+)"', html)
         # An exact list, deliberately: this is a tripwire for a tab arriving
         # without a decision behind it, so it is updated by hand when one is
         # commissioned and never relaxed into a subset check.

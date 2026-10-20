@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-10-20T09:28:14.327010</dc:date>
+    <dc:date>2026-10-20T10:06:55.477562</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -452,7 +452,7 @@ L 387.241885 130.292206
 L 385.587603 129.884055 
 L 383.929322 129.492467 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|0|MUC1">
     <path d="M 380.332962 145.070012 
@@ -1724,7 +1724,7 @@ L 465.432904 174.384106
 L 464.215623 173.191854 
 L 462.986482 172.011833 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|1|FCGR3A">
     <path d="M 451.972355 183.599875 
@@ -2042,7 +2042,7 @@ L 447.297954 192.715488
 L 446.264891 191.703665 
 L 445.221762 190.702224 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_activity|1|FCGR3A">
     <path d="M 434.207636 202.290266 
@@ -2996,7 +2996,7 @@ L 510.364598 252.095585
 L 509.922172 250.450137 
 L 509.463315 248.809196 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|2|FCGR1A">
     <path d="M 494.088366 253.191503 
@@ -3208,7 +3208,7 @@ L 493.741463 256.476179
 L 493.343674 254.996741 
 L 492.931111 253.521354 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|2|FCGR1A">
     <path d="M 477.556162 257.903662 
@@ -3314,7 +3314,7 @@ L 485.429896 258.666476
 L 485.054425 257.270042 
 L 484.665009 255.877434 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_activity|2|FCGR1A">
     <path d="M 469.29006 260.259741 
@@ -4268,7 +4268,7 @@ L 509.566287 341.858014
 L 510.021511 340.216061 
 L 510.460293 338.569639 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|3|FCN1">
     <path d="M 494.991799 334.529913 
@@ -4480,7 +4480,7 @@ L 493.023694 337.182458
 L 493.432991 335.706162 
 L 493.827504 334.225847 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|3|FCN1">
     <path d="M 478.35901 330.186121 
@@ -4692,7 +4692,7 @@ L 476.481101 332.506901
 L 476.84447 331.196263 
 L 477.194715 329.882056 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|3|FCN1">
     <path d="M 461.726221 325.84233 
@@ -4904,7 +4904,7 @@ L 459.938509 327.831345
 L 460.25595 326.686363 
 L 460.561926 325.538264 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|literature|3|FCN1">
     <path d="M 445.093432 321.498538 
@@ -5434,7 +5434,7 @@ L 469.194889 424.975064
 L 470.483288 423.732662 
 L 471.759199 422.47744 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|chemical_probe|4|PELATON">
     <path d="M 460.490403 411.136896 
@@ -5540,7 +5540,7 @@ L 463.259541 418.758055
 L 464.486068 417.575317 
 L 465.700707 416.380373 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|4|PELATON">
     <path d="M 454.43191 405.03983 
@@ -5646,7 +5646,7 @@ L 457.324193 412.541046
 L 458.488848 411.417972 
 L 459.642214 410.283307 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|regional_specificity|4|PELATON">
     <path d="M 448.373418 398.942764 
@@ -5964,7 +5964,7 @@ L 439.51815 393.89002
 L 440.497188 392.945936 
 L 441.466736 391.992108 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|4|PELATON">
     <path d="M 430.19794 380.651565 
@@ -6070,7 +6070,7 @@ L 433.582802 387.673011
 L 434.499968 386.78859 
 L 435.408244 385.895042 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|rodent|4|PELATON">
     <path d="M 424.139447 374.554498 
@@ -6176,7 +6176,7 @@ L 427.647454 381.456003
 L 428.502748 380.631245 
 L 429.349751 379.797975 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|literature|4|PELATON">
     <path d="M 418.080955 368.457432 
@@ -6812,7 +6812,7 @@ L 384.296682 461.452292
 L 385.954093 461.057035 
 L 387.607468 460.645224 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|5|CXCL5">
     <path d="M 383.665996 445.151403 
@@ -7024,7 +7024,7 @@ L 380.392566 444.710845
 L 381.88276 444.355465 
 L 383.369326 443.985201 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|5|CXCL5">
     <path d="M 379.427853 428.49138 
@@ -7236,7 +7236,7 @@ L 376.48845 427.969397
 L 377.811427 427.653895 
 L 379.131183 427.325179 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|5|CXCL5">
     <path d="M 375.189711 411.831358 
@@ -7978,7 +7978,7 @@ L 292.020635 466.292212
 L 293.731058 466.819458 
 L 295.446667 467.329574 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|chemical_probe|6|FCGR1BP">
     <path d="M 299.926465 451.982747 
@@ -8084,7 +8084,7 @@ L 294.593655 458.091047
 L 296.221939 458.592973 
 L 297.85516 459.078592 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|6|FCGR1BP">
     <path d="M 302.334958 443.731764 
@@ -8190,7 +8190,7 @@ L 297.166676 449.889881
 L 298.71282 450.366488 
 L 300.263654 450.827609 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|regional_specificity|6|FCGR1BP">
     <path d="M 304.743452 435.480782 
@@ -8296,7 +8296,7 @@ L 299.739696 441.688716
 L 301.203702 442.140003 
 L 302.672147 442.576627 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|6|FCGR1BP">
     <path d="M 307.151945 427.2298 
@@ -8508,7 +8508,7 @@ L 304.885737 425.286385
 L 306.185465 425.687032 
 L 307.489134 426.074662 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|6|FCGR1BP">
     <path d="M 311.968932 410.727835 
@@ -8614,7 +8614,7 @@ L 307.458757 417.085219
 L 308.676346 417.460547 
 L 309.897627 417.82368 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|rodent|6|FCGR1BP">
     <path d="M 314.377425 402.476853 
@@ -9356,7 +9356,7 @@ L 219.047313 409.607224
 L 220.194543 410.867025 
 L 221.354315 412.115291 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|7|CXCL2">
     <path d="M 233.012026 401.174931 
@@ -9780,7 +9780,7 @@ L 244.583166 386.585647
 L 245.498909 387.591245 
 L 246.424661 388.587636 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|7|CXCL2">
     <path d="M 258.082372 377.647276 
@@ -10628,7 +10628,7 @@ L 178.625354 329.457388
 L 178.97312 331.125409 
 L 179.33755 332.78987 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|8|FCGR3B">
     <path d="M 194.937605 329.292447 
@@ -10840,7 +10840,7 @@ L 195.47146 326.032933
 L 195.784141 327.532668 
 L 196.111803 329.0292 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|8|FCGR3B">
     <path d="M 211.711858 325.531778 
@@ -11052,7 +11052,7 @@ L 212.317567 322.608479
 L 212.595161 323.939926 
 L 212.886056 325.268531 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|8|FCGR3B">
     <path d="M 228.486112 321.771109 
@@ -11900,7 +11900,7 @@ L 184.546793 239.886926
 L 183.998574 241.500213 
 L 183.466515 243.118901 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|9|CXCL3">
     <path d="M 198.679158 248.035116 
@@ -12324,7 +12324,7 @@ L 217.044176 251.111582
 L 216.606577 252.399339 
 L 216.181877 253.691408 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|9|CXCL3">
     <path d="M 231.39452 258.607623 
@@ -13172,7 +13172,7 @@ L 235.168149 165.755898
 L 233.876101 166.866686 
 L 232.595225 167.990339 
 z
-" style="fill: url(#haae3076676); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hffe8ecfcf3); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|10|CXCL1">
     <path d="M 243.198225 179.955709 
@@ -13596,7 +13596,7 @@ L 257.451134 191.938744
 L 256.419796 192.825397 
 L 255.397376 193.722318 
 z
-" style="fill: url(#h0102cc52c7); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#hee263f4da8); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|10|CXCL1">
     <path d="M 266.000376 205.687688 
@@ -14097,7 +14097,7 @@ z
   </g>
  </g>
  <defs>
-  <pattern id="haae3076676" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="hffe8ecfcf3" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#e8e8e8"/>
    <path d="M -36 36 
 L 36 -36 
@@ -14151,7 +14151,7 @@ M 36 108
 L 108 36 
 " style="fill: #4d4d4d; stroke: #4d4d4d; stroke-width: 1.0; stroke-linecap: butt; stroke-linejoin: miter"/>
   </pattern>
-  <pattern id="h0102cc52c7" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="hee263f4da8" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#ffffff"/>
    <path d="M 0 72.3 
 C 0.079561 72.3 0.155874 72.26839 0.212132 72.212132 

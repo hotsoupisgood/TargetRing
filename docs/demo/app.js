@@ -2604,8 +2604,9 @@ function evidenceGeneRow(g, d) {
     : (unevaluable.length ? "" : "no rule fired");
 
   return `<tr class="ev-row">
-    <th scope="row"><b>${esc(g.gene)}</b>${g.ensembl_id
-      ? ` <code class="ev-ens" title="Ensembl id">${esc(g.ensembl_id)}</code>` : ""}</th>
+    <th scope="row"${g.ensembl_id ? ` title="Ensembl id ${esc(g.ensembl_id)}"` : ""}>
+      <b>${esc(g.gene)}</b>${g.ensembl_id
+      ? ` <code class="ev-ens">${esc(g.ensembl_id)}</code>` : ""}</th>
     <td class="ev-k" title="k \u2014 how many of the ${esc(d.k_max)} external rings have a real measurement for this gene. Your own logFC and adjusted p are not counted.">${
       esc(g.k)}/${esc(d.k_max)}</td>
     <td class="ev-pills">${pills} ${cannot} ${gapPills}</td>
@@ -2656,7 +2657,7 @@ function renderEvidence(d) {
      </details>
      <table class="ev-table"><thead><tr>
        <th>gene</th><th title="k — external rings with a measurement">k</th>
-       <th>what the readings say</th><th>finding</th><th>clear</th>
+       <th>readings</th><th>finding</th><th>clear</th>
      </tr></thead><tbody>${d.order.map((name) => {
        const g = d.genes.find((x) => x.gene === name);
        return g ? evidenceGeneRow(g, d) : "";

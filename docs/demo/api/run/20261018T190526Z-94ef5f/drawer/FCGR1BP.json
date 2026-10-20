@@ -10,7 +10,7 @@
  "padj": 7.54734e-15,
  "k": 3,
  "k_max": 9,
- "k_note": "3 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
+ "k_note": "k = 3/9 external rings with a real measurement (your own logFC and padj are not counted)",
  "unfiltered_rings": [],
  "pipeline_summary": "0 agents \u2014 a gene record exists, genuinely undrugged",
  "severe_liabilities": [],
@@ -136,7 +136,7 @@
   "completeness": {
    "state": "value",
    "value": 3.0,
-   "detail": "3 of 9 external rings have a real measurement (your own logFC and padj are not counted)"
+   "detail": "k = 3/9 external rings with a real measurement (your own logFC and padj are not counted)"
   }
  },
  "triage": null,
@@ -430,7 +430,7 @@
      "ring": "completeness",
      "state": "value",
      "value": 3.0,
-     "detail": "3 of 9 external rings have a real measurement (your own logFC and padj are not counted)"
+     "detail": "k = 3/9 external rings with a real measurement (your own logFC and padj are not counted)"
     }
    ],
    "rings_without_a_value": [

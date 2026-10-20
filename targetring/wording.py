@@ -213,6 +213,12 @@ _GENE_NOT_TARGET = (
     ("target record exists", "a gene record exists"),
 )
 
+#: k in the ONE printed form. The completeness cell's reason said "8 of 9
+#: external rings have a real measurement" in the drawer, beside a grid cell
+#: reading "8/9" (review of 2026-10-20, item 5).
+_K_SPELLED_OUT = re.compile(
+    r"\b(\d+) of (\d+) external rings have a real measurement")
+
 #: A COUNT of four digits or more, ungrouped. Not an IDENTIFIER: the digits must
 #: not be glued to a letter or a separator, so `ENSG00000081041`,
 #: `E-GEOD-101794`, `b39c02a638ef`, `#808080` and `2026-10-18` are left alone.
@@ -252,6 +258,8 @@ def modernise(text: str) -> str:
     '2 candidates hit this gene at score ≥ 0.1'
     >>> modernise("4.0 TPM in Small_Intestine_Terminal_Ileum / 6.0 TPM median")
     '4.0 TPM in Small Intestine Terminal Ileum / 6.0 TPM median'
+    >>> modernise("7 of 9 external rings have a real measurement (yours not counted)")
+    'k = 7/9 external rings with a real measurement (yours not counted)'
     >>> modernise("Pharos covers 20,412 human targets")
     'Pharos covers 20,412 human genes'
     >>> modernise("65217 = 25232 with a statistic + 39985 without")
@@ -266,6 +274,9 @@ def modernise(text: str) -> str:
     out = strip_internal_codes(text)
     for a, b in _GENE_NOT_TARGET:
         out = out.replace(a, b)
+    out = _K_SPELLED_OUT.sub(
+        lambda m: f"k = {m.group(1)}/{m.group(2)} external rings with a real "
+                  f"measurement", out)
     out = _REGION_IN_SENTENCE.sub(
         lambda m: m.group(1) + m.group(2).replace("_", " "), out)
     for pat, rep in _OPS:

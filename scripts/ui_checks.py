@@ -763,8 +763,10 @@ def one_name_checks(page, base: str) -> None:
     check(bool(ks), "k is printed somewhere to check")
     odd = sorted({k for k in ks if not re.fullmatch(r"\d+/\d+", k)})
     check(not odd, f"every printed k is '8/9' ({odd[:3]})")
+    spelled = re.findall(r"\d+ of \d+ external rings", body)
+    check(not spelled, f"no surface spells k out as '8 of 9 external rings' ({spelled[:2]})")
     check("of 9 external rings measured" not in body,
-          "no surface spells k out as '8 of 9 external rings measured'")
+          "nor as '8 of 9 external rings measured'")
 
     # 3. "gene", not "target".
     hay = "\n".join(ln for ln in (body + "\n" + tip).splitlines()

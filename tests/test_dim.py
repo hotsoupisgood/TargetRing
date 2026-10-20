@@ -730,9 +730,21 @@ class TestItIsNotTheThresholdFilterControl:
         assert ">=" not in " ".join(shown)
 
     def test_the_control_says_what_it_does_not_do(self) -> None:
+        """v4.3, review of 2026-10-20 item 4. The 125-word paragraph this used
+        to read became one line -- "Dims rows only; nothing is filtered or
+        recomputed. No value is not a low value." -- and the rest of it is the
+        `DIM_TITLE` hover, verbatim. Nothing is lost, so this asserts both
+        halves: the ONE claim a reader can get wrong is on screen, and the rest
+        is one hover away."""
         bar = _dimbar_js()
-        for phrase in ("does not filter", "drop ledger", "threshold filters"):
+        for phrase in ("Dims rows only", "nothing is\n       filtered or recomputed",
+                       "No value is not a low value", "DIM_TITLE"):
             assert phrase in bar, phrase
+        js = (STATIC / "app.js").read_text()
+        title = js[js.index("const DIM_TITLE ="):js.index("const PADJ_RING")]
+        for phrase in ("drop ledger", "threshold filters", "values.csv",
+                       "neither a match nor an exclusion"):
+            assert phrase in title, phrase
 
     def test_the_dim_filter_refuses_the_drop_no_data_toggle(self) -> None:
         """§3.2's rule-1 opt-out has no meaning here — nothing is being removed,

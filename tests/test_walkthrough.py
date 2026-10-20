@@ -190,7 +190,7 @@ class TestExpressionPhrasing:
         # Above 5x in a disease tissue: the word, with the ratio and the line.
         e = r.recommend(r.Facts(**{**hi, "region_is_disease_tissue": True}), T)["expression"]
         assert e["specific"] is True
-        assert "concentrated in Small_Intestine_Terminal_Ileum (25.0x the panel median, above the documented 5x line)" in e["shown"]
+        assert "concentrated in Small Intestine Terminal Ileum (25.0x the panel median, above the documented 5x line)" in e["shown"]
         # In a disease tissue but under the line: no word.
         e = r.recommend(r.Facts(**{**hi, "region_tpm": 8.0, "region_is_disease_tissue": True}), T)["expression"]
         assert e["specific"] is False and "concentrated" not in e["shown"]
@@ -270,7 +270,7 @@ class TestDiseaseAreaMatch:
                        "n_abnormal_phenotypes": 2, "disease_text": "Crohn's disease"})
         a = r.disease_area_match(f)
         assert a["matched"] is False
-        assert a["shown"].startswith("disease-area match: no -- met on 2 term(s), none in the disease area")
+        assert a["shown"].startswith("disease-area match: no — met on 2 term(s), none in the disease area")
 
     def test_an_unmapped_contrast_claims_nothing(self) -> None:
         f = r.Facts(**{**BASE, "mouse_phenotypes": CXCL1_TERMS, "disease_text": "COVID-19"})
@@ -366,7 +366,7 @@ class TestSummaryPromptAndFacts:
                        "spleen_tpm": 213.6, "disease_text": "Crohn's disease"})
         h = r.immune_origin_hint(f, T)
         assert h["suggested"] is True and h["inflamed_tissue_contrast"] is True
-        assert h["reasons"] == ["spleen 213.6 TPM >= Small_Intestine_Terminal_Ileum 19.06 TPM"]
+        assert h["reasons"] == ["spleen 213.6 TPM ≥ Small Intestine Terminal Ileum 19.06 TPM"]
         # MUC1 in ileum: blood 0.6, spleen 3.0, both under ileum 9.3.
         f = r.Facts(**{**BASE, "region": ILEUM, "region_tpm": 9.3, "whole_blood_tpm": 0.6,
                        "spleen_tpm": 3.0, "disease_text": "Crohn's disease"})
@@ -379,7 +379,7 @@ class TestSummaryPromptAndFacts:
         d = dict(MUC1_DRAWER)
         d["recommendation"] = r.recommend_drawer(d, T)
         facts = summary_llm.build_facts(d, {"region": ILEUM})
-        assert facts["expression"]["shown"].startswith("9.3 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 6.99 TPM")
+        assert facts["expression"]["shown"].startswith("9.3 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 6.99 TPM")
         assert facts["immune_origin_hint"]["suggested"] is False
         assert facts["pipeline"]["furthest_agent"] == {
             "name": "TECEMOTIDE", "stage": "Phase 3", "modality": "Protein",

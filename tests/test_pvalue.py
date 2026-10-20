@@ -228,9 +228,14 @@ def test_the_rule_text_is_not_reformatted():
     Two things stay as they are (Puck, 2026-10-19), and this is one of them.
     """
     c = _dysregulated(2.19538e-22)
-    assert c["threshold"] == "|logFC| >= 1 and adjusted p <= 0.05"
+    # v4.3, review of 2026-10-20 item 5: the bound is printed with the glyph a
+    # reader reads (≤, not <=). It is still the BOUND and still not reformatted
+    # into the measurement's "<0.05" -- which is what this test is about.
+    assert c["threshold"] == "|logFC| ≥ 1 and adjusted p ≤ 0.05"
+    assert "<0.05" not in c["threshold"]
     spec = {x["key"]: x for x in recommend.criteria_spec()}
-    assert spec["dysregulated"]["met_when"] == "|logFC| >= 1 and adjusted p <= 0.05"
+    assert spec["dysregulated"]["met_when"] == (
+        "|logFC| ≥ 1 and adjusted p ≤ 0.05")
 
 
 def test_the_stored_number_is_untouched():
