@@ -25,6 +25,7 @@ from ..cache import Cache
 from ..config import GTEX_BASE, GTEX_DATASET
 from ..http import Http, describe, json_or_raise
 from ..states import Cell, no_data, value
+from .. import wording
 
 # COUNCIL V7. A ratio without a level is not a specificity statement. Measured
 # in the council's liver run: GFAP (astrocyte-restricted, 0.216 TPM in liver)
@@ -124,7 +125,8 @@ def specificity_cell(rec: GTExRecord, region: str) -> Cell:
         # here" must not land in the same place. Below the floor the ratio is
         # arithmetically fine and biologically meaningless.
         return no_data(
-            f"{region_tpm:.4g} TPM in {region} is below the {REGION_TPM_FLOOR:g} TPM floor "
+            f"{region_tpm:.4g} TPM in {wording.region_label(region)} is below the "
+            f"{REGION_TPM_FLOOR:g} TPM floor "
             f"for 'expressed at all', so the specificity ratio "
             f"({region_tpm / denom:.3g}x the median tissue) is not a specificity statement. "
             f"The absolute TPM is in the CSV and the drawer."
@@ -132,7 +134,8 @@ def specificity_cell(rec: GTExRecord, region: str) -> Cell:
     ratio = region_tpm / denom
     return value(
         ratio,
-        f"{region_tpm:.4g} TPM in {region} / {denom:.4g} TPM median across "
+        f"{region_tpm:.4g} TPM in {wording.region_label(region)} / {denom:.4g} "
+        f"TPM median across "
         f"{len(rec.tissues)} GTEx tissues (above the {REGION_TPM_FLOOR:g} TPM floor)",
         raw={"region_tpm": region_tpm, "median_tpm": denom,
              "n_tissues": len(rec.tissues), "uberon": rec.ontology.get(region)},

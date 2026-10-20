@@ -17,7 +17,7 @@ V2-REPORT §1.4 names it as the answer to a headline that keeps not appearing.
 *within Pharos*. A submitted gene that Pharos does not hold at all returns
 `target: null` (probed: `{target(q:{sym:"NOTAGENE"}){sym}}` -> `null`, HTTP 200,
 no `errors` key) and is `no_data` here -- absence of a record, never Tdark.
-Pharos holds 20,412 human targets against Open Targets' ~62,000 Ensembl genes,
+Pharos holds 20,412 human genes against Open Targets' ~62,000 Ensembl genes,
 so a non-coding gene or an unreviewed ORF will legitimately have no TDL.
 
 **The ordinal is stated, never inferred** (Puck's condition). TDL is an ordered
@@ -62,7 +62,7 @@ TDL_MEANING: dict[str, str] = {
     "Tdark": "nothing known beyond the sequence — nobody has looked",
     "Tbio": "biology known; no chemical matter meeting the activity bar",
     "Tchem": "small molecules meeting the activity bar exist",
-    "Tclin": "an approved drug acts through this target",
+    "Tclin": "an approved drug acts through this gene",
 }
 TDL_MAX = max(TDL_ORDINAL.values())
 
@@ -213,9 +213,9 @@ def tdl_cell(rec: PharosRecord) -> Cell:
         return failed(f"{SOURCE_LABEL}: {rec.error}")
     if not rec.found:
         return no_data(
-            f"Pharos holds no target record for {rec.symbol}. Pharos covers 20,412 human "
+            f"Pharos holds no gene record for {rec.symbol}. Pharos covers 20,412 human "
             f"targets; absence of a record is not Tdark, which is a measured level meaning "
-            f"'nobody has looked at a target we do hold'."
+            f"'nobody has looked at a gene we do hold'."
         )
     raw_tdl = str(rec.tdl or "")
     ordinal = TDL_ORDINAL.get(raw_tdl)
@@ -227,7 +227,7 @@ def tdl_cell(rec: PharosRecord) -> Cell:
         )
     renamed = ""
     if rec.pharos_symbol and rec.pharos_symbol != rec.symbol:
-        renamed = (f"; Pharos holds this target as {rec.pharos_symbol}, matched on "
+        renamed = (f"; Pharos holds this gene as {rec.pharos_symbol}, matched on "
                    f"{rec.matched_on}")
     return value(
         float(ordinal),

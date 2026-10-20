@@ -146,14 +146,14 @@ def _v(cells: dict[str, Cell], key: str) -> float:
 
 def _approved_but_not_tclin(c: dict[str, Cell]) -> str:
     if _v(c, "clinical_phase") == PHASE_APPROVED and _v(c, "tdl") < TDL_TCLIN:
-        return ("Open Targets attributes an APPROVED drug to this target, and "
+        return ("Open Targets attributes an APPROVED drug to this gene, and "
                 "Pharos does not class it Tclin")
     return ""
 
 
 def _tclin_but_no_attributable_drug(c: dict[str, Cell]) -> str:
     if _v(c, "tdl") == TDL_TCLIN and _v(c, "clinical_phase") == PHASE_NONE:
-        return ("Pharos classes this target Tclin — an approved drug acts "
+        return ("Pharos classes this gene Tclin — an approved drug acts "
                 "through it — and Open Targets attributes no indication to it "
                 "at all")
     return ""
@@ -163,14 +163,14 @@ def _probe_but_tdark(c: dict[str, Cell]) -> str:
     if (_v(c, "chemical_probe") == PROBE_PRESENT
             and _v(c, "tdl") == TDL_TDARK):
         return ("a high-quality chemical probe exists, and Pharos classes this "
-                "target Tdark — nobody has looked")
+                "gene Tdark — nobody has looked")
     return ""
 
 
 def _reached_a_phase_then_stopped_for_cause(c: dict[str, Cell]) -> str:
     if (_v(c, "clinical_phase") > PHASE_NONE
             and _v(c, "clinical_activity") == ACTIVITY_STOPPED_FOR_CAUSE):
-        return ("a drug reached the clinic against this target and a trial was "
+        return ("a drug reached the clinic against this gene and a trial was "
                 "stopped for cause — Open Targets categorised the stop "
                 "Negative or Safety_Sideeffects")
     return ""
@@ -211,10 +211,10 @@ RULES: tuple[Rule, ...] = (
     Rule("approved_but_not_tclin", CONTRADICTION,
          ("clinical_phase", "tdl"),
          why=("Pharos defines Tclin as 'an approved drug acts through this "
-              "target' and Open Targets' phase 5 means an approved drug is "
+              "gene' and Open Targets' phase 5 means an approved drug is "
               "attributable to it. The two sources are answering the same "
               "question and returning different answers, so at most one of "
-              "them is describing this target correctly and the figure cannot "
+              "them is describing this gene correctly and the figure cannot "
               "say which."),
          test=_approved_but_not_tclin),
     Rule("tclin_but_no_attributable_drug", CONTRADICTION,
@@ -222,10 +222,10 @@ RULES: tuple[Rule, ...] = (
          why=("The mirror of the above, and it has a benign explanation that "
               "has to be stated rather than assumed: this build's phase ring "
               "is gated on Open Targets target-disease GENETIC evidence, so a "
-              "genuinely drugged target with no genetic association scores 0 "
+              "genuinely drugged gene with no genetic association scores 0 "
               "here. That makes this a disagreement about attribution rather "
               "than about the drug — which is worth seeing, and is not "
-              "evidence against the target."),
+              "evidence against the gene."),
          test=_tclin_but_no_attributable_drug),
     Rule("probe_but_tdark", CONTRADICTION,
          ("chemical_probe", "tdl"),
@@ -238,7 +238,7 @@ RULES: tuple[Rule, ...] = (
          ("clinical_phase", "clinical_activity"),
          why=("Not a contradiction — a history, and the one most likely to "
               "change a go/no-go call. Measured: roughly 7 of 8 "
-              "terminations say nothing about the target "
+              "terminations say nothing about the gene "
               "(Insufficient_Enrollment, Business_Administrative); those land "
               "on 'dormant' and never here. This cell is the remainder that "
               "Open Targets categorised Negative or Safety_Sideeffects."),
@@ -246,14 +246,14 @@ RULES: tuple[Rule, ...] = (
     Rule("safety_liabilities_recorded", FLAG,
          ("safety",),
          why=("The ring's own label is 'NOT evidence of safety'. NEGATIVE is "
-              "the liability arm -- `hasSafetyEvent` and `isCancerDriverGene` "
+              "the liability arm — `hasSafetyEvent` and `isCancerDriverGene` "
               "are observed only as -1, and palette.py's legend for this "
               "family is 'red = liability / constraint, blue = clean on these "
               "four keys'. A negative value means Open Targets holds one of "
               "those records; it does not quantify risk. The converse matters "
               "more and is why this is a flag rather than a score: a value at "
               "or above zero means Open Targets holds no such record, which is "
-              "a fact about Open Targets and NOT evidence that this target is "
+              "a fact about Open Targets and NOT evidence that this gene is "
               "safe."),
          test=_safety_liabilities_recorded),
     Rule("mouse_phenotyped_and_normal", FLAG,

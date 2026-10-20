@@ -145,6 +145,135 @@ def strip_internal_codes(text: str) -> str:
     return out
 
 
+#: Tissue names GTEx writes with underscores and this build prints with spaces.
+#: One display form, decided by the 2026-10-20 review: the page had three --
+#: `Small_Intestine_Terminal_Ileum` on the opening view and the figure,
+#: `ileum` in the drawer's verdict tag (`recommend.REGION_SHORT`), and the
+#: spaced form in neither.
+#:
+#: The spaced one wins because it is the same NAME: a reader who wants to find
+#: this tissue in GTEx is looking for these words, and shortening "Small
+#: Intestine Terminal Ileum" to "ileum" renames the organ -- GTEx also has
+#: `Terminal_Ileum`, and the two are different tissue samples. The underscored
+#: id is still what the manifest records and what the GTEx query used; it is an
+#: IDENTIFIER, and it stays on the hovers and in the artefact beside this.
+def region_label(region: str | None) -> str:
+    """The region as a reader reads it. One form, everywhere.
+
+    >>> region_label("Small_Intestine_Terminal_Ileum")
+    'Small Intestine Terminal Ileum'
+    >>> region_label("Whole_Blood")
+    'Whole Blood'
+    >>> region_label("Lung")
+    'Lung'
+    >>> region_label(None)
+    'none'
+    >>> region_label("")
+    'none'
+
+    GTEx's own capitalisation is kept rather than re-cased: `Brain_Cortex_BA24`
+    carries a Brodmann area and title-casing it to `Ba24` would be wrong about
+    a name this build did not coin.
+
+    >>> region_label("Brain_Anterior_Cingulate_Cortex_BA24")
+    'Brain Anterior Cingulate Cortex BA24'
+    """
+    return (region or "").replace("_", " ") or "none"
+
+
+#: The bounds, as a reader reads them. The page's own markup has always used
+#: "≥" and "—" while the server's strings used ">=" and "--", so one
+#: sentence on the Table tab carried both (review of 2026-10-20, item 5). The
+#: source strings were changed; these are for text already on disk.
+#:
+#: Spaces are required around "--" so a hyphenated word and a command-line flag
+#: survive, and ">=" is only rewritten with a space or a digit after it so a
+#: filter EXPRESSION -- the syntax the analyse form parses, echoed back at the
+#: reader -- is handled by the caller skipping that field rather than by this
+#: pattern guessing.
+_OPS = ((re.compile(r">="), "≥"),
+        (re.compile(r"<="), "≤"),
+        (re.compile(r"(?<= )--(?= )"), "—"))
+
+#: "target" meaning "gene". This build draws a gene set and calls it that
+#: everywhere except in Open Targets' own name and its own field names
+#: ("target-disease associations", "target-prioritisation"), which are proper
+#: nouns and are left alone -- hence the phrase list rather than a word swap.
+_GENE_NOT_TARGET = (
+    ("this target", "this gene"),
+    ("the target for an", "the gene for an"),
+    ("no target record", "no gene record"),
+    ("at a target we do hold", "at a gene we do hold"),
+    ("human targets", "human genes"),
+    ("matched no Open Targets target", "matched no Open Targets record"),
+    # The ChEMBL phrase before the bare one, or it becomes "ChEMBL a gene
+    # record exists": these are applied in order and the first match wins the
+    # substring.
+    ("ChEMBL target record exists", "a ChEMBL record exists"),
+    ("target record exists", "a gene record exists"),
+)
+
+#: A COUNT of four digits or more, ungrouped. Not an IDENTIFIER: the digits must
+#: not be glued to a letter or a separator, so `ENSG00000081041`,
+#: `E-GEOD-101794`, `b39c02a638ef`, `#808080` and `2026-10-18` are left alone.
+#: The `#` in that class is not hypothetical: the first draft turned the I2
+#: invariant's "#808080" into "#808,080" in a baked manifest. Python's own
+#: `f"{n:,}"` is the grouping, which is what the rest of the server uses and
+#: what `app.js`'s `fmtCount` mirrors.
+_UNGROUPED_COUNT = re.compile(r"(?<![\w.,/:#-])(\d{4,})(?![\d,/:-]|\w)")
+
+#: Four digits that are a YEAR rather than a count. "2026" must not become
+#: "2,026", and no count this build prints is a bare number in this window:
+#: the gene totals are five digits and every other count is under 1,000.
+_YEAR = range(1900, 2101)
+
+#: A GTEx tissue id used as a NAME inside a sentence. Anchored on the phrase so
+#: it cannot reach the manifest's own `region` value, which is the identifier
+#: the GTEx query used.
+_REGION_IN_SENTENCE = re.compile(
+    r"\b(TPM in |concentrated in )([A-Z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+)")
+
+
+def _group(m: "re.Match[str]") -> str:
+    n = int(m.group(1))
+    return m.group(1) if n in _YEAR else f"{n:,}"
+
+
+def modernise(text: str) -> str:
+    """One sentence in this build's current wording: codes out, one region
+    form, one name for a gene, the typographic bounds.
+
+    The source strings were edited to this form in the same commit, so this is
+    a no-op on anything the running code writes -- `tests/test_wording.py`
+    asserts that. It exists for the four finished runs, whose text was baked on
+    2026-10-18 (`scripts/restamp_wording.py`).
+
+    >>> modernise("2 candidates hit this target at score >= 0.1")
+    '2 candidates hit this gene at score ≥ 0.1'
+    >>> modernise("4.0 TPM in Small_Intestine_Terminal_Ileum / 6.0 TPM median")
+    '4.0 TPM in Small Intestine Terminal Ileum / 6.0 TPM median'
+    >>> modernise("Pharos covers 20,412 human targets")
+    'Pharos covers 20,412 human genes'
+    >>> modernise("65217 = 25232 with a statistic + 39985 without")
+    '65,217 = 25,232 with a statistic + 39,985 without'
+    >>> modernise("ENSG00000081041 on 2026-10-18, rule b39c02a638ef")
+    'ENSG00000081041 on 2026-10-18, rule b39c02a638ef'
+    >>> modernise("painted only in ['#4d4d4d', '#808080'] over 2200-step ramp")
+    "painted only in ['#4d4d4d', '#808080'] over 2200-step ramp"
+    >>> modernise("nothing to change here")
+    'nothing to change here'
+    """
+    out = strip_internal_codes(text)
+    for a, b in _GENE_NOT_TARGET:
+        out = out.replace(a, b)
+    out = _REGION_IN_SENTENCE.sub(
+        lambda m: m.group(1) + m.group(2).replace("_", " "), out)
+    for pat, rep in _OPS:
+        out = pat.sub(rep, out)
+    out = _UNGROUPED_COUNT.sub(_group, out)
+    return out
+
+
 def has_internal_code(text: str) -> bool:
     """True where `text` still names a build code. The test's predicate, and
     the restamp's own check: a surface that fails this is printing a reference
@@ -152,4 +281,5 @@ def has_internal_code(text: str) -> bool:
     return bool(re.search(rf"\b{CODE}", text or ""))
 
 
-__all__ = ["CODE", "strip_internal_codes", "has_internal_code"]
+__all__ = ["CODE", "region_label", "modernise", "strip_internal_codes",
+           "has_internal_code"]

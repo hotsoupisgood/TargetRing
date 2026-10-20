@@ -77,6 +77,7 @@ from typing import Any
 
 from . import config
 from .pvalue import format_p
+from . import wording
 
 RULE_TEXT = "expressed AND dysregulated AND phenotype"
 RULE_NOTE = "not used to order or filter the figure"
@@ -175,9 +176,9 @@ class Thresholds:
                 "specific_ratio": self.specific_ratio}
 
     def sentence(self) -> str:
-        return (f"GTEx region TPM >= {self.min_tpm:g}; |logFC| >= {self.min_abs_logfc:g} "
-                f"and adjusted p <= {self.max_q:g}; mouse phenotype ring > 0 or "
-                f">= {self.min_phenotypes:d} abnormal term(s)")
+        return (f"GTEx region TPM ≥ {self.min_tpm:g}; |logFC| ≥ {self.min_abs_logfc:g} "
+                f"and adjusted p ≤ {self.max_q:g}; mouse phenotype ring > 0 or "
+                f"≥ {self.min_phenotypes:d} abnormal term(s)")
 
 
 def current_thresholds() -> Thresholds:
@@ -187,12 +188,28 @@ def current_thresholds() -> Thresholds:
                       config.RECOMMEND_SPECIFIC_RATIO)
 
 
+#: Typography that must not move the rule version. v4.3 printed the bounds as
+#: "≥"/"≤" instead of ">="/"<=" (review of 2026-10-20, item 5) and the hash
+#: below moved with them -- which would tell every reader of every baked verdict
+#: that the RULE had changed when only its punctuation had. The hash is taken
+#: over the canonical ASCII form, so a glyph is display and a bound is the rule.
+RULE_GLYPHS = (("≥", ">="), ("≤", "<="), ("—", "--"), ("÷", "/"))
+
+
+def _canonical(text: str) -> str:
+    """`text` with the display glyphs folded back to ASCII, for hashing only."""
+    for glyph, ascii_ in RULE_GLYPHS:
+        text = text.replace(glyph, ascii_)
+    return text
+
+
 def rule_version(t: Thresholds) -> str:
     """Short hash of the rule text and the thresholds, so a baked verdict says
     which rule produced it. Changing a number changes the version. The
     specificity line and the disease-area aid are display, not rule, and are
-    deliberately NOT in this hash."""
-    body = f"{RULE_TEXT}|{t.sentence()}|not_met beats no_data"
+    deliberately NOT in this hash -- and neither is the typography of the
+    bounds (`_canonical`)."""
+    body = _canonical(f"{RULE_TEXT}|{t.sentence()}|not_met beats no_data")
     return hashlib.sha256(body.encode()).hexdigest()[:12]
 
 
@@ -378,10 +395,16 @@ def _criterion(key: str, label: str, status: str, value: Any, shown: str,
             "source": source}
 
 
-#: The region as a one-word tag for the trimmed box ("region: ileum,
-#: inferred"). GTEx's own tissue names are long and underscored and the box has
-#: no room for one; a name not in this table is printed in full, lower-cased,
-#: rather than cut by a rule that could rename the organ.
+#: RETIRED as a display form, v4.3 (review of 2026-10-20, item 5). It shortened
+#: the region for the trimmed verdict box -- "region: ileum, inferred" -- which
+#: made three names for one tissue on one page, against the underscored GTEx id
+#: on the opening view and on the figure. Worse, it RENAMED the organ: GTEx has
+#: both `Small_Intestine_Terminal_Ileum` and `Terminal_Ileum`, and this table
+#: mapped both to "ileum".
+#:
+#: `wording.region_label` is the one form now. The table is kept because
+#: `region_short` is still exported and tested, and because the short words are
+#: the record of what the box used to say.
 REGION_SHORT: dict[str, str] = {
     "Small_Intestine_Terminal_Ileum": "ileum",
     "Colon_Transverse": "colon",
@@ -415,7 +438,9 @@ def region_tag(f: Facts) -> dict[str, Any]:
         "region": f.region,
         "short": region_short(f.region),
         "origin": origin,
-        "shown": f"region: {region_short(f.region)}, {origin}",
+        # v4.3: the ONE display form, not `region_short`. One name per tissue
+        # on one page (`wording.region_label`).
+        "shown": f"region: {wording.region_label(f.region)}, {origin}",
         "tooltip": _region_words(f),
     }
 
@@ -423,12 +448,12 @@ def region_tag(f: Facts) -> dict[str, Any]:
 def _region_words(f: Facts) -> str:
     """"<region>, the run's chosen tissue" plus the disease-tissue statement
     when one can be made."""
-    where = f.region or "the run's region"
+    where = wording.region_label(f.region) if f.region else "the run's region"
     s = f"{where}, the run's chosen tissue"
     if f.region_is_disease_tissue is True:
         s += " (a disease tissue for this contrast)"
     elif f.region_is_disease_tissue is False:
-        s += " -- not a disease tissue for this contrast"
+        s += " — not a disease tissue for this contrast"
     return s
 
 
@@ -454,7 +479,8 @@ def expression_summary(f: Facts, t: Thresholds) -> dict[str, Any]:
         shown = (f"{f.region_tpm:.4g} TPM in {_region_words(f)}; median across "
                  f"{n} tissues {f.panel_median_tpm:.4g} TPM")
         if specific:
-            shown += (f"; concentrated in {f.region} ({ratio:.1f}x the panel median, "
+            shown += (f"; concentrated in {wording.region_label(f.region)} "
+                      f"({ratio:.1f}x the panel median, "
                       f"above the documented {t.specific_ratio:g}x line)")
     return {
         "region": f.region,
@@ -501,10 +527,10 @@ def disease_area_match(f: Facts) -> dict[str, Any]:
                 matching.append({"term": term, "area": sub_area})
                 break
     if matching:
-        shown = (f"disease-area match: yes ({area}) -- "
+        shown = (f"disease-area match: yes ({area}) — "
                  + "; ".join(f"{m['term']} [{m['area']}]" for m in matching))
     elif n_met:
-        shown = (f"disease-area match: no -- met on {n_met} term(s), none in the "
+        shown = (f"disease-area match: no — met on {n_met} term(s), none in the "
                  f"disease area ({area}: {', '.join(spec)})")
     else:
         shown = f"disease-area match: no abnormal terms to match ({area})"
@@ -536,19 +562,21 @@ def immune_origin_hint(f: Facts, t: Thresholds | None = None) -> dict[str, Any]:
         if v is None or f.region_tpm is None:
             continue
         if v >= t.min_tpm and v >= f.region_tpm:
-            reasons.append(f"{label} {v:.4g} TPM >= {f.region or 'region'} {f.region_tpm:.4g} TPM")
+            reasons.append(f"{label} {v:.4g} TPM ≥ "
+                           f"{wording.region_label(f.region) if f.region else 'region'}"
+                           f" {f.region_tpm:.4g} TPM")
     known = f.whole_blood_tpm is not None or f.spleen_tpm is not None
     return {
         "suggested": bool(reasons) if known else None,
         "reasons": reasons,
-        "rule": (f"GTEx whole-blood or spleen median TPM >= {t.min_tpm:g} and >= the "
+        "rule": (f"GTEx whole-blood or spleen median TPM ≥ {t.min_tpm:g} and ≥ the "
                  f"region's TPM"),
         "inflamed_tissue_contrast": disease_area_for(f.disease_text) is not None,
     }
 
 
 def _expressed(f: Facts, t: Thresholds) -> dict[str, Any]:
-    thr = f"GTEx TPM >= {t.min_tpm:g} in the run's region"
+    thr = f"GTEx TPM ≥ {t.min_tpm:g} in the run's region"
     if f.region_tpm is not None:
         return _criterion(
             "expressed", "expressed", MET if f.region_tpm >= t.min_tpm else NOT_MET,
@@ -568,7 +596,7 @@ def _expressed(f: Facts, t: Thresholds) -> dict[str, Any]:
 
 
 def _dysregulated(f: Facts, t: Thresholds) -> dict[str, Any]:
-    thr = f"|logFC| >= {t.min_abs_logfc:g} and adjusted p <= {t.max_q:g}"
+    thr = f"|logFC| ≥ {t.min_abs_logfc:g} and adjusted p ≤ {t.max_q:g}"
     if f.logfc is None or f.padj is None:
         missing = [n for n, v in (("logFC", f.logfc), ("adjusted p", f.padj)) if v is None]
         return _criterion("dysregulated", "dysregulated in the study", NO_DATA,
@@ -589,7 +617,8 @@ def _dysregulated(f: Facts, t: Thresholds) -> dict[str, Any]:
 
 
 def _phenotype(f: Facts, t: Thresholds) -> dict[str, Any]:
-    thr = f"mouse phenotype ring > 0, or >= {t.min_phenotypes:d} abnormal mouse term(s)"
+    thr = (f"mouse phenotype ring > 0, or ≥ {t.min_phenotypes:d} abnormal "
+           f"mouse term(s)")
     n = f.n_abnormal_phenotypes
     if f.rodent_ring is not None:
         if f.rodent_ring > 0 or (n is not None and n >= t.min_phenotypes):
@@ -613,7 +642,7 @@ def _phenotype(f: Facts, t: Thresholds) -> dict[str, Any]:
                           bare=f"{n} abnormal term{'' if n == 1 else 's'}")
     return _criterion("phenotype", "phenotype in a study", NO_DATA,
                       {"ring": None, "n_abnormal": n},
-                      "not phenotyped -- no mouse phenotype records, which is not 'no phenotype'",
+                      "not phenotyped — no mouse phenotype records, which is not 'no phenotype'",
                       thr, "Open Targets mousePhenotypes",
                       bare="not phenotyped")
 
@@ -633,11 +662,11 @@ def criteria_spec(t: Thresholds | None = None) -> list[dict[str, Any]]:
     t = t or current_thresholds()
     return [
         {"n": 1, "key": "expressed", "name": "Expressed",
-         "met_when": (f"GTEx median TPM >= {t.min_tpm:g} in the run's region "
+         "met_when": (f"GTEx median TPM ≥ {t.min_tpm:g} in the run's region "
                       f"(fallback: tissue-distribution ring > 0 if GTEx is absent)"),
          "source": "GTEx median TPM, Open Targets prioritisation"},
         {"n": 2, "key": "dysregulated", "name": "Dysregulated in this study",
-         "met_when": f"|logFC| >= {t.min_abs_logfc:g} and adjusted p <= {t.max_q:g}",
+         "met_when": f"|logFC| ≥ {t.min_abs_logfc:g} and adjusted p ≤ {t.max_q:g}",
          "source": "the submitted DE table"},
         # One name for one criterion. Review of 2026-10-20, item 3: this
         # read "Phenotype in a model" on two surfaces (the criteria block and
@@ -647,7 +676,7 @@ def criteria_spec(t: Thresholds | None = None) -> list[dict[str, Any]]:
         # phenotype in a study" (2026-10-18) -- all said "a study". His words
         # win: one name, 37 uses against 1.
         {"n": 3, "key": "phenotype", "name": "Phenotype in a study",
-         "met_when": (f"mouse-KO ring > 0, or >= {t.min_phenotypes:d} abnormal "
+         "met_when": (f"mouse-KO ring > 0, or ≥ {t.min_phenotypes:d} abnormal "
                       f"mouse phenotype term(s)"),
          "source": "Open Targets mousePhenotypes"},
     ]

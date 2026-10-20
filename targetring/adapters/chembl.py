@@ -151,7 +151,7 @@ def mechanism_summary(rec: ChEMBLRecord) -> dict[str, Any]:
     words = {
         "no_uniprot": "no UniProt accession — non-coding, or no reviewed protein entry",
         "no_target_record": "no ChEMBL target record for this accession (no data, not undrugged)",
-        "undrugged": "ChEMBL target record exists with 0 mechanisms — genuinely undrugged",
+        "undrugged": "a ChEMBL record exists with 0 mechanisms — genuinely undrugged",
         "mechanisms": None,
         "failed": f"ChEMBL call failed: {rec.error}",
     }

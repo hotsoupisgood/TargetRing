@@ -166,7 +166,7 @@
    "id": "I9",
    "name": "three-stage accounting",
    "outcome": "PASS",
-   "detail": "65217 = 25232 with a statistic + 39985 without; top 60 <= with-statistic; 12 selected <= top",
+   "detail": "65,217 = 25,232 with a statistic + 39,985 without; top 60 \u2264 with-statistic; 12 selected \u2264 top",
    "affects": ""
   }
  ],
@@ -238,7 +238,7 @@
   {
    "input": "ENSG00000279487",
    "status": "unresolved",
-   "reason": "'ENSG00000279487' matched no Open Targets target Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence.",
+   "reason": "'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence.",
    "resolved_symbol": null,
    "ensembl_id": null,
    "row": 11
@@ -285,7 +285,7 @@
   },
   {
    "condition": "no Pharos TDL for 2 of 11 gene(s) (PELATON, FCGR1BP)",
-   "affects": "those cells are hatched, never zeroed; Pharos covers 20,412 human targets and absence of a record is not Tdark"
+   "affects": "those cells are hatched, never zeroed; Pharos covers 20,412 human genes and absence of a record is not Tdark"
   }
  ],
  "ring_sources": [

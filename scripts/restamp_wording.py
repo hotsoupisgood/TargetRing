@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -37,12 +38,17 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from targetring import config, table as table_mod  # noqa: E402
-from targetring.wording import strip_internal_codes  # noqa: E402
+from targetring.wording import modernise  # noqa: E402
 
 #: Keys whose value is an adapter's or a renderer's own recorded payload rather
 #: than a sentence for a reader. Never rewritten, at any depth.
 OPAQUE_KEYS = frozenset({"raw", "git_sha", "run_id", "gene", "key", "url",
-                         "query", "pubtator_query", "europepmc_query"})
+                         "query", "pubtator_query", "europepmc_query",
+                         # A filter expression is the SYNTAX the analyse form
+                         # parses, echoed back at the reader. Respelling
+                         # "literature >= 2" as "literature ≥ 2" would
+                         # document an input the parser rejects.
+                         "expression", "filters", "region"})
 
 #: Sentences this build rewords, as exact pairs. The code strip above is a
 #: rule; these are the two *judgements* of the 2026-10-20 review that landed in
@@ -79,6 +85,11 @@ MIGRATIONS: tuple[tuple[str, str, str], ...] = (
 )
 
 
+def _numbers(text: str) -> list[str]:
+    """Every number in `text`, grouping removed, in order."""
+    return [m.replace(",", "") for m in re.findall(r"\d[\d,]*", text)]
+
+
 def _reword(text: str) -> str:
     """`strip_internal_codes`, then the explicit migrations.
 
@@ -86,7 +97,7 @@ def _reword(text: str) -> str:
     is a wording pass on a finished analysis, and a number moving in it would
     be the plausible-wrong output AGENTS.md's one rule is about.
     """
-    out = strip_internal_codes(text)
+    out = modernise(text)
     # The digit assertion is on the MIGRATIONS, not on the strip: a code is
     # partly a number ("COUNCIL V13"), so removing one removes digits. A
     # migration rewords constant text around the run's own numbers, and a digit
@@ -96,8 +107,10 @@ def _reword(text: str) -> str:
     for _why, old, new in MIGRATIONS:
         if old in reworded:
             reworded = reworded.replace(old, new)
-    assert ([c for c in out if c.isdigit()]
-            == [c for c in reworded if c.isdigit()]), (out, reworded)
+    # The NUMBERS must be the same numbers. Compared as integers with the
+    # grouping removed, because `modernise` inserts thousands separators -- a
+    # format change -- while a migration must never move a value.
+    assert _numbers(out) == _numbers(reworded), (out, reworded)
     return reworded
 
 

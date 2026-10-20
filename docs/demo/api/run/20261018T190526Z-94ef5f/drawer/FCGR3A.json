@@ -12,7 +12,7 @@
  "k_max": 9,
  "k_note": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
  "unfiltered_rings": [],
- "pipeline_summary": "2 agents \u00b7 1 with an active trial \u00b7 0 with \u22651 trial stopped for cause \u00b7 0 indicated for a disease attributable to this target",
+ "pipeline_summary": "2 agents \u00b7 1 with an active trial \u00b7 0 with \u22651 trial stopped for cause \u00b7 0 indicated for a disease attributable to this gene",
  "severe_liabilities": [],
  "attribution_error": null,
  "drugs": [
@@ -68,12 +68,12 @@
  "trials": {
   "source": "Open Targets clinicalReports",
   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
-  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this target are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
+  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this gene are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
   "sources_seen": {
    "ClinicalTrials.gov": 23,
    "TTD": 5
   },
-  "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 23 drug-trial PAIRS; the same trials are 23 DISTINCT studies, because a trial testing two of this target's drugs appears in both rows. Live: 3 pairs = 3 distinct. Stopped early: 9 pairs = 9 distinct, of which 0 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
+  "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 23 drug-trial PAIRS; the same trials are 23 DISTINCT studies, because a trial testing two of this gene's drugs appears in both rows. Live: 3 pairs = 3 distinct. Stopped early: 9 pairs = 9 distinct, of which 0 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
   "n_pairs": 23,
   "n_pairs_live": 3,
   "n_pairs_stopped": 9,
@@ -306,7 +306,7 @@
  "tdl": {
   "state": "value",
   "value": 3.0,
-  "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
+  "detail": "Tclin (3/3) \u2014 an approved drug acts through this gene. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
   "raw": {
    "tdl": "Tclin",
    "ordinal": 3,
@@ -438,22 +438,22 @@
   "regional_specificity": {
    "state": "value",
    "value": 0.6693132792532874,
-   "detail": "4.004 TPM in Small_Intestine_Terminal_Ileum / 5.982 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
+   "detail": "4.004 TPM in Small Intestine Terminal Ileum / 5.982 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
   },
   "clinical_phase": {
    "state": "not_applicable",
    "value": null,
-   "detail": "2 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 3 (BEMARITUZUMAB, IMGATUZUMAB). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate."
+   "detail": "2 candidates hit this gene, but NONE is indicated for a disease with mechanistic evidence linking it to this gene, so there is no clinical phase *for this gene* to report. Furthest phase for any indication would have been Phase 3 (BEMARITUZUMAB, IMGATUZUMAB). Attribution = human genetic evidence (genetic_association, genetic_literature) at score \u2265 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate."
   },
   "clinical_activity": {
    "state": "value",
    "value": 1.0,
-   "detail": "live trial \u2014 3 of 23 trial row(s) recruiting or ongoing, on 1 of 2 drug(s) Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this target's rows: ClinicalTrials.gov 23, TTD 5. Counts here are drug-trial pairs over 2 drug row(s); 23 distinct NCT id(s) are in the drawer."
+   "detail": "live trial \u2014 3 of 23 trial row(s) recruiting or ongoing, on 1 of 2 drug(s) Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this gene's rows: ClinicalTrials.gov 23, TTD 5. Counts here are drug-trial pairs over 2 drug row(s); 23 distinct NCT id(s) are in the drawer."
   },
   "tdl": {
    "state": "value",
    "value": 3.0,
-   "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
+   "detail": "Tclin (3/3) \u2014 an approved drug acts through this gene. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
   },
   "rodent": {
    "state": "value",
@@ -463,7 +463,7 @@
   "literature": {
    "state": "value",
    "value": 4.576398945124239,
-   "detail": "37704 PubTator3 records for '@GENE_FCGR3A' (log10(1+n) = 4.58); gene id-resolved, region is free text"
+   "detail": "37,704 PubTator3 records for '@GENE_FCGR3A' (log10(1+n) = 4.58); gene id-resolved, region is free text"
   },
   "completeness": {
    "state": "value",
@@ -497,9 +497,9 @@
     "label": "expressed",
     "status": "met",
     "value": 4.004,
-    "shown": "4.004 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+    "shown": "4.004 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)",
     "bare": "4.004 TPM",
-    "threshold": "GTEx TPM >= 1 in the run's region",
+    "threshold": "GTEx TPM \u2265 1 in the run's region",
     "source": "GTEx median TPM"
    },
    {
@@ -512,7 +512,7 @@
     },
     "shown": "logFC 2.7, adjusted p <0.05",
     "bare": "logFC +2.7, p <0.05",
-    "threshold": "|logFC| >= 1 and adjusted p <= 0.05",
+    "threshold": "|logFC| \u2265 1 and adjusted p \u2264 0.05",
     "source": "submitted DE table"
    },
    {
@@ -525,7 +525,7 @@
     },
     "shown": "phenotyped, 2 abnormal term(s) on record",
     "bare": "2 abnormal terms",
-    "threshold": "mouse phenotype ring > 0, or >= 1 abnormal mouse term(s)",
+    "threshold": "mouse phenotype ring > 0, or \u2265 1 abnormal mouse term(s)",
     "source": "Open Targets mousePhenotypes",
     "disease_area": {
      "disease_area": "inflammatory bowel disease",
@@ -544,7 +544,7 @@
       "immune system",
       "inflammation"
      ],
-     "shown": "disease-area match: yes (inflammatory bowel disease) -- decreased susceptibility to induced arthritis [inflammation]",
+     "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 decreased susceptibility to induced arthritis [inflammation]",
      "short": "disease-area terms: 1",
      "tooltip": "inflammatory bowel disease: decreased susceptibility to induced arthritis [inflammation]. Display aid, not a criterion."
     }
@@ -562,15 +562,15 @@
    "specific": false,
    "specific_ratio_threshold": 5.0,
    "blood_or_spleen_at_or_above_region": true,
-   "shown": "4.004 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 5.982 TPM",
+   "shown": "4.004 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 5.982 TPM",
    "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
   },
   "region_tag": {
    "region": "Small_Intestine_Terminal_Ileum",
    "short": "ileum",
    "origin": "inferred",
-   "shown": "region: ileum, inferred",
-   "tooltip": "Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+   "shown": "region: Small Intestine Terminal Ileum, inferred",
+   "tooltip": "Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)"
   },
   "disease_area": {
    "disease_area": "inflammatory bowel disease",
@@ -589,7 +589,7 @@
     "immune system",
     "inflammation"
    ],
-   "shown": "disease-area match: yes (inflammatory bowel disease) -- decreased susceptibility to induced arthritis [inflammation]",
+   "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 decreased susceptibility to induced arthritis [inflammation]",
    "short": "disease-area terms: 1",
    "tooltip": "inflammatory bowel disease: decreased susceptibility to induced arthritis [inflammation]. Display aid, not a criterion."
   },
@@ -601,8 +601,8 @@
    "specific_ratio": 5.0
   },
   "rule_short": "rule: expressed AND dysregulated AND phenotype \u2014 not used to order or filter the figure",
-  "rule_tooltip": "Thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
-  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+  "rule_tooltip": "Thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
+  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s)",
   "rule_version": "bdc70c8fc230",
   "mode": "rule",
   "note": "not used to order or filter the figure",
@@ -611,7 +611,7 @@
  "baked": {
   "at_utc": "2026-10-18T19:07:55Z",
   "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
-  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count -- fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
+  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count \u2014 fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
   "run_id": "20261018T190526Z-94ef5f",
   "sources": [
    "opentargets.target",
@@ -623,7 +623,7 @@
   ]
  },
  "summary": {
-  "text": "GO: expressed (4.004 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue and a disease tissue for this contrast), dysregulated in the study (logFC 2.7, adjusted p 4.2e-20), and a mouse phenotype on record (phenotyped, 2 abnormal terms). Hypothesis: inhibition, because the gene is up-regulated in the Crohn's disease versus non-inflammatory-bowel-disease control contrast, logFC 2.7, adjusted p 4.2e-20. Mouse knockouts show decreased susceptibility to induced arthritis and decreased susceptibility to injury; expression is 4.004 TPM in Small_Intestine_Terminal_Ileum against a median of 5.982 TPM across 54 tissues. Two agents hit this target with 3 of 23 trial rows live, the furthest being the Phase 3 antibody bemarituzumab (none indicated for a disease attributable to this target); development level: an approved drug acts on it, with 37704 PubTator3 records. The change may reflect infiltrating immune cells rather than regulation in the tissue: whole blood 164.1 TPM and spleen 240.9 TPM both exceed the region's 4.004 TPM. No data: chemical probe; the pipeline phase ring is not applicable for this target.",
+  "text": "GO: expressed (4.004 TPM in Small Intestine Terminal Ileum, the run's chosen tissue and a disease tissue for this contrast), dysregulated in the study (logFC 2.7, adjusted p 4.2e-20), and a mouse phenotype on record (phenotyped, 2 abnormal terms). Hypothesis: inhibition, because the gene is up-regulated in the Crohn's disease versus non-inflammatory-bowel-disease control contrast, logFC 2.7, adjusted p 4.2e-20. Mouse knockouts show decreased susceptibility to induced arthritis and decreased susceptibility to injury; expression is 4.004 TPM in Small Intestine Terminal Ileum against a median of 5.982 TPM across 54 tissues. Two agents hit this gene with 3 of 23 trial rows live, the furthest being the Phase 3 antibody bemarituzumab (none indicated for a disease attributable to this gene); development level: an approved drug acts on it, with 37,704 PubTator3 records. The change may reflect infiltrating immune cells rather than regulation in the tissue: whole blood 164.1 TPM and spleen 240.9 TPM both exceed the region's 4.004 TPM. No data: chemical probe; the pipeline phase ring is not applicable for this gene.",
   "model": "claude-opus-5",
   "prompt_version": "2ab6ea127fbd28e5",
   "effort": "low",
@@ -655,16 +655,16 @@
     "specific": false,
     "specific_ratio_threshold": 5.0,
     "blood_or_spleen_at_or_above_region": true,
-    "shown": "4.004 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 5.982 TPM",
+    "shown": "4.004 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast); median across 54 tissues 5.982 TPM",
     "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
    },
    "immune_origin_hint": {
     "suggested": true,
     "reasons": [
-     "whole blood 164.1 TPM >= Small_Intestine_Terminal_Ileum 4.004 TPM",
-     "spleen 240.9 TPM >= Small_Intestine_Terminal_Ileum 4.004 TPM"
+     "whole blood 164.1 TPM \u2265 Small_Intestine_Terminal_Ileum 4.004 TPM",
+     "spleen 240.9 TPM \u2265 Small_Intestine_Terminal_Ileum 4.004 TPM"
     ],
-    "rule": "GTEx whole-blood or spleen median TPM >= 1 and >= the region's TPM",
+    "rule": "GTEx whole-blood or spleen median TPM \u2265 1 and \u2265 the region's TPM",
     "inflamed_tissue_contrast": true
    },
    "rings": [
@@ -702,25 +702,25 @@
      "ring": "regional_specificity",
      "state": "value",
      "value": 0.6693132792532874,
-     "detail": "4.004 TPM in Small_Intestine_Terminal_Ileum / 5.982 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
+     "detail": "4.004 TPM in Small Intestine Terminal Ileum / 5.982 TPM median across 54 GTEx tissues (above the 1 TPM floor)"
     },
     {
      "ring": "clinical_phase",
      "state": "not_applicable",
      "value": null,
-     "detail": "2 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 3 (BEMARITUZUMAB, IMGATUZUMAB). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate."
+     "detail": "2 candidates hit this gene, but NONE is indicated for a disease with mechanistic evidence linking it to this gene, so there is no clinical phase *for this gene* to report. Furthest phase for any indication would have been Phase 3 (BEMARITUZUMAB, IMGATUZUMAB). Attribution = human genetic evidence (genetic_association, genetic_literature) at score \u2265 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate."
     },
     {
      "ring": "clinical_activity",
      "state": "value",
      "value": 1.0,
-     "detail": "live trial \u2014 3 of 23 trial row(s) recruiting or ongoing, on 1 of 2 drug(s) Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this target's rows: ClinicalTrials.gov 23, TTD 5. Counts here are drug-trial pairs over 2 drug row(s); 23 distinct NCT id(s) are in the drawer."
+     "detail": "live trial \u2014 3 of 23 trial row(s) recruiting or ongoing, on 1 of 2 drug(s) Read from Open Targets clinicalReports in the gene query \u2014 no per-drug hop (v2.4). Source labels on this gene's rows: ClinicalTrials.gov 23, TTD 5. Counts here are drug-trial pairs over 2 drug row(s); 23 distinct NCT id(s) are in the drawer."
     },
     {
      "ring": "tdl",
      "state": "value",
      "value": 3.0,
-     "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
+     "detail": "Tclin (3/3) \u2014 an approved drug acts through this gene. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
     },
     {
      "ring": "rodent",
@@ -732,7 +732,7 @@
      "ring": "literature",
      "state": "value",
      "value": 4.576398945124239,
-     "detail": "37704 PubTator3 records for '@GENE_FCGR3A' (log10(1+n) = 4.58); gene id-resolved, region is free text"
+     "detail": "37,704 PubTator3 records for '@GENE_FCGR3A' (log10(1+n) = 4.58); gene id-resolved, region is free text"
     },
     {
      "ring": "completeness",
@@ -770,7 +770,7 @@
       "gastroesophageal junction adenocarcinoma"
      ]
     },
-    "summary_line": "2 agents \u00b7 1 with an active trial \u00b7 0 with \u22651 trial stopped for cause \u00b7 0 indicated for a disease attributable to this target",
+    "summary_line": "2 agents \u00b7 1 with an active trial \u00b7 0 with \u22651 trial stopped for cause \u00b7 0 indicated for a disease attributable to this gene",
     "n_distinct_trials": 23,
     "n_live_trials": 3,
     "n_stopped_trials": 9,
@@ -787,7 +787,7 @@
    "tdl": {
     "state": "value",
     "label": "Tclin",
-    "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
+    "detail": "Tclin (3/3) \u2014 an approved drug acts through this gene. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
    },
    "literature": {
     "pubtator_records": 37704,
@@ -800,7 +800,7 @@
      {
       "criterion": "expressed",
       "status": "met",
-      "shown": "4.004 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+      "shown": "4.004 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)"
      },
      {
       "criterion": "dysregulated in the study",
@@ -816,11 +816,11 @@
     "caveats": [],
     "modality": null,
     "disease_area": {
-     "shown": "disease-area match: yes (inflammatory bowel disease) -- decreased susceptibility to induced arthritis [inflammation]",
+     "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 decreased susceptibility to induced arthritis [inflammation]",
      "matched": true,
      "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)"
     },
-    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s)",
     "rule_version": "bdc70c8fc230"
    }
   },
@@ -878,7 +878,7 @@
      "allelic_composition": "Fcgr4<tm1.1Rav>/Fcgr4<tm1.1Rav>",
      "genetic_background": "involves: C57BL/6",
      "pmids": [
-      "20974962"
+      "20,974,962"
      ]
     }
    ]
@@ -892,7 +892,7 @@
      "allelic_composition": "Fcgr4<tm1.1Rav>/Fcgr4<tm1.1Rav>",
      "genetic_background": "involves: C57BL/6",
      "pmids": [
-      "20974962"
+      "20,974,962"
      ]
     }
    ]

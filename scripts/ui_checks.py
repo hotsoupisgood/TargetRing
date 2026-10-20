@@ -599,6 +599,128 @@ def evidence_checks(page, base: str) -> None:
           f"k reads '8/9' on every row ({ks[:3]})")
 
 
+#: `>=` / `<=` / ` -- ` in text a reader sees. The page's own markup has always
+#: used the typographic forms and the server's strings used ASCII, so one
+#: sentence carried both (review of 2026-10-20, item 5). The analyse form's
+#: `<code>ring >= number</code>` is exempt: that is the syntax the parser takes,
+#: not prose, and respelling it would document an input the form rejects.
+ASCII_OPS = re.compile(r">=|<=|(?<= )--(?= )")
+
+#: A GTEx tissue id where a reader expects a name.
+UNDERSCORED = re.compile(r"\b[A-Z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+\b")
+
+#: An integer of four digits or more with no grouping.
+#: Not an IDENTIFIER: the digits must not be glued to a letter or a separator,
+#: so `ENSG00000081041`, `E-GEOD-101794` and `b39c02a638ef` are not counts and
+#: are not expected to be grouped.
+UNGROUPED = re.compile(r"(?<![\w.,/:#-])\d{4,}(?![\d,/:-]|\w)")
+
+#: "target" meaning a gene. Open Targets' own name and its own field names
+#: ("target-disease associations", "target-prioritisation") are PROPER NOUNS and
+#: are excluded: the fix is one name for a gene, not a search and replace.
+STRAY_TARGET = re.compile(r"(?<!Open )\btargets?\b(?![-\w])")
+
+
+def one_name_checks(page, base: str) -> None:
+    """17. One name and one format each (review of 2026-10-20, item 5).
+
+    Read over all six tabs AND over every tooltip, because a hover is text a
+    reader sees and four of these drifted there first.
+    """
+    page.set_viewport_size(DESK)
+    seen: list[str] = []
+    tips: list[str] = []
+    for tab in ("table", "figure", "evidence", "ledger", "invariants", "caveats"):
+        page.goto(f"{base}/demo/#{tab}", wait_until="networkidle")
+        page.wait_for_timeout(900)
+        pane = page.query_selector(f"#pane-{tab}")
+        if pane:
+            seen.append(pane.inner_text())
+        tips += [t for t in page.evaluate(
+            """() => [...document.querySelectorAll('[title]')]
+                 .map((e) => e.getAttribute('title'))""") if t]
+    # And the drawer, which is where most of the per-gene wording lives.
+    page.goto(f"{base}/demo/#table/MUC1", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+    seen.append(page.inner_text("#drawer"))
+    tips += [t for t in page.evaluate(
+        """() => [...document.querySelectorAll('#drawer [title]')]
+             .map((e) => e.getAttribute('title'))""") if t]
+    body = "\n".join(seen)
+    tip = "\n".join(tips)
+
+    # 1. One region display form. The underscored id is an IDENTIFIER and is
+    #    allowed in a hover that says so; it is not a name in a sentence.
+    check("Small Intestine Terminal Ileum" in body,
+          "the region reads 'Small Intestine Terminal Ileum'")
+    check("Small_Intestine_Terminal_Ileum" not in body,
+          "and the underscored GTEx id is not in the page text")
+    ids_in_tips = [t for t in tips if "Small_Intestine_Terminal_Ileum" in t
+                   and "GTEx tissue id" not in t]
+    check(not ids_in_tips,
+          f"a hover carrying the id says it is one ({[t[:40] for t in ids_in_tips][:2]})")
+    check("region: ileum" not in body and "region: ileum" not in tip,
+          "and nothing shortens it to 'ileum'")
+
+    # 2. One k format, "8/9", everywhere it is printed.
+    ks = page.evaluate("""() => {
+      const out = [];
+      for (const el of document.querySelectorAll('td.kcell, td.ev-k')) {
+        out.push(el.innerText.replace(/\s+/g, '').trim());
+      }
+      const dt = [...document.querySelectorAll('#drawer dl.kv dt')]
+        .find((d) => d.textContent.includes('rings with a real value'));
+      if (dt && dt.nextElementSibling) {
+        out.push(dt.nextElementSibling.textContent.trim().split(/\s+/)[0]);
+      }
+      return out;
+    }""")
+    check(bool(ks), "k is printed somewhere to check")
+    odd = sorted({k for k in ks if not re.fullmatch(r"\d+/\d+", k)})
+    check(not odd, f"every printed k is '8/9' ({odd[:3]})")
+    check("of 9 external rings measured" not in body,
+          "no surface spells k out as '8 of 9 external rings measured'")
+
+    # 3. "gene", not "target".
+    hay = "\n".join(ln for ln in (body + "\n" + tip).splitlines()
+                    if "opentargets.org" not in ln)
+    stray = sorted({m.group(0) for m in STRAY_TARGET.finditer(hay)})
+    where = [ln.strip()[:70] for ln in hay.splitlines() if STRAY_TARGET.search(ln)]
+    check(not stray,
+          f"nothing reader-visible calls a gene a target ({where[:2]})")
+    check("Open Targets" in body, "while Open Targets keeps its own name")
+
+    # 4. Thousands separators.
+    big = sorted({n for n in UNGROUPED.findall(body) if not n.startswith("20")})
+    check(not big, f"every integer over 999 is grouped ({big[:4]})")
+
+    # 5. The typographic operators.
+    # A filter EXPRESSION in a footer is the syntax the analyse form parses,
+    # echoed at the reader, and keeps its ASCII operator.
+    opl = [ln.strip() for ln in body.splitlines()
+           if ASCII_OPS.search(ln) and "FILTERED" not in ln]
+    check(not opl, f"no '>=' or ' -- ' in the page text ({[l[:60] for l in opl][:2]})")
+    check("\u2265" in body, "the bounds print as '\u2265'")
+
+    # 7. The Paid calls tab states the dated total the flow page states.
+    page.goto(f"{base}/demo/#caveats", wait_until="networkidle")
+    page.wait_for_timeout(1400)
+    paid = page.inner_text("#pane-caveats")
+    # The heading is upper-cased by CSS, so this reads the text case-blind.
+    low = paid.lower()
+    check("$1.35 total" in low,
+          f"the Paid calls tab states the $1.35 total ({paid.splitlines()[0][:60]!r})")
+    check("measured 2026-10-18" in low, "and dates it")
+    total_row = page.evaluate("""() => {
+      const tr = document.querySelector('#pane-caveats tr.total');
+      return tr ? tr.innerText.replace(/\s+/g, ' ').trim() : null;
+    }""")
+    check(bool(total_row) and "$1.35" in total_row,
+          f"the table has a total row ({(total_row or '')[:60]!r})")
+    check(bool(total_row) and "measured 2026-10-18" in (total_row or "").lower(),
+          "dated there too")
+
+
 def literature_column_checks(page, base: str) -> None:
     """13. Column 11, which had column 2's defect.
 
@@ -843,6 +965,8 @@ def main(argv: list[str]) -> int:
         cohesion_checks(page, args.base)
         print("=== the moving ranges, counted ===")
         moving_ranges_checks(page, args.base)
+        print("=== one name, one format ===")
+        one_name_checks(page, args.base)
         print("=== the literature column ===")
         literature_column_checks(page, args.base)
         print("=== the Gene expression box ===")

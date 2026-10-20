@@ -1,4 +1,4 @@
-targetring — Small_Intestine_Terminal_Ileum. run 20261018T190526Z-94ef5f · 19a6b1b346f7
+targetring — Small Intestine Terminal Ileum. run 20261018T190526Z-94ef5f · 19a6b1b346f7
 
 INVARIANTS 9/9 PASS · every check this build can make, made and held; per-check detail in manifest.json
 
@@ -38,11 +38,11 @@ Rings, outermost first (scale is per-ring; a colour means nothing between two ri
        source: PubTator3 — https://www.ncbi.nlm.nih.gov/research/pubtator3/api
   12. k — external rings with a measurement [0, 9] rings with a real value, of 9 — derived; maximum is the number of external rings
        scale: a completeness gauge: it orders nothing and selects nothing, and is drawn muted to say so
-       source: computed here, by counting rings 3-11: k is how many of the nine external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs — no source of its own is read for it
+       source: computed here, by counting rings 3-11: k is how many of the 9 external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs — no source of its own is read for it
 
 The ring sources above are also in manifest.json (`ring_sources`), with the endpoint and the pinned schema or dataset version for each, and the run's UTC timestamp is the access date. In the SVG each source line is a real link; in a PNG or on a slide nothing is clickable, which is why the figure prints the domain beside the name.
 
-Pipeline: furthest phase counts only drugs indicated for a disease with human genetic evidence linking it to this target. A drug that hits the target for an unrelated indication sets no phase.
+Pipeline: furthest phase counts only drugs indicated for a disease with human genetic evidence linking it to this gene. A drug that hits the gene for an unrelated indication sets no phase.
 Missing is never imputed. k = external rings with a real measurement for that gene; it is a completeness gauge and orders nothing. Spoke ORDER: the circle starts at 12 o'clock and runs clockwise — spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged). Region affects exactly one ring (regional specificity).
 This figure is internally consistent and auditable. Nothing on it is ranked or scored: it is your gene set, the evidence rings, and a drawer per gene.
 Ensembl id per gene: in the click-drawer and in values.csv, deliberately NOT on the rim at any gene count — a spoke label runs radially and the id needs 155 px where there are 121 between the circle and the scale column. Symbols are ambiguous; the id is what was queried.

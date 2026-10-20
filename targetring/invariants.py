@@ -728,10 +728,10 @@ def _i9_three_stage_accounting(accounting: Any, svg_path: Path | None) -> Result
                 f"({line!r}); a reader cannot see the three-stage count this "
                 f"run computed")
     return Result("I9", "three-stage accounting", "PASS",
-                  f"{accounting.n_total} = {accounting.n_with_statistic} with "
-                  f"a statistic + {accounting.n_without_statistic} without; "
-                  f"top {accounting.n_top} <= with-statistic; "
-                  f"{accounting.n_selected} selected <= top")
+                  f"{accounting.n_total:,} = {accounting.n_with_statistic:,} "
+                  f"with a statistic + {accounting.n_without_statistic:,} "
+                  f"without; top {accounting.n_top:,} ≤ with-statistic; "
+                  f"{accounting.n_selected:,} selected ≤ top")
 
 
 def _i10_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,

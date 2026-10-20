@@ -40,7 +40,7 @@
   {
    "input": "ENSG00000279487",
    "status": "unresolved",
-   "reason": "'ENSG00000279487' matched no Open Targets target Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence."
+   "reason": "'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence."
   }
  ],
  "rings": {
@@ -144,21 +144,21 @@
     "n": 1,
     "key": "expressed",
     "name": "Expressed",
-    "met_when": "GTEx median TPM >= 1 in the run's region (fallback: tissue-distribution ring > 0 if GTEx is absent)",
+    "met_when": "GTEx median TPM \u2265 1 in the run's region (fallback: tissue-distribution ring > 0 if GTEx is absent)",
     "source": "GTEx median TPM, Open Targets prioritisation"
    },
    {
     "n": 2,
     "key": "dysregulated",
     "name": "Dysregulated in this study",
-    "met_when": "|logFC| >= 1 and adjusted p <= 0.05",
+    "met_when": "|logFC| \u2265 1 and adjusted p \u2264 0.05",
     "source": "the submitted DE table"
    },
    {
     "n": 3,
     "key": "phenotype",
     "name": "Phenotype in a study",
-    "met_when": "mouse-KO ring > 0, or >= 1 abnormal mouse phenotype term(s)",
+    "met_when": "mouse-KO ring > 0, or \u2265 1 abnormal mouse phenotype term(s)",
     "source": "Open Targets mousePhenotypes"
    }
   ],

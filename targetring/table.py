@@ -232,7 +232,7 @@ def _assert_the_files_own_count_agrees(csv_path: Path, rows: list[dict[str, str]
         raise TableUnavailable(
             f"{csv_path.name} says `rendered={stated}` and its cell section holds "
             f"{genes} gene(s). The file disagrees with itself about where the cells "
-            f"end -- the likeliest cause is an appended section being read as data, "
+            f"end — the likeliest cause is an appended section being read as data, "
             f"or cells lost from the middle. No table is drawn."
         )
 

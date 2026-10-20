@@ -228,3 +228,98 @@ class TestTheMovingRangeCountIsCounted:
                         if "Nine of the twelve" in ln
                         and not ln.lstrip().startswith(("#", "//", "*"))]
             assert not rendered, (name, rendered[:2])
+
+
+class TestOneNameOneFormat:
+    """Review of 2026-10-20, item 5. `modernise` is the rule and the SOURCE
+    strings were edited to its output, so it is a no-op on what the build
+    writes today — which is the assertion that stops them drifting back."""
+
+    def test_the_region_has_one_display_form(self) -> None:
+        from targetring.wording import region_label
+        assert region_label("Small_Intestine_Terminal_Ileum") == (
+            "Small Intestine Terminal Ileum")
+        # And it does not rename the organ. `REGION_SHORT` mapped both of these
+        # to "ileum", and GTEx holds them as different tissue samples.
+        assert region_label("Terminal_Ileum") != region_label(
+            "Small_Intestine_Terminal_Ileum")
+
+    def test_the_js_half_agrees(self) -> None:
+        """`regionLabel` in `app.js`, read rather than run: it is a one-line
+        arrow function and the pattern is the whole of it."""
+        js = (STATIC / "app.js").read_text()
+        m = re.search(r"^const regionLabel = .*$", js, re.M)
+        assert m, "app.js no longer declares a top-level `regionLabel`"
+        assert "replace(/_/g" in m.group(0), m.group(0)
+        assert "toLowerCase" not in m.group(0), (
+            "GTEx's own capitalisation is kept — see `wording.region_label`")
+
+    def test_a_count_is_grouped_and_an_identifier_is_not(self) -> None:
+        from targetring.wording import modernise
+        assert modernise("65217 genes") == "65,217 genes"
+        for untouched in ("ENSG00000081041", "E-GEOD-101794", "b39c02a638ef",
+                          "2026-10-18", "#808080", "2200-step colormap",
+                          "20261018T190526Z-94ef5f"):
+            assert modernise(untouched) == untouched, untouched
+
+    def test_a_year_is_not_a_count(self) -> None:
+        from targetring.wording import modernise
+        assert modernise("measured 2026") == "measured 2026"
+
+    def test_the_bounds_print_as_glyphs(self) -> None:
+        from targetring.wording import modernise
+        assert modernise("TPM >= 1 and p <= 0.05") == "TPM ≥ 1 and p ≤ 0.05"
+        assert modernise("yes (area) -- met on 2") == "yes (area) — met on 2"
+        # A hyphenated word and a flag survive: the dash rule needs spaces.
+        assert modernise("gene-id resolved --force") == "gene-id resolved --force"
+
+    def test_a_gene_is_not_called_a_target(self) -> None:
+        from targetring.wording import modernise
+        assert modernise("2 candidates hit this target") == (
+            "2 candidates hit this gene")
+        assert modernise("ChEMBL target record exists with 0") == (
+            "a ChEMBL record exists with 0")
+        # Open Targets keeps its own name, and so do its own field names.
+        for proper in ("Open Targets holds 3 rows",
+                       "Open Targets target-disease associations",
+                       "platform-docs.opentargets.org/target-prioritisation"):
+            assert modernise(proper) == proper, proper
+
+    def test_the_rule_version_does_not_move_with_the_typography(self) -> None:
+        """`recommend.rule_version` hashes the rule and its thresholds. v4.3
+        printed the bounds as glyphs, and a hash that moved with them would
+        tell every reader of every baked verdict that the RULE had changed."""
+        t = recommend.current_thresholds()
+        assert "≥" in t.sentence() and ">=" not in t.sentence()
+        assert ">=" in recommend._canonical(t.sentence())
+        assert recommend.rule_version(t) == "bdc70c8fc230"
+
+    def test_modernise_is_a_no_op_on_what_the_build_writes(self) -> None:
+        """Every reader-visible registry, through the rule. A new adapter
+        string with `>=` or "this target" in it fails here."""
+        from targetring.wording import modernise
+        texts: list[str] = []
+        for spec in RING_SPECS:
+            texts += [spec.label, spec.source, spec.units, spec.transform,
+                      spec.table_label, spec.printed_units, spec.bound_units]
+        for doc in sources.RING_SOURCE_DOCS.values():
+            texts += [doc.why, doc.reads, doc.legend_text]
+        for rule in evidence.RULES:
+            texts.append(rule.why)
+        texts.append(json.dumps(recommend.criteria_block(), default=str))
+        texts.append(invariants.EPMC_DRIVES_NO_RING)
+        bad = [t for t in texts if t and modernise(t) != t]
+        assert not bad, [(t[:70], modernise(t)[:70]) for t in bad[:2]]
+
+    @pytest.mark.skipif(not DEMO.is_dir(), reason="no exported demo run")
+    @pytest.mark.parametrize("name", ["values.csv", "values.json", "manifest.json",
+                                      "evidence.json"])
+    def test_the_published_artefacts_are_in_the_one_form(self, name: str) -> None:
+        text = (DEMO / name).read_text()
+        # The region id survives where it IS the identifier: the manifest's own
+        # `region` key, and the GTEx query it was used in.
+        assert "TPM in Small_Intestine_Terminal_Ileum" not in text
+        assert "this target" not in text
+        assert "human targets" not in text
+        # A hex colour is not a count.
+        assert not re.search(r"#[0-9a-f]{1,3},[0-9a-f]{3}\b", text)

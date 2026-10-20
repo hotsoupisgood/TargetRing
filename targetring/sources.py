@@ -71,6 +71,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from . import config
+from .order import EXTERNAL_RING_COUNT
 
 
 @dataclass(frozen=True)
@@ -312,7 +313,7 @@ DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
         why=("Atlas's help pages are client-rendered and document neither file, so "
              "this link names the resource and nothing more. What a contrast IS is "
              "stated per experiment in its own -configuration.xml, which this build "
-             "reads and prints verbatim -- including the prose <name> -- rather "
+             "reads and prints verbatim — including the prose <name> — rather "
              "than reconstructing from the id. The id is {reference}_{test} and is "
              "asserted every run (I8): eight of the Atlas's 1,126 human "
              "differential contrasts fail that assertion, measured 2026-09-29"),
@@ -390,9 +391,12 @@ DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
 #: The `completeness` ring is the only one of the three whose provenance does
 #: not depend on where this run's DE numbers came from -- it is arithmetic over
 #: the other rings either way.
+#: v4.3: the count is the constant, not the word "nine" -- one number, printed
+#: once, in the one format (`EXTERNAL_RING_COUNT`).
 _COMPLETENESS_REASON = (
-    "computed here, by counting rings 3-11: k is how many of the "
-    "nine external rings have a real measurement for this gene. It "
+    f"computed here, by counting rings 3-11: k is how many of the "
+    f"{EXTERNAL_RING_COUNT} external rings have a real "
+    f"measurement for this gene. It "
     "is arithmetic over the other rings' cells, so its provenance "
     "is theirs — no source of its own is read for it")
 
@@ -714,7 +718,7 @@ def data_source_rows(keys: Iterable[str]) -> list[dict[str, str]]:
         if doc is None:
             raise AssertionError(
                 f"source {key!r} has no entry in DATA_SOURCE_DOCS. Every source a "
-                f"page reads must resolve to a citation -- add one, and do not "
+                f"page reads must resolve to a citation — add one, and do not "
                 f"borrow a neighbouring source's URL to do it.")
         rows.append({"source": key, "legend_text": doc.legend_text,
                      "doc_url": doc.url, "endpoint": doc.endpoint,

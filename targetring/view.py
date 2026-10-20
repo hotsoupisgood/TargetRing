@@ -389,7 +389,7 @@ def table_payload(run_id: str, sort: str = "", dim: str = "", *,
 #: about what an artefact does not do is a claim, and the page draws claims
 #: rather than writing them.
 EVIDENCE_NOTE = (
-    "Evidence per target, in the order this run drew its spokes. This surface "
+    "Evidence per gene, in the order this run drew its spokes. This surface "
     "does not rank or score genes. The GO / NO-GO line is the owner's explicit "
     "three-part rule, shown for each gene; it never orders or filters the figure.")
 

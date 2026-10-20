@@ -437,4 +437,4 @@ class TestTheSafetyRingsSignIsNotGuessedAt:
         rule = next(r for r in ev.RULES
                     if r.key == "safety_liabilities_recorded")
         assert "NEGATIVE is the liability arm" in rule.why
-        assert "NOT evidence that this target is safe" in rule.why
+        assert "NOT evidence that this gene is safe" in rule.why

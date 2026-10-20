@@ -627,7 +627,7 @@ async def run_analysis(
         conditions.append((
             f"no Pharos TDL for {len(pharos_missing)} of {len(genes)} gene(s) "
             f"({', '.join(pharos_missing[:5])})",
-            "those cells are hatched, never zeroed; Pharos covers 20,412 human targets "
+            "those cells are hatched, never zeroed; Pharos covers 20,412 human genes "
             "and absence of a record is not Tdark",
         ))
     # A source that drives no ring should not be able to dominate a run without

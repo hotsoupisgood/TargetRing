@@ -60,6 +60,7 @@ from .palette import (  # noqa: E402
 from .palette import relative_luminance as _luminance  # noqa: E402
 from . import sources as SOURCES  # noqa: E402
 from .states import Cell  # noqa: E402
+from . import wording as WORDING  # noqa: E402
 
 # v2.6. Every ring used to be drawn on one ramp -- viridis, truncated to
 # [0.16, 0.92] so its luminance sat in [0.056, 0.663] and the three reserved
@@ -2076,7 +2077,7 @@ def render(
         fig.savefig(out_svg, format="svg")
     _add_wedge_tooltips(out_svg, rings, {
         "regional_specificity":
-            f"this run: {region} TPM ÷ median across "
+            f"this run: {WORDING.region_label(region)} TPM ÷ median across "
             f"{gtex_panel_size(cells_by_ring) or 'the GTEx panel'}",
     })
     if out_png is not None:
@@ -2257,7 +2258,11 @@ def _draw_centre(ax, region, n_genes, input_count, rendered_count, ledger_counts
     out = [
         ax.text(0.5, Y, FIGURE_TITLE, ha="center", va="center", size=15 * k,
                 weight="bold", transform=ax.transAxes),
-        ax.text(0.5, Y, region, ha="center", va="center", size=11 * k,
+        # v4.3: one display form for the region, everywhere
+        # (`wording.region_label`). This is the centre-hole line, and the
+        # spaced name is the same width as the underscored one.
+        ax.text(0.5, Y, WORDING.region_label(region), ha="center", va="center",
+                size=11 * k,
                 transform=ax.transAxes, color="#333333"),
         ax.text(0.5, Y, _wrap(parts, 2), ha="center", va="center", size=9.5 * k,
                 transform=ax.transAxes, color="#111111"),
@@ -3151,7 +3156,8 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
         # with the thing they described. Nothing replaces them: this figure is a
         # gene set, rings of evidence and a drawer, and it now says so by saying
         # nothing it cannot do.
-        f"Regional specificity = {region} TPM ÷ median across {n_tissues or 'the GTEx panel'}.",
+        f"Regional specificity = {WORDING.region_label(region)} TPM ÷ median "
+        f"across {n_tissues or 'the GTEx panel'}.",
         "Mouse-phenotype ring: a LEAD, not a verdict. Embryonic-lethal lines drop out of "
         "adult phenotyping, which biases exactly the essential genes the safety ring flags "
         "as risky.",
@@ -3166,7 +3172,7 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
         f"The circle {clock or clock_phrase(AUDIT)} — {ordering_note}. "
         f"Region affects exactly one ring (regional specificity).",
         "Pipeline: furthest phase counts only drugs indicated for a disease with mechanistic "
-        "evidence linking it to THIS target. A drug that hits the target for an unrelated "
+        "evidence linking it to THIS gene. A drug that hits the gene for an unrelated "
         "indication sets no phase; those genes are drawn 'not applicable', not 'low'.",
     ]
     notes.append(_ID_NOTE)
@@ -3191,7 +3197,7 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
     if gene_flags:
         notes.append(
             "⚠ = Open Targets records a cardiac-conduction, cardiotoxicity or mortality "
-            f"safety liability for this target ({', '.join(sorted(gene_flags))}). The "
+            f"safety liability for this gene ({', '.join(sorted(gene_flags))}). The "
             "clinical rings are a pipeline statement, never a safety one."
         )
     if subtitle:
@@ -3632,7 +3638,7 @@ def render_legend(
     # the floor is 9 pt — below that it is unreadable and the run should fail
     # rather than ship a legend nobody can read.
     region_line = fig.text(0.025, 0.947,
-                           f"{region} · {input_count} genes in, "
+                           f"{WORDING.region_label(region)} · {input_count} genes in, "
                            f"{rendered_count} rendered",
                            fontsize=13, va="top", ha="left", color="#333333")
     _fit_text_before(fig, region_line, limit_frac=0.295, floor_pt=9.0)
@@ -3943,7 +3949,7 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
     The full audit stamps stay on the audit render, which is the right artefact
     for the morning review. This is what makes the slide render honest anyway.
     """
-    lines = [f"targetring \u2014 {region}. {provenance}", ""]
+    lines = [f"targetring \u2014 {WORDING.region_label(region)}. {provenance}", ""]
     if invariant_summary:
         lines += [invariant_summary, ""]
     lines.append("Rings, outermost first (scale is per-ring; a colour means nothing "
@@ -3979,7 +3985,7 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
     lines += [
         "",
         "Pipeline: furthest phase counts only drugs indicated for a disease with human "
-        "genetic evidence linking it to this target. A drug that hits the target for an "
+        "genetic evidence linking it to this gene. A drug that hits the gene for an "
         "unrelated indication sets no phase.",
         f"Missing is never imputed. k = external rings with a real measurement for that "
         f"gene; it is a completeness gauge and orders nothing. Spoke ORDER: the circle "
@@ -4017,7 +4023,7 @@ def caption(rings, norms, region, provenance, ordering_note="", filter_notes=(),
     if gene_flags:
         lines.append(
             "\u26a0 = Open Targets records a cardiac-conduction, cardiotoxicity or "
-            f"mortality safety liability for this target ({', '.join(sorted(gene_flags))}). "
+            f"mortality safety liability for this gene ({', '.join(sorted(gene_flags))}). "
             "The clinical rings are a pipeline statement, never a safety one.")
     return "\n".join(lines)
 

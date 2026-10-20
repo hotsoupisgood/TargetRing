@@ -1680,6 +1680,13 @@ td.cell-no-data, .grid td.no-data {
   .ev-row { break-inside: avoid; }
 }
 
+/* v4.3: the Paid calls table's total row. A rule above it and the figure in
+   full strength, because the total is what the flow page states for this run
+   and the reader should not have to add five rows up to check it. */
+tr.total > th, tr.total > td { border-top: 2px solid var(--tr-rule-strong);
+                               padding-top: var(--tr-s-2); }
+tr.total > th { text-align: left; font-weight: 600; }
+
 /* --- 12. The chosen contrast.
    ---------------------------
    `docs/DECISION-AUTOPICK-2026-10-09.md`: the app chooses on first view and the

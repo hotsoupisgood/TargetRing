@@ -364,7 +364,7 @@ class OTRecord:
     associations_error: str | None = None
 
     def drug_names(self) -> list[str]:
-        """Distinct drug names on this target's rows, in first-seen order.
+        """Distinct drug names on this gene's rows, in first-seen order.
 
         v2.2 item 2: these are what the ClinicalTrials.gov hop is keyed on.
         COUNCIL D3 ruled out keying CT.gov on the gene itself -- `query.term=BRAF`
@@ -378,7 +378,7 @@ class OTRecord:
         return out
 
     def indication_disease_ids(self) -> list[str]:
-        """Every disease id any of this target's drug rows is indicated for."""
+        """Every disease id any of this gene's drug rows is indicated for."""
         out: list[str] = []
         for row in self.drug_rows:
             for d in row.get("diseases") or []:
@@ -527,7 +527,7 @@ HUMAN_CHROMOSOMES: frozenset[str] = frozenset(
 def has_genomic_location_key(payload: Any) -> bool:
     """Did the payload this record came from ever ask for a location?
 
-    The discriminator between "Open Targets has no location for this target"
+    The discriminator between "Open Targets has no location for this gene"
     and "this cache entry predates the field", and the reason `fetch` can keep
     the existing cache instead of versioning the key and re-fetching 250 runs'
     worth of genes. Same distinction `has_prioritisation_record` draws for the
@@ -606,7 +606,7 @@ def _from_payload(eid: str, payload: dict[str, Any] | None) -> OTRecord:
 
 
 def has_prioritisation_record(rec: OTRecord) -> bool:
-    """Does Open Targets score this target at all?
+    """Does Open Targets score this gene at all?
 
     The discriminator between "sparsely encoded" and "nothing here". Every key in
     DENSE_PRIORITISATION_KEYS was present for 24/24 targets in the live census,
@@ -636,7 +636,7 @@ def _mean_of_keys(rec: OTRecord, keys: tuple[str, ...], label: str) -> Cell:
         return no_data(f"{rec.ensembl_id} not found in Open Targets")
     if not has_prioritisation_record(rec):
         return no_data(
-            f"Open Targets holds no prioritisation record for this target, so none of the "
+            f"Open Targets holds no prioritisation record for this gene, so none of the "
             f"{label} keys can be read. This is absence of a record, not a clean result."
         )
 
@@ -716,7 +716,7 @@ def chemical_probe_cell(rec: OTRecord) -> Cell:
         return no_data(f"{rec.ensembl_id} not found in Open Targets")
     if not has_prioritisation_record(rec):
         return no_data(
-            "Open Targets holds no prioritisation record for this target, so the "
+            "Open Targets holds no prioritisation record for this gene, so the "
             "chemical-probe key cannot be read. This is absence of a record, not "
             "'no probe exists'."
         )
@@ -755,7 +755,7 @@ def safety_cell(rec: OTRecord) -> Cell:
 
 
 def mechanistic_evidence(rec: OTRecord, disease_id: str) -> dict[str, float]:
-    """The non-circular datatype scores linking this target to this disease."""
+    """The non-circular datatype scores linking this gene to this disease."""
     dts = (rec.associations or {}).get(disease_id) or {}
     return {
         k: v for k, v in dts.items()
@@ -846,7 +846,7 @@ def severe_liabilities(rec: OTRecord) -> list[dict[str, str]]:
 
 
 def clinical_phase_cell(rec: OTRecord) -> Cell:
-    """COUNCIL D4 Ring A / COUNCIL V1 — furthest phase reached *for this target*.
+    """COUNCIL D4 Ring A / COUNCIL V1 — furthest phase reached *for this gene*.
 
     v1 took `max(maxClinicalStage)` over every row, so EPHA2 rendered
     "Approved (3 candidates)" at the brightest end of the colormap on the
@@ -880,7 +880,7 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
     if rec.drug_count == 0:
         # COUNCIL D5: OT distinguishes a meaningful zero from no data. A target
         # record that exists and reports 0 candidates is genuinely undrugged.
-        return value(0.0, "target record exists, 0 drug or clinical candidates", raw=0)
+        return value(0.0, "a gene record exists, 0 drug or clinical candidates", raw=0)
 
     if rec.associations_error is not None:
         # We asked and could not find out. Not "unattributed", not a phase.
@@ -958,13 +958,13 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
     if not attributed:
         names = [(r.get("drug") or {}).get("name") for r in rec.drug_rows[:3]]
         return not_applicable(
-            f"{rec.drug_count} candidates hit this target, but NONE is indicated for a disease "
-            f"with mechanistic evidence linking it to this target, so there is no clinical "
-            f"phase *for this target* to report. Furthest phase for any indication would have "
+            f"{rec.drug_count} candidates hit this gene, but NONE is indicated for a disease "
+            f"with mechanistic evidence linking it to this gene, so there is no clinical "
+            f"phase *for this gene* to report. Furthest phase for any indication would have "
             f"been {STAGE_LABEL.get(unattributed_top, 'none')} "
             f"({', '.join(str(n) for n in names if n)}). "
             f"Attribution = human genetic evidence "
-            f"({', '.join(sorted(GENETIC_ATTRIBUTION_DATATYPES))}) at score >= "
+            f"({', '.join(sorted(GENETIC_ATTRIBUTION_DATATYPES))}) at score ≥ "
             f"{ATTRIBUTION_MIN_SCORE} in Open Targets' target-disease associations. "
             f"'clinical' and 'literature' are circular; 'somatic_mutation' and "
             f"'affected_pathway' do not discriminate.",
@@ -1000,7 +1000,7 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
                if n_at_top > 1 else "")
     detail = (
         f"{STAGE_LABEL[top]} for this indication — {drug} reached {STAGE_LABEL[top]} "
-        f"for {hit['name']}, which is attributable to this target ({ev}{example}). "
+        f"for {hit['name']}, which is attributable to this gene ({ev}{example}). "
         f"{n_drugs} of {rec.drug_count} candidates have an attributable indication"
     )
     if global_over_attributed > top:
@@ -1102,7 +1102,7 @@ def trial_reports(rec: OTRecord) -> list[dict[str, Any]]:
 
 
 def source_counts(rec: OTRecord) -> dict[str, int]:
-    """Distinct `clinicalReports.source` values on this target, with counts.
+    """Distinct `clinicalReports.source` values on this gene, with counts.
 
     Requirement 1 of v2.4 and the reason the relabelling is not allowed to be
     silent again: whatever Open Targets calls these rows, what it called them on
@@ -1153,7 +1153,7 @@ def clinical_activity_cell(rec: OTRecord) -> Cell:
         return no_data(
             f"{rec.drug_count} candidate(s) in Open Targets, but not one of their "
             f"clinicalReports rows carries a trialOverallStatus. Report sources present "
-            f"for this target: {', '.join(f'{k} {v}' for k, v in list(sources.items())[:6]) or 'none'}. "
+            f"for this gene: {', '.join(f'{k} {v}' for k, v in list(sources.items())[:6]) or 'none'}. "
             f"A row with no status is a label or registry entry, not a trial, "
             f"and counting it would read as inactive."
         )
@@ -1191,7 +1191,7 @@ def clinical_activity_cell(rec: OTRecord) -> Cell:
     }
     provenance = (
         f" Read from {SOURCE_LABEL} in the gene query — no per-drug hop (v2.4). "
-        f"Source labels on this target's rows: "
+        f"Source labels on this gene's rows: "
         f"{', '.join(f'{k} {v}' for k, v in list(sources.items())[:4])}. "
         f"Counts here are drug-trial pairs over {len(rec.drug_rows)} drug row(s); "
         f"{distinct} distinct NCT id(s) are in the drawer."
@@ -1317,7 +1317,7 @@ def trials_panel(rec: OTRecord) -> dict[str, Any]:
             "are selected by carrying a `trialOverallStatus`, NOT by a source literal: on "
             "2026-09-24 Open Targets relabelled these rows from `AACT` to "
             "`ClinicalTrials.gov`, a literal match on the old name returned nothing, and "
-            "the data was wrongly declared gone. The labels actually seen on this target "
+            "the data was wrongly declared gone. The labels actually seen on this gene "
             "are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's "
             "free text is shown beside the category, never in place of it."
         ),
@@ -1325,7 +1325,7 @@ def trials_panel(rec: OTRecord) -> dict[str, Any]:
         "dedup_note": (
             f"TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug "
             f"rows below gives {len(reports)} drug-trial PAIRS; the same trials are "
-            f"{len(ids)} DISTINCT studies, because a trial testing two of this target's "
+            f"{len(ids)} DISTINCT studies, because a trial testing two of this gene's "
             f"drugs appears in both rows. Live: {len(live_all)} pairs = {len(live_ids)} "
             f"distinct. Stopped early: {len(stopped_all)} pairs = {len(stopped_ids)} "
             f"distinct, of which {n_for_cause} pair(s) are categorised FOR CAUSE "
@@ -1409,7 +1409,7 @@ def drug_pipeline_rows(rec: OTRecord) -> list[dict[str, Any]]:
 
     COUNCIL D2: BRAF's top row is sorafenib, approved for RCC/HCC, not
     BRAF-driven disease. An approved multi-kinase inhibitor must never silently
-    read as 'this target is clinically validated', so the indication is a
+    read as 'this gene is clinically validated', so the indication is a
     required column, not a nicety.
     """
     out: list[dict[str, Any]] = []
@@ -1475,7 +1475,7 @@ def pipeline_summary(rec: OTRecord) -> str:
     if not rec.found or rec.drug_count is None:
         return "no Open Targets record"
     if rec.drug_count == 0:
-        return "0 agents — target record exists, genuinely undrugged"
+        return "0 agents — a gene record exists, genuinely undrugged"
     rows = drug_pipeline_rows(rec)
     active = sum(1 for r in rows if r["status"] in ACTIVE_STATUSES)
     stopped = sum(1 for r in rows if any(c in FOR_CAUSE_CATEGORIES for c in r["stop_reasons"]))
@@ -1486,7 +1486,7 @@ def pipeline_summary(rec: OTRecord) -> str:
         f"{stopped} with \u22651 trial stopped for cause",
     ]
     if rec.associations is not None:
-        parts.append(f"{n_attr} indicated for a disease attributable to this target")
+        parts.append(f"{n_attr} indicated for a disease attributable to this gene")
     return " \u00b7 ".join(parts)
 
 

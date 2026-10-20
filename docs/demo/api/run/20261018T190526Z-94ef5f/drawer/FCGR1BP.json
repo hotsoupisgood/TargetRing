@@ -12,7 +12,7 @@
  "k_max": 9,
  "k_note": "3 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
  "unfiltered_rings": [],
- "pipeline_summary": "0 agents \u2014 target record exists, genuinely undrugged",
+ "pipeline_summary": "0 agents \u2014 a gene record exists, genuinely undrugged",
  "severe_liabilities": [],
  "attribution_error": null,
  "drugs": [],
@@ -20,9 +20,9 @@
  "trials": {
   "source": "Open Targets clinicalReports",
   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
-  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this target are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
+  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this gene are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
   "sources_seen": {},
-  "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 0 drug-trial PAIRS; the same trials are 0 DISTINCT studies, because a trial testing two of this target's drugs appears in both rows. Live: 0 pairs = 0 distinct. Stopped early: 0 pairs = 0 distinct, of which 0 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
+  "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 0 drug-trial PAIRS; the same trials are 0 DISTINCT studies, because a trial testing two of this gene's drugs appears in both rows. Live: 0 pairs = 0 distinct. Stopped early: 0 pairs = 0 distinct, of which 0 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
   "n_pairs": 0,
   "n_pairs_live": 0,
   "n_pairs_stopped": 0,
@@ -41,7 +41,7 @@
  "tdl": {
   "state": "no_data",
   "value": null,
-  "detail": "Pharos holds no target record for FCGR1BP. Pharos covers 20,412 human targets; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a target we do hold'.",
+  "detail": "Pharos holds no gene record for FCGR1BP. Pharos covers 20,412 human genes; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a gene we do hold'.",
   "raw": null
  },
  "literature": {
@@ -106,12 +106,12 @@
   "regional_specificity": {
    "state": "no_data",
    "value": null,
-   "detail": "0.224 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (0.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer."
+   "detail": "0.224 TPM in Small Intestine Terminal Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (0.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer."
   },
   "clinical_phase": {
    "state": "value",
    "value": 0.0,
-   "detail": "target record exists, 0 drug or clinical candidates"
+   "detail": "a gene record exists, 0 drug or clinical candidates"
   },
   "clinical_activity": {
    "state": "not_applicable",
@@ -121,7 +121,7 @@
   "tdl": {
    "state": "no_data",
    "value": null,
-   "detail": "Pharos holds no target record for FCGR1BP. Pharos covers 20,412 human targets; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a target we do hold'."
+   "detail": "Pharos holds no gene record for FCGR1BP. Pharos covers 20,412 human genes; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a gene we do hold'."
   },
   "rodent": {
    "state": "value",
@@ -165,9 +165,9 @@
     "label": "expressed",
     "status": "not_met",
     "value": 0.224,
-    "shown": "0.224 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+    "shown": "0.224 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)",
     "bare": "0.224 TPM",
-    "threshold": "GTEx TPM >= 1 in the run's region",
+    "threshold": "GTEx TPM \u2265 1 in the run's region",
     "source": "GTEx median TPM"
    },
    {
@@ -180,7 +180,7 @@
     },
     "shown": "logFC 2.8, adjusted p <0.05",
     "bare": "logFC +2.8, p <0.05",
-    "threshold": "|logFC| >= 1 and adjusted p <= 0.05",
+    "threshold": "|logFC| \u2265 1 and adjusted p \u2264 0.05",
     "source": "submitted DE table"
    },
    {
@@ -193,7 +193,7 @@
     },
     "shown": "phenotyped, 6 abnormal term(s) on record",
     "bare": "6 abnormal terms",
-    "threshold": "mouse phenotype ring > 0, or >= 1 abnormal mouse term(s)",
+    "threshold": "mouse phenotype ring > 0, or \u2265 1 abnormal mouse term(s)",
     "source": "Open Targets mousePhenotypes",
     "disease_area": {
      "disease_area": "inflammatory bowel disease",
@@ -224,7 +224,7 @@
       "immune system",
       "inflammation"
      ],
-     "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]",
+     "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]",
      "short": "disease-area terms: 4",
      "tooltip": "inflammatory bowel disease: abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]. Display aid, not a criterion."
     }
@@ -242,15 +242,15 @@
    "specific": false,
    "specific_ratio_threshold": 5.0,
    "blood_or_spleen_at_or_above_region": true,
-   "shown": "0.224 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+   "shown": "0.224 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)",
    "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
   },
   "region_tag": {
    "region": "Small_Intestine_Terminal_Ileum",
    "short": "ileum",
    "origin": "inferred",
-   "shown": "region: ileum, inferred",
-   "tooltip": "Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+   "shown": "region: Small Intestine Terminal Ileum, inferred",
+   "tooltip": "Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)"
   },
   "disease_area": {
    "disease_area": "inflammatory bowel disease",
@@ -281,7 +281,7 @@
     "immune system",
     "inflammation"
    ],
-   "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]",
+   "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]",
    "short": "disease-area terms: 4",
    "tooltip": "inflammatory bowel disease: abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]. Display aid, not a criterion."
   },
@@ -293,8 +293,8 @@
    "specific_ratio": 5.0
   },
   "rule_short": "rule: expressed AND dysregulated AND phenotype \u2014 not used to order or filter the figure",
-  "rule_tooltip": "Thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
-  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+  "rule_tooltip": "Thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
+  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s)",
   "rule_version": "bdc70c8fc230",
   "mode": "rule",
   "note": "not used to order or filter the figure",
@@ -303,7 +303,7 @@
  "baked": {
   "at_utc": "2026-10-18T19:07:55Z",
   "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
-  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count -- fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
+  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count \u2014 fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
   "run_id": "20261018T190526Z-94ef5f",
   "sources": [
    "opentargets.target",
@@ -315,7 +315,7 @@
   ]
  },
  "summary": {
-  "text": "NO-GO: expressed not met (0.224 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue and a disease tissue for this contrast), dysregulated in the study met (logFC 2.8, adjusted p 7.55e-15), and phenotype in a study met (phenotyped, 6 abnormal terms on record). Hypothesis: inhibition, because the gene is up-regulated in the Crohn's disease versus non-inflammatory-bowel-disease control contrast, logFC +2.8, adjusted p 7.55e-15. The mouse record lists abnormal macrophage physiology, decreased susceptibility to induced arthritis, increased susceptibility to bacterial infection, abnormal dendritic cell antigen presentation, abnormal type I hypersensitivity reaction and decreased susceptibility to autoimmune hemolytic anemia; the pipeline holds 0 agents (target record exists, genuinely undrugged), there are 0 ChEMBL mechanisms, and literature is 0 PubTator3 records (13 Europe PMC records). The change may reflect infiltrating immune cells rather than regulation in the tissue: whole blood 11.36 TPM and spleen 4.238 TPM are both at or above the region's 0.224 TPM. No data: regional specificity and development level, with clinical activity not applicable.",
+  "text": "NO-GO: expressed not met (0.224 TPM in Small Intestine Terminal Ileum, the run's chosen tissue and a disease tissue for this contrast), dysregulated in the study met (logFC 2.8, adjusted p 7.55e-15), and phenotype in a study met (phenotyped, 6 abnormal terms on record). Hypothesis: inhibition, because the gene is up-regulated in the Crohn's disease versus non-inflammatory-bowel-disease control contrast, logFC +2.8, adjusted p 7.55e-15. The mouse record lists abnormal macrophage physiology, decreased susceptibility to induced arthritis, increased susceptibility to bacterial infection, abnormal dendritic cell antigen presentation, abnormal type I hypersensitivity reaction and decreased susceptibility to autoimmune hemolytic anemia; the pipeline holds 0 agents (a gene record exists, genuinely undrugged), there are 0 ChEMBL mechanisms, and literature is 0 PubTator3 records (13 Europe PMC records). The change may reflect infiltrating immune cells rather than regulation in the tissue: whole blood 11.36 TPM and spleen 4.238 TPM are both at or above the region's 0.224 TPM. No data: regional specificity and development level, with clinical activity not applicable.",
   "model": "claude-opus-5",
   "prompt_version": "2ab6ea127fbd28e5",
   "effort": "low",
@@ -347,16 +347,16 @@
     "specific": false,
     "specific_ratio_threshold": 5.0,
     "blood_or_spleen_at_or_above_region": true,
-    "shown": "0.224 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)",
+    "shown": "0.224 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)",
     "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
    },
    "immune_origin_hint": {
     "suggested": true,
     "reasons": [
-     "whole blood 11.36 TPM >= Small_Intestine_Terminal_Ileum 0.224 TPM",
-     "spleen 4.238 TPM >= Small_Intestine_Terminal_Ileum 0.224 TPM"
+     "whole blood 11.36 TPM \u2265 Small_Intestine_Terminal_Ileum 0.224 TPM",
+     "spleen 4.238 TPM \u2265 Small_Intestine_Terminal_Ileum 0.224 TPM"
     ],
-    "rule": "GTEx whole-blood or spleen median TPM >= 1 and >= the region's TPM",
+    "rule": "GTEx whole-blood or spleen median TPM \u2265 1 and \u2265 the region's TPM",
     "inflamed_tissue_contrast": true
    },
    "rings": [
@@ -394,13 +394,13 @@
      "ring": "regional_specificity",
      "state": "no_data",
      "value": null,
-     "detail": "0.224 TPM in Small_Intestine_Terminal_Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (0.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer."
+     "detail": "0.224 TPM in Small Intestine Terminal Ileum is below the 1 TPM floor for 'expressed at all', so the specificity ratio (0.59x the median tissue) is not a specificity statement. The absolute TPM is in the CSV and the drawer."
     },
     {
      "ring": "clinical_phase",
      "state": "value",
      "value": 0.0,
-     "detail": "target record exists, 0 drug or clinical candidates"
+     "detail": "a gene record exists, 0 drug or clinical candidates"
     },
     {
      "ring": "clinical_activity",
@@ -412,7 +412,7 @@
      "ring": "tdl",
      "state": "no_data",
      "value": null,
-     "detail": "Pharos holds no target record for FCGR1BP. Pharos covers 20,412 human targets; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a target we do hold'."
+     "detail": "Pharos holds no gene record for FCGR1BP. Pharos covers 20,412 human genes; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a gene we do hold'."
     },
     {
      "ring": "rodent",
@@ -455,7 +455,7 @@
     "n_drugs": 0,
     "stages_reached": [],
     "furthest_agent": null,
-    "summary_line": "0 agents \u2014 target record exists, genuinely undrugged",
+    "summary_line": "0 agents \u2014 a gene record exists, genuinely undrugged",
     "n_distinct_trials": 0,
     "n_live_trials": 0,
     "n_stopped_trials": 0,
@@ -472,7 +472,7 @@
    "tdl": {
     "state": "no_data",
     "label": null,
-    "detail": "Pharos holds no target record for FCGR1BP. Pharos covers 20,412 human targets; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a target we do hold'."
+    "detail": "Pharos holds no gene record for FCGR1BP. Pharos covers 20,412 human genes; absence of a record is not Tdark, which is a measured level meaning 'nobody has looked at a gene we do hold'."
    },
    "literature": {
     "pubtator_records": 0,
@@ -485,7 +485,7 @@
      {
       "criterion": "expressed",
       "status": "not_met",
-      "shown": "0.224 TPM in Small_Intestine_Terminal_Ileum, the run's chosen tissue (a disease tissue for this contrast)"
+      "shown": "0.224 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)"
      },
      {
       "criterion": "dysregulated in the study",
@@ -501,11 +501,11 @@
     "caveats": [],
     "modality": null,
     "disease_area": {
-     "shown": "disease-area match: yes (inflammatory bowel disease) -- abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]",
+     "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 abnormal macrophage physiology [immune system]; decreased susceptibility to induced arthritis [inflammation]; abnormal dendritic cell antigen presentation [immune system]; decreased susceptibility to autoimmune hemolytic anemia [immune system]",
      "matched": true,
      "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)"
     },
-    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM >= 1; |logFC| >= 1 and adjusted p <= 0.05; mouse phenotype ring > 0 or >= 1 abnormal term(s)",
+    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s)",
     "rule_version": "bdc70c8fc230"
    }
   },
@@ -567,9 +567,9 @@
      "allelic_composition": "Fcgr1<tm1Jsv>/Fcgr1<tm1Jsv>",
      "genetic_background": "involves: 129P2/OlaHsd * BALB/c",
      "pmids": [
-      "11911824",
-      "18949059",
-      "9892619"
+      "11,911,824",
+      "18,949,059",
+      "9,892,619"
      ]
     }
    ]
@@ -583,9 +583,9 @@
      "allelic_composition": "Fcgr1<tm1Jsv>/Fcgr1<tm1Jsv>",
      "genetic_background": "involves: 129P2/OlaHsd * BALB/c",
      "pmids": [
-      "11911824",
-      "18949059",
-      "9892619"
+      "11,911,824",
+      "18,949,059",
+      "9,892,619"
      ]
     }
    ]
@@ -599,9 +599,9 @@
      "allelic_composition": "Fcgr1<tm1Jsv>/Fcgr1<tm1Jsv>",
      "genetic_background": "involves: 129P2/OlaHsd * BALB/c",
      "pmids": [
-      "11911824",
-      "18949059",
-      "9892619"
+      "11,911,824",
+      "18,949,059",
+      "9,892,619"
      ]
     }
    ]
@@ -615,9 +615,9 @@
      "allelic_composition": "Fcgr1<tm1Jsv>/Fcgr1<tm1Jsv>",
      "genetic_background": "involves: 129P2/OlaHsd * BALB/c",
      "pmids": [
-      "11911824",
-      "18949059",
-      "9892619"
+      "11,911,824",
+      "18,949,059",
+      "9,892,619"
      ]
     }
    ]
@@ -631,9 +631,9 @@
      "allelic_composition": "Fcgr1<tm1Jsv>/Fcgr1<tm1Jsv>",
      "genetic_background": "involves: 129P2/OlaHsd * BALB/c",
      "pmids": [
-      "11911824",
-      "18949059",
-      "9892619"
+      "11,911,824",
+      "18,949,059",
+      "9,892,619"
      ]
     }
    ]
@@ -647,9 +647,9 @@
      "allelic_composition": "Fcgr1<tm1Jsv>/Fcgr1<tm1Jsv>",
      "genetic_background": "involves: 129P2/OlaHsd * BALB/c",
      "pmids": [
-      "11911824",
-      "18949059",
-      "9892619"
+      "11,911,824",
+      "18,949,059",
+      "9,892,619"
      ]
     }
    ]

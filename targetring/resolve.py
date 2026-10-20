@@ -162,7 +162,7 @@ class Resolver:
 
     def _from_hits(self, raw: str, cleaned: str, hits: list[dict[str, str]]) -> Resolution:
         if not hits:
-            return Resolution(raw, "no_match", note=f"{cleaned!r} matched no Open Targets target")
+            return Resolution(raw, "no_match", note=f"{cleaned!r} matched no Open Targets record")
         if len(hits) > 1:
             # QA B6: never pick the first. Silently choosing a winner here is how
             # a figure becomes about the wrong gene.

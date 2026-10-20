@@ -2595,7 +2595,7 @@ function renderEvidence(d) {
   // The run-level line. Counts of GENES, three of them, never a total of
   // findings — a target with two disagreements is not twice one.
   const counts = `<ul class="tight ev-counts">
-    <li><b>${esc(fc.genes)}</b> target(s) on this figure</li>
+    <li><b>${esc(fc.genes)}</b> gene(s) on this figure</li>
     <li><b>${esc(fc.with_contradiction)}</b> where two sources disagree</li>
     <li><b>${esc(fc.with_flag)}</b> carrying a flag</li>
     <li><b>${esc(fc.with_unevaluable)}</b> with at least one reading that
@@ -2605,7 +2605,8 @@ function renderEvidence(d) {
     `<div class="note warn"><b>${esc(d.evidence_note)}</b></div>
      <p class="hint">${esc(d.evidence_empty_note)}</p>
      <div class="ev-meta">
-       <code>${esc(d.run_id)}</code> · ${esc(d.region || "")} ·
+       <code>${esc(d.run_id)}</code> · <span title="GTEx tissue id: ${
+         esc(d.region || "none")}">${esc(regionLabel(d.region))}</span> ·
        ${esc(d.timestamp_utc || "")}
        <p class="hint">Order: ${esc(d.ordering_note || d.ordering || "")}
        — the order this run drew its spokes in. This surface does not reorder
@@ -2666,14 +2667,31 @@ function llmAccountsHtml(llm) {
   // from before v4.0 has no such key and the heading simply carries no date
   // rather than inventing one from the run's timestamp.
   const when = (llm.accounts_measured_utc || "").slice(0, 10);
-  return `<h4>Paid calls — ${nAcc} cap${nAcc === 1 ? "" : "s"}, ${nAcc} counter${
-    nAcc === 1 ? "" : "s"}${when ? `, measured ${esc(when)}` : ""}</h4>
+  // v4.3, review of 2026-10-20 item 5: the TOTAL, which the flow page prints
+  // and this tab did not. Five rows of dollars and the reader adding them up,
+  // beside a flowchart stating "$1.35" for the same run, is one figure with two
+  // answers. Summed from the same rows the table prints -- `export_flow.py:103`
+  // is the Python half, over the same `llm.accounts` -- so the two cannot
+  // disagree, and it carries the same date the heading does.
+  const spent = Object.values(llm.accounts || {})
+    .reduce((t, a) => t + Number(a.spent || 0), 0);
+  const calls = Object.values(llm.accounts || {})
+    .reduce((t, a) => t + Number(a.calls || 0), 0);
+  return `<h4>Paid calls — $${spent.toFixed(2)} total${
+    when ? `, measured ${esc(when)}` : ""}</h4>
     ${when ? `<p class="hint">Every dollar below is the total spent up to
       <b>${esc(when)}</b>, folded from the ledger on that date. Model prices
       change and this build's are a pinned constant, so read these as a record
       of what this project cost by then, not as a current price list.</p>` : ""}
     <table><thead><tr><th>account</th><th>spent</th><th>calls</th>
-      <th>what it pays for</th></tr></thead><tbody>${rows}</tbody></table>
+      <th>what it pays for</th></tr></thead><tbody>${rows}
+      <tr class="total"><th scope="row">total</th>
+        <td><b>$${spent.toFixed(2)}</b>${
+          when ? ` <span class="hint">measured ${esc(when)}</span>` : ""}</td>
+        <td>${esc(fmtCount(calls))} call${calls === 1 ? "" : "s"}</td>
+        <td class="reason">${nAcc} cap${nAcc === 1 ? "" : "s"}, ${nAcc} counter${
+          nAcc === 1 ? "" : "s"} — none borrows from another</td></tr>
+      </tbody></table>
     <p class="hint">No account borrows from another and all are separate
     from any other budget on this machine. Spend is folded from
     <code>${esc(llm.ledger_path || "runs/spend-ledger.jsonl")}</code>, which is
@@ -3135,7 +3153,10 @@ function drawerHtml(d) {
   h += `<h4>your measurement</h4><dl class="kv">
     <dt>logFC</dt><dd>${d.logfc}</dd>
     <dt>adjusted p</dt><dd>${fmtP(d.padj)}</dd>
-    <dt>rings with a real value (k)</dt><dd>${d.k} of ${d.k_max}
+    ${/* v4.3, review of 2026-10-20 item 5: "8/9", the form the grid and the
+          Evidence tab print. It read "8 of 9" here and "k = 8 of 9 external
+          rings measured" on the Evidence tab, for one number. */""}
+    <dt>rings with a real value (k)</dt><dd>${esc(d.k)}/${esc(d.k_max)}
       <span class="hint">completeness only — k orders nothing and selects nothing</span></dd>
     <dt>Pharos TDL</dt><dd>${d.tdl && d.tdl.state === "value"
       ? `<b>${esc((d.tdl.raw || {}).tdl || "")}</b> <span class="hint">development level, not a pocket</span>`
@@ -3155,7 +3176,7 @@ function drawerHtml(d) {
         <p class="summary-line">${esc(d.pipeline_summary)}</p>`;
   if ((d.severe_liabilities || []).length) {
     h += `<div class="note bad"><b>⚠ Open Targets records a cardiac or mortality safety
-      liability for this target:</b> ${d.severe_liabilities
+      liability for this gene:</b> ${d.severe_liabilities
         .map((s) => `${esc(s.event)} <span class="hint">(matched “${esc(s.matched)}”${
           s.datasource ? ", " + esc(s.datasource) : ""})</span>`).join("; ")}.
       The clinical rings are a pipeline statement, never a safety one.</div>`;
@@ -3166,8 +3187,8 @@ function drawerHtml(d) {
       ${esc(d.attribution_error)}</div>`;
   }
   if (drugs.length) {
-    h += `<div class="note">An approved drug that hits this target is not the same as
-      this target being clinically validated — polypharmacology defeats a mechanism
+    h += `<div class="note">An approved drug that hits this gene is not the same as
+      this gene being clinically validated — polypharmacology defeats a mechanism
       filter alone. The indication is shown beside the phase for exactly that reason.</div>
       <div class="scroll-x"><table><thead><tr><th>Drug</th><th>Modality</th><th>Furthest phase</th>
       <th>Current status</th><th>Indication</th><th>Trials</th><th>Stopped</th>
@@ -3195,12 +3216,12 @@ function drawerHtml(d) {
   if (tr.source) {
     h += `<h4>trials — ${esc(tr.source)}</h4>
       <p class="summary-line">${tr.n_lead_sponsors || 0} distinct lead sponsor(s)
-        across this target's drugs${(tr.lead_sponsors || []).length
+        across this gene's drugs${(tr.lead_sponsors || []).length
           ? ": " + tr.lead_sponsors.slice(0, 6).map(esc).join(", ") : ""}.</p>`;
     // v2.4 requirement 1: the source labels actually seen, so the next
     // relabelling is visible in the drawer instead of emptying a ring.
     if (tr.sources_seen && Object.keys(tr.sources_seen).length) {
-      h += `<p class="summary-line hint">report source labels on this target:
+      h += `<p class="summary-line hint">report source labels on this gene:
         ${Object.entries(tr.sources_seen).map(([k, v]) => `${esc(k)} ${v}`).join(" · ")}</p>`;
     }
     // v2.3 item 2. The target-level totals are DISTINCT NCT ids; the sum of the
@@ -3531,6 +3552,15 @@ function movingRangeSentence(rings) {
        the gene set you submitted, so a colour is only true of this run.`;
   return `<p class="drift">${body}</p>`;
 }
+
+// ONE display form for a GTEx tissue name. Mirrors `wording.region_label`:
+// GTEx writes `Small_Intestine_Terminal_Ileum` and this page prints "Small
+// Intestine Terminal Ileum", with GTEx's own capitalisation kept. The
+// underscored id is the IDENTIFIER and stays in the hover and in the artefact.
+// Review of 2026-10-20, item 5: the page had three names for one tissue, and
+// one of them ("ileum") renamed the organ -- GTEx has `Terminal_Ileum` as a
+// separate tissue. `tests/test_wording.py` runs both halves over one list.
+const regionLabel = (r) => String(r == null ? "" : r).replace(/_/g, " ") || "none";
 
 // A UTC stamp as a reader reads one: `2026-10-18T19:07:55Z` -> `2026-10-18
 // 19:07 UTC`. Sliced off the string rather than parsed through `new Date()`,
@@ -4048,7 +4078,8 @@ function renderTable(d) {
        <b>${esc(cnt.input)}</b> genes in · <b>${esc(cnt.rendered)}</b> in this table ·
        <button class="drop linkish" id="table-show-ledger"><b>${esc(cnt.dropped)}</b>
          not shown — why?</button> ·
-       region <b>${esc(d.region)}</b> ·
+       region <b title="GTEx tissue id: ${esc(d.region || "none")}">${
+         esc(regionLabel(d.region))}</b> ·
        <span class="pill ok">input = rendered + ledgered</span>
        <span class="hint">${esc(cnt.input)} = ${esc(cnt.rendered)} + ${esc(cnt.dropped)},
          checked against this run's own artefacts before the table was built</span>

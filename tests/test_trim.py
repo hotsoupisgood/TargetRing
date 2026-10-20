@@ -142,17 +142,30 @@ class TestTheTrimmedBox:
         rec = r.recommend(r.Facts(**{**BASE, "n_abnormal_phenotypes": 1}), T)
         assert crit(rec, "phenotype")["bare"] == "1 abnormal term"
 
-    def test_the_region_is_a_three_word_tag(self) -> None:
+    def test_the_region_tag_uses_the_one_display_form(self) -> None:
+        """v4.3, review of 2026-10-20 item 5. This tag used to shorten the
+        region to one word -- "region: ileum, inferred" -- which made three
+        names for one tissue on one page, against the underscored GTEx id on
+        the opening view and on the figure. Worse, it RENAMED the organ: GTEx
+        has `Small_Intestine_Terminal_Ileum` and `Terminal_Ileum` as separate
+        tissues and `REGION_SHORT` mapped both to "ileum".
+
+        One form now (`wording.region_label`), and the trim it was part of is
+        kept where it belongs: the long expression sentence is still in the
+        tooltip and not in the box.
+        """
         tag = r.recommend(r.Facts(**BASE), T)["region_tag"]
-        assert tag["shown"] == "region: ileum, inferred"
-        assert len(tag["shown"].split()) == 3
+        assert tag["shown"] == "region: Small Intestine Terminal Ileum, inferred"
         assert "the run's chosen tissue" in tag["tooltip"]
+        # The box still carries a TAG and not the sentence.
+        assert "\n" not in tag["shown"] and len(tag["shown"]) < 60
+        assert "median across" not in tag["shown"]
 
     def test_the_tag_says_how_the_region_was_come_by(self) -> None:
         for flag, word in ((True, "inferred"), (False, "form default"), (None, "chosen")):
             tag = r.recommend(r.Facts(**{**BASE, "region": "Lung",
                                          "region_is_disease_tissue": flag}), T)["region_tag"]
-            assert tag["shown"] == f"region: lung, {word}"
+            assert tag["shown"] == f"region: Lung, {word}"
 
     def test_an_unmapped_gtex_name_is_printed_in_full_not_cut(self) -> None:
         """A rule that shortened any underscored name could rename the organ;
@@ -186,7 +199,11 @@ class TestTheTrimmedBox:
         assert rec["rule_short"] == ("rule: expressed AND dysregulated AND phenotype "
                                      "— not used to order or filter the figure")
         assert "\n" not in rec["rule_short"] and len(rec["rule_short"]) < 100
-        assert "GTEx region TPM >= 1" in rec["rule_tooltip"]
+        # v4.3: the bound is printed with the glyph a reader reads. The RULE
+        # VERSION is hashed over the ASCII form (`recommend._canonical`), so a
+        # typography change cannot say the rule changed.
+        assert "GTEx region TPM ≥ 1" in rec["rule_tooltip"]
+        assert ">=" not in rec["rule_tooltip"]
         assert r.rule_version(T) in rec["rule_tooltip"]
 
     def test_the_modality_line_survives_the_trim(self) -> None:
