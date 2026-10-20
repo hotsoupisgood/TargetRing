@@ -211,7 +211,7 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
         reads="target.drugAndClinicalCandidates — maximum stage per indication",
         why=("documents the widget this ring reads, including that the maximum "
              "stage is taken across indications — the reason the ring gates on "
-             "attribution (COUNCIL V1)"),
+             "attribution"),
     ),
     "clinical_activity": SourceDoc(
         name="Open Targets",

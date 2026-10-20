@@ -2242,8 +2242,12 @@ function renderDecode(s) {
         <span class="sw" style="background:${esc(c)}"></span>
         <span>${esc(act.categories[i] || "")}</span></div>`).join("") +
       `</div>` : "") +
-    `<p class="drift">Nine of the twelve ranges move with the gene set you
-     submitted, so a colour is only true of this run.</p>`;
+    // COUNTED, not written. This read "Nine of the twelve ranges move" while
+    // the strip right under it showed four (review of 2026-10-20, item 3). The
+    // server marks each ring `moves` where its range came from this run's own
+    // cells rather than from a declared domain (`figure.RingSpec.range_moves`),
+    // so the number is a count of the rings on the screen.
+    movingRangeSentence(s.rings);
 
   // v3.2 / UX v3 round 2 A4. The caveat clauses the app render handed to the
   // page so that its circle would fit one 1440 x 900 viewport. Read from the
@@ -3067,12 +3071,23 @@ function drawerHtml(d) {
       ? " · UniProt " + esc(d.uniprot) : ""}${d.gencode_id
       ? " · GTEx " + esc(d.gencode_id) : ""}</p>`;
 
-  // A baked drawer states its date before anything else in it: the pipeline
+  // A baked drawer states its DATE before anything else in it: the pipeline
   // and the literature below are as they were on that day, not as they are.
+  //
+  // Review of 2026-10-20, item 3. It used to open with "Read from disk.", the
+  // whole 180-word bake note and 46 characters of git SHA ending "-dirty" —
+  // so the reader's first fact about a gene was a build id, and "read from
+  // disk" is about this program and not about the evidence. The date is the
+  // fact that matters and it is now the whole line; the note and the full
+  // build id are in the hover, which is where this page puts a provenance
+  // string a reader can ask for rather than one they have to read past.
   if (d.baked) {
-    h += `<div class="note"><b>Read from disk.</b> ${esc(d.baked.note || "")}
-          ${d.baked.at_utc ? `Baked ${esc(d.baked.at_utc)}` : ""}${
-          d.baked.git_sha ? ` at <code>${esc(d.baked.git_sha)}</code>` : ""}.</div>`;
+    const when = fmtStampUTC(d.baked.at_utc);
+    const title = [d.baked.note || "",
+                   d.baked.git_sha ? `Build ${d.baked.git_sha}.` : ""]
+      .filter(Boolean).join(" ");
+    h += `<div class="note"${title ? ` title="${esc(title)}"` : ""}>${
+      when ? `Evidence recorded ${esc(when)}` : esc(d.baked.note || "")}</div>`;
   }
 
   if (d.input_symbol !== d.gene) {
@@ -3229,8 +3244,9 @@ function drawerHtml(d) {
       ${lit.europepmc_echo_live === false
         ? `<span class="hint">— replayed from cache, not checked this run</span>` : ""}
       <br><code>${esc(lit.europepmc_query || "")}</code>
-      <br><span class="hint">A count, not evidence: COUNCIL M6 measured it swinging 44%
-      on phrasing alone. It sets no ring value.</span></dd></dl>`;
+      <br><span class="hint">A count, not evidence: it swings 44% on phrasing
+      alone, measured. It sets no ring value — the literature ring is the
+      PubTator3 count above.</span></dd></dl>`;
   const years = Object.entries(lit.years || {}).sort((a, b) => b[0].localeCompare(a[0]));
   if (years.length) {
     h += `<p class="hint">by year: ${years.slice(0, 8)
@@ -3243,13 +3259,13 @@ function drawerHtml(d) {
   h += mp.length
     ? `<div class="note warn">A lead, not a verdict, and never folded into any score.
        The ring is three states — not phenotyped / phenotyped-and-normal /
-       phenotyped-with-abnormal. The count below is context, not a score
-       (COUNCIL V9), and the source is mouse only, not rat (COUNCIL V15).</div>
+       phenotyped-with-abnormal. The count below is context, not a score,
+       and the source is mouse only, not rat.</div>
        ${phenotypeTermListHtml(d.phenotype_terms, mp)}`
     : `<p class="hint">No mouse phenotype records — not phenotyped, which is not the
        same as “no phenotype”. Embryonic-lethal lines drop out of adult phenotyping,
-       which biases exactly the essential genes the safety ring flags as risky
-       (COUNCIL M5).</p>`;
+       which biases exactly the essential genes the safety ring flags as
+       risky.</p>`;
 
   if (d.triage) h += triageHtml(d.triage);
   else h += `<div class="note">LLM triage of the rodent lead was not run for this gene
@@ -3471,6 +3487,33 @@ function inkOn(hex) {
 // Four significant figures, trailing zeros dropped: `2.81`, `5`, `0.02312`. The
 // drawer prints `toPrecision(4)` and this is the same number without the `5.000`.
 const num = (v) => String(Number((+v).toPrecision(4)));
+
+// "4 of the 12 ranges move with the gene set you submitted, so a colour is only
+// true of this run." — a count of the rings this run drew, as a `<p>`.
+// Mirrors `figure.moving_range_count`, which writes the same sentence onto the
+// detachable legend's SVG; `tests/test_scales.py` asserts the pair agree on the
+// demo payload.
+function movingRangeSentence(rings) {
+  const all = rings || [];
+  const n = all.filter((r) => r.moves).length;
+  if (!all.length) return "";
+  const body = n === 0
+    ? `None of the ${all.length} ranges move with the gene set you submitted:
+       every ring has a fixed domain.`
+    : `${n} of the ${all.length} ${n === 1 ? "range moves" : "ranges move"} with
+       the gene set you submitted, so a colour is only true of this run.`;
+  return `<p class="drift">${body}</p>`;
+}
+
+// A UTC stamp as a reader reads one: `2026-10-18T19:07:55Z` -> `2026-10-18
+// 19:07 UTC`. Sliced off the string rather than parsed through `new Date()`,
+// which would re-print it in the browser's own zone — the stamp is UTC, the
+// manifest says UTC, and a drawer that said "12:07" in California about a
+// 19:07 bake would be a wrong fact rather than a format.
+function fmtStampUTC(s) {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(String(s == null ? "" : s));
+  return m ? `${m[1]} ${m[2]} UTC` : "";
+}
 
 // A COUNT, grouped in threes: `40606` -> `40,606`. Review of 2026-10-20: the
 // page printed `65217` and `40606` as digit strings, which a reader has to count

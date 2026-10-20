@@ -14,7 +14,7 @@ its value shown.
 |---|---|---|---|
 | 1 | expressed | GTEx region median TPM ≥ `RECOMMEND_MIN_TPM` (1.0); if GTEx absent, tissue-distribution ring > 0 | GTEx, Open Targets prioritisation |
 | 2 | dysregulated in the study | abs(logFC) ≥ `RECOMMEND_MIN_ABS_LOGFC` (1.0) and q ≤ `RECOMMEND_MAX_Q` (0.05) | the submitted DE table |
-| 3 | phenotype in a model | mouse-KO ring > 0 or ≥ `RECOMMEND_MIN_PHENOTYPES` (1) mousePhenotypes terms | Open Targets |
+| 3 | phenotype in a study | mouse-KO ring > 0 or ≥ `RECOMMEND_MIN_PHENOTYPES` (1) mousePhenotypes terms | Open Targets |
 
 - **GO** if all three met.
 - **NO-GO** if any is not met.

@@ -508,7 +508,7 @@ async def run_analysis(
     cells_by_ring["completeness"] = {
         g: value(float(stats[g].k),
                  f"{stats[g].k} of {EXTERNAL_RING_COUNT} external rings have a real "
-                 f"measurement (COUNCIL V13: your own logFC and padj are not counted)")
+                 f"measurement (your own logFC and padj are not counted)")
         for g in genes
     }
     ordering = normalise_ordering(ordering, cells_by_ring)
@@ -615,7 +615,7 @@ async def run_analysis(
     if unreachable:
         conditions.append((
             "the Europe PMC integrity probe did not answer",
-            "it sets no ring value (PLAN §2, COUNCIL M6); the literature ring is "
+            "it sets no ring value; the literature ring is "
             "PubTator3 and is unaffected, and Europe PMC counts are fetched on gene "
             "click where the echo is asserted again",
         ))
@@ -658,7 +658,7 @@ async def run_analysis(
         conditions.append((
             f"{len(outcome.kept_unevaluated)} gene(s) kept unfiltered: no data on a "
             f"filtered ring ({', '.join(f'{r} {n}' for r, n in sorted(per_ring.items()))})",
-            "a threshold never drops a gene for being unmeasured (COUNCIL v0 M3); they are "
+            "a threshold never drops a gene for being unmeasured; they are "
             "drawn, marked ~, and only the explicit per-filter 'drop no-data' toggle "
             "removes them",
         ))

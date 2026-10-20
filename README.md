@@ -70,9 +70,11 @@ Everything in the build is downstream of that. Concretely:
 - **The query must come back unchanged.** Europe PMC echoes the query; it is
   asserted byte-identical. One unbalanced quote once inflated a hit count 12×
   behind an HTTP 200.
-- **When a check fails, the figure says so.** Seven invariants run on every
-  render. A failure puts a banner on the figure itself — not a log line, not a
-  toast — so a screenshot carries the warning.
+- **When a check fails, the figure says so.** Nine invariants run on every
+  render of a contrast run (seven on a pasted table — I8 and I9 are the
+  contrast's own accounting), and two more on the heatmap and phenotype pages.
+  A failure puts a banner on the figure itself — not a log line, not a toast
+  — so a screenshot carries the warning.
 
 ![An invariant failure, on the figure](docs/showcase/02-invariant-failure-banner.png)
 

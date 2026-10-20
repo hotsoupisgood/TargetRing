@@ -1,4 +1,8 @@
-"""The seven invariants of PLAN.md §6, checked against the rendered artefact.
+"""The invariants of PLAN.md §6, checked against the rendered artefact.
+
+Seven on every render, plus I8 and I9 where the run has a contrast, plus I10
+(the heatmap) and I11 (the phenotype page) on their own surfaces. "Seven" was
+the count before I8/I9 and it was still in the README on 2026-10-20.
 
 These run at the end of every render, including the unattended one, and their
 PASS/FAIL goes into the manifest and onto the figure. The point of checking the
@@ -408,9 +412,14 @@ def _i4_accounting(input_count, rendered_count, ledger_count) -> Result:
                   f"({input_count - rendered_count - ledger_count:+d} unaccounted)")
 
 
+#: What a reader needs from a non-PASS I5, which is the scope of the failure and
+#: not a document reference: Europe PMC is a count beside the literature ring and
+#: never the ring itself. The build record for that decision is PLAN §2; it is in
+#: this comment rather than in the sentence, because an internal code in
+#: reader-visible text is a dead end for the one reader it reaches.
 EPMC_DRIVES_NO_RING = (
-    "Europe PMC sets no ring value (PLAN §2, COUNCIL M6); the literature ring is "
-    "PubTator3 and is unaffected"
+    "Europe PMC sets no ring value; the literature ring is PubTator3 and is "
+    "unaffected"
 )
 
 
@@ -462,9 +471,12 @@ def _i5_literature(audit: dict[str, Any] | None) -> Result:
             affects=EPMC_DRIVES_NO_RING,
         )
     return Result("I5", "literature query integrity", "PASS",
-                  f"{live} Europe PMC echo(es) checked live and byte-identical"
+                  f"{live} Europe PMC integrity probe echo(es) checked live "
+                  f"and byte-identical"
                   + (f" ({replayed} more replayed from cache and not counted)"
                      if replayed else "")
+                  + "; the per-gene Europe PMC counts in the drawers are read "
+                    "from this machine's cache and each says so"
                   + f"; no ERROR key in {ncbi} NCBI response(s)")
 
 
@@ -547,8 +559,11 @@ def _i7_figure_states_what_it_did(
     So I7 keeps its id and its place in the PASS/FAIL list, and now asserts three
     things about the rendered SVG:
 
-    1. **No headline marker survives the ranking.** Nothing is ranked, so a ◆
-       anywhere in the artefact is a claim with nothing behind it.
+    1. **No headline marker is drawn.** Nothing is ranked, so a ◆ anywhere in
+       the artefact is a claim with nothing behind it. The PASS sentence says
+       that in the page's own words -- the sub-header reads "Nothing here is
+       ranked or scored", and a line about what "survives the ranking" read
+       beside it as though a ranking existed (review of 2026-10-20, item 3).
     2. **The spoke order is stated on the figure**, the sentence printed is the
        ordering the run used, and **the spokes are actually in that order** --
        re-derived from the CSV of drawn values, so a figure that says
@@ -610,7 +625,8 @@ def _i7_figure_states_what_it_did(
     n_marked = claims.get("n_kept_unevaluated", 0)
     return Result(
         "I7", "the figure states what it did", "PASS",
-        f"no headline marker survives the ranking; the spoke order is printed on the "
+        f"no headline marker is drawn on the figure, and nothing is ranked or "
+        f"scored to put one there; the spoke order is printed on the "
         f"figure ({ordering}) and the spokes follow it; "
         + (f"{n_filters} active filter(s) named on it, {n_filtered} gene(s) filtered into "
            f"the ledger and {n_marked} kept and marked for having no data on a filtered ring"
@@ -789,8 +805,8 @@ def _i10_heatmap_states_its_recipe(svg_path: Path | None, ref: Any,
         return Result(
             "I10", "heatmap states its recipe", "FAIL",
             f"{len(missing)} of the {len(expected)} mandatory string(s) are "
-            f"missing from the rendered heatmap: {missing}. Per AGENTS.md, a "
-            f"heatmap missing any of these is not shipped.")
+            f"missing from the rendered heatmap: {missing}. A heatmap missing "
+            f"any of these is not shipped.")
     if data is None:
         return Result(
             "I10", "heatmap states its recipe", "PASS",

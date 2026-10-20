@@ -234,8 +234,8 @@ def tdl_cell(rec: PharosRecord) -> Cell:
         f"{raw_tdl} ({ordinal}/{TDL_MAX}) — {TDL_MEANING[raw_tdl]}"
         + (f"; family {rec.family}" if rec.family else "")
         + renamed
-        + ". TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability "
-          "(COUNCIL S1): Tclin means somebody already drugged it.",
+        + ". TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical "
+          "druggability: Tclin means somebody already drugged it.",
         raw={"tdl": raw_tdl, "ordinal": ordinal, "family": rec.family,
              "novelty": rec.novelty, "source": SOURCE_LABEL,
              "matched_on": rec.matched_on, "pharos_symbol": rec.pharos_symbol},

@@ -308,7 +308,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -343,14 +343,14 @@
     "tdl": {
      "state": "value",
      "value": 2.0,
-     "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#917729",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -364,7 +364,7 @@
     "completeness": {
      "state": "value",
      "value": 8.0,
-     "detail": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "8 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#456768",
      "source": "derived; maximum is the number of external rings"
     }
@@ -402,7 +402,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -423,7 +423,7 @@
     "clinical_phase": {
      "state": "not_applicable",
      "value": null,
-     "detail": "2 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 3 (BEMARITUZUMAB, IMGATUZUMAB). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate (COUNCIL V1/D2).",
+     "detail": "2 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 3 (BEMARITUZUMAB, IMGATUZUMAB). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate.",
      "fill": "#ffffff",
      "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
     },
@@ -437,14 +437,14 @@
     "tdl": {
      "state": "value",
      "value": 3.0,
-     "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#695200",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (2 abnormal term(s) of 2 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (2 abnormal term(s) of 2 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -458,7 +458,7 @@
     "completeness": {
      "state": "value",
      "value": 7.0,
-     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#537475",
      "source": "derived; maximum is the number of external rings"
     }
@@ -496,7 +496,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -517,7 +517,7 @@
     "clinical_phase": {
      "state": "not_applicable",
      "value": null,
-     "detail": "1 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 1 (MDX-447). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate (COUNCIL V1/D2).",
+     "detail": "1 candidates hit this target, but NONE is indicated for a disease with mechanistic evidence linking it to this target, so there is no clinical phase *for this target* to report. Furthest phase for any indication would have been Phase 1 (MDX-447). Attribution = human genetic evidence (genetic_association, genetic_literature) at score >= 0.1 in Open Targets' target-disease associations. 'clinical' and 'literature' are circular; 'somatic_mutation' and 'affected_pathway' do not discriminate.",
      "fill": "#ffffff",
      "source": "OT drugAndClinicalCandidates, gated on OT target-disease genetic evidence"
     },
@@ -531,14 +531,14 @@
     "tdl": {
      "state": "value",
      "value": 3.0,
-     "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tclin (3/3) \u2014 an approved drug acts through this target. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#695200",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -552,7 +552,7 @@
     "completeness": {
      "state": "value",
      "value": 6.0,
-     "detail": "6 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "6 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#608081",
      "source": "derived; maximum is the number of external rings"
     }
@@ -590,7 +590,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -625,7 +625,7 @@
     "tdl": {
      "state": "value",
      "value": 1.0,
-     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#b19f6e",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
@@ -646,7 +646,7 @@
     "completeness": {
      "state": "value",
      "value": 5.0,
-     "detail": "5 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "5 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#6e8c8d",
      "source": "derived; maximum is the number of external rings"
     }
@@ -677,21 +677,21 @@
     "tractable": {
      "state": "no_data",
      "value": null,
-     "detail": "tractability: hasLigand, hasPocket, hasSmallMoleculeBinder absent for this gene and not a sparse-encoded key. A 3-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "detail": "tractability: hasLigand, hasPocket, hasSmallMoleculeBinder absent for this gene and not a sparse-encoded key. A 3-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
     },
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
     "safety": {
      "state": "no_data",
      "value": null,
-     "detail": "safety: geneEssentiality, geneticConstraint absent for this gene and not a sparse-encoded key. A 4-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "detail": "safety: geneEssentiality, geneticConstraint absent for this gene and not a sparse-encoded key. A 4-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
     },
@@ -740,7 +740,7 @@
     "completeness": {
      "state": "value",
      "value": 3.0,
-     "detail": "3 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "3 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#8ba6a7",
      "source": "derived; maximum is the number of external rings"
     }
@@ -778,7 +778,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -813,14 +813,14 @@
     "tdl": {
      "state": "value",
      "value": 1.0,
-     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#b19f6e",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (7 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (7 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -834,7 +834,7 @@
     "completeness": {
      "state": "value",
      "value": 6.0,
-     "detail": "6 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "6 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#608081",
      "source": "derived; maximum is the number of external rings"
     }
@@ -865,21 +865,21 @@
     "tractable": {
      "state": "no_data",
      "value": null,
-     "detail": "tractability: hasLigand, hasPocket, hasSmallMoleculeBinder absent for this gene and not a sparse-encoded key. A 3-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "detail": "tractability: hasLigand, hasPocket, hasSmallMoleculeBinder absent for this gene and not a sparse-encoded key. A 3-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder \u2014 3 dense keys, present for every target with a prioritisation record"
     },
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
     "safety": {
      "state": "no_data",
      "value": null,
-     "detail": "safety: geneEssentiality absent for this gene and not a sparse-encoded key. A 4-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer (COUNCIL V4).",
+     "detail": "safety: geneEssentiality absent for this gene and not a sparse-encoded key. A 4-key mean cannot be formed. Refusing a shorter mean \u2014 the denominator would encode the answer.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene"
     },
@@ -914,7 +914,7 @@
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -928,7 +928,7 @@
     "completeness": {
      "state": "value",
      "value": 3.0,
-     "detail": "3 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "3 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#8ba6a7",
      "source": "derived; maximum is the number of external rings"
     }
@@ -966,7 +966,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -1001,14 +1001,14 @@
     "tdl": {
      "state": "value",
      "value": 1.0,
-     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#b19f6e",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -1022,7 +1022,7 @@
     "completeness": {
      "state": "value",
      "value": 7.0,
-     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#537475",
      "source": "derived; maximum is the number of external rings"
     }
@@ -1060,7 +1060,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -1095,14 +1095,14 @@
     "tdl": {
      "state": "value",
      "value": 1.0,
-     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#b19f6e",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (2 abnormal term(s) of 2 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (2 abnormal term(s) of 2 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -1116,7 +1116,7 @@
     "completeness": {
      "state": "value",
      "value": 6.0,
-     "detail": "6 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "6 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#608081",
      "source": "derived; maximum is the number of external rings"
     }
@@ -1154,7 +1154,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -1189,14 +1189,14 @@
     "tdl": {
      "state": "value",
      "value": 1.0,
-     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#b19f6e",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -1210,7 +1210,7 @@
     "completeness": {
      "state": "value",
      "value": 7.0,
-     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#537475",
      "source": "derived; maximum is the number of external rings"
     }
@@ -1248,7 +1248,7 @@
     "chemical_probe": {
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8).",
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected.",
      "fill": "#e8e8e8",
      "source": "OT prioritisation: hasHighQualityChemicalProbes \u2014 SPARSE. Explicit 0.0 = looked, no probe; key absent = no_data (hatched)"
     },
@@ -1283,14 +1283,14 @@
     "tdl": {
      "state": "value",
      "value": 1.0,
-     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
      "fill": "#b19f6e",
      "source": "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3"
     },
     "rodent": {
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)",
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 6 record(s); the count is in the drawer and is deliberately NOT on the ring)",
      "fill": "#00623b",
      "source": "OT mousePhenotypes, 'no abnormal phenotype' excluded; mouse only, not rat"
     },
@@ -1304,7 +1304,7 @@
     "completeness": {
      "state": "value",
      "value": 7.0,
-     "detail": "7 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+     "detail": "7 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
      "fill": "#537475",
      "source": "derived; maximum is the number of external rings"
     }
@@ -1422,7 +1422,7 @@
    "linked": true,
    "anchor_text": "Open Targets \u00b7 platform-docs.opentargets.org",
    "url": "https://platform-docs.opentargets.org/target/drugs",
-   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications \u2014 the reason the ring gates on attribution (COUNCIL V1)",
+   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications \u2014 the reason the ring gates on attribution",
    "failed_genes": [],
    "failed_target": null,
    "recorded_drift": ""
@@ -1548,7 +1548,7 @@
    "id": "I5",
    "name": "literature query integrity",
    "outcome": "PASS",
-   "detail": "1 Europe PMC echo(es) checked live and byte-identical; no ERROR key in 11 NCBI response(s)",
+   "detail": "1 Europe PMC integrity probe echo(es) checked live and byte-identical; the per-gene Europe PMC counts in the drawers are read from this machine's cache and each says so; no ERROR key in 11 NCBI response(s)",
    "affects": ""
   },
   {
@@ -1562,7 +1562,7 @@
    "id": "I7",
    "name": "the figure states what it did",
    "outcome": "PASS",
-   "detail": "no headline marker survives the ranking; the spoke order is printed on the figure (spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)) and the spokes follow it; no threshold filter was active",
+   "detail": "no headline marker is drawn on the figure, and nothing is ranked or scored to put one there; the spoke order is printed on the figure (spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)) and the spokes follow it; no threshold filter was active",
    "affects": ""
   },
   {
@@ -1708,7 +1708,7 @@
  "not_attempted": [
   "Measured rate limits under parallel load \u2014 unmeasured for every source. Concurrency is capped at 4 per host and any 429 is a hard run failure (QA \u00a75).",
   "LLM triage gold set \u2014 labelling ~20 abstracts is human work. Triage precision is UNMEASURED (QA S2 item 5).",
-  "Any ChEMBL-backed ring \u2014 UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring (QA B6, COUNCIL D2).",
+  "Any ChEMBL-backed ring \u2014 UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring.",
   "Any ordering of the genes by merit. The spokes are in the order this run states on the figure and nothing on it is a ranking, a score or a recommendation."
  ],
  "llm": {
@@ -1836,7 +1836,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "a drug reached the clinic against this target and a trial was stopped for cause \u2014 Open Targets categorised the stop Negative or Safety_Sideeffects",
     "missing_rings": [],
     "missing_states": {},
@@ -1864,7 +1864,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -1938,7 +1938,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_phase"
@@ -1970,7 +1970,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -2044,7 +2044,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_phase"
@@ -2076,7 +2076,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -2142,7 +2142,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2174,7 +2174,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [
      "rodent"
@@ -2254,7 +2254,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2290,7 +2290,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [
      "rodent"
@@ -2360,7 +2360,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2392,7 +2392,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -2468,7 +2468,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2504,7 +2504,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -2570,7 +2570,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2602,7 +2602,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -2668,7 +2668,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2700,7 +2700,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -2766,7 +2766,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2798,7 +2798,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -2864,7 +2864,7 @@
      "clinical_phase",
      "clinical_activity"
     ],
-    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
+    "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects.",
     "headline": "",
     "missing_rings": [
      "clinical_activity"
@@ -2896,7 +2896,7 @@
     "rings": [
      "rodent"
     ],
-    "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
+    "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap.",
     "headline": "",
     "missing_rings": [],
     "missing_states": {},
@@ -3052,7 +3052,7 @@
     "clinical_phase",
     "clinical_activity"
    ],
-   "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects."
+   "why": "Not a contradiction \u2014 a history, and the one most likely to change a go/no-go call. Measured: roughly 7 of 8 terminations say nothing about the target (Insufficient_Enrollment, Business_Administrative); those land on 'dormant' and never here. This cell is the remainder that Open Targets categorised Negative or Safety_Sideeffects."
   },
   {
    "key": "safety_liabilities_recorded",
@@ -3068,7 +3068,7 @@
    "rings": [
     "rodent"
    ],
-   "why": "AGENTS.md rule 6: the rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap."
+   "why": "The rodent result is a lead, not a verdict. This is the level a reader is most likely to misread, because it looks like the hatched 'not phenotyped' state and means the opposite \u2014 somebody made the mouse and it was normal. Stated as a measurement so it is not mistaken for a gap."
   }
  ],
  "ring_labels": {

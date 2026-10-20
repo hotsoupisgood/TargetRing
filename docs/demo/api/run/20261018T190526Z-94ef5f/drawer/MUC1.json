@@ -10,7 +10,7 @@
  "padj": 2.19538e-22,
  "k": 8,
  "k_max": 9,
- "k_note": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)",
+ "k_note": "8 of 9 external rings have a real measurement (your own logFC and padj are not counted)",
  "unfiltered_rings": [],
  "pipeline_summary": "12 agents \u00b7 0 with an active trial \u00b7 1 with \u22651 trial stopped for cause \u00b7 9 indicated for a disease attributable to this target",
  "severe_liabilities": [],
@@ -449,7 +449,7 @@
  "tdl": {
   "state": "value",
   "value": 2.0,
-  "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it.",
+  "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
   "raw": {
    "tdl": "Tchem",
    "ordinal": 2,
@@ -714,7 +714,7 @@
   "chemical_probe": {
    "state": "no_data",
    "value": null,
-   "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+   "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected."
   },
   "safety": {
    "state": "value",
@@ -739,12 +739,12 @@
   "tdl": {
    "state": "value",
    "value": 2.0,
-   "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+   "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
   },
   "rodent": {
    "state": "value",
    "value": 1.0,
-   "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+   "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring)"
   },
   "literature": {
    "state": "value",
@@ -754,7 +754,7 @@
   "completeness": {
    "state": "value",
    "value": 8.0,
-   "detail": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+   "detail": "8 of 9 external rings have a real measurement (your own logFC and padj are not counted)"
   }
  },
  "triage": null,
@@ -1005,7 +1005,7 @@
      "ring": "chemical_probe",
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected (v2.3 item 1, COUNCIL M7/V8)."
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected."
     },
     {
      "ring": "safety",
@@ -1035,13 +1035,13 @@
      "ring": "tdl",
      "state": "value",
      "value": 2.0,
-     "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+     "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
     },
     {
      "ring": "rodent",
      "state": "value",
      "value": 1.0,
-     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+     "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring)"
     },
     {
      "ring": "literature",
@@ -1053,7 +1053,7 @@
      "ring": "completeness",
      "state": "value",
      "value": 8.0,
-     "detail": "8 of 9 external rings have a real measurement (COUNCIL V13: your own logFC and padj are not counted)"
+     "detail": "8 of 9 external rings have a real measurement (your own logFC and padj are not counted)"
     }
    ],
    "rings_without_a_value": [
@@ -1109,7 +1109,7 @@
    "tdl": {
     "state": "value",
     "label": "Tchem",
-    "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability (COUNCIL S1): Tclin means somebody already drugged it."
+    "detail": "Tchem (2/3) \u2014 small molecules meeting the activity bar exist. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
    },
    "literature": {
     "pubtator_records": 40606,
@@ -1180,7 +1180,7 @@
    "knockout_ring": {
     "state": "value",
     "value": 1.0,
-    "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring \u2014 COUNCIL V9)"
+    "detail": "phenotyped, abnormal phenotype on record (6 abnormal term(s) of 7 record(s); the count is in the drawer and is deliberately NOT on the ring)"
    },
    "question": "Is there a model-organism phenotype that a biologist would read as evidence this gene matters for this disease area? Answer 1 or 0 and one plain sentence naming the term(s)."
   },

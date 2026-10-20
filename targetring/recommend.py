@@ -639,7 +639,14 @@ def criteria_spec(t: Thresholds | None = None) -> list[dict[str, Any]]:
         {"n": 2, "key": "dysregulated", "name": "Dysregulated in this study",
          "met_when": f"|logFC| >= {t.min_abs_logfc:g} and adjusted p <= {t.max_q:g}",
          "source": "the submitted DE table"},
-        {"n": 3, "key": "phenotype", "name": "Phenotype in a model",
+        # One name for one criterion. Review of 2026-10-20, item 3: this
+        # read "Phenotype in a model" on two surfaces (the criteria block and
+        # the flow page) while the four `_criterion` calls below, the 11 baked
+        # drawers, the README and Puck's own sentence -- "we need the gene to
+        # be expressed, and also misregulated in the study, and have a strong
+        # phenotype in a study" (2026-10-18) -- all said "a study". His words
+        # win: one name, 37 uses against 1.
+        {"n": 3, "key": "phenotype", "name": "Phenotype in a study",
          "met_when": (f"mouse-KO ring > 0, or >= {t.min_phenotypes:d} abnormal "
                       f"mouse phenotype term(s)"),
          "source": "Open Targets mousePhenotypes"},

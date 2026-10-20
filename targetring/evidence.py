@@ -237,7 +237,7 @@ RULES: tuple[Rule, ...] = (
     Rule("reached_a_phase_then_stopped_for_cause", FLAG,
          ("clinical_phase", "clinical_activity"),
          why=("Not a contradiction — a history, and the one most likely to "
-              "change a go/no-go call. COUNCIL D4 measured that roughly 7 of 8 "
+              "change a go/no-go call. Measured: roughly 7 of 8 "
               "terminations say nothing about the target "
               "(Insufficient_Enrollment, Business_Administrative); those land "
               "on 'dormant' and never here. This cell is the remainder that "
@@ -258,7 +258,7 @@ RULES: tuple[Rule, ...] = (
          test=_safety_liabilities_recorded),
     Rule("mouse_phenotyped_and_normal", FLAG,
          ("rodent",),
-         why=("AGENTS.md rule 6: the rodent result is a lead, not a verdict. "
+         why=("The rodent result is a lead, not a verdict. "
               "This is the level a reader is most likely to misread, because "
               "it looks like the hatched 'not phenotyped' state and means the "
               "opposite — somebody made the mouse and it was normal. Stated "

@@ -213,9 +213,9 @@ def build(run_id: str) -> dict[str, Any]:
         "spend": spend(m),
         "no_ranking":
             "There is no score, no weighted sum, no front and no ranking of any "
-            "kind (AGENTS.md rule 7). The spoke order is a decision, it is "
-            "stated on the figure, and it is checked in the artefact. The rings "
-            "are evidence for a reader to weigh.",
+            "kind. The spoke order is a decision, it is stated on the figure, "
+            "and it is checked in the artefact. The rings are evidence for a "
+            "reader to weigh.",
     }
 
 

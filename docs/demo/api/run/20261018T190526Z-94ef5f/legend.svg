@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-10-19T15:00:07.451784</dc:date>
+    <dc:date>2026-10-20T08:38:10.583180</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -12829,9 +12829,9 @@ z
   </g>
   <g id="text_4">
    <text style="font-size: 11.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #8a4b00" transform="translate(345.6 39.049326)">This legend is true only of the run named above.</text>
-   <text style="font-size: 11.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #8a4b00" transform="translate(345.6 52.852471)">Nine of the twelve ranges move with the submitted</text>
-   <text style="font-size: 11.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #8a4b00" transform="translate(345.6 66.655615)">gene set — check the run id on the figure matches</text>
-   <text style="font-size: 11.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #8a4b00" transform="translate(345.6 80.45876)">this one before reading a colour off it.</text>
+   <text style="font-size: 11.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #8a4b00" transform="translate(345.6 52.852471)">4 of the 12 ranges move with the</text>
+   <text style="font-size: 11.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #8a4b00" transform="translate(345.6 66.655615)">submitted gene set — check the run id on the</text>
+   <text style="font-size: 11.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #8a4b00" transform="translate(345.6 80.45876)">figure matches this one before reading a colour off it.</text>
   </g>
   <g id="text_5">
    <text style="font-size: 8px; font-family: 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Computer Modern Typewriter', 'Andale Mono', 'Nimbus Mono L', 'Courier New', 'Courier', 'Fixed', 'Terminal', monospace; text-anchor: end; fill: #666666" x="1146.24" y="639.598125" transform="rotate(-0 1146.24 639.598125)">run 20261018T190526Z-94ef5f · 19a6b1b346f7</text>
@@ -12848,7 +12848,7 @@ z
   <g id="text_7">
    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #333333" transform="translate(403.2 517.279414)">Mouse-phenotype ring: a LEAD, not a verdict. Embryonic-lethal</text>
    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #333333" transform="translate(403.2 529.282148)">lines drop out of adult phenotyping, which biases exactly the</text>
-   <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #333333" transform="translate(403.2 541.284883)">essential genes the safety ring flags as risky (COUNCIL M5).</text>
+   <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #333333" transform="translate(403.2 541.284883)">essential genes the safety ring flags as risky.</text>
    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #333333" transform="translate(403.2 553.286836)"/>
    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #333333" transform="translate(403.2 565.28957)">Pipeline: furthest phase counts only drugs indicated for a</text>
    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #333333" transform="translate(403.2 577.292305)">disease with mechanistic evidence linking it to THIS target.</text>
@@ -13199,7 +13199,7 @@ L 741.79 34.259336
 L 741.79 27.609336 
 L 722.79 27.609336 
 z
-" style="fill: url(#h57f226721a); stroke: #4d4d4d; stroke-linejoin: miter"/>
+" style="fill: url(#h6c06fb6854); stroke: #4d4d4d; stroke-linejoin: miter"/>
    </g>
    <g id="text_76">
     <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="749.39" y="34.259336" transform="rotate(-0 749.39 34.259336)">no data — never measured here</text>
@@ -13210,7 +13210,7 @@ L 741.79 48.510078
 L 741.79 41.860078 
 L 722.79 41.860078 
 z
-" style="fill: url(#heaa3f1d927); stroke: #808080; stroke-linejoin: miter"/>
+" style="fill: url(#h8946bb5c4f); stroke: #808080; stroke-linejoin: miter"/>
    </g>
    <g id="text_77">
     <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="749.39" y="48.510078" transform="rotate(-0 749.39 48.510078)">not applicable to this gene</text>
@@ -13221,7 +13221,7 @@ L 741.79 62.76082
 L 741.79 56.11082 
 L 722.79 56.11082 
 z
-" style="fill: url(#h3deb9006a2); stroke: #ff0000; stroke-linejoin: miter"/>
+" style="fill: url(#h93b4dccb75); stroke: #ff0000; stroke-linejoin: miter"/>
    </g>
    <g id="text_78">
     <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="749.39" y="62.76082" transform="rotate(-0 749.39 62.76082)">call FAILED — not the same as absent</text>
@@ -13274,7 +13274,7 @@ z
   </g>
  </g>
  <defs>
-  <pattern id="h57f226721a" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="h6c06fb6854" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#e8e8e8"/>
    <path d="M -36 36 
 L 36 -36 
@@ -13328,7 +13328,7 @@ M 36 108
 L 108 36 
 " style="fill: #4d4d4d; stroke: #4d4d4d; stroke-width: 1.0; stroke-linecap: butt; stroke-linejoin: miter"/>
   </pattern>
-  <pattern id="heaa3f1d927" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="h8946bb5c4f" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#ffffff"/>
    <path d="M 0 72.3 
 C 0.079561 72.3 0.155874 72.26839 0.212132 72.212132 
@@ -19462,7 +19462,7 @@ C 71.844126 0.26839 71.920439 0.3 72 0.3
 z
 " style="fill: #808080; stroke: #808080; stroke-width: 1.0; stroke-linecap: butt; stroke-linejoin: miter"/>
   </pattern>
-  <pattern id="h3deb9006a2" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="h93b4dccb75" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#000000"/>
    <path d="M -36 36 
 L 36 -36 

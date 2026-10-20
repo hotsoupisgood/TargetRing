@@ -401,7 +401,11 @@ function draw(D) {
     },
     {
       id: "top", kind: "decision", title: `6. Keep the top ${n(sel.n_top)} genes`,
-      stat: () => `${n(sel.n_top)} of ${n(sel.n_with_statistic)} · ${n(sel.n_selected)} drawn`,
+      // "selected", not "drawn": `n_selected` is the set handed to the
+      // renderer, and box 9 below reports what was actually drawn --- 12 in,
+      // 11 drawn, 1 ledgered. Two boxes saying "drawn" about two different
+      // numbers was item 3 of the 2026-10-20 review.
+      stat: () => `${n(sel.n_top)} of ${n(sel.n_with_statistic)} · ${n(sel.n_selected)} selected`,
       detail: () => `
         <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
         <p>Three stages, and <b>all three counts are printed on the figure</b>,

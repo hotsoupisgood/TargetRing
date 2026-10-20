@@ -673,7 +673,7 @@ def _mean_of_keys(rec: OTRecord, keys: tuple[str, ...], label: str) -> Cell:
             )
         return no_data(
             f"{label}: " + "; ".join(why) + f". A {len(keys)}-key mean cannot be formed. "
-            f"Refusing a shorter mean — the denominator would encode the answer (COUNCIL V4)."
+            f"Refusing a shorter mean — the denominator would encode the answer."
         )
 
     detail = f"mean of {len(keys)}/{len(keys)} keys: " + ", ".join(
@@ -727,7 +727,7 @@ def chemical_probe_cell(rec: OTRecord) -> Cell:
             f"explicitly as 0.0 for other genes — so absence here is silence, not a "
             f"measured zero, and filling it would be imputation (v2.2 item 1). This "
             f"ring is allowed to be hatched; the tractability ring beside it is not "
-            f"affected (v2.3 item 1, COUNCIL M7/V8)."
+            f"affected."
         )
     v = rec.prioritisation[key]
     meaning = ("an explicit 0.0: Open Targets looked and holds no high-quality chemical probe"
@@ -745,8 +745,7 @@ def chemical_probe_cell(rec: OTRecord) -> Cell:
         # made, and it stands on its own.
         f"{key} = {meaning}. Chemical-probe stock is prior tool-compound effort, NOT "
         f"tractability — they are two rings for that reason, and this one is allowed "
-        f"to be hatched without taking the three dense keys down with it "
-        f"(v2.3 item 1, COUNCIL M7/V8).",
+        f"to be hatched without taking the three dense keys down with it.",
         raw={"keys": {key: v}, "inferred_from_absence": []},
     )
 
@@ -968,7 +967,7 @@ def clinical_phase_cell(rec: OTRecord) -> Cell:
             f"({', '.join(sorted(GENETIC_ATTRIBUTION_DATATYPES))}) at score >= "
             f"{ATTRIBUTION_MIN_SCORE} in Open Targets' target-disease associations. "
             f"'clinical' and 'literature' are circular; 'somatic_mutation' and "
-            f"'affected_pathway' do not discriminate (COUNCIL V1/D2).",
+            f"'affected_pathway' do not discriminate.",
             raw={"unattributed_max_stage": unattributed_top, "attributed": 0},
         )
 
@@ -1155,8 +1154,8 @@ def clinical_activity_cell(rec: OTRecord) -> Cell:
             f"{rec.drug_count} candidate(s) in Open Targets, but not one of their "
             f"clinicalReports rows carries a trialOverallStatus. Report sources present "
             f"for this target: {', '.join(f'{k} {v}' for k, v in list(sources.items())[:6]) or 'none'}. "
-            f"A row with no status is a label or registry entry, not a trial (COUNCIL D1 "
-            f"gap (ii)), and counting it would read as inactive."
+            f"A row with no status is a label or registry entry, not a trial, "
+            f"and counting it would read as inactive."
         )
 
     unknown = sorted({r["status"] for r in reports if r["bucket"] is None})
@@ -1400,7 +1399,7 @@ def rodent_cell(rec: OTRecord) -> Cell:
     return value(1.0,
                  f"phenotyped, abnormal phenotype on record "
                  f"({len(abnormal)} abnormal term(s) of {len(rows)} record(s); the count is "
-                 f"in the drawer and is deliberately NOT on the ring — COUNCIL V9)",
+                 f"in the drawer and is deliberately NOT on the ring)",
                  raw={"state": "phenotyped_abnormal", "n_abnormal": len(abnormal),
                       "n_rows": len(rows)})
 

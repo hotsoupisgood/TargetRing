@@ -138,7 +138,7 @@
    "id": "I5",
    "name": "literature query integrity",
    "outcome": "PASS",
-   "detail": "1 Europe PMC echo(es) checked live and byte-identical; no ERROR key in 11 NCBI response(s)",
+   "detail": "1 Europe PMC integrity probe echo(es) checked live and byte-identical; the per-gene Europe PMC counts in the drawers are read from this machine's cache and each says so; no ERROR key in 11 NCBI response(s)",
    "affects": ""
   },
   {
@@ -152,7 +152,7 @@
    "id": "I7",
    "name": "the figure states what it did",
    "outcome": "PASS",
-   "detail": "no headline marker survives the ranking; the spoke order is printed on the figure (spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)) and the spokes follow it; no threshold filter was active",
+   "detail": "no headline marker is drawn on the figure, and nothing is ranked or scored to put one there; the spoke order is printed on the figure (spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged)) and the spokes follow it; no threshold filter was active",
    "affects": ""
   },
   {
@@ -261,7 +261,7 @@
  "not_attempted": [
   "Measured rate limits under parallel load \u2014 unmeasured for every source. Concurrency is capped at 4 per host and any 429 is a hard run failure (QA \u00a75).",
   "LLM triage gold set \u2014 labelling ~20 abstracts is human work. Triage precision is UNMEASURED (QA S2 item 5).",
-  "Any ChEMBL-backed ring \u2014 UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring (QA B6, COUNCIL D2).",
+  "Any ChEMBL-backed ring \u2014 UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring.",
   "Any ordering of the genes by merit. The spokes are in the order this run states on the figure and nothing on it is a ranking, a score or a recommendation."
  ],
  "environment": {
@@ -352,7 +352,7 @@
   {
    "ring": "clinical_phase",
    "linked": "yes",
-   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications \u2014 the reason the ring gates on attribution (COUNCIL V1)",
+   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications \u2014 the reason the ring gates on attribution",
    "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
    "doc_url": "https://platform-docs.opentargets.org/target/drugs",
    "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",

@@ -331,6 +331,21 @@ class RingSpec:
         return self.raw_units or self.units
 
     @property
+    def range_moves(self) -> bool:
+        """True where this ring's colour range is taken from THIS RUN's cells,
+        so the same colour means a different number in the next run.
+
+        The same condition `_norm_for` branches on, read off the spec: a
+        categorical ring has no range at all and a ring with a declared
+        `domain` has a fixed one. Review of 2026-10-20, item 3: the decode
+        panel and the detachable legend both spelled the count out in a
+        hard-coded sentence -- nine, over a strip that showed four -- so the
+        number is counted from the specs the run actually drew
+        (`moving_range_count`) and the sentence is built around it.
+        """
+        return not self.categorical and self.domain is None
+
+    @property
     def source_doc(self):
         """This ring's citation, or None where there is nothing to cite.
 
@@ -1984,7 +1999,7 @@ def render(
     # figure, not a different one).
     notes = list(notes) + list(contrast_notes)
     # v3.0. The export gets MORE, not less, and this is the clearest instance:
-    # "all seven invariants PASS" is the single fact that makes a downloaded PNG
+    # "every invariant PASS" is the single fact that makes a downloaded PNG
     # auditable, and until now it was only in manifest.json and in a tab. The
     # person the export exists for has neither. A failure was always shouted in
     # red; a pass was silent, which left the two indistinguishable on paper.
@@ -2555,6 +2570,18 @@ def _draw_ring_scales(fig, rings, norms, cmaps, lay, header: bool = True,
     return blocks
 
 
+def moving_range_count(rings) -> int:
+    """How many of `rings` have a range that moves with the submitted set.
+
+    One function for the three surfaces that say so -- the detachable legend's
+    SVG, the decode panel in the app, and the panel's own per-ring `moves` flag
+    -- because the sentence is a count of the figure in front of the reader,
+    and a second implementation of it is how "nine of twelve" outlived the
+    nine.
+    """
+    return sum(1 for r in rings if r.range_moves)
+
+
 def scale_rows(cells_by_ring, de_source=None) -> list[dict]:
     """The scale column as data, for the page to draw as HTML.
 
@@ -2594,6 +2621,9 @@ def scale_rows(cells_by_ring, de_source=None) -> list[dict]:
             # the identical cell in the grid read "40,606 PubTator3 records".
             "printed_units": spec.printed_units,
             "bound_units": spec.bound_units,
+            # Whether THIS ring's range came from this run's cells. The page
+            # counts these rather than carrying a number of its own.
+            "moves": spec.range_moves,
             "transform": spec.transform or "",
             "stepped": stepped,
             "colours": ring_swatches(spec) if stepped
@@ -3124,7 +3154,7 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
         f"Regional specificity = {region} TPM ÷ median across {n_tissues or 'the GTEx panel'}.",
         "Mouse-phenotype ring: a LEAD, not a verdict. Embryonic-lethal lines drop out of "
         "adult phenotyping, which biases exactly the essential genes the safety ring flags "
-        "as risky (COUNCIL M5).",
+        "as risky.",
         f"Missing is never imputed. k = how many of the {EXTERNAL_RING_COUNT} EXTERNAL rings "
         f"have a real measurement for that gene; your own logFC and padj are not counted. It "
         f"is a completeness gauge: it orders nothing and selects nothing.",
@@ -3609,15 +3639,22 @@ def render_legend(
     blocks.append(region_line)
     # The run id keeps its place as the third thing on the artefact and gets
     # bigger, not smaller: the pairing is the one risk a detachable legend
-    # introduces, and nine of the twelve ranges move with the submitted set.
+    # introduces, and some of the ranges move with the submitted set.
     blocks.append(fig.text(0.300, 0.994, run_id or provenance, fontsize=16,
                            weight="bold", va="top", ha="left", color="#8a4b00"))
+    # Counted, not written: `moving_range_count` over the rings THIS legend
+    # drew. The sentence used to say "Nine of the twelve" while the strip under
+    # it showed four (review of 2026-10-20, item 3).
+    n_moves, n_rings = moving_range_count(rings), len(rings)
+    moving = ("No range moves with the submitted gene set"
+              if not n_moves
+              else f"{n_moves} of the {n_rings} ranges move with the\n"
+                   f"submitted gene set")
     blocks.append(fig.text(
         0.300, 0.955,
         "This legend is true only of the run named above.\n"
-        "Nine of the twelve ranges move with the submitted\n"
-        "gene set — check the run id on the figure matches\n"
-        "this one before reading a colour off it.",
+        f"{moving} — check the run id on the\n"
+        "figure matches this one before reading a colour off it.",
         fontsize=11.5, va="top", ha="left", color="#8a4b00"))
     if provenance and provenance != run_id:
         # v3.1: bottom-right, not top-right. The cell-state box moved into the

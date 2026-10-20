@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-10-19T14:59:50.398518</dc:date>
+    <dc:date>2026-10-20T08:37:53.691497</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -452,7 +452,7 @@ L 714.738085 161.399249
 L 712.140451 160.758351 
 L 709.536538 160.143461 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|0|MUC1">
     <path d="M 703.889362 184.604068 
@@ -1724,7 +1724,7 @@ L 837.51737 230.634464
 L 835.605938 228.762332 
 L 833.67588 226.909408 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|1|FCGR3A">
     <path d="M 816.380971 245.105507 
@@ -2042,7 +2042,7 @@ L 809.041002 259.419278
 L 807.418837 257.830466 
 L 805.780866 256.257954 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_activity|1|FCGR3A">
     <path d="M 788.485957 274.454053 
@@ -2996,7 +2996,7 @@ L 908.071269 352.660753
 L 907.376552 350.076992 
 L 906.656032 347.500308 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|2|FCGR1A">
     <path d="M 882.513549 354.381617 
@@ -3208,7 +3208,7 @@ L 881.968826 359.539371
 L 881.344199 357.216287 
 L 880.696373 354.899565 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|2|FCGR1A">
     <path d="M 856.55389 361.780874 
@@ -3314,7 +3314,7 @@ L 868.917605 362.978681
 L 868.328023 360.785934 
 L 867.716544 358.599193 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_activity|2|FCGR1A">
     <path d="M 843.574061 365.480502 
@@ -4268,7 +4268,7 @@ L 906.817723 493.610022
 L 907.532538 491.031749 
 L 908.221535 488.446457 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|3|FCN1">
     <path d="M 883.932164 482.103086 
@@ -4480,7 +4480,7 @@ L 880.841751 486.268239
 L 881.484448 483.950089 
 L 882.103932 481.625628 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|3|FCN1">
     <path d="M 857.814561 475.282256 
@@ -4692,7 +4692,7 @@ L 854.865779 478.926457
 L 855.436358 476.868429 
 L 855.986329 474.804798 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|3|FCN1">
     <path d="M 831.696958 468.461427 
@@ -4904,7 +4904,7 @@ L 828.889807 471.584674
 L 829.388268 469.786769 
 L 829.868726 467.983969 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|literature|3|FCN1">
     <path d="M 805.579355 461.640597 
@@ -5434,7 +5434,7 @@ L 843.424619 624.124398
 L 845.447725 622.17352 
 L 847.451222 620.202508 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|chemical_probe|4|PELATON">
     <path d="M 829.756418 602.395044 
@@ -5540,7 +5540,7 @@ L 834.104651 614.362152
 L 836.030603 612.504961 
 L 837.937887 610.628603 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|4|PELATON">
     <path d="M 820.243083 592.821138 
@@ -5646,7 +5646,7 @@ L 824.784684 604.599907
 L 826.613481 602.836402 
 L 828.424551 601.054697 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|regional_specificity|4|PELATON">
     <path d="M 810.729747 583.247232 
@@ -5964,7 +5964,7 @@ L 796.824781 575.313172
 L 798.362113 573.830725 
 L 799.884545 572.33298 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|4|PELATON">
     <path d="M 782.18974 554.525515 
@@ -6070,7 +6070,7 @@ L 787.504813 565.550927
 L 788.944991 564.162166 
 L 790.371209 562.759074 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|rodent|4|PELATON">
     <path d="M 772.676405 544.951609 
@@ -6176,7 +6176,7 @@ L 778.184846 555.788682
 L 779.527869 554.493608 
 L 780.857874 553.185168 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|literature|4|PELATON">
     <path d="M 763.163069 535.377703 
@@ -6812,7 +6812,7 @@ L 710.113385 681.402691
 L 712.715931 680.782039 
 L 715.312139 680.135393 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|5|CXCL5">
     <path d="M 709.123051 655.806253 
@@ -7024,7 +7024,7 @@ L 703.982955 655.114467
 L 706.322929 654.556433 
 L 708.657205 653.975027 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|5|CXCL5">
     <path d="M 702.468117 629.645887 
@@ -7236,7 +7236,7 @@ L 697.852524 628.826243
 L 699.929927 628.330826 
 L 702.002271 627.814661 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|5|CXCL5">
     <path d="M 695.813183 603.48552 
@@ -7978,7 +7978,7 @@ L 565.217113 689.002565
 L 567.9029 689.830472 
 L 570.596832 690.63148 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|chemical_probe|6|FCGR1BP">
     <path d="M 577.631226 666.533156 
@@ -8084,7 +8084,7 @@ L 569.257393 676.124702
 L 571.814202 676.91285 
 L 574.378764 677.675392 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|6|FCGR1BP">
     <path d="M 581.413157 653.577068 
@@ -8190,7 +8190,7 @@ L 573.297673 663.246838
 L 575.725503 663.995229 
 L 578.160696 664.719304 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|regional_specificity|6|FCGR1BP">
     <path d="M 585.195089 640.62098 
@@ -8296,7 +8296,7 @@ L 577.337952 650.368975
 L 579.636804 651.077607 
 L 581.942628 651.763216 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|6|FCGR1BP">
     <path d="M 588.977021 627.664892 
@@ -8508,7 +8508,7 @@ L 585.418512 624.613249
 L 587.459407 625.242364 
 L 589.506491 625.85104 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|6|FCGR1BP">
     <path d="M 596.540884 601.752716 
@@ -8614,7 +8614,7 @@ L 589.458792 611.735385
 L 591.370709 612.324743 
 L 593.288423 612.894952 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|rodent|6|FCGR1BP">
     <path d="M 600.322816 588.796628 
@@ -9356,7 +9356,7 @@ L 450.630904 599.993079
 L 452.432341 601.971279 
 L 454.253469 603.931366 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|7|CXCL2">
     <path d="M 472.558966 586.752289 
@@ -9780,7 +9780,7 @@ L 490.728526 563.843496
 L 492.166468 565.422534 
 L 493.620128 566.987114 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|7|CXCL2">
     <path d="M 511.925625 549.808037 
@@ -10628,7 +10628,7 @@ L 387.158406 474.137964
 L 387.704487 476.757171 
 L 388.276731 479.370787 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|8|FCGR3B">
     <path d="M 412.772686 473.878967 
@@ -10840,7 +10840,7 @@ L 413.610971 468.760721
 L 414.101957 471.115676 
 L 414.616468 473.465604 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|clinical_phase|8|FCGR3B">
     <path d="M 439.112422 467.973783 
@@ -11052,7 +11052,7 @@ L 440.063535 463.383479
 L 440.499427 465.474181 
 L 440.956204 467.560421 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|8|FCGR3B">
     <path d="M 465.452159 462.0686 
@@ -11900,7 +11900,7 @@ L 396.456534 333.490132
 L 395.595694 336.023392 
 L 394.76023 338.565134 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|9|CXCL3">
     <path d="M 418.647852 346.284811 
@@ -12324,7 +12324,7 @@ L 447.485482 351.115625
 L 446.798343 353.137722 
 L 446.131459 355.16659 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|9|CXCL3">
     <path d="M 470.019081 362.886268 
@@ -13172,7 +13172,7 @@ L 475.944614 217.086039
 L 473.915778 218.830251 
 L 471.904486 220.594665 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|safety|10|CXCL1">
     <path d="M 488.553825 239.383263 
@@ -13596,7 +13596,7 @@ L 510.934425 258.199598
 L 509.314968 259.591862 
 L 507.709516 261.000252 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="cell|tdl|10|CXCL1">
     <path d="M 524.358854 279.78885 
@@ -26925,7 +26925,7 @@ z
   <g id="text_19">
    <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #222222" transform="translate(503.314453 889.3589)">INVARIANTS 9/9 PASS · every check this build can make, made and held; per-check detail in manifest.json</text>
    <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #222222" transform="translate(528.669141 898.360951)">Regional specificity = Small_Intestine_Terminal_Ileum TPM ÷ median across the GTEx panel.</text>
-   <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #222222" transform="translate(353.991211 907.363002)">Mouse-phenotype ring: a LEAD, not a verdict. Embryonic-lethal lines drop out of adult phenotyping, which biases exactly the essential genes the safety ring flags as risky (COUNCIL M5).</text>
+   <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #222222" transform="translate(382.391602 907.363002)">Mouse-phenotype ring: a LEAD, not a verdict. Embryonic-lethal lines drop out of adult phenotyping, which biases exactly the essential genes the safety ring flags as risky.</text>
    <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #222222" transform="translate(297.448828 916.365053)">Missing is never imputed. k = how many of the 9 EXTERNAL rings have a real measurement for that gene; your own logFC and padj are not counted. It is a completeness gauge: it orders nothing and selects nothing.</text>
    <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #222222" transform="translate(350.197852 925.367104)">The circle runs clockwise from the ring-name gap at 12 o'clock — spoke order: the order of Atlas E-GEOD-101794 g2_g1 (unchanged). Region affects exactly one ring (regional specificity).</text>
    <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; fill: #222222" transform="translate(258.680859 934.369154)">Pipeline: furthest phase counts only drugs indicated for a disease with mechanistic evidence linking it to THIS target. A drug that hits the target for an unrelated indication sets no phase; those genes are drawn 'not applicable', not 'low'.</text>
@@ -27242,7 +27242,7 @@ L 30.174 32.263453
 L 30.174 27.013453 
 L 15.174 27.013453 
 z
-" style="fill: url(#h637622e55a); stroke: #4d4d4d; stroke-linejoin: miter"/>
+" style="fill: url(#h719f5dbafc); stroke: #4d4d4d; stroke-linejoin: miter"/>
    </g>
    <g id="text_88">
     <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="36.174" y="32.263453" transform="rotate(-0 36.174 32.263453)">no data — never measured here</text>
@@ -27253,7 +27253,7 @@ L 30.174 43.514039
 L 30.174 38.264039 
 L 15.174 38.264039 
 z
-" style="fill: url(#hace0936cdc); stroke: #808080; stroke-linejoin: miter"/>
+" style="fill: url(#h7afca3d804); stroke: #808080; stroke-linejoin: miter"/>
    </g>
    <g id="text_89">
     <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="36.174" y="43.514039" transform="rotate(-0 36.174 43.514039)">not applicable to this gene</text>
@@ -27264,7 +27264,7 @@ L 30.174 54.764625
 L 30.174 49.514625 
 L 15.174 49.514625 
 z
-" style="fill: url(#h3ce9c46043); stroke: #ff0000; stroke-linejoin: miter"/>
+" style="fill: url(#h0a861ad2b9); stroke: #ff0000; stroke-linejoin: miter"/>
    </g>
    <g id="text_90">
     <text style="font-size: 7.5px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="36.174" y="54.764625" transform="rotate(-0 36.174 54.764625)">call FAILED — not the same as absent</text>
@@ -27330,7 +27330,7 @@ z
   </g>
  </g>
  <defs>
-  <pattern id="h637622e55a" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="h719f5dbafc" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#e8e8e8"/>
    <path d="M -36 36 
 L 36 -36 
@@ -27384,7 +27384,7 @@ M 36 108
 L 108 36 
 " style="fill: #4d4d4d; stroke: #4d4d4d; stroke-width: 1.0; stroke-linecap: butt; stroke-linejoin: miter"/>
   </pattern>
-  <pattern id="hace0936cdc" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="h7afca3d804" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#ffffff"/>
    <path d="M 0 72.3 
 C 0.079561 72.3 0.155874 72.26839 0.212132 72.212132 
@@ -33518,7 +33518,7 @@ C 71.844126 0.26839 71.920439 0.3 72 0.3
 z
 " style="fill: #808080; stroke: #808080; stroke-width: 1.0; stroke-linecap: butt; stroke-linejoin: miter"/>
   </pattern>
-  <pattern id="h3ce9c46043" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+  <pattern id="h0a861ad2b9" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
    <rect x="0" y="0" width="73" height="73" fill="#000000"/>
    <path d="M -36 36 
 L 36 -36 

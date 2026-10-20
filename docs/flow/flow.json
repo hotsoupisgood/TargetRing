@@ -157,7 +157,7 @@
    {
     "n": 3,
     "key": "phenotype",
-    "name": "Phenotype in a model",
+    "name": "Phenotype in a study",
     "met_when": "mouse-KO ring > 0, or >= 1 abnormal mouse phenotype term(s)",
     "source": "Open Targets mousePhenotypes"
    }
@@ -214,5 +214,5 @@
   ],
   "note": "No paid call is on the render path: the figure draws without a key. Each account has its own cap and none borrows from another. Model prices change, so read these as what this project had cost by the date above, not as a price list."
  },
- "no_ranking": "There is no score, no weighted sum, no front and no ranking of any kind (AGENTS.md rule 7). The spoke order is a decision, it is stated on the figure, and it is checked in the artefact. The rings are evidence for a reader to weigh."
+ "no_ranking": "There is no score, no weighted sum, no front and no ranking of any kind. The spoke order is a decision, it is stated on the figure, and it is checked in the artefact. The rings are evidence for a reader to weigh."
 }

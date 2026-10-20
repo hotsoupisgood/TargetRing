@@ -8,7 +8,7 @@ Rings, outermost first (scale is per-ring; a colour means nothing between two ri
        source: the logFC column of the DE table you submitted — your own measurement, read straight off your file and not transformed. The run's manifest records which header it was read from (`input.columns.logfc`) and `values.csv` carries the value per gene
   2. -log10 padj (Atlas) [1.16, 1.36] -log10 adjusted p — Expression Atlas E-GEOD-101794 g2_g1
        scale: log-spaced: colour is log10(1 + x), ticks are x
-       source: the adjusted-p column of the DE table you submitted, drawn as −log10(padj) so that more significant is larger — your own measurement, with that one transform and nothing else. The run's manifest records which header it was read from (`input.columns.padj`) and the cell detail prints the original p back
+       source: the adjusted-p column of the DE table you submitted — your own measurement, with one transform and nothing else. The table shows the adjusted p; the ring draws −log10(padj), so that more significant is larger. The run's manifest records which header it was read from (`input.columns.padj`) and the cell detail prints the original p back
   3. Tractability (family suggests druggable) [0, 1] mean of 3 keys, each 0 or 1 — OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder — 3 dense keys, present for every target with a prioritisation record
        scale: fixed 0–1, same colour in every run
        source: Open Targets — https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section

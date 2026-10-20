@@ -32,6 +32,13 @@ What it holds, in the order Puck asked for it:
 13. the Table tab's column 11 prints the PubTator3 record count with
     thousands separators ("40,606", not "4.609"), the hover carries both that
     count and the drawn log, and the dim control states the stored units.
+14. no internal build code ("COUNCIL V13", "AGENTS.md rule 7") is in the page
+    text or in any tooltip, while the facts those codes hung off still are;
+    I7 does not say "survives the ranking" under a tagline reading "Nothing
+    here is ranked or scored"; I5 says which Europe PMC call went live and the
+    drawer says its own was replayed; the drawer opens with a date rather than
+    a 40-character build id; criterion 3 has one name; and the moving-range
+    sentence counts the rings the payload marks.
 
     python3 scripts/ui_checks.py --base http://127.0.0.1:8911/TargetRing
     python3 scripts/ui_checks.py --shots docs/showcase
@@ -298,6 +305,130 @@ def p_column_checks(page, base: str) -> None:
           f"and none in a tooltip, and {RAW_PADJ} is nowhere on it ({thits[:3]})")
 
 
+#: Internal build codes. They are rows in review documents that are not on the
+#: page and are not linked from it, so for the one reader who follows one they
+#: are a dead end. Same pattern as `targetring.wording.CODE`, written here
+#: because this script runs against the published tree and imports nothing.
+INTERNAL_CODE = re.compile(r"\b(?:COUNCIL\b|AGENTS\.md)")
+
+
+def cohesion_checks(page, base: str) -> None:
+    """14. The contradictions and the internal codes (review of 2026-10-20).
+
+    Every assertion here is a thing two surfaces used to disagree about, or a
+    reference a reader could not follow.
+    """
+    page.set_viewport_size(DESK)
+    # Every tab, with NO drawer open: `#table/MUC1` would put the drawer's
+    # scrim over the tab strip and every click below would time out on it.
+    page.goto(f"{base}/demo/", wait_until="networkidle")
+    page.wait_for_timeout(1800)
+
+    # --- no internal code anywhere a reader can see, on any tab ---
+    for tab in ("table", "figure", "evidence", "ledger", "scales", "spend"):
+        el = page.query_selector(f'.tab[data-tab="{tab}"]')
+        if el:
+            el.click()
+            page.wait_for_timeout(350)
+    body = page.inner_text("body")
+    hits = sorted(set(INTERNAL_CODE.findall(body)))
+    check(not hits, f"no internal build code in the page text ({hits[:3]})")
+    titles = page.evaluate(
+        """() => [...document.querySelectorAll('[title]')]
+             .map((e) => e.getAttribute('title'))""")
+    joined = "\n".join(t for t in titles if t)
+    thits = sorted(set(INTERNAL_CODE.findall(joined)))
+    check(not thits, f"nor in any tooltip ({thits[:3]})")
+    # The facts those codes were attached to are still there.
+    check("external rings have a real measurement" in joined + body,
+          "k still says what it counts")
+
+    # --- the tagline and I7 do not contradict each other ---
+    page.query_selector('.tab[data-tab="table"]').click()
+    page.wait_for_timeout(350)
+    check("Nothing here is ranked or scored" in page.inner_text("body"),
+          "the tagline is on the page")
+    inv = page.evaluate("""async () => {
+      const r = await fetch('api/run/20261018T190526Z-94ef5f/manifest.json');
+      const m = await r.json();
+      return (m.invariants || []).map((i) => [i.id, i.name, i.detail || '']);
+    }""")
+    i7 = next((row for row in inv if row[0] == "I7"), None)
+    check(bool(i7), "the run records I7")
+    check(bool(i7) and "survives the ranking" not in i7[2],
+          f"I7 no longer says 'survives the ranking' ({(i7 or ['', '', ''])[2][:60]!r})")
+    check(bool(i7) and "no headline marker is drawn" in i7[2],
+          "and says what it actually checked")
+    check(len(inv) == 9, f"this contrast run records nine invariants ({len(inv)})")
+
+    # --- Europe PMC: which call went live, and which was replayed ---
+    i5 = next((row for row in inv if row[0] == "I5"), None)
+    check(bool(i5) and "integrity probe" in i5[2],
+          f"I5 names the probe as the call that went live ({(i5 or ['', '', ''])[2][:70]!r})")
+    check(bool(i5) and "read from this machine's cache" in i5[2],
+          "and says the per-gene counts were not")
+    page.goto(f"{base}/demo/#table/MUC1", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+    drawer = page.inner_text("#drawer")
+    check("replayed from cache, not checked this run" in drawer,
+          "the drawer's Europe PMC count still says it was replayed")
+    # The fact "COUNCIL M6" used to be attached to, kept without the code.
+    check("swings 44% on phrasing alone" in drawer,
+          "and still states the 44% swing that count was measured at")
+
+    # --- the drawer opens with a date, not a build id ---
+    first = page.evaluate("""() => {
+      const n = document.querySelector('#drawer .note');
+      return n ? {text: n.innerText.trim(), title: n.getAttribute('title') || ''} : null;
+    }""")
+    check(bool(first) and first["text"] == "Evidence recorded 2026-10-18 19:07 UTC",
+          f"the drawer opens 'Evidence recorded 2026-10-18 19:07 UTC' ({(first or {}).get('text', '')[:60]!r})")
+    check(bool(first) and "Read from disk" not in first["text"],
+          "and no longer says 'Read from disk.'")
+    check("19a6b1b346f7405e8cfd88c560a014f00411ee1d" not in drawer,
+          "the 40-character build id is not visible text")
+    check(bool(first) and "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty" in first["title"],
+          "but the full build id is still one hover away")
+
+    # --- one name for criterion 3 ---
+    page.goto(f"{base}/demo/", wait_until="networkidle")
+    page.wait_for_timeout(1400)
+    body = page.inner_text("body")
+    check("Phenotype in a model" not in body and "phenotype in a model" not in body,
+          "no surface calls criterion 3 'phenotype in a model'")
+    check("henotype in a study" in body,
+          "it is 'phenotype in a study' — Puck's own words — everywhere")
+
+
+def moving_ranges_checks(page, base: str) -> None:
+    """14b. The count of moving ranges, counted rather than written.
+
+    The decode panel said "Nine of the twelve ranges move" over a strip that
+    showed four.
+    """
+    page.set_viewport_size(DESK)
+    page.goto(f"{base}/demo/#scales", wait_until="networkidle")
+    page.wait_for_timeout(1600)
+    got = page.evaluate("""async () => {
+      const el = document.querySelector('#cell-states .drift, .drift');
+      const r = await fetch('api/run/20261018T190526Z-94ef5f/scales.json');
+      const s = await r.json();
+      return {
+        said: el ? el.innerText.replace(/\\s+/g, ' ').trim() : null,
+        moves: (s.rings || []).filter((x) => x.moves).length,
+        rings: (s.rings || []).length,
+      };
+    }""")
+    check(bool(got["said"]), "the decode panel carries the moving-range sentence")
+    check("Nine of the twelve" not in (got["said"] or ""),
+          f"it is no longer hard-coded as 'Nine of the twelve' ({(got['said'] or '')[:50]!r})")
+    check(got["moves"] == 4 and got["rings"] == 12,
+          f"the payload marks 4 of 12 rings as moving ({got['moves']}/{got['rings']})")
+    check(bool(got["said"]) and got["said"].startswith(
+              f"{got['moves']} of the {got['rings']} ranges move"),
+          f"and the sentence states those two numbers ({(got['said'] or '')[:50]!r})")
+
+
 def literature_column_checks(page, base: str) -> None:
     """13. Column 11, which had column 2's defect.
 
@@ -528,6 +659,10 @@ def main(argv: list[str]) -> int:
         p_format_checks(page, args.base)
         print("=== the p column ===")
         p_column_checks(page, args.base)
+        print("=== cohesion: codes, contradictions, one name ===")
+        cohesion_checks(page, args.base)
+        print("=== the moving ranges, counted ===")
+        moving_ranges_checks(page, args.base)
         print("=== the literature column ===")
         literature_column_checks(page, args.base)
         print("=== the Gene expression box ===")

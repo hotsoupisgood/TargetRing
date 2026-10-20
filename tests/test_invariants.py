@@ -347,7 +347,12 @@ class TestV11ReplayedEchoIsNotACheckedEcho:
         r = self._i5({"echo_live": 1, "echo_replayed": 13, "ncbi_checked": 14,
                       "echo_mismatches": [], "ncbi_errors": []})
         assert r.outcome == "PASS"
-        assert "1 Europe PMC echo(es) checked live" in r.detail
+        # v4.3: it names the call that went live. The probe bypasses the
+        # cache by construction; the per-gene counts do not, and the drawer
+        # says so on each of them. I5 saying only "checked live" read as a
+        # contradiction of the drawer (review of 2026-10-20, item 3).
+        assert "1 Europe PMC integrity probe echo(es) checked live" in r.detail
+        assert "read from this machine's cache and each says so" in r.detail
         assert "13 more replayed from cache and not counted" in r.detail
 
     def test_a_mismatch_is_still_a_failure_however_it_arrived(self) -> None:
@@ -380,7 +385,12 @@ class TestI7TheFigureStatesWhatItDid:
         res, _ = rendered
         i7 = self._run(rendered, _claims(res))
         assert i7.outcome == "PASS"
-        assert "no headline marker survives the ranking" in i7.detail
+        # v4.3: reworded. Nothing is ranked, so there was no ranking for a
+        # marker to survive -- and the page's own sub-header says "Nothing here
+        # is ranked or scored" (review of 2026-10-20, item 3).
+        assert "no headline marker is drawn on the figure" in i7.detail
+        assert "nothing is ranked or scored to put one there" in i7.detail
+        assert "survives the ranking" not in i7.detail
         assert "no threshold filter was active" in i7.detail
 
     def test_fails_when_a_headline_marker_outlives_the_ranking(self, tmp_path: Path,
