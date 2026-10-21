@@ -525,16 +525,9 @@
   <button id="drawer-close" aria-label="close">×</button>
   <div id="drawer-body"></div>
 </aside>
-<!-- 2026-10-18, Puck: "a text box on highlight that has an LLM interpretation of
-     the values". Filled by `showSummary` from the gene's BAKED drawer (the
-     `summary` block `scripts/bake_summaries.py` wrote); shown on hover/focus of a
-     gene label or any of its cells, dismissed by its button or Escape. Empty
-     when no baked summary exists -- nothing is fetched live and nothing is
-     generated on the page. -->
-<aside id="summary-box" hidden role="status" aria-live="polite">
-  <button id="summary-close" aria-label="dismiss summary">×</button>
-  <div id="summary-body"></div>
-</aside>
+<!-- 2026-10-20, Puck: the hover evidence-summary panel that used to sit here is
+     gone. It repeated over the grid, on every row the pointer crossed, what one
+     click on the row puts in the drawer above. -->
 <div id="scrim" hidden></div>
 
 <script src="static-demo.js"></script>

@@ -16,7 +16,8 @@ What it holds, in the order Puck asked for it:
    the gene, the value with its unit (or the state word) and the source.
 4. Table is the first tab and the opening view; the second is Circos.
 5. the Table tab opens with the three GO / NO-GO criteria and their bounds.
-6. a click anywhere on a row highlights that row and opens its drawer.
+6. a click anywhere on a row highlights that row and opens its drawer, and
+   hovering a row raises no evidence-summary panel over the grid.
 7. the Drop ledger pane says in one sentence what the ledger is.
 8. every flow box is titled verb-first.
 9. the MUC1 drawer prints its adjusted p as "<0.05", not as `2.19538e-22`.
@@ -198,6 +199,21 @@ def tool_checks(page, base: str) -> None:
     # 6. A click anywhere on a row.
     page.query_selector('.tab[data-tab="table"]').click()
     page.wait_for_timeout(400)
+
+    # 2026-10-20, Puck: "by hover box i didn't mean the dark tool tip, the
+    # bottom left box". Resting on a row used to raise the gene's whole GO /
+    # NO-GO and evidence summary over the grid, after a 120 ms debounce — the
+    # same text the click below puts in the drawer. The panel is gone from the
+    # markup; the cell's own tooltip and the drawer are untouched.
+    check(not page.query_selector("#summary-box"),
+          "the evidence-summary panel is not in the page at all")
+    page.query_selector("#table-grid tbody tr td").hover()
+    page.wait_for_timeout(900)
+    check(not page.query_selector("#summary-box"),
+          "resting on a data row raises no summary panel")
+    check(bool(page.query_selector("#drawer[hidden]")),
+          "and the drawer stays shut until the row is clicked")
+
     gene = page.evaluate("""() => {
       const tr = document.querySelector('#table-grid tbody tr');
       const cell = tr.querySelector('td');

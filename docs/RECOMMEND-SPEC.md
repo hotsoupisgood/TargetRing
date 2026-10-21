@@ -151,9 +151,10 @@ and gives the plain phrase for each. Biologist audience, as above.
 
 ## Placement and hygiene
 
-- Verdict line first in the highlight box, then the three criteria, then the
+- Verdict line first in the drawer, then the three criteria, then the
   caveat line when triggered, then the rule text with thresholds and
-  "not used to order or filter the figure".
+  "not used to order or filter the figure". (It also led the row-hover
+  summary panel until 2026-10-20, when that panel was removed.)
 - Baked into `runs/<id>/drawer/<GENE>.json` as `recommendation` with
   thresholds and `rule_version` (hash of this rule). Demo serves it static.
 - PLAN.md v2.5: rings are evidence, not a score. This verdict is the owner's

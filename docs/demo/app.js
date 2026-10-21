@@ -313,10 +313,8 @@ async function init() {
   $("#drawer-close").onclick = closeDrawer;
   $("#scrim").onclick = closeDrawer;
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { closeDrawer(); if (!$("#summary-box").hidden) hideSummary(true); }
+    if (e.key === "Escape") closeDrawer();
   });
-  $("#summary-close").onclick = () => hideSummary(true);
-  $("#summary-box").addEventListener("mouseleave", () => hideSummary(false));
 
   document.querySelectorAll(".tab").forEach((t) => {
     t.onclick = () => goTab(t.dataset.tab);
@@ -2866,35 +2864,13 @@ function closeDrawer() {
   else closeDrawerPaint();
 }
 
-// ---------- the evidence summary box (2026-10-18) ----------
-//
-// Puck: "a text box on highlight that has an LLM interpretation of the values
-// ... basically a summary of evidence, kind of dry." The text is NOT generated
-// here and NOT fetched from a model: it is the `summary` block that
-// `scripts/bake_summaries.py` wrote into the gene's baked drawer, read through
-// the same file route the drawer uses (`/api/run/{id}/drawer/{gene}`), cached per
-// gene for the page's life. A gene with no baked summary -- no drawer file, or a
-// drawer baked before summaries existed -- shows nothing at all: no box, no
-// error, no "generating…". The box names what it is on its face: model, date,
-// prompt version, and the drawer's own provenance line.
-const SUMMARY_CACHE = new Map();   // `${run}|${gene}` -> drawer JSON | null
-let SUMMARY_SHOWING = "";          // the gene the box is currently about
-let SUMMARY_DISMISSED = "";        // a gene the reader closed; stays closed until another is highlighted
-let SUMMARY_TIMER = null;
-
-async function bakedDrawerFor(runId, gene) {
-  const k = `${runId}|${gene}`;
-  if (SUMMARY_CACHE.has(k)) return SUMMARY_CACHE.get(k);
-  let d = null;
-  try {
-    const r = await fetch(`/api/run/${encodeURIComponent(runId)}/drawer/${encodeURIComponent(gene)}`);
-    d = r.ok ? await r.json() : null;
-  } catch (e) {
-    d = null;                       // a network failure is "no summary", never a message
-  }
-  SUMMARY_CACHE.set(k, d);
-  return d;
-}
+// 2026-10-20, Puck: "by hover box i didn't mean the dark tool tip, the bottom
+// left box". The evidence summary panel (`#summary-box`, 2026-10-18) popped up
+// on row hover with the gene's baked GO / NO-GO and summary text -- the same
+// thing a click on the row already puts in the drawer, with room to read it.
+// Removed whole: the panel, its state, its fetch cache (`bakedDrawerFor`) and
+// its hover wiring. The baked `summary` block is still written by
+// `scripts/bake_summaries.py` and still read by the drawer.
 
 // ---------- the GO / NO-GO verdict (2026-10-18) ----------
 //
@@ -3009,7 +2985,7 @@ function phenotypeTermListHtml(terms, labels) {
       to a particular phenotype, and neither does this list.</p>`;
 }
 
-function recommendationHtml(rec, compact, phenotypeFlag, phenotypeTerms) {
+function recommendationHtml(rec, phenotypeFlag, phenotypeTerms) {
   if (!rec || !rec.verdict) return "";
   const cls = VERDICT_CLASS[rec.verdict] || "nodata";
   const crit = (rec.criteria || []).map((c) => {
@@ -3037,74 +3013,13 @@ function recommendationHtml(rec, compact, phenotypeFlag, phenotypeTerms) {
   const caveats = (rec.caveats || []).map((c) => `<p class="verdict-caveat">${esc(c)}</p>`).join("");
   const modality = rec.modality ? `<p class="verdict-modality">${esc(rec.modality)}</p>` : "";
   const flag = phenotypeFlagHtml(phenotypeFlag, phenotypeTerms);
-  return `<div class="verdict ${cls}${compact ? " compact" : ""}">
+  return `<div class="verdict ${cls}">
     <p class="verdict-line"><span class="verdict-word">${esc(rec.verdict)}</span>${region}</p>
     <ul class="crit-list">${crit}${flag}</ul>
     ${modality}${caveats}
     <p class="verdict-rule" title="${esc(rec.rule_tooltip || rec.rule_text || "")}">${
       esc(rec.rule_short || rec.rule_text || "")}</p>
   </div>`;
-}
-
-function summaryHtml(d) {
-  const s = d.summary || {};
-  const baked = d.baked || {};
-  // Verdict line first, then the three criteria, then the LLM text (whose
-  // first sentence restates that verdict), then what the text is.
-  return `<h3>${esc(d.gene)} <span class="hint">${d.recommendation ? "GO / NO-GO and " : ""}evidence summary</span></h3>
-    ${recommendationHtml(d.recommendation, true, d.phenotype_llm, d.phenotype_terms)}
-    ${s.text ? `<p class="summary-text">${esc(s.text)}</p>
-    <p class="summary-label"><b>LLM-generated from the values below</b>, <code>${esc(s.model)}</code>,
-      ${esc((s.generated_at || "").slice(0, 10))}, prompt <code>${esc(s.prompt_version)}</code>.
-      It reads this gene's own drawer and nothing else; the exact facts it was given are stored
-      beside it. The verdict above was given to it, not decided by it. Open the drawer for the numbers.</p>`
-    : `<p class="summary-label">No evidence summary is baked for this gene.</p>`}
-    ${baked.note ? `<p class="summary-prov">${esc(baked.note)}${
-      baked.at_utc ? ` Baked ${esc(baked.at_utc)}` : ""}${
-      baked.git_sha ? ` at <code>${esc(baked.git_sha)}</code>` : ""}.</p>` : ""}`;
-}
-
-async function showSummary(runId, gene) {
-  if (!runId || !gene || gene === SUMMARY_DISMISSED) return;
-  const d = await bakedDrawerFor(runId, gene);
-  // Nothing baked -- no summary text and no verdict -- shows nothing at all.
-  if (!d || !((d.summary && d.summary.text) || (d.recommendation && d.recommendation.verdict))) return;
-  SUMMARY_SHOWING = gene;
-  $("#summary-body").innerHTML = summaryHtml(d);
-  $("#summary-box").hidden = false;
-}
-
-function hideSummary(dismiss) {
-  if (dismiss) SUMMARY_DISMISSED = SUMMARY_SHOWING;
-  SUMMARY_SHOWING = "";
-  $("#summary-box").hidden = true;
-}
-
-// Hover or keyboard focus on a gene's label, or on any cell of its row, is the
-// highlight. Debounced so a pointer crossing the grid does not fetch every row;
-// leaving the grid hides the box unless the pointer is on the box itself (so the
-// text can be read and selected).
-function wireSummaryHighlight(d) {
-  const runId = d.run_id;
-  const baked = new Set(d.baked_drawers || []);
-  $("#table-grid").querySelectorAll("tbody tr").forEach((tr) => {
-    const label = tr.querySelector(".gene");
-    const gene = label ? (label.dataset.gene || label.textContent.trim()) : "";
-    if (!gene || !baked.has(gene)) return;       // no drawer file -> no summary; nothing wired
-    const arm = () => {
-      clearTimeout(SUMMARY_TIMER);
-      if (gene !== SUMMARY_DISMISSED) SUMMARY_DISMISSED = "";
-      SUMMARY_TIMER = setTimeout(() => showSummary(runId, gene), 120);
-    };
-    tr.addEventListener("mouseenter", arm);
-    tr.addEventListener("focusin", arm);
-  });
-  $("#table-grid").addEventListener("mouseleave", () => {
-    clearTimeout(SUMMARY_TIMER);
-    SUMMARY_TIMER = setTimeout(() => {
-      if (!$("#summary-box").matches(":hover")) hideSummary(false);
-    }, 250);
-  });
 }
 
 // v4.0. The chromosome, first in the drawer's identifier line, spelled out as
@@ -3170,8 +3085,8 @@ function drawerHtml(d) {
   // numbers it was computed from -- before the first <h4>, so `sectionise`
   // leaves it in the always-visible header rather than behind a collapsed
   // section. Absent for a drawer baked before the rule.
-  if (d.recommendation) h += recommendationHtml(d.recommendation, false, d.phenotype_llm,
-                                               d.phenotype_terms);
+  if (d.recommendation) h += recommendationHtml(d.recommendation, d.phenotype_llm,
+                                                d.phenotype_terms);
 
   // v4.2. "your measurement" prints the adjusted p as `fmtP` — `<.0001`, not
   // `2.19538e-22`. `d.padj` itself is untouched in the payload and on disk;
@@ -4375,7 +4290,6 @@ function renderTable(d) {
       if (d.in_memory || (d.baked_drawers || []).includes(gene)) openDrawer(gene);
     });
   });
-  wireSummaryHighlight(d);
 
   renderTableSources(d);
 

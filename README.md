@@ -117,7 +117,7 @@ because the clinical rings are a pipeline statement, never a safety one.*
 ## The GO / NO-GO line
 
 Separate from the rings, and from a different author. The rings are evidence
-and carry no verdict. The verdict line in a gene's highlight box and drawer is
+and carry no verdict. The verdict line in a gene's drawer is
 **Puck's explicit rule** (2026-10-18: "we need the gene to be expressed, and
 also misregulated in the study, and have a strong phenotype in a study"),
 evaluated deterministically by `targetring/recommend.py` from the numbers the

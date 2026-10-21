@@ -655,34 +655,12 @@ td.reason { color: var(--muted); }
 }
 #cell-tip[hidden] { display: none; }
 
-/* 2026-10-18. The evidence summary box: shown on gene highlight, below the
-   drawer's z-order and above the grid, anchored bottom-right so it never covers
-   the row that raised it. Dismissible (button, Escape); the label line is part
-   of the box, not a tooltip, because "LLM-generated" is a claim the reader must
-   see before the text, every time. */
-#summary-box {
-  position: fixed; right: 18px; bottom: 18px; width: min(560px, 92vw); max-height: 60vh;
-  overflow-y: auto; background: var(--tr-surface, #fff); color: var(--tr-ink, #16181d);
-  border: 1px solid var(--line); border-left: 4px solid var(--accent);
-  box-shadow: 0 8px 28px rgba(0,0,0,.16); border-radius: 8px; padding: 14px 44px 12px 16px;
-  z-index: 45; font-size: 13.5px; line-height: 1.45;
-}
-#summary-box h3 { margin: 0 0 6px; font-size: 15px; }
-#summary-box h3 .hint { font-weight: 400; font-size: 12px; margin-left: 6px; }
-#summary-box .summary-text { margin: 0 0 8px; }
-#summary-box .summary-label { margin: 0 0 6px; font-size: 12px; color: var(--muted);
-                              border-top: 1px solid var(--line); padding-top: 6px; }
-#summary-box .summary-prov { margin: 0; font-size: 12px; color: var(--muted); }
-#summary-close { position: absolute; top: 6px; right: 8px; background: none; border: none;
-                 color: var(--muted); font-size: 22px; width: 32px; height: 32px;
-                 line-height: 32px; border-radius: 6px; cursor: pointer; }
-#summary-close:hover { background: #f4f6f8; }
-
 /* 2026-10-18. The GO / NO-GO verdict block (`recommendationHtml`), at the top of
-   the highlight box and of the drawer. Colour carries the verdict and nothing
-   else: GO green, NO-GO grey, INSUFFICIENT DATA amber -- grey for NO-GO on
-   purpose, because a failed rule is a plain statement, not an alarm. The rule
-   text and "not used to order or filter the figure" are part of the block. */
+   the drawer -- and, until 2026-10-20, of the row-hover panel. Colour carries
+   the verdict and nothing else: GO green, NO-GO grey, INSUFFICIENT DATA amber
+   -- grey for NO-GO on purpose, because a failed rule is a plain statement, not
+   an alarm. The rule text and "not used to order or filter the figure" are part
+   of the block. */
 .verdict { border: 1px solid var(--line); border-left: 5px solid var(--muted); border-radius: 6px;
            padding: 8px 12px; margin: 6px 0 10px; background: #f7f8fa; }
 .verdict.go { border-left-color: var(--ok); background: #eef7f1; }
@@ -715,7 +693,6 @@ td.reason { color: var(--muted); }
 .verdict .crit .shown { cursor: help; }
 .verdict .verdict-rule { margin: 4px 0 0; font-size: 12px; color: var(--muted);
                          cursor: help; }
-.verdict.compact .crit { font-size: 12.5px; }
 /* The Claude-coded phenotype flag: one row in the same list as the three
    criteria and visibly not one of them -- no tick in the mark column, a rule
    above it, and the word Claude on its face. It never moved the verdict. */
