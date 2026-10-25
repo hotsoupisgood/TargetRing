@@ -182,9 +182,17 @@ def region_label(region: str | None) -> str:
 
 
 #: The bounds, as a reader reads them. The page's own markup has always used
-#: "≥" and "—" while the server's strings used ">=" and "--", so one
-#: sentence on the Table tab carried both (review of 2026-10-20, item 5). The
-#: source strings were changed; these are for text already on disk.
+#: "≥" while the server's strings used ">=", so one sentence on the Table tab
+#: carried both (review of 2026-10-20, item 5). The source strings were changed;
+#: these are for text already on disk.
+#:
+#: The third rule used to rewrite " -- " to an em dash. The dashboard language
+#: standard of 2026-10-21 forbids an em dash in reader-visible text (rule 5),
+#: so a spaced "--" now closes to a comma instead: the one separator that reads
+#: correctly wherever a dash was carrying a clause, and that never leaves a
+#: sentence fragment behind. The leading space is consumed and the trailing one
+#: kept, so "a -- b" becomes "a, b". Idempotent, because the output holds no
+#: spaced "--" for a second pass to find.
 #:
 #: Spaces are required around "--" so a hyphenated word and a command-line flag
 #: survive, and ">=" is only rewritten with a space or a digit after it so a
@@ -193,7 +201,7 @@ def region_label(region: str | None) -> str:
 #: pattern guessing.
 _OPS = ((re.compile(r">="), "≥"),
         (re.compile(r"<="), "≤"),
-        (re.compile(r"(?<= )--(?= )"), "—"))
+        (re.compile(r" --(?= )"), ","))
 
 #: "target" meaning "gene". This build draws a gene set and calls it that
 #: everywhere except in Open Targets' own name and its own field names
@@ -211,6 +219,82 @@ _GENE_NOT_TARGET = (
     # substring.
     ("ChEMBL target record exists", "a ChEMBL record exists"),
     ("target record exists", "a gene record exists"),
+)
+
+#: The three sentences the dashboard language standard of 2026-10-21 changed by
+#: more than punctuation. Rule 2 is "precise, not impressionistic", and its word
+#: list bans "reads as" and "sits": Puck's own objection was *"reads is
+#: unspecific. do a full review of this kind of language"*.
+#:
+#: These are here for the same reason the bounds are. The source strings were
+#: edited in the same commit, so a new run writes the right words and this is a
+#: no-op on it (`tests/test_wording.py` asserts that); the four finished runs
+#: have the old words baked into 46 drawer files and 4 manifests, and
+#: `scripts/restamp_wording.py` is what reaches those. Each pair is anchored on
+#: enough of its own sentence that it cannot fire on anything else, and the
+#: replacement keeps every number and every fact.
+_IMPRESSIONISTIC = (
+    # `recommend.expression_summary`'s note.
+    ("panel median reads as tissue-specific for",
+     "panel median is high for"),
+    # `phenotype_llm.NOTE`.
+    ("It sits BESIDE the owner's", "It is printed BESIDE the owner's"),
+    # `spend.ACCOUNT_PURPOSE[PHENOTYPE]`.
+    ("only the table it sits above", "only the table printed below it"),
+    # `contract.OPENTARGETS_RING_KEYS`, baked into each manifest invariant row.
+    ("every key a ring reads is present", "every key a ring queries is present"),
+)
+
+#: Units, and file paths off the surface. Two instructions from 2026-10-21,
+#: reaching the same 46 baked drawers the pairs above do.
+#:
+#: Puck, 10:05: *"please be descriptive. do not allow disembodied numbers
+#: without units"*, with "logFC +2.6" -> "log2 fold change +2.6" as the worked
+#: example. So wherever a NUMBER is printed and `logFC` is the only thing
+#: naming what it measures, the quantity is spelled out. Where `logFC` is a
+#: LABEL and not a unit it stays, which is why none of these pairs is a bare
+#: "logFC": the ring's name on the baked figures ("logFC (yours)", "logFC
+#: (Atlas)") and the token the filter syntax parses (`logfc >= 1.0`) are
+#: untouched, and a pair that fired on them would rename a column head to
+#: disagree with its own figure.
+#:
+#: Rule 10 of the standard, for the rest: a reader of the page cannot follow a
+#: repo path, so the three notes that carried one say the same fact in words.
+#: The mouse ring's "> 0" gains the scale it is read on, which is rule 16's
+#: "a score names its scale".
+#:
+#: Every number and every bound is carried through unchanged. The rule version
+#: does not move with any of this: `recommend.RULE_WORDS` folds the wording back
+#: before the hash, and `tests/test_wording.py` pins `bdc70c8fc230` both ways.
+_UNITS_AND_PATHS = (
+    # `run.py`'s logfc cell detail: "logFC 2.2 (submitted)".
+    (re.compile(r"\blogFC (?=[-+0-9])"), "log2 fold change "),
+    # `run.py`'s k note and the completeness cell's detail.
+    ("your own logFC and padj are not counted",
+     "your own log2 fold change and adjusted p are not counted"),
+    ("your own logFC and padj are not counted. It",
+     "your own log2 fold change and adjusted p are not counted. It"),
+    # `recommend._dysregulated`'s no-data bare value and sentence.
+    ("no logFC or adjusted p", "no log2 fold change or adjusted p"),
+    # `Thresholds.sentence`, `criteria_spec` and the criterion threshold.
+    ("|logFC|", "|log2 fold change|"),
+    ("mouse phenotype ring > 0 or",
+     "mouse phenotype ring above 0 on its 0-to-1 scale, or"),
+    ("mouse-KO ring > 0, or",
+     "mouse-KO ring above 0 on its 0-to-1 scale, or"),
+    # `recommend.disease_area_match`'s note.
+    ("display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+     "display aid, not a criterion"),
+    # `summary_llm.SUMMARY_NOTE`.
+    ("computed by the owner's rule (recommend.py), which it was given",
+     "computed by the owner's three-criteria rule, which it was given"),
+    # `drawer_bake.BAKED_NOTE`.
+    ("state, value and reason is the run's own values.csv.",
+     "state, value and reason is the run's own recorded table of values."),
+    # `spend.ACCOUNT_PURPOSE[SUMMARY]`.
+    ("baked offline by scripts/bake_summaries.py from the gene's own drawer "
+     "values", "baked offline before publication from the gene's own drawer "
+     "values"),
 )
 
 #: k in the ONE printed form. The completeness cell's reason said "8 of 9
@@ -233,11 +317,80 @@ _UNGROUPED_COUNT = re.compile(r"(?<![\w.,/:#-])(\d{4,})(?![\d,/:-]|\w)")
 #: the gene totals are five digits and every other count is under 1,000.
 _YEAR = range(1900, 2101)
 
+#: An IDENTIFIER standing alone, with no sentence around it. `modernise` rewords
+#: a sentence; a string that is nothing but digits is not one, it is a key.
+#:
+#: `_UNGROUPED_COUNT` cannot tell a key from a count, because every exemption it
+#: has looks at the NEIGHBOURS that a bare identifier does not have: a PMID is
+#: not glued to a letter, a separator or a `#`. So the exemption has to come
+#: from the whole string, which is what this is.
+#:
+#: Not hypothetical, and not cheap. `scripts/restamp_wording.py` grouped PMID
+#: 11911824 to "11,911,824" inside `phenotype_terms[].models[].pmids[]`,
+#: `app.js` builds each PubMed href as the base plus that value, and the result
+#: was that every one of the 12 PubMed links in the tool resolved to an empty
+#: `[uid]` search. It shipped: the live site served it from 9f19811 until the
+#: link check of 2026-10-21 read the rendered hrefs rather than the registry.
+#:
+#: The comma is in the class so the guard holds on text that is ALREADY grouped,
+#: which is what a second pass over a baked artefact sees.
+_BARE_IDENTIFIER = re.compile(r"\A\s*\d[\d,]*\s*\Z")
+
 #: A GTEx tissue id used as a NAME inside a sentence. Anchored on the phrase so
 #: it cannot reach the manifest's own `region` value, which is the identifier
 #: the GTEx query used.
 _REGION_IN_SENTENCE = re.compile(
     r"\b(TPM in |concentrated in )([A-Z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+)")
+
+
+#: Rule 5 of the dashboard language standard, adopted 2026-10-21: no em dash in
+#: reader-visible text, and no en dash standing in for one. The source strings
+#: were edited to this form in the same pass; these four runs were baked on
+#: 2026-10-18, so `scripts/restamp_wording.py` applies it to their artefacts,
+#: which is where the baked drawer summaries live.
+#:
+#: An em dash in this build's prose is almost always a label joined to its own
+#: gloss ("not phenotyped — no mouse phenotype records"), and a colon is the
+#: separator that reads correctly there. A SECOND dash in the same string is a
+#: bracketed aside rather than a second gloss, so it closes with a comma: one
+#: colon per sentence, or the sentence stops reading as one.
+#:
+#: A dash that OPENS or CLOSES a string is carrying nothing and is dropped with
+#: its space, because ": replayed from cache" is worse than what it replaced.
+#:
+#: An en dash between digits is a range and becomes " to ", the form the
+#: standard names. A HYPHEN is never touched at all: a hyphenated word, a
+#: command-line flag and `-log10` are not dashes.
+_EN_RANGE = re.compile(r"(?<=\d)\s*–\s*(?=\d)")
+_DASH_CLAUSE = re.compile(r"\s*[—–]\s*")
+
+
+def plain_dashes(text: str) -> str:
+    """Em and en dashes out, reading unchanged. Idempotent: the output holds
+    neither character, so a second pass finds nothing.
+
+    >>> plain_dashes("not phenotyped — no mouse phenotype records")
+    'not phenotyped: no mouse phenotype records'
+    >>> plain_dashes("0 agents — a record exists — genuinely undrugged")
+    '0 agents: a record exists, genuinely undrugged'
+    >>> plain_dashes("— replayed from cache")
+    'replayed from cache'
+    >>> plain_dashes("mean of 3 keys, each 0 or 1 · fixed 0–1")
+    'mean of 3 keys, each 0 or 1 · fixed 0 to 1'
+    >>> plain_dashes("-log10 adjusted p, non-zero, --force")
+    '-log10 adjusted p, non-zero, --force'
+    """
+    out = _EN_RANGE.sub(" to ", text or "")
+    seen = 0
+
+    def _sub(m: "re.Match[str]") -> str:
+        nonlocal seen
+        if m.start() == 0 or m.end() == len(out):
+            return ""
+        seen += 1
+        return ": " if seen == 1 else ", "
+
+    return _DASH_CLAUSE.sub(_sub, out)
 
 
 def _group(m: "re.Match[str]") -> str:
@@ -270,10 +423,35 @@ def modernise(text: str) -> str:
     "painted only in ['#4d4d4d', '#808080'] over 2200-step ramp"
     >>> modernise("nothing to change here")
     'nothing to change here'
+
+    A string that is nothing but digits is an identifier, not a sentence, and
+    nothing here applies to it. A PMID is the case that matters: grouped, it
+    becomes a dead PubMed link.
+
+    >>> modernise("11911824")
+    '11911824'
+    >>> modernise("11,911,824")
+    '11,911,824'
+    >>> modernise("20643340")
+    '20643340'
+
+    A count inside a sentence still groups, which is the whole point of the
+    distinction: the neighbours are what make it a count.
+
+    >>> modernise("Pharos covers 20412 human targets")
+    'Pharos covers 20,412 human genes'
     """
+    if _BARE_IDENTIFIER.match(text or ""):
+        return text
     out = strip_internal_codes(text)
     for a, b in _GENE_NOT_TARGET:
         out = out.replace(a, b)
+    for a, b in _IMPRESSIONISTIC:
+        out = out.replace(a, b)
+    # Before `_OPS`: these pairs are anchored on the ASCII ">" the baked text
+    # carries, and `_OPS` is what turns ">=" into its glyph.
+    for a, b in _UNITS_AND_PATHS:
+        out = a.sub(b, out) if hasattr(a, "sub") else out.replace(a, b)
     out = _K_SPELLED_OUT.sub(
         lambda m: f"k = {m.group(1)}/{m.group(2)} external rings with a real "
                   f"measurement", out)
@@ -281,6 +459,7 @@ def modernise(text: str) -> str:
         lambda m: m.group(1) + m.group(2).replace("_", " "), out)
     for pat, rep in _OPS:
         out = pat.sub(rep, out)
+    out = plain_dashes(out)
     out = _UNGROUPED_COUNT.sub(_group, out)
     return out
 
@@ -292,5 +471,5 @@ def has_internal_code(text: str) -> bool:
     return bool(re.search(rf"\b{CODE}", text or ""))
 
 
-__all__ = ["CODE", "region_label", "modernise", "strip_internal_codes",
-           "has_internal_code"]
+__all__ = ["CODE", "region_label", "modernise", "plain_dashes",
+           "strip_internal_codes", "has_internal_code"]

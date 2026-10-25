@@ -50,6 +50,40 @@ OPAQUE_KEYS = frozenset({"raw", "git_sha", "run_id", "gene", "key", "url",
                          # document an input the parser rejects.
                          "expression", "filters", "region"})
 
+#: Two of those keys are opaque because of what a STRING under them is: a
+#: filter expression ("literature >= 2") is the syntax the analyse form parses,
+#: echoed back at the reader, and a region key is the underscored GTEx tissue
+#: id. Neither is ever a dict. A drawer's `summary.inputs.expression` IS a
+#: dict -- the gene's expression facts, with a reader's sentence under `note`
+#: -- and skipping it by name left "a ratio against the panel median reads as
+#: tissue-specific" baked in the four runs after the wording pass of
+#: 2026-10-20 had already fixed the source string. Same class of defect as the
+#: PMID grouping below: a key name matched where the VALUE was a different
+#: kind of thing. So these two are opaque only where they are scalars.
+BY_SCALAR_ONLY = frozenset({"expression", "region"})
+
+#: Keys whose value is a BARE-DIGIT identifier, at any depth. A wording pass
+#: must not reach one, and this pass already did: `modernise` read each PMID in
+#: `phenotype_terms[].models[].pmids[]` as a four-digit-or-more count and gave
+#: it thousands separators, so `11911824` became `11,911,824`. `app.js` builds
+#: every PubMed href as the base plus that value, with no validation, so all 12
+#: PubMed links in the tool resolved to an empty `[uid]` search. It shipped in
+#: 9f19811 and the live site served it until the link check of 2026-10-21.
+#:
+#: `wording._BARE_IDENTIFIER` now stops this at the generator, so this set is
+#: belt and braces rather than the fix. It is deliberately only the two PubMed
+#: keys: every other identifier in these artefacts carries a letter prefix
+#: (`ENSG...`, `NCT...`, `CHEMBL...`, `MP:...`, `E-GEOD-...`), which
+#: `_UNGROUPED_COUNT` already exempts, and widening this set past the evidence
+#: is how the grouping rule got into trouble in the first place.
+ID_KEYS = frozenset({"pmid", "pmids"})
+
+#: An identifier that a previous restamp already grouped. The repair is on the
+#: artefacts, not on `modernise`: the commas are on disk in the four baked runs
+#: and in the published export, and the generator fix cannot reach back and
+#: remove them.
+_GROUPED_IDENTIFIER = re.compile(r"\A\s*\d{1,3}(?:,\d{3})+\s*\Z")
+
 #: Sentences this build rewords, as exact pairs. The code strip above is a
 #: rule; these are the two *judgements* of the 2026-10-20 review that landed in
 #: a baked invariant detail, and a judgement is not something to infer from a
@@ -114,6 +148,35 @@ def _reword(text: str) -> str:
     return reworded
 
 
+def _repair_identifiers(node: Any, hits: list[tuple[str, str]],
+                        path: str) -> Any:
+    """An id-bearing value with a previous pass's thousands separators out.
+
+    Never reworded: `modernise` does not run here at all. Only a value that is
+    nothing but grouped digits is touched, so this cannot reach an identifier
+    carrying a letter even if one is filed under an id key by mistake.
+
+    >>> hits = []
+    >>> _repair_identifiers(["11,911,824", "9892619"], hits, ".pmids")
+    ['11911824', '9892619']
+    >>> hits
+    [('.pmids[0]', '11,911,824')]
+    >>> _repair_identifiers("CHEMBL1742997", [], ".drug_id")
+    'CHEMBL1742997'
+    >>> _repair_identifiers("20643340", [], ".pmids")
+    '20643340'
+    """
+    if isinstance(node, str):
+        if _GROUPED_IDENTIFIER.match(node):
+            hits.append((path, node))
+            return node.strip().replace(",", "")
+        return node
+    if isinstance(node, list):
+        return [_repair_identifiers(v, hits, f"{path}[{i}]")
+                for i, v in enumerate(node)]
+    return node
+
+
 def _walk(node: Any, hits: list[tuple[str, str]], path: str = "") -> Any:
     """`node` with every readable string reworded, collecting what changed."""
     if isinstance(node, str):
@@ -122,8 +185,17 @@ def _walk(node: Any, hits: list[tuple[str, str]], path: str = "") -> Any:
             hits.append((path, node))
         return new
     if isinstance(node, dict):
-        return {k: (v if k in OPAQUE_KEYS else _walk(v, hits, f"{path}.{k}"))
-                for k, v in node.items()}
+        out: dict[str, Any] = {}
+        for k, v in node.items():
+            where = f"{path}.{k}"
+            if k in OPAQUE_KEYS and not (
+                    k in BY_SCALAR_ONLY and isinstance(v, (dict, list))):
+                out[k] = v
+            elif k in ID_KEYS:
+                out[k] = _repair_identifiers(v, hits, where)
+            else:
+                out[k] = _walk(v, hits, where)
+        return out
     if isinstance(node, list):
         return [_walk(v, hits, f"{path}[{i}]") for i, v in enumerate(node)]
     return node
