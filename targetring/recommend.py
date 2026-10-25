@@ -176,9 +176,15 @@ class Thresholds:
                 "specific_ratio": self.specific_ratio}
 
     def sentence(self) -> str:
-        return (f"GTEx region TPM ≥ {self.min_tpm:g}; |logFC| ≥ {self.min_abs_logfc:g} "
-                f"and adjusted p ≤ {self.max_q:g}; mouse phenotype ring > 0 or "
-                f"≥ {self.min_phenotypes:d} abnormal term(s)")
+        # Units sweep, 2026-10-21 10:05. Every number on this line now says what
+        # it measures: TPM and adjusted p already did, `logFC` is spelled out as
+        # the quantity it abbreviates, and the mouse ring names the 0-to-1 scale
+        # it is read on instead of printing a bare "> 0".
+        return (f"GTEx region TPM ≥ {self.min_tpm:g}; "
+                f"|log2 fold change| ≥ {self.min_abs_logfc:g} "
+                f"and adjusted p ≤ {self.max_q:g}; mouse phenotype ring above 0 "
+                f"on its 0-to-1 scale, or ≥ {self.min_phenotypes:d} "
+                f"abnormal term(s)")
 
 
 def current_thresholds() -> Thresholds:
@@ -195,11 +201,26 @@ def current_thresholds() -> Thresholds:
 #: over the canonical ASCII form, so a glyph is display and a bound is the rule.
 RULE_GLYPHS = (("≥", ">="), ("≤", "<="), ("—", "--"), ("÷", "/"))
 
+#: Wording that must not move the rule version either, for the same reason the
+#: glyphs must not. The units sweep of 2026-10-21 10:05 spelled "logFC" out as
+#: "log2 fold change" and gave the mouse ring its scale, on the surface and in
+#: `Thresholds.sentence`. Both name the SAME bound on the SAME quantity, so a
+#: hash that moved with them would have told every reader of all 46 baked
+#: verdicts that the rule had changed when only its words had. Folded back to
+#: the form the thresholds were first hashed in, so `bdc70c8fc230` survives a
+#: rename of the quantity and still moves the moment a number moves.
+RULE_WORDS = (("|log2 fold change|", "|logFC|"),
+              ("mouse phenotype ring above 0 on its 0-to-1 scale, or",
+               "mouse phenotype ring > 0 or"))
+
 
 def _canonical(text: str) -> str:
-    """`text` with the display glyphs folded back to ASCII, for hashing only."""
+    """`text` with the display glyphs and the display wording folded back, for
+    hashing only. A bound is the rule; how it is spelled is display."""
     for glyph, ascii_ in RULE_GLYPHS:
         text = text.replace(glyph, ascii_)
+    for words, canonical in RULE_WORDS:
+        text = text.replace(words, canonical)
     return text
 
 
@@ -385,14 +406,23 @@ def modality(f: Facts) -> str | None:
 
 
 def _criterion(key: str, label: str, status: str, value: Any, shown: str,
-               threshold: str, source: str, bare: str = "") -> dict[str, Any]:
+               threshold: str, source: str, bare: str = "",
+               hover: str = "") -> dict[str, Any]:
     """`shown` is the sentence (kept: the JSON, the summary prompt and the
     drawer's long form read it). `bare` is the trimmed box's whole right-hand
     side -- the value and its unit and nothing else (Puck, 2026-10-18 18:42
-    PDT: "make it much less wordy"). Both are computed from the same number."""
+    PDT: "make it much less wordy"). Both are computed from the same number.
+
+    `hover` is the DEFINITION: what this criterion means and what scale its
+    number is on. Puck, 2026-10-21 10:05: "please be descriptive. do not allow
+    disembodied numbers without units." The definition belongs in hover text
+    rather than on the surface (dashboard language standard, rule 13: a tool
+    page carries no explanatory prose), so `label` and `bare` stay short and
+    this carries the units a reader needs to decode them.
+    """
     return {"key": key, "label": label, "status": status, "value": value,
             "shown": shown, "bare": bare or shown, "threshold": threshold,
-            "source": source}
+            "source": source, "hover": hover}
 
 
 #: RETIRED as a display form, v4.3 (review of 2026-10-20, item 5). It shortened
@@ -453,7 +483,7 @@ def _region_words(f: Facts) -> str:
     if f.region_is_disease_tissue is True:
         s += " (a disease tissue for this contrast)"
     elif f.region_is_disease_tissue is False:
-        s += " — not a disease tissue for this contrast"
+        s += ", not a disease tissue for this contrast"
     return s
 
 
@@ -493,8 +523,8 @@ def expression_summary(f: Facts, t: Thresholds) -> dict[str, Any]:
         "specific_ratio_threshold": t.specific_ratio,
         "blood_or_spleen_at_or_above_region": immune,
         "shown": shown,
-        "note": ("absolute TPMs, not a fold: a ratio against the panel median reads "
-                 "as tissue-specific for anything blood-borne in a blood-rich tissue. "
+        "note": ("absolute TPMs, not a fold: a ratio against the panel median is "
+                 "high for anything blood-borne in a blood-rich tissue. "
                  "'Concentrated' is said only above the threshold, in a disease "
                  "tissue, and when neither whole blood nor spleen is at or above "
                  "the region's TPM."),
@@ -508,7 +538,10 @@ def disease_area_match(f: Facts) -> dict[str, Any]:
     area = disease_area_for(f.disease_text)
     n_met = f.n_abnormal_phenotypes
     base = {"disease_area": area, "mapping_version": mapping_version(),
-            "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+            # Rule 10: the spec that defines the mapping is a repo document, and
+            # a reader of the page cannot follow a path. The fact that matters on
+            # screen is that this match never moves the verdict.
+            "note": "display aid, not a criterion",
             "n_met_terms": n_met}
     if area is None:
         return {**base, "matched": None, "matching_terms": [],
@@ -527,10 +560,10 @@ def disease_area_match(f: Facts) -> dict[str, Any]:
                 matching.append({"term": term, "area": sub_area})
                 break
     if matching:
-        shown = (f"disease-area match: yes ({area}) — "
+        shown = (f"disease-area match: yes ({area}): "
                  + "; ".join(f"{m['term']} [{m['area']}]" for m in matching))
     elif n_met:
-        shown = (f"disease-area match: no — met on {n_met} term(s), none in the "
+        shown = (f"disease-area match: no. Met on {n_met} term(s), none in the "
                  f"disease area ({area}: {', '.join(spec)})")
     else:
         shown = f"disease-area match: no abnormal terms to match ({area})"
@@ -575,50 +608,186 @@ def immune_origin_hint(f: Facts, t: Thresholds | None = None) -> dict[str, Any]:
     }
 
 
+#: The region this criterion was answered in, as a reader's words, or a phrase
+#: that names no tissue at all when the run has none. `wording.region_label`
+#: is the ONE display form for a GTEx tissue id (`region_tag`, the figure
+#: centre and the opening view all use it), so the criterion label cannot
+#: introduce a third name for the ileum.
+def _expressed_where(f: Facts) -> str:
+    return wording.region_label(f.region) if f.region else "the run's region"
+
+
 def _expressed(f: Facts, t: Thresholds) -> dict[str, Any]:
-    thr = f"GTEx TPM ≥ {t.min_tpm:g} in the run's region"
+    """Criterion 1, labelled with the region it was actually answered in.
+
+    Puck, 2026-10-21: the label reads "expressed in <region>" rather than a
+    bare "expressed", because "expressed" on its own is a claim with no place
+    attached to it and this criterion is entirely about one tissue.
+
+    The fallback is the case that makes this worth care. When GTEx has no
+    median for the gene, the criterion is decided by Open Targets'
+    `tissueDistribution`, which is a whole-body score and not regional at all
+    -- so that branch must NOT say "expressed in <region>". It names the score
+    it used instead, and its hover says plainly that the run's region did not
+    decide it. Labelling a non-regional score with a region would be the
+    plausible-wrong output AGENTS.md's one rule is about, in words.
+    """
+    where = _expressed_where(f)
+    thr = f"GTEx median TPM ≥ {t.min_tpm:g} in {where}"
     if f.region_tpm is not None:
         return _criterion(
-            "expressed", "expressed", MET if f.region_tpm >= t.min_tpm else NOT_MET,
+            "expressed", f"expressed in {where}",
+            MET if f.region_tpm >= t.min_tpm else NOT_MET,
             f.region_tpm, f"{f.region_tpm:.4g} TPM in {_region_words(f)}", thr,
-            "GTEx median TPM", bare=f"{f.region_tpm:.4g} TPM")
+            "GTEx median TPM", bare=f"{f.region_tpm:.4g} TPM",
+            hover=(f"Expressed: the gene's median expression in {where} in "
+                   f"GTEx, a public atlas of gene activity by tissue, is at "
+                   f"least {t.min_tpm:g} TPM (transcripts per million)."))
     if f.tissue_distribution is not None:
         return _criterion(
-            "expressed", "expressed",
+            "expressed", "expressed, by tissue distribution",
             MET if f.tissue_distribution > 0 else NOT_MET, f.tissue_distribution,
             f"no GTEx number; Open Targets tissueDistribution {f.tissue_distribution:+.2f}",
             thr + " (fallback: Open Targets tissueDistribution > 0)",
             "Open Targets prioritisation.tissueDistribution",
-            bare=f"tissue distribution {f.tissue_distribution:+.2f}")
-    return _criterion("expressed", "expressed", NO_DATA, None,
+            bare=f"tissue distribution {f.tissue_distribution:+.2f}",
+            hover=("Expressed: GTEx has no median for this gene, so Open "
+                   "Targets' tissue-distribution score decided this "
+                   "criterion, not the run's region. That score runs from -1 "
+                   "to +1, and this criterion counts any score above 0."))
+    return _criterion("expressed", f"expressed in {where}", NO_DATA, None,
                       "no GTEx TPM and no tissueDistribution key for this gene",
-                      thr, "GTEx median TPM", bare="no TPM")
+                      thr, "GTEx median TPM", bare="no TPM",
+                      hover=(f"Expressed: GTEx has no median for this gene in "
+                             f"{where} and Open Targets has no "
+                             f"tissue-distribution score for it, so this "
+                             f"criterion is no data rather than not met."))
+
+
+#: What logFC and adjusted p ARE, for a reader who has only ever seen the
+#: column headers. Puck, 2026-10-21 10:05: "do not allow disembodied numbers
+#: without units", with this exact example -- "'logFC +2.6' becomes 'log2 fold
+#: change +2.6', with hover text saying it is 6.1 times higher".
+#:
+#: The line between a LABEL and a UNIT, which is where the sweep of that day
+#: landed: wherever a NUMBER is printed and `logFC` is the only thing naming
+#: what it measures -- the two criterion lines, the cell detail, the threshold
+#: sentence -- the quantity is spelled out, because that is the instruction's
+#: own worked example. Where `logFC` is a label rather than a unit it stays:
+#: the ring's name on the baked figures (`figure.RingSpec`), the header of the
+#: column the reader submitted, and the token the filter syntax parses
+#: (`logfc >= 1.0`), which renaming would break. The doubling rule stays here,
+#: in hover text, which is where rule 3 of the standard puts a definition.
+_LOGFC_UNITS = ("log2 fold change: each +1 is a doubling, so +2.6 is about 6 "
+                "times higher")
+_PADJ_UNITS = ("adjusted p is the significance after correcting for testing "
+               "every gene")
+
+
+def _p_words(p: Any) -> str:
+    """An adjusted p for a reader, with no bare comparison operator in it.
+
+    `pvalue.format_p` prints the cutoff form "<0.05", which is the right
+    STATEMENT -- this build does not print a measured p below its own cutoff.
+    But "p <0.05" on a tool surface is a FAIL against the dashboard language
+    standard, and the ASCII operator is the part that trips it. So the operator
+    becomes the word it means. The number does not move.
+
+    >>> _p_words(2.19538e-22)
+    'under 0.05'
+    >>> _p_words(0.123)
+    '0.12'
+    >>> _p_words(None)
+    'no data'
+    """
+    out = format_p(p)
+    return f"under {out[1:]}" if out.startswith("<") else out
 
 
 def _dysregulated(f: Facts, t: Thresholds) -> dict[str, Any]:
-    thr = f"|logFC| ≥ {t.min_abs_logfc:g} and adjusted p ≤ {t.max_q:g}"
+    # Units sweep, Puck 2026-10-21 10:05: "please be descriptive. do not allow
+    # disembodied numbers without units", with "logFC +2.6" -> "log2 fold change
+    # +2.6" as the worked example. The operators and the values are the rule as
+    # he wrote it on 2026-10-19 and are NOT reformatted; only the quantity's
+    # name is spelled out.
+    thr = (f"|log2 fold change| ≥ {t.min_abs_logfc:g} "
+           f"and adjusted p ≤ {t.max_q:g}")
     if f.logfc is None or f.padj is None:
-        missing = [n for n, v in (("logFC", f.logfc), ("adjusted p", f.padj)) if v is None]
+        missing = [n for n, v in (("log2 fold change", f.logfc),
+                                  ("adjusted p", f.padj)) if v is None]
         return _criterion("dysregulated", "dysregulated in the study", NO_DATA,
                           {"logfc": f.logfc, "padj": f.padj},
                           f"no {' or '.join(missing)} in the submitted table", thr,
                           "submitted DE table",
-                          bare=f"no {' or '.join(missing)}")
+                          bare=f"no {' or '.join(missing)}",
+                          hover=(f"Dysregulated: {_LOGFC_UNITS}, and "
+                                 f"{_PADJ_UNITS}. This rule counts "
+                                 f"|log2 fold change| of at least "
+                                 f"{t.min_abs_logfc:g} with adjusted p at "
+                                 f"{t.max_q:g} or below. The submitted table "
+                                 f"carries neither number for this gene."))
     # The threshold `thr` above keeps `{t.max_q:g}` -- "adjusted p <= 0.05" is
     # the RULE as Puck wrote it and `criteria_spec` prints the same string, so
     # it is not a measured p and is not reformatted (Puck, 2026-10-19).
     # `value` keeps both numbers exactly; only the two sentences are formatted.
     ok = abs(f.logfc) >= t.min_abs_logfc and f.padj <= t.max_q
+    # The fold change is a UNIT CONVERSION of the gene's own logFC, not a new
+    # measurement: 2 ** |logFC|, with the direction taken from the sign. It is
+    # the translation Puck asked for by name. The reference and test group are
+    # the contrast's own words, which `Facts` does not carry, so this says
+    # "test group" and "reference group" rather than naming a disease it cannot
+    # see from here.
+    fold = 2 ** abs(f.logfc)
+    direction = "higher" if f.logfc > 0 else "lower"
     return _criterion("dysregulated", "dysregulated in the study", MET if ok else NOT_MET,
                       {"logfc": f.logfc, "padj": f.padj},
-                      f"logFC {f.logfc:g}, adjusted p {format_p(f.padj)}", thr,
+                      f"log2 fold change {f.logfc:g}, "
+                      f"adjusted p {_p_words(f.padj)}", thr,
                       "submitted DE table",
-                      bare=f"logFC {f.logfc:+g}, p {format_p(f.padj)}")
+                      # The box has a budget: "make it much less wordy" (Puck,
+                      # 2026-10-18 18:42), and `tests/test_trim.py` holds it to a
+                      # value and its unit. So the box says "p", the sentence in
+                      # `shown` says "adjusted p", and the hover defines it.
+                      # The units sweep of 2026-10-21 10:05 spells "logFC" out
+                      # here too: it is the one criterion whose bare value was an
+                      # abbreviation rather than a unit, and the worked example
+                      # in that instruction is this exact string. The budget in
+                      # `test_trim.py` moves with it, for this line only.
+                      bare=(f"log2 fold change {f.logfc:+g}, "
+                            f"p {_p_words(f.padj)}"),
+                      hover=(f"Dysregulated: log2 fold change {f.logfc:+g} "
+                             f"means this gene is about {fold:.3g} times "
+                             f"{direction} in the test group than in the "
+                             f"reference group, because each +1 is a "
+                             f"doubling. {_PADJ_UNITS.capitalize()}. This "
+                             f"rule counts |log2 fold change| of at least "
+                             f"{t.min_abs_logfc:g} with adjusted p at "
+                             f"{t.max_q:g} or below."))
+
+
+def _phenotype_hover(f: Facts, t: Thresholds) -> str:
+    """What the mouse phenotype ring and the term count ARE, with both scales
+    named. The ring is not a quantity on a scale of anything: it is three
+    states, and `None` is the hatched one, so the hover says that rather than
+    leaving a reader to read `0` and `no data` as the same answer (AGENTS.md
+    rule 1: missing is not low)."""
+    n = f.n_abnormal_phenotypes
+    counted = ("no abnormal terms are on record" if n is None
+               else f"{n} abnormal term{'' if n == 1 else 's'} on record")
+    return (f"Phenotype in a study: Open Targets records which mouse genes "
+            f"have been knocked out and what changed. The ring is three "
+            f"states, not a number: an abnormal phenotype on record, none on "
+            f"record, or no record at all (drawn hatched). For this gene, "
+            f"{counted}. This rule counts a ring above 0, or at least "
+            f"{t.min_phenotypes:d} abnormal mouse term"
+            f"{'' if t.min_phenotypes == 1 else 's'}. A mouse result is a "
+            f"lead, never a verdict.")
 
 
 def _phenotype(f: Facts, t: Thresholds) -> dict[str, Any]:
     thr = (f"mouse phenotype ring > 0, or ≥ {t.min_phenotypes:d} abnormal "
            f"mouse term(s)")
+    hover = _phenotype_hover(f, t)
     n = f.n_abnormal_phenotypes
     if f.rodent_ring is not None:
         if f.rodent_ring > 0 or (n is not None and n >= t.min_phenotypes):
@@ -628,26 +797,29 @@ def _phenotype(f: Facts, t: Thresholds) -> dict[str, Any]:
                               {"ring": f.rodent_ring, "n_abnormal": n}, shown, thr,
                               "Open Targets mousePhenotypes",
                               bare=(f"{n} abnormal term{'' if n == 1 else 's'}"
-                                    if n is not None else "abnormal term on record"))
+                                    if n is not None else "abnormal term on record"),
+                              hover=hover)
         return _criterion("phenotype", "phenotype in a study", NOT_MET,
                           {"ring": f.rodent_ring, "n_abnormal": n},
                           "phenotyped, no abnormal phenotype detected", thr,
                           "Open Targets mousePhenotypes",
-                          bare="0 abnormal terms")
+                          bare="0 abnormal terms", hover=hover)
     if n is not None and n >= t.min_phenotypes:
         return _criterion("phenotype", "phenotype in a study", MET,
                           {"ring": None, "n_abnormal": n},
                           f"{n} abnormal mouse term(s) on record (ring hatched)", thr,
                           "Open Targets mousePhenotypes",
-                          bare=f"{n} abnormal term{'' if n == 1 else 's'}")
+                          bare=f"{n} abnormal term{'' if n == 1 else 's'}",
+                          hover=hover)
     return _criterion("phenotype", "phenotype in a study", NO_DATA,
                       {"ring": None, "n_abnormal": n},
-                      "not phenotyped — no mouse phenotype records, which is not 'no phenotype'",
+                      "not phenotyped: no mouse phenotype records, which is not 'no phenotype'",
                       thr, "Open Targets mousePhenotypes",
-                      bare="not phenotyped")
+                      bare="not phenotyped", hover=hover)
 
 
-def criteria_spec(t: Thresholds | None = None) -> list[dict[str, Any]]:
+def criteria_spec(t: Thresholds | None = None,
+                  region: str | None = None) -> list[dict[str, Any]]:
     """The three criteria and their bounds, with no gene in front of them.
 
     v4.2, Puck 2026-10-19: "on the top of the table page the main part should
@@ -658,15 +830,47 @@ def criteria_spec(t: Thresholds | None = None) -> list[dict[str, Any]]:
     criterion functions above build theirs from, so the list at the top of the
     Table tab and the line inside a drawer can never state two different
     bounds. Moving `RECOMMEND_MIN_TPM` moves both.
+
+    `region` names the tissue criterion 1 is answered in, so the heading on the
+    Table tab reads "Expressed in Small Intestine Terminal Ileum" rather than a
+    bare "Expressed" (Puck, 2026-10-21). It is OPTIONAL and defaults to naming
+    no tissue at all, because this list is also published by a route that has
+    no run in front of it: a criteria block that named a region the reader's
+    run was not drawn against would be a wrong label on a right number.
+
+    `hover` carries the DEFINITION of each criterion and the scale of every
+    number in it (Puck, 2026-10-21 10:05, "do not allow disembodied numbers
+    without units"), because rule 13 of the dashboard language standard keeps
+    explanatory prose off a tool page.
+
+    >>> [c["name"] for c in criteria_spec()][0]
+    'Expressed'
+    >>> [c["name"] for c in criteria_spec(region="Small_Intestine_Terminal_Ileum")][0]
+    'Expressed in Small Intestine Terminal Ileum'
     """
     t = t or current_thresholds()
+    where = wording.region_label(region) if region else "the run's region"
     return [
-        {"n": 1, "key": "expressed", "name": "Expressed",
-         "met_when": (f"GTEx median TPM ≥ {t.min_tpm:g} in the run's region "
-                      f"(fallback: tissue-distribution ring > 0 if GTEx is absent)"),
+        {"n": 1, "key": "expressed",
+         "name": f"Expressed in {where}" if region else "Expressed",
+         "met_when": (f"GTEx median TPM at least {t.min_tpm:g} in {where} "
+                      f"(fallback: tissue-distribution score above 0 if GTEx "
+                      f"is absent)"),
+         "hover": (f"Expressed: the gene's median expression in {where} in "
+                   f"GTEx, a public atlas of gene activity by tissue, is at "
+                   f"least {t.min_tpm:g} TPM (transcripts per million). Where "
+                   f"GTEx has no median for a gene, Open Targets' "
+                   f"tissue-distribution score decides instead; that score "
+                   f"runs from -1 to +1 and this rule counts any score above "
+                   f"0."),
          "source": "GTEx median TPM, Open Targets prioritisation"},
         {"n": 2, "key": "dysregulated", "name": "Dysregulated in this study",
-         "met_when": f"|logFC| ≥ {t.min_abs_logfc:g} and adjusted p ≤ {t.max_q:g}",
+         "met_when": (f"|log2 fold change| ≥ {t.min_abs_logfc:g} "
+                      f"and adjusted p ≤ {t.max_q:g}"),
+         "hover": (f"Dysregulated: {_LOGFC_UNITS}, and {_PADJ_UNITS}. This "
+                   f"rule counts |log2 fold change| of at least "
+                   f"{t.min_abs_logfc:g} with adjusted p at {t.max_q:g} or "
+                   f"below, both read from the table you submitted."),
          "source": "the submitted DE table"},
         # One name for one criterion. Review of 2026-10-20, item 3: this
         # read "Phenotype in a model" on two surfaces (the criteria block and
@@ -676,19 +880,30 @@ def criteria_spec(t: Thresholds | None = None) -> list[dict[str, Any]]:
         # phenotype in a study" (2026-10-18) -- all said "a study". His words
         # win: one name, 37 uses against 1.
         {"n": 3, "key": "phenotype", "name": "Phenotype in a study",
-         "met_when": (f"mouse-KO ring > 0, or ≥ {t.min_phenotypes:d} abnormal "
-                      f"mouse phenotype term(s)"),
+         "met_when": (f"mouse-KO ring above 0 on its 0-to-1 scale, or "
+                      f"≥ {t.min_phenotypes:d} abnormal mouse phenotype "
+                      f"term(s)"),
+         "hover": (f"Phenotype in a study: Open Targets records which mouse "
+                   f"genes have been knocked out and what changed. The ring "
+                   f"is three states, not a number: an abnormal phenotype on "
+                   f"record, none on record, or no record at all (drawn "
+                   f"hatched). This rule counts a ring above 0, or at least "
+                   f"{t.min_phenotypes:d} abnormal mouse term"
+                   f"{'' if t.min_phenotypes == 1 else 's'}. A mouse result "
+                   f"is a lead, never a verdict."),
          "source": "Open Targets mousePhenotypes"},
     ]
 
 
-def criteria_block(t: Thresholds | None = None) -> dict[str, Any]:
+def criteria_block(t: Thresholds | None = None,
+                   region: str | None = None) -> dict[str, Any]:
     """`criteria_spec` plus the sentences that frame it: how the verdict
     follows from the three, and the one thing that never changes it."""
     t = t or current_thresholds()
     return {
         "heading": "GO / NO-GO: three criteria, all must hold",
-        "criteria": criteria_spec(t),
+        "criteria": criteria_spec(t, region),
+        "region": region or "",
         "go": "GO when all three are met.",
         "no_go": "NO-GO when any one is not met.",
         "insufficient": "INSUFFICIENT DATA when none is not met but any is no data.",
@@ -731,7 +946,7 @@ def recommend(f: Facts, t: Thresholds | None = None) -> dict[str, Any]:
         # its title attribute (Puck, 18:42 PDT: "the rule text collapses to one
         # line with a tooltip for thresholds"). `rule_text` is unchanged: the
         # summary prompt and the drawer's long form still carry it.
-        "rule_short": f"rule: {RULE_TEXT} — {RULE_NOTE}",
+        "rule_short": f"rule: {RULE_TEXT}: {RULE_NOTE}",
         "rule_tooltip": f"Thresholds: {t.sentence()}. Rule version "
                         f"{rule_version(t)}. {RULE_NOTE}.",
         "rule_text": f"Rule: {RULE_TEXT}; thresholds: {t.sentence()}",

@@ -508,12 +508,40 @@ async def contrast_heatmap(accession: str, contrast_id: str,
     return FileResponse(out_svg, media_type="image/svg+xml", headers=_NO_STORE)
 
 
+def run_region(run_id: str) -> str:
+    """The GTEx tissue a finished run was drawn against, off its manifest.
+
+    Read rather than inferred, and "" when there is nothing to read: the
+    criteria block labels criterion 1 with this tissue, so a guess here would
+    put a region on the page that the run was not drawn against.
+    """
+    if not run_id:
+        return ""
+    path = RUNS_DIR / run_id / "manifest.json"
+    if not path.exists():
+        return ""
+    try:
+        region = json_mod.loads(path.read_text()).get("region")
+    except Exception:  # noqa: BLE001 -- an unreadable manifest names nothing
+        return ""
+    return region if isinstance(region, str) else ""
+
+
 @app.get("/api/criteria")
-async def criteria() -> dict[str, Any]:
+async def criteria(run_id: str = "") -> dict[str, Any]:
     """The GO / NO-GO rule's three criteria and their bounds.
 
     v4.2, Puck 2026-10-19: the Table tab opens with "there are 3 go no go
     criteria, and a numbered list. and the bounds we are looking for in them".
+
+    Criterion 1 is labelled with the region it is answered in: "Expressed in
+    Small Intestine Terminal Ileum", not a bare "Expressed" (Puck,
+    2026-10-21). The region comes from `run_id` when the caller names one, and
+    otherwise from `config.DEMO_FEATURED_RUN`, which is the published site's
+    single run and is what `scripts/export_static_demo.py` sets before it
+    snapshots this route. With neither, the label stays "Expressed" and the
+    bounds say "the run's region": naming a tissue here that the reader's own
+    run was not drawn against would be a wrong label on a right number.
 
     A route rather than a literal in `app.js`, for the reason every other
     threshold on this page is a route: `recommend.criteria_block` reads
@@ -528,7 +556,8 @@ async def criteria() -> dict[str, Any]:
     """
     from . import recommend as recommend_mod
 
-    return recommend_mod.criteria_block()
+    return recommend_mod.criteria_block(
+        region=run_region(run_id or config.DEMO_FEATURED_RUN) or None)
 
 
 @app.get("/api/orderings")
@@ -1040,7 +1069,7 @@ async def gene_phenotypes(run_id: str, gene: str) -> JSONResponse:
             if not rec.found:
                 raise HTTPException(
                     404, f"Open Targets has no target record for {ensembl_id} "
-                         f"({gene}) — cannot be distinguished from 'phenotyped, "
+                         f"({gene}): cannot be distinguished from 'phenotyped, "
                          f"no records', so no table is rendered")
             table = await phenotype_mod.build_table(
                 rec, gene_symbol=d.get("input_symbol") or gene,
