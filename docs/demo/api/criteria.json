@@ -4,25 +4,29 @@
   {
    "n": 1,
    "key": "expressed",
-   "name": "Expressed",
-   "met_when": "GTEx median TPM \u2265 1 in the run's region (fallback: tissue-distribution ring > 0 if GTEx is absent)",
+   "name": "Expressed in Small Intestine Terminal Ileum",
+   "met_when": "GTEx median TPM at least 1 in Small Intestine Terminal Ileum (fallback: tissue-distribution score above 0 if GTEx is absent)",
+   "hover": "Expressed: the gene's median expression in Small Intestine Terminal Ileum in GTEx, a public atlas of gene activity by tissue, is at least 1 TPM (transcripts per million). Where GTEx has no median for a gene, Open Targets' tissue-distribution score decides instead; that score runs from -1 to +1 and this rule counts any score above 0.",
    "source": "GTEx median TPM, Open Targets prioritisation"
   },
   {
    "n": 2,
    "key": "dysregulated",
    "name": "Dysregulated in this study",
-   "met_when": "|logFC| \u2265 1 and adjusted p \u2264 0.05",
+   "met_when": "|log2 fold change| \u2265 1 and adjusted p \u2264 0.05",
+   "hover": "Dysregulated: log2 fold change: each +1 is a doubling, so +2.6 is about 6 times higher, and adjusted p is the significance after correcting for testing every gene. This rule counts |log2 fold change| of at least 1 with adjusted p at 0.05 or below, both read from the table you submitted.",
    "source": "the submitted DE table"
   },
   {
    "n": 3,
    "key": "phenotype",
    "name": "Phenotype in a study",
-   "met_when": "mouse-KO ring > 0, or \u2265 1 abnormal mouse phenotype term(s)",
+   "met_when": "mouse-KO ring above 0 on its 0-to-1 scale, or \u2265 1 abnormal mouse phenotype term(s)",
+   "hover": "Phenotype in a study: Open Targets records which mouse genes have been knocked out and what changed. The ring is three states, not a number: an abnormal phenotype on record, none on record, or no record at all (drawn hatched). This rule counts a ring above 0, or at least 1 abnormal mouse term. A mouse result is a lead, never a verdict.",
    "source": "Open Targets mousePhenotypes"
   }
  ],
+ "region": "Small_Intestine_Terminal_Ileum",
  "go": "GO when all three are met.",
  "no_go": "NO-GO when any one is not met.",
  "insufficient": "INSUFFICIENT DATA when none is not met but any is no data.",

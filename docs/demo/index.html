@@ -54,7 +54,7 @@
   <p class="sub">
     A gene set, rings of evidence, and a drawer per gene.
     <strong>Nothing here is ranked or scored.</strong>
-    <span id="local-note">Local only — nothing leaves this machine.</span>
+    <span id="local-note">Local only. Nothing leaves this machine.</span>
   </p>
 </header>
 
@@ -73,10 +73,11 @@
          measurement from a crawl, and a month-old number rendered like a live one
          is a small plausible wrong figure. -->
   <p id="landing-lede" class="landing-only">Type a disease.<br>
-    <span class="hint">targetring finds a public expression study for it,
+    <span class="hint" title="targetring finds a public expression study for it,
       picks a comparison of affected against unaffected people, and draws what
       is known about each gene that differs. Everything it chose is shown and
-      can be changed.</span></p>
+      can be changed.">A public expression study, a comparison, and the genes
+      that differ.</span></p>
 
   <!-- Demo mode (config.DEMO_MODE). The server tells the page via /api/health
        and the page adds `demo` to <body>; CSS hides the disease search, the
@@ -94,13 +95,14 @@
            Atlas IDENTIFIER (`g2_g1`) or a column name in a data file; it is
            never the heading. -->
       <summary><span class="chev" aria-hidden="true">▾</span>
-        <b>Gene expression</b>
-        — differential expression from a disease name</summary>
+        <b>Gene expression</b>:
+        differential expression from a disease name</summary>
       <div class="reveal">
-        <p class="hint">Type a disease. Each hit shows how many Expression Atlas
-          <b>comparisons</b> exist for it — not experiments — with the date the
-          local index was built. Nothing is fetched from Atlas until you pick
-          one, and none is picked for you.</p>
+        <p class="hint" title="Each hit shows how many Expression Atlas
+          comparisons exist for it, not experiments, with the date the local
+          index was built. Nothing is fetched from Atlas until a comparison is
+          picked, and none is picked for you.">Each hit counts Expression Atlas
+          <b>comparisons</b>, with the date the local index was built.</p>
         <div class="row">
           <input id="disease" spellcheck="false" size="34"
                  placeholder="Crohn&#39;s disease">
@@ -154,8 +156,8 @@
          wrapper had swallowed either. -->
     <details id="controls" open>
       <summary><span class="chev" aria-hidden="true">▾</span>
-        <b>The table, the region, the gene order and the filters</b>
-        — 4 sections</summary>
+        <b>The table, the region, the gene order and the filters</b>:
+        4 sections</summary>
       <div class="reveal">
     <!-- Wrapped so it can be hidden as a unit on the Atlas path, where it is
          the one section of the four that does NOT apply: `makeSpokes` reads
@@ -168,15 +170,20 @@
          typed — the same lie `sources.DESource` was built to stop. -->
     <div id="paste-section">
     <h2>1. Differential expression table</h2>
-    <p class="hint">Columns: gene symbol, logFC, adjusted p. CSV or TSV.
-      Every row is either rendered or named in the drop ledger.<br>
-      <!-- UX B9: the rejection message names the accepted aliases; so should
-           the hint, before you have to fail to find out. -->
-      Accepted headers, as exported: DESeq2 <code>log2FoldChange</code>/<code>padj</code>,
-      edgeR <code>logFC</code>/<code>FDR</code>, limma <code>logFC</code>/<code>adj.P.Val</code>.
-      Positional guessing is never attempted.<br>
-      Up to <b>60</b> genes. Above that the spokes are too narrow to read, so the
-      table is capped by adjusted p and every excluded gene is named in the ledger.</p>
+    <!-- UX B9: the rejection message names the accepted aliases; so should the
+         hover text, before you have to fail to find out. The three paragraphs
+         that used to print here are one line and a title: rule 13, a tool page
+         carries no explanatory prose, and rule 3 puts the detail on hover. -->
+    <p class="hint" title="Every row is either rendered or named in the drop
+      ledger. Log2 fold change is the log base 2 of the ratio between the two
+      groups. A value of +1 is twice as high and +2 is four times as high. A
+      negative value is lower. Adjusted p runs from 0 to 1. Accepted headers,
+      as exported: DESeq2 log2FoldChange/padj, edgeR logFC/FDR, limma
+      logFC/adj.P.Val. Positional guessing is never attempted. Above 60 genes
+      the spokes are too narrow to read, so the table is capped by adjusted p
+      and every excluded gene is named in the ledger.">Columns: gene symbol,
+      log2 fold change, adjusted p. CSV or TSV, up to <b>60</b> genes, one
+      gene per row.</p>
     <textarea id="table" rows="10" spellcheck="false"
       placeholder="gene,logFC,padj&#10;BRAF,2.41,0.0003"></textarea>
     <div class="row">
@@ -191,10 +198,13 @@
     <div id="paste-superseded" class="note" hidden></div>
     <h2>2. Region</h2>
     <!-- UX B11: nothing said what this changed. -->
-    <p class="hint">Affects exactly one ring — <b>regional specificity</b>, the region's
-      median TPM divided by this gene's median across the GTEx panel. Genes below
-      1 TPM in the region are drawn <b>no data</b> rather than given a ratio: a ratio
-      without a level is not a specificity statement.</p>
+    <p class="hint" title="Regional specificity is the region's median TPM
+      divided by this gene's median across the GTEx panel. The result is a
+      multiple of that median, so a value of 1 means the region matches it.
+      Genes below 1 TPM in the region are drawn no data rather than given a
+      ratio: a ratio without a level is not a specificity statement.">Sets
+      exactly one ring: <b>regional specificity</b>, in multiples of the
+      gene's own median.</p>
     <select id="region"></select>
     <!-- Set for you when a disease is chosen, and said rather than done
          silently: "enriched in ileum" and "enriched in whole blood" are
@@ -205,23 +215,26 @@
 
     <h2>3. Gene order around the circle</h2>
     <!-- v2.5 item 1. The order carries meaning and is printed on the figure. -->
-    <p class="hint">The default is <b>the order of your submitted table</b>, unchanged —
-      you have usually already sorted it, and it is your measurement rather than a
-      composite this app invented. Ordering by a single ring uses that one source's own
-      number; genes with no value on it go last, as a visible block, never treated as
-      the lowest value.</p>
+    <p class="hint" title="The submitted order is your measurement rather than a
+      composite this app invented. Ordering by a single ring uses that one
+      source's own number. Genes with no value on it go last, as a visible
+      block, never treated as the lowest value.">The default is <b>the order of
+      your submitted table</b>, unchanged.</p>
     <select id="ordering"></select>
 
     <h2>4. Threshold filters <span class="hint">optional</span></h2>
     <!-- v2.5 item 2, and the two rules that govern it. -->
-    <p class="hint">One per line, as <code>ring &gt;= number</code> or
-      <code>ring &lt;= number</code>, compared against the ring's own raw value — the
-      number in <code>values.csv</code>, not a rank or a colour position. A filtered
-      gene is removed from the plot and named in the drop ledger.<br>
-      <b>A threshold never drops a gene that has no data on that ring.</b> It is kept
-      and marked <code>~</code>; otherwise filtering would quietly delete the
-      under-studied genes instead of the ones that missed the threshold. Tick the box
-      below to drop them anyway, and the figure will say that is what happened.</p>
+    <p class="hint" title="A bound is compared against the ring's own raw value,
+      the number this run recorded for that cell, not a rank or a colour
+      position. The bound carries that ring's own units, which the scale beside
+      the figure names. A filtered gene is removed from the plot and named in
+      the drop ledger. A gene with no data on that ring is kept and marked ~;
+      otherwise filtering would quietly delete the under-studied genes instead
+      of the ones that missed the threshold. Tick the box below to drop them
+      anyway, and the figure will say that is what happened.">One per line, as
+      <code>ring &gt;= number</code> or <code>ring &lt;= number</code>, in that
+      ring's own units.<br>
+      <b>A threshold never drops a gene that has no data on that ring.</b></p>
     <textarea id="filters" rows="3" spellcheck="false"
       placeholder="regional_specificity >= 5&#10;literature >= 1.5"></textarea>
     <label class="check"><input type="checkbox" id="drop-no-data">
@@ -286,30 +299,30 @@
         <details class="dl">
           <summary class="btn">Figure ▾</summary>
           <div class="dl-menu">
-            <a id="dl-png" download>PNG — the full export, with every caveat</a>
-            <a id="dl-svg" download>SVG — same, editable in Illustrator</a>
-            <a id="dl-slide" download>Slide SVG (16:9)</a>
-            <a id="dl-slide-png" download>Slide PNG (16:9)</a>
-            <a id="dl-caption" download>caption.txt — paste under the slide</a>
+            <a id="dl-png" download>PNG: the full export, with every caveat</a>
+            <a id="dl-svg" download>SVG: the same, editable in Illustrator</a>
+            <a id="dl-slide" download>Slide SVG: 16:9 aspect ratio</a>
+            <a id="dl-slide-png" download>Slide PNG: 16:9 aspect ratio</a>
+            <a id="dl-caption" download>Text: paste under the slide</a>
           </div>
         </details>
         <details class="dl">
           <summary class="btn">Legend ▾</summary>
           <div class="dl-menu">
-            <a id="dl-legend-png" download>PNG — the legend on its own slide</a>
-            <a id="dl-legend" download>SVG — same, editable</a>
-            <p class="hint">Twelve scales, the cell states and the caveats, 16:9.
-              It carries this run's id: only pair it with a figure that shows
-              the same one.</p>
+            <a id="dl-legend-png" download>PNG: the legend on its own slide</a>
+            <a id="dl-legend" download>SVG: the same, editable</a>
+            <p class="hint" title="It carries this run's id: only pair it with a
+              figure that shows the same one.">Twelve ring scales, the cell
+              states and the caveats, 16:9 aspect ratio.</p>
           </div>
         </details>
         <details class="dl">
           <summary class="btn">Data ▾</summary>
           <div class="dl-menu">
-            <a id="dl-csv" download>values.csv — every cell, with its Ensembl id</a>
+            <a id="dl-csv" download>CSV: every cell, with its Ensembl id</a>
             <!-- UX A3 -->
-            <a id="dl-ledger" download>ledger.csv — every gene not on the figure</a>
-            <a id="dl-manifest" target="_blank">manifest.json — sources, versions, invariants</a>
+            <a id="dl-ledger" download>CSV: every gene not on the figure</a>
+            <a id="dl-manifest" target="_blank">JSON: sources, versions and invariants</a>
           </div>
         </details>
         <span id="dl-run" class="hint"></span>
@@ -397,7 +410,7 @@
           <div id="cell-states"></div>
           <details id="scales" open>
             <summary><span class="chev" aria-hidden="true">▾</span>
-              <b>The 12 ring scales</b> — what a colour means, ring by ring</summary>
+              <b>The 12 ring scales</b>: what a colour means, ring by ring</summary>
             <div id="scale-rows" class="reveal"></div>
           </details>
         </aside>
@@ -511,9 +524,10 @@
          figure" (see the status order in `renderLedger`). -->
     <div class="tabpane" role="tabpanel" id="pane-ledger" aria-labelledby="tab-ledger" hidden>
       <h3 class="pane-h">Drop ledger</h3>
-      <p class="pane-lede">Every input gene the figure does not draw, with the
-        rule that removed it — plus the genes it does draw under a changed
-        symbol — so a gene can never leave the figure silently.</p>
+      <p class="pane-lede" title="A gene can never leave the figure silently.
+        The genes it does draw under a changed symbol are listed here too, so
+        the change is visible.">Every input gene the figure does not draw, with
+        the rule that removed it.</p>
       <div id="ledger"></div>
     </div>
     <div class="tabpane" role="tabpanel" id="pane-invariants" aria-labelledby="tab-invariants" hidden><div id="invariants"></div></div>

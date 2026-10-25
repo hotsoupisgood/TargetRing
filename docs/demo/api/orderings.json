@@ -27,7 +27,7 @@
   },
   {
    "value": "ring:safety",
-   "label": "by ring: Safety flags & constraint \u2014 NOT evidence of safety"
+   "label": "by ring: Safety flags & constraint: NOT evidence of safety"
   },
   {
    "value": "ring:regional_specificity",
@@ -43,7 +43,7 @@
   },
   {
    "value": "ring:tdl",
-   "label": "by ring: Target development level (Pharos TDL \u2014 knowledge, not a pocket)"
+   "label": "by ring: Target development level (Pharos TDL: knowledge, not a pocket)"
   },
   {
    "value": "ring:rodent",
@@ -73,7 +73,7 @@
   },
   {
    "ring": "safety",
-   "label": "Safety flags & constraint \u2014 NOT evidence of safety"
+   "label": "Safety flags & constraint: NOT evidence of safety"
   },
   {
    "ring": "regional_specificity",
@@ -89,7 +89,7 @@
   },
   {
    "ring": "tdl",
-   "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)"
+   "label": "Target development level (Pharos TDL: knowledge, not a pocket)"
   },
   {
    "ring": "rodent",

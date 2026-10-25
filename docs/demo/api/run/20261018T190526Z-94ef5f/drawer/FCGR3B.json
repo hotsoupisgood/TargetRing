@@ -10,9 +10,9 @@
  "padj": 8.87052e-15,
  "k": 6,
  "k_max": 9,
- "k_note": "k = 6/9 external rings with a real measurement (your own logFC and padj are not counted)",
+ "k_note": "k = 6/9 external rings with a real measurement (your own log2 fold change and adjusted p are not counted)",
  "unfiltered_rings": [],
- "pipeline_summary": "0 agents \u2014 a gene record exists, genuinely undrugged",
+ "pipeline_summary": "0 agents: a gene record exists, genuinely undrugged",
  "severe_liabilities": [],
  "attribution_error": null,
  "drugs": [],
@@ -20,7 +20,7 @@
  "trials": {
   "source": "Open Targets clinicalReports",
   "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
-  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring \u2014 no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this gene are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
+  "note": "Read from `drugAndClinicalCandidates.rows[].clinicalReports` in the same gene query that draws every other Open Targets ring: no per-drug hop (v2.4). Rows are selected by carrying a `trialOverallStatus`, NOT by a source literal: on 2026-09-24 Open Targets relabelled these rows from `AACT` to `ClinicalTrials.gov`, a literal match on the old name returned nothing, and the data was wrongly declared gone. The labels actually seen on this gene are listed below. Stop reasons ARE categorised by Open Targets; the sponsor's free text is shown beside the category, never in place of it.",
   "sources_seen": {},
   "dedup_note": "TARGET TOTALS ARE DISTINCT NCT IDS (since 2026-09-24). Summing the per-drug rows below gives 0 drug-trial PAIRS; the same trials are 0 DISTINCT studies, because a trial testing two of this gene's drugs appears in both rows. Live: 0 pairs = 0 distinct. Stopped early: 0 pairs = 0 distinct, of which 0 pair(s) are categorised FOR CAUSE (Negative / Safety_Sideeffects).",
   "n_pairs": 0,
@@ -41,7 +41,7 @@
  "tdl": {
   "state": "value",
   "value": 1.0,
-  "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
+  "detail": "Tbio (1/3): biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it.",
   "raw": {
    "tdl": "Tbio",
    "ordinal": 1,
@@ -105,7 +105,7 @@
  },
  "chembl": {
   "state": "undrugged",
-  "note": "a ChEMBL record exists with 0 mechanisms \u2014 genuinely undrugged",
+  "note": "a ChEMBL record exists with 0 mechanisms: genuinely undrugged",
   "target_chembl_id": "CHEMBL5842",
   "n_mechanisms": 0,
   "n_direct": 0,
@@ -123,7 +123,7 @@
   "logfc": {
    "state": "value",
    "value": 2.9,
-   "detail": "logFC 2.9 (submitted)"
+   "detail": "log2 fold change 2.9 (submitted)"
   },
   "neg_log10_padj": {
    "state": "value",
@@ -138,7 +138,7 @@
   "chemical_probe": {
    "state": "no_data",
    "value": null,
-   "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected."
+   "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes: so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected."
   },
   "safety": {
    "state": "value",
@@ -163,7 +163,7 @@
   "tdl": {
    "state": "value",
    "value": 1.0,
-   "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
+   "detail": "Tbio (1/3): biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
   },
   "rodent": {
    "state": "value",
@@ -178,7 +178,7 @@
   "completeness": {
    "state": "value",
    "value": 6.0,
-   "detail": "k = 6/9 external rings with a real measurement (your own logFC and padj are not counted)"
+   "detail": "k = 6/9 external rings with a real measurement (your own log2 fold change and adjusted p are not counted)"
   }
  },
  "triage": null,
@@ -204,13 +204,14 @@
   "criteria": [
    {
     "key": "expressed",
-    "label": "expressed",
+    "label": "expressed in Small Intestine Terminal Ileum",
     "status": "not_met",
     "value": 0.7127,
     "shown": "0.7127 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)",
     "bare": "0.7127 TPM",
-    "threshold": "GTEx TPM \u2265 1 in the run's region",
-    "source": "GTEx median TPM"
+    "threshold": "GTEx median TPM \u2265 1 in Small Intestine Terminal Ileum",
+    "source": "GTEx median TPM",
+    "hover": "Expressed: the gene's median expression in Small Intestine Terminal Ileum in GTEx, a public atlas of gene activity by tissue, is at least 1 TPM (transcripts per million)."
    },
    {
     "key": "dysregulated",
@@ -220,10 +221,11 @@
      "logfc": 2.9,
      "padj": 8.87052e-15
     },
-    "shown": "logFC 2.9, adjusted p <0.05",
-    "bare": "logFC +2.9, p <0.05",
-    "threshold": "|logFC| \u2265 1 and adjusted p \u2264 0.05",
-    "source": "submitted DE table"
+    "shown": "log2 fold change 2.9, adjusted p under 0.05",
+    "bare": "log2 fold change +2.9, p under 0.05",
+    "threshold": "|log2 fold change| \u2265 1 and adjusted p \u2264 0.05",
+    "source": "submitted DE table",
+    "hover": "Dysregulated: log2 fold change +2.9 means this gene is about 7.46 times higher in the test group than in the reference group, because each +1 is a doubling. Adjusted p is the significance after correcting for testing every gene. This rule counts |log2 fold change| of at least 1 with adjusted p at 0.05 or below."
    },
    {
     "key": "phenotype",
@@ -237,10 +239,11 @@
     "bare": "2 abnormal terms",
     "threshold": "mouse phenotype ring > 0, or \u2265 1 abnormal mouse term(s)",
     "source": "Open Targets mousePhenotypes",
+    "hover": "Phenotype in a study: Open Targets records which mouse genes have been knocked out and what changed. The ring is three states, not a number: an abnormal phenotype on record, none on record, or no record at all (drawn hatched). For this gene, 2 abnormal terms on record. This rule counts a ring above 0, or at least 1 abnormal mouse term. A mouse result is a lead, never a verdict.",
     "disease_area": {
      "disease_area": "inflammatory bowel disease",
      "mapping_version": "5ca634159f74",
-     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+     "note": "display aid, not a criterion",
      "n_met_terms": 2,
      "matched": true,
      "matching_terms": [
@@ -254,7 +257,7 @@
       "immune system",
       "inflammation"
      ],
-     "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 decreased susceptibility to induced arthritis [inflammation]",
+     "shown": "disease-area match: yes (inflammatory bowel disease): decreased susceptibility to induced arthritis [inflammation]",
      "short": "disease-area terms: 1",
      "tooltip": "inflammatory bowel disease: decreased susceptibility to induced arthritis [inflammation]. Display aid, not a criterion."
     }
@@ -273,7 +276,7 @@
    "specific_ratio_threshold": 5.0,
    "blood_or_spleen_at_or_above_region": true,
    "shown": "0.7127 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)",
-   "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+   "note": "absolute TPMs, not a fold: a ratio against the panel median is high for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
   },
   "region_tag": {
    "region": "Small_Intestine_Terminal_Ileum",
@@ -285,7 +288,7 @@
   "disease_area": {
    "disease_area": "inflammatory bowel disease",
    "mapping_version": "5ca634159f74",
-   "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)",
+   "note": "display aid, not a criterion",
    "n_met_terms": 2,
    "matched": true,
    "matching_terms": [
@@ -299,7 +302,7 @@
     "immune system",
     "inflammation"
    ],
-   "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 decreased susceptibility to induced arthritis [inflammation]",
+   "shown": "disease-area match: yes (inflammatory bowel disease): decreased susceptibility to induced arthritis [inflammation]",
    "short": "disease-area terms: 1",
    "tooltip": "inflammatory bowel disease: decreased susceptibility to induced arthritis [inflammation]. Display aid, not a criterion."
   },
@@ -310,9 +313,9 @@
    "min_phenotypes": 1,
    "specific_ratio": 5.0
   },
-  "rule_short": "rule: expressed AND dysregulated AND phenotype \u2014 not used to order or filter the figure",
-  "rule_tooltip": "Thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
-  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s)",
+  "rule_short": "rule: expressed AND dysregulated AND phenotype: not used to order or filter the figure",
+  "rule_tooltip": "Thresholds: GTEx region TPM \u2265 1; |log2 fold change| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring above 0 on its 0-to-1 scale, or \u2265 1 abnormal term(s). Rule version bdc70c8fc230. not used to order or filter the figure.",
+  "rule_text": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |log2 fold change| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring above 0 on its 0-to-1 scale, or \u2265 1 abnormal term(s)",
   "rule_version": "bdc70c8fc230",
   "mode": "rule",
   "note": "not used to order or filter the figure",
@@ -321,7 +324,7 @@
  "baked": {
   "at_utc": "2026-10-18T19:07:55Z",
   "git_sha": "19a6b1b346f7405e8cfd88c560a014f00411ee1d-dirty",
-  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count \u2014 fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own values.csv.",
+  "note": "Drug pipeline, trials and safety liabilities from Open Targets; TDL from Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count: fetched, or read from this machine's cache, when this drawer was baked, not when you clicked. Every ring's state, value and reason is the run's own recorded table of values.",
   "run_id": "20261018T190526Z-94ef5f",
   "sources": [
    "opentargets.target",
@@ -333,7 +336,7 @@
   ]
  },
  "summary": {
-  "text": "NO-GO: expressed not met (0.7127 TPM in Small Intestine Terminal Ileum, the run's chosen tissue, a disease tissue for this contrast), dysregulated in the study met (logFC 2.9, adjusted p 8.87e-15), and phenotype in a study met (phenotyped, 2 abnormal terms on record). Hypothesis: inhibition, because the gene is up-regulated in the Crohn's disease versus non-inflammatory-bowel-disease control contrast, logFC +2.9, adjusted p 8.87e-15. Mouse knockouts show decreased susceptibility to induced arthritis and decreased susceptibility to injury, while regional expression is 0.7127 TPM in Small Intestine Terminal Ileum; there are 0 agents and the target record is genuinely undrugged, with 0 ChEMBL mechanisms, development level: biology known, no chemistry, and 2,410 PubTator3 records. The change may reflect infiltrating immune cells rather than regulation in the tissue: whole blood 838.7 TPM and spleen 83.52 TPM both exceed the region's 0.7127 TPM. No data: chemical probe and regional specificity; clinical activity is not applicable with no drugs to report.",
+  "text": "NO-GO: expressed not met (0.7127 TPM in Small Intestine Terminal Ileum, the run's chosen tissue, a disease tissue for this contrast), dysregulated in the study met (log2 fold change 2.9, adjusted p 8.87e-15), and phenotype in a study met (phenotyped, 2 abnormal terms on record). Hypothesis: inhibition, because the gene is up-regulated in the Crohn's disease versus non-inflammatory-bowel-disease control contrast, log2 fold change +2.9, adjusted p 8.87e-15. Mouse knockouts show decreased susceptibility to induced arthritis and decreased susceptibility to injury, while regional expression is 0.7127 TPM in Small Intestine Terminal Ileum; there are 0 agents and the target record is genuinely undrugged, with 0 ChEMBL mechanisms, development level: biology known, no chemistry, and 2,410 PubTator3 records. The change may reflect infiltrating immune cells rather than regulation in the tissue: whole blood 838.7 TPM and spleen 83.52 TPM both exceed the region's 0.7127 TPM. No data: chemical probe and regional specificity; clinical activity is not applicable with no drugs to report.",
   "model": "claude-opus-5",
   "prompt_version": "2ab6ea127fbd28e5",
   "effort": "low",
@@ -366,7 +369,7 @@
     "specific_ratio_threshold": 5.0,
     "blood_or_spleen_at_or_above_region": true,
     "shown": "0.7127 TPM in Small Intestine Terminal Ileum, the run's chosen tissue (a disease tissue for this contrast)",
-    "note": "absolute TPMs, not a fold: a ratio against the panel median reads as tissue-specific for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
+    "note": "absolute TPMs, not a fold: a ratio against the panel median is high for anything blood-borne in a blood-rich tissue. 'Concentrated' is said only above the threshold, in a disease tissue, and when neither whole blood nor spleen is at or above the region's TPM."
    },
    "immune_origin_hint": {
     "suggested": true,
@@ -382,7 +385,7 @@
      "ring": "logfc",
      "state": "value",
      "value": 2.9,
-     "detail": "logFC 2.9 (submitted)"
+     "detail": "log2 fold change 2.9 (submitted)"
     },
     {
      "ring": "neg_log10_padj",
@@ -400,7 +403,7 @@
      "ring": "chemical_probe",
      "state": "no_data",
      "value": null,
-     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes \u2014 so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected."
+     "detail": "hasHighQualityChemicalProbes is absent for this gene, and Open Targets also writes the key explicitly as 0.0 for other genes: so absence here is silence, not a measured zero, and filling it would be imputation (v2.2 item 1). This ring is allowed to be hatched; the tractability ring beside it is not affected."
     },
     {
      "ring": "safety",
@@ -430,7 +433,7 @@
      "ring": "tdl",
      "state": "value",
      "value": 1.0,
-     "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
+     "detail": "Tbio (1/3): biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
     },
     {
      "ring": "rodent",
@@ -448,7 +451,7 @@
      "ring": "completeness",
      "state": "value",
      "value": 6.0,
-     "detail": "k = 6/9 external rings with a real measurement (your own logFC and padj are not counted)"
+     "detail": "k = 6/9 external rings with a real measurement (your own log2 fold change and adjusted p are not counted)"
     }
    ],
    "rings_without_a_value": [
@@ -466,7 +469,7 @@
     "n_drugs": 0,
     "stages_reached": [],
     "furthest_agent": null,
-    "summary_line": "0 agents \u2014 a gene record exists, genuinely undrugged",
+    "summary_line": "0 agents: a gene record exists, genuinely undrugged",
     "n_distinct_trials": 0,
     "n_live_trials": 0,
     "n_stopped_trials": 0,
@@ -483,7 +486,7 @@
    "tdl": {
     "state": "value",
     "label": "Tbio",
-    "detail": "Tbio (1/3) \u2014 biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
+    "detail": "Tbio (1/3): biology known; no chemical matter meeting the activity bar. TDL is a DEVELOPMENT/KNOWLEDGE level, not biophysical druggability: Tclin means somebody already drugged it."
    },
    "literature": {
     "pubtator_records": 2410,
@@ -501,7 +504,7 @@
      {
       "criterion": "dysregulated in the study",
       "status": "met",
-      "shown": "logFC 2.9, adjusted p 8.87e-15"
+      "shown": "log2 fold change 2.9, adjusted p 8.87e-15"
      },
      {
       "criterion": "phenotype in a study",
@@ -512,11 +515,11 @@
     "caveats": [],
     "modality": null,
     "disease_area": {
-     "shown": "disease-area match: yes (inflammatory bowel disease) \u2014 decreased susceptibility to induced arthritis [inflammation]",
+     "shown": "disease-area match: yes (inflammatory bowel disease): decreased susceptibility to induced arthritis [inflammation]",
      "matched": true,
-     "note": "display aid, not a criterion (docs/RECOMMEND-SPEC.md)"
+     "note": "display aid, not a criterion"
     },
-    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |logFC| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring > 0 or \u2265 1 abnormal term(s)",
+    "rule": "Rule: expressed AND dysregulated AND phenotype; thresholds: GTEx region TPM \u2265 1; |log2 fold change| \u2265 1 and adjusted p \u2264 0.05; mouse phenotype ring above 0 on its 0-to-1 scale, or \u2265 1 abnormal term(s)",
     "rule_version": "bdc70c8fc230"
    }
   },
@@ -528,7 +531,7 @@
    "usd": 0.0424
   },
   "stop_reason": "end_turn",
-  "note": "LLM-generated from the values in this drawer and nothing else, when the summary was baked, not when you opened it. It reads the figure; it is not a literature review. Its first sentence restates the GO / NO-GO verdict computed by the owner's rule (recommend.py), which it was given and did not decide. The exact facts it was given are stored beside it."
+  "note": "LLM-generated from the values in this drawer and nothing else, when the summary was baked, not when you opened it. It reads the figure; it is not a literature review. Its first sentence restates the GO / NO-GO verdict computed by the owner's three-criteria rule, which it was given and did not decide. The exact facts it was given are stored beside it."
  },
  "phenotype_llm": {
   "flag": 0,
@@ -562,7 +565,7 @@
   },
   "stop_reason": "end_turn",
   "is_criterion": false,
-  "note": "A 0/1 read of this gene's mouse phenotype terms against the contrast's disease area, written by the model named beside it from those terms and nothing else, when the drawer was baked. It sits BESIDE the owner's deterministic phenotype criterion and is never the criterion: it never changes the GO / NO-GO verdict and orders nothing on the figure."
+  "note": "A 0/1 read of this gene's mouse phenotype terms against the contrast's disease area, written by the model named beside it from those terms and nothing else, when the drawer was baked. It is printed BESIDE the owner's deterministic phenotype criterion and is never the criterion: it never changes the GO / NO-GO verdict and orders nothing on the figure."
  },
  "phenotype_terms": [
   {
@@ -574,7 +577,7 @@
      "allelic_composition": "Fcgr4<tm1.1Rav>/Fcgr4<tm1.1Rav>",
      "genetic_background": "involves: C57BL/6",
      "pmids": [
-      "20,974,962"
+      "20974962"
      ]
     }
    ]
@@ -588,7 +591,7 @@
      "allelic_composition": "Fcgr4<tm1.1Rav>/Fcgr4<tm1.1Rav>",
      "genetic_background": "involves: C57BL/6",
      "pmids": [
-      "20,974,962"
+      "20974962"
      ]
     }
    ]
@@ -597,6 +600,6 @@
  "chromosome": {
   "state": "value",
   "text": "1",
-  "detail": "chromosome 1 \u2014 Open Targets genomicLocation.chromosome for ENSG00000162747 (GRCh38)"
+  "detail": "chromosome 1: Open Targets genomicLocation.chromosome for ENSG00000162747 (GRCh38)"
  }
 }

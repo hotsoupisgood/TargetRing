@@ -1,2 +1,2 @@
 input_symbol,status,resolved_symbol,ensembl_id,row,reason
-ENSG00000279487,unresolved,,,11,"'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release — not in the current release, not evidence of absence."
+ENSG00000279487,unresolved,,,11,"'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release: not in the current release, not evidence of absence."

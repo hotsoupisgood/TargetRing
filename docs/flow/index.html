@@ -12,8 +12,8 @@
         `targetring.config` and the featured run's own `manifest.json`. A
         diagram is a claim about what the code does, and a diagram carrying its
         own copy of a threshold is a claim that stops being true without
-        failing. If a number is missing from the data this page draws an em dash
-        and says so; it never substitutes a plausible one.
+        failing. If a number is missing from the data this page draws
+        "not available" and says so; it never substitutes a plausible one.
      2. IT IS NOT INSIDE THE TOOL. The tool is the app view at
         /TargetRing/demo/; this is a separate page, so it can be iframed into a
         blog post without dragging the app's stylesheet, state or refusals with
@@ -40,7 +40,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>targetring — how it works</title>
+<title>targetring: how it works</title>
 <meta name="description" content="A disease name to a GO / NO-GO verdict: every
  step targetring takes, with the real numbers from one Crohn's disease run.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -199,7 +199,7 @@
   <p class="sub">
     A disease name to a GO / NO-GO verdict, step by step.
     <strong>Nothing here is ranked or scored.</strong>
-    Every number below is read from one real run.
+    Every number below is taken from one recorded run.
   </p>
 </header>
 
@@ -207,7 +207,7 @@
   <p class="sub" id="lede">Loading…</p>
   <p class="sub" id="norank"></p>
   <div class="key">
-    <span style="--c:var(--source)">reads a public source</span>
+    <span style="--c:var(--source)">queries a public source</span>
     <span style="--c:var(--derived)">derived here</span>
     <span class="dash" style="--c:var(--decision)">decision</span>
     <span style="--c:var(--check)">check that can stop the figure</span>
@@ -220,9 +220,9 @@
     <div class="panel detail" id="detail">
       <h3>Click any box</h3>
       <p class="what">the method</p>
-      <p>Every number on this chart is read from one real run — the same run the
-        <a href="../demo/">interactive tool</a> opens in — and from the build's own
-        constants. Nothing here is illustrative.</p>
+      <p>Every number on this chart is taken from one recorded run. The
+        <a href="../demo/">tool</a> opens that same run. The thresholds and the
+        caps are the build's own constants. Nothing here is illustrative.</p>
     </div>
   </div>
   <p class="foot" id="foot"></p>
@@ -233,16 +233,16 @@
 // ---------------------------------------------------------------------------
 // The one escape hatch, and the one rule about missing data.
 //
-// `n()` renders a number or an em dash. It NEVER falls back to a plausible
-// value, because this page's whole claim is that its numbers are the run's. A
-// chart with a made-up count on it is the HTML version of the defect the build
-// exists to prevent.
+// `n()` renders a number or "not available". It NEVER falls back to a
+// plausible value, because this page's whole claim is that its numbers are the
+// run's. A chart with a made-up count on it is the HTML version of the defect
+// the build exists to prevent.
 // ---------------------------------------------------------------------------
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const n = (v) => (v === null || v === undefined || v === "") ? "—"
+const n = (v) => (v === null || v === undefined || v === "") ? "not available"
   : (typeof v === "number" ? v.toLocaleString("en-US") : String(v));
-const money = (v) => (v === null || v === undefined) ? "—"
+const money = (v) => (v === null || v === undefined) ? "not available"
   : "$" + Number(v).toFixed(2);
 // "'Crohn's disease' vs 'non inflammatory bowel disease control' in 'A1a Paris
 // classification'" -> "Crohn's disease vs non inflammatory bowel disease
@@ -268,9 +268,12 @@ const plainComparison = (name) => {
 };
 
 d3.json("flow.json").then(draw).catch((e) => {
+  // The reader gets the sentence; the maintainer gets the reason, in the
+  // console, because a repo path is not page text (dashboard language 10).
+  console.error("flow.json could not be read:", e);
   d3.select("#lede").attr("class", "sub err")
-    .text("flow.json could not be read, so this chart has no numbers to draw. "
-          + "Regenerate it with scripts/export_flow.py. (" + e.message + ")");
+    .text("The numbers for this chart could not be loaded, so no step is "
+          + "drawn below.");
 });
 
 function draw(D) {
@@ -278,21 +281,23 @@ function draw(D) {
   const rule = D.verdict_rule || {}, sp = D.spend || {};
 
   d3.select("#lede").html(
-    `Every step the tool takes, with the numbers from one real run: <b>${esc(D.disease)}</b>,
-     Expression Atlas <code>${esc(c.accession)} ${esc(c.id)}</code>
-     (n=${n(c.n_test)} vs ${n(c.n_ref)}), drawn in
+    `Every step the tool takes, with the numbers from one recorded run.
+     The run: <b>${esc(D.disease)}</b>, Expression Atlas
+     <code>${esc(c.accession)} ${esc(c.id)}</code>
+     (<span title="The number of samples on each side of the comparison, the
+      test group first and the reference group second.">${n(c.n_test)} vs ${
+       n(c.n_ref)} samples</span>), drawn in
      <b>${esc((D.region || "").replace(/_/g, " "))}</b>.
-     Click a box for what it does and why. Dashed boxes are decisions the tool
-     made and states on the figure.`);
+     Click a box to see what that step does. Dashed boxes are decisions the
+     tool made. The tool states each one on the figure.`);
   d3.select("#norank").html(esc(D.no_ranking));
   d3.select("#foot").html(
     `Run <code>${esc(D.run_id)}</code> · build <code>${esc(D.git_sha)}</code> ·
      run at ${esc((D.timestamp_utc || "").slice(0, 16).replace("T", " "))} UTC ·
-     model spend ${money(sp.total)} measured ${esc(sp.measured)} ·
-     numbers generated by <code>scripts/export_flow.py</code> from
-     ${esc(D.generated_from)}.
+     model spend ${money(sp.total)} measured ${esc(sp.measured)}.
+     Numbers taken from ${esc(D.generated_from)}.
      <a href="../demo/">Open the tool</a> ·
-     <a href="https://github.com/hotsoupisgood/TargetRing">source</a>`);
+     <a href="https://github.com/hotsoupisgood/TargetRing">source code</a>`);
 
   // -------------------------------------------------------------------------
   // The boxes. `kind` drives the colour and is the status key; `stat` is the one
@@ -306,67 +311,74 @@ function draw(D) {
       id: "disease", kind: "source", title: "1. Enter a disease",
       stat: () => `“${D.disease}”`,
       detail: () => `
-        <p>You type a disease. It is resolved against EFO/MONDO through OLS4,
-        and <b>every hit carries two ids</b> — the current one for Open Targets
-        and whichever ones Expression Atlas still tags its samples with.</p>
-        <p>One id would make one of those two sources look empty:
-        <code>EFO_0000384</code> is obsolete and Open Targets returns null for
-        it, while Atlas is still using it. The picker shows which id belongs to
-        which source rather than choosing for you.</p>
-        <p>Nothing is preselected and nothing is fetched from Atlas yet.</p>`,
+        <p>A disease name is entered. It is resolved against EFO and MONDO
+        through OLS4. <b>Every hit carries two ids:</b> the current one for Open
+        Targets, and whichever ones Expression Atlas still tags its samples
+        with.</p>
+        <p>One id would make one of those two sources look empty.
+        <code>EFO_0000384</code> is obsolete, so Open Targets returns null for
+        it, while Expression Atlas still uses it. The picker names which id
+        belongs to which source instead of choosing one.</p>
+        <p>Nothing is preselected. Nothing is fetched from Expression Atlas at
+        this step.</p>`,
     },
     {
       id: "atlas", kind: "source", title: "2. Search Expression Atlas",
-      stat: () => `Expression Atlas ${n(c.accession)} · built ${n(c.index_built_utc)}`,
+      stat: () => `study ${n(c.accession)} · index built ${n(c.index_built_utc)}`,
+      hover: "The date the local index of Expression Atlas was built. Every "
+             + "contrast count on the picker carries it.",
       detail: () => `
-        <p><b>Differential expression</b> — which public study, and which
+        <p><b>Differential expression:</b> which public study, and which
         comparison inside it.</p>
         <p>A local index of Expression Atlas differential experiments is searched
         for contrasts tagged with this disease. <b>A row is a contrast, never an
-        experiment</b>: the sign, the groups and the n per side differ per
-        contrast, and one accession can carry a hundred of them.</p>
+        experiment.</b> The sign, the groups and the number of samples per side
+        differ per contrast. One accession can carry more than one contrast.</p>
         <p>Every count on that screen carries <b>the date the index was
-        built</b> (${n(c.index_built_utc)} for this run) and the picker marks it
-        stale after 30 days. A contrast count is a measurement from a crawl, and
-        a month-old number rendered like a live one is a small plausible wrong
-        figure.</p>
-        <p>Microarray contrasts are shown, greyed, with the reason — this build
-        reads RNA-seq only. Hiding them would make Atlas look emptier than it
-        is.</p>`,
+        built</b>, ${n(c.index_built_utc)} for this run. The picker marks the
+        index stale after 30 days. A contrast count is a measurement from a
+        crawl, and a month-old number drawn like a live one is a small plausible
+        wrong figure.</p>
+        <p>Microarray contrasts are shown greyed, with the reason: this build
+        loads RNA-seq contrasts only. Hiding them would make Expression Atlas
+        look emptier than it is.</p>`,
     },
     {
       id: "contrast", kind: "decision", title: "3. Pick the comparison",
-      stat: () => `contrast ${n(c.id)} · n=${n(c.n_test)} vs ${n(c.n_ref)} · ${
-        platformWord(c.platform) || n(c.platform)}`,
+      stat: () => `contrast ${n(c.id)} · ${n(c.n_test)} vs ${n(c.n_ref)
+        } samples · ${platformWord(c.platform) || n(c.platform)}`,
+      hover: "Samples on each side of the comparison, the test group first "
+             + "and the reference group second.",
       detail: () => `
-        <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
         <p><b>Differential expression:</b> ${esc(plainComparison(c.name) || c.name)}</p>
         <table><tbody>
           <tr><th>accession</th><td class="n">${esc(c.accession)}</td></tr>
           <tr><th>contrast</th><td class="n">${esc(c.id)}</td></tr>
-          <tr><th>n</th><td class="n">${n(c.n_test)} vs ${n(c.n_ref)}</td></tr>
+          <tr><th>samples, test vs reference</th>
+            <td class="n">${n(c.n_test)} vs ${n(c.n_ref)}</td></tr>
           <tr><th>platform</th><td>${esc(c.platform)}</td></tr>
           <tr><th>pipeline</th><td>${esc(c.pipeline)}</td></tr>
           <tr><th>Ensembl</th><td class="n">release ${n(c.ensembl_release)}</td></tr>
         </tbody></table>
         <p><b>Sign convention, verbatim from the manifest:</b></p>
         <p class="quote">${esc(c.sign_sentence)}</p>
-        <p>Either a rule picks the contrast or a model does, choosing <b>only
-        among contrasts the index already offered it</b> — it cannot invent one.
+        <p>Either a rule picks the contrast or a large language model picks it,
+        choosing <b>only among contrasts the index already offered it</b>. It
+        cannot invent one.
         That call has its own spend cap and its own counter
         (${money((sp.accounts || []).find((a) => a.account === "chooser")?.spent)}
         spent of
         ${money((sp.accounts || []).find((a) => a.account === "chooser")?.cap)}
         over
         ${n((sp.accounts || []).find((a) => a.account === "chooser")?.calls)}
-        calls, measured ${esc(sp.measured)}). Whichever chose it, the choice is
+        model calls, measured ${esc(sp.measured)}). Whichever chose it, the
+        choice is
         printed in the middle of the figure.</p>`,
     },
     {
       id: "region", kind: "decision", title: "4. Choose the body region",
       stat: () => (D.region || "").replace(/_/g, " "),
       detail: () => `
-        <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
         <p>The tissue the regional-specificity ring is read against. It changes
         exactly one ring, and it changes what that ring <i>means</i>: “enriched
         in ileum” and “enriched in whole blood” are different statements about a
@@ -375,29 +387,32 @@ function draw(D) {
         GTEx tissues this build can read</b>.</p>
         ${(D.region_inferred || []).length ? `<p><b>This run:</b></p>
           <p class="quote">${esc(D.region_inferred[0])}</p>` : ""}
-        <p>A reader who did not pick the tissue would not notice it had been
-        picked, so the figure says so itself — not just the form.</p>`,
+        <p>A reader who did not pick the tissue would not know it had been
+        picked. The figure states the choice itself, not only the form.</p>`,
     },
     {
       id: "de", kind: "source", title: "5. Load differential expression",
-      stat: () => `${n(sel.n_total)} rows · ${n(sel.n_with_statistic)} with a statistic`,
+      stat: () => `${n(sel.n_total)} rows · ${n(sel.n_with_statistic)
+        } rows with a statistic`,
+      hover: "One row per gene in the analytics file for this comparison. A "
+             + "row without a statistic is not a zero.",
       detail: () => `
-        <p><b>Gene expression</b> — the numbers themselves.</p>
+        <p><b>Gene expression:</b> the numbers themselves.</p>
         <p>The analytics file for contrast <code>${esc(c.id)}</code>: gene,
         log2 fold change, adjusted p.
-        ${n(sel.n_total)} rows, of which <b>${n(sel.n_with_statistic)}</b> carry
-        a statistic for this comparison and <b>${n(sel.n_without_statistic)}</b> do
-        not.</p>
-        <p>Rows without a statistic are not zeros and are not dropped quietly —
-        the count above is on the figure. Headers are matched against the exact
+        ${n(sel.n_total)} rows, of which <b>${n(sel.n_with_statistic)}</b> rows
+        carry a statistic for this comparison and
+        <b>${n(sel.n_without_statistic)}</b> rows do not.</p>
+        <p>Rows without a statistic are not zeros and are not dropped quietly.
+        The count above is printed on the figure. Headers are matched against the exact
         names DESeq2, edgeR and limma export
         (<code>log2FoldChange</code>/<code>padj</code>,
         <code>logFC</code>/<code>FDR</code>,
         <code>logFC</code>/<code>adj.P.Val</code>).
         <b>Positional guessing is never attempted</b>: a column read by position
         is a wrong number that looks right.</p>
-        <p>You can also paste your own table here instead of using Atlas at
-        all.</p>`,
+        <p>A differential-expression table can also be pasted in at this step
+        instead of using Expression Atlas.</p>`,
     },
     {
       id: "top", kind: "decision", title: `6. Keep the top ${n(sel.n_top)} genes`,
@@ -405,18 +420,21 @@ function draw(D) {
       // renderer, and box 9 below reports what was actually drawn --- 12 in,
       // 11 drawn, 1 ledgered. Two boxes saying "drawn" about two different
       // numbers was item 3 of the 2026-10-20 review.
-      stat: () => `${n(sel.n_top)} of ${n(sel.n_with_statistic)} · ${n(sel.n_selected)} selected`,
+      stat: () => `${n(sel.n_top)} genes of ${n(sel.n_with_statistic)} rows · ${
+        n(sel.n_selected)} genes selected`,
+      hover: "The genes kept by adjusted p, out of the rows that carry a "
+             + "statistic. Selected is the set handed to the renderer.",
       detail: () => `
-        <p class="what" style="margin:0 0 6px">decision — stated on the figure</p>
-        <p>Three stages, and <b>all three counts are printed on the figure</b>,
-        because this is the one place a gene set can shrink without anyone
-        noticing:</p>
+        <p>Selection runs in three stages. <b>All three counts are printed on
+        the figure</b>, because this is the one place a gene set can shrink
+        without anyone noticing.</p>
         <table><tbody>
           <tr><th>rows in the contrast</th><td class="n">${n(sel.n_total)}</td></tr>
           <tr><th>with a statistic</th><td class="n">${n(sel.n_with_statistic)}</td></tr>
-          <tr><th>top by adjusted p</th><td class="n">${n(sel.n_top)}</td></tr>
-          <tr><th>of those, up / down</th><td class="n">${n(sel.n_up)} / ${n(sel.n_down)}</td></tr>
-          <tr><th>selected to draw</th><td class="n">${n(sel.n_selected)}</td></tr>
+          <tr><th>top genes by adjusted p</th><td class="n">${n(sel.n_top)}</td></tr>
+          <tr><th>of those, genes up / genes down</th>
+            <td class="n">${n(sel.n_up)} / ${n(sel.n_down)}</td></tr>
+          <tr><th>genes selected to draw</th><td class="n">${n(sel.n_selected)}</td></tr>
         </tbody></table>
         <p>The cap is <b>${n(sel.max_genes)}</b> genes. Above that the spokes are
         too narrow to read, so the table is cut by adjusted p and
@@ -428,9 +446,10 @@ function draw(D) {
       detail: () => `
         <p><b>Join by identifier, never by index.</b> Open Targets'
         <code>targets()</code> drops ids it cannot find and answers HTTP 200
-        with a <i>shorter array</i>, which shifts every downstream cell by one —
-        a figure that is wrong in a way nothing looks wrong about. Every adapter
-        builds <code>{id: record}</code> and looks up the id it asked for.</p>
+        with a <i>shorter array</i>, which shifts every downstream cell by one.
+        The result is a wrong figure with nothing wrong-looking on it. Every
+        adapter builds <code>{id: record}</code> and looks up the id it asked
+        for.</p>
         <p>Identifiers are resolved <b>once, before any ring</b>: symbol →
         Ensembl (at the exact GTEx gencode version) → UniProt → ChEMBL, with
         explicit <code>ambiguous</code> and <code>no_match</code> states. A wrong
@@ -445,47 +464,53 @@ function draw(D) {
     },
     {
       id: "states", kind: "derived", title: "8. Mark each cell",
-      stat: () => `${n((D.rings || {}).total)} rings · ${n((D.rings || {}).external)} external · four cell states`,
+      stat: () => `${n((D.rings || {}).total)} rings · ${
+        n((D.rings || {}).external)} external rings · four cell states`,
+      hover: "An external ring is read from a public source. The other rings "
+             + "are the submitted differential expression and the k gauge.",
       detail: () => `
         <p><b>Missing is not low.</b> Every cell in every ring is exactly one
         of four states:</p>
         <ul>
-          <li><code>value</code> — a real measurement, on that ring's scale</li>
-          <li><code>no_data</code> — nobody has measured this. Hatched grey, and
+          <li><code>value</code>: a real measurement, on that ring's scale</li>
+          <li><code>no_data</code>: nobody has measured this. Hatched grey, and
             <b>never filled, averaged, zeroed or imputed</b></li>
-          <li><code>not_applicable</code> — the question does not apply to this
+          <li><code>not_applicable</code>: the question does not apply to this
             gene. Stippled</li>
-          <li><code>failed</code> — the call broke. Red, and distinct from the
+          <li><code>failed</code>: the call broke. Red, and distinct from the
             source saying nothing</li>
         </ul>
         <p>The three non-values are drawn differently from each other and from
-        every value, because the hardest part of building this figure by hand was
-        being sure an empty cell meant “nobody measured it” and not “the lookup
-        silently failed”.</p>
-        <p>Each gene also carries <b>k</b> — how many of the
-        ${n((D.rings || {}).external)} external rings it actually has — printed
-        next to its name on the rim, with the chromosome it sits on.</p>`,
+        every value, so an empty cell cannot be mistaken for a lookup that
+        failed.</p>
+        <p>Each gene also carries <b>k</b>: how many of the
+        ${n((D.rings || {}).external)} external rings it actually has. The value
+        of k is printed next to the gene's name on the rim, with the gene's
+        chromosome.</p>`,
     },
     {
       id: "invariants", kind: "check", title: "9. Check the figure",
       stat: () => `${(D.invariants || []).length} invariant checks · ${
-        (D.invariants || []).filter((i) => i.outcome === "PASS").length} passed`,
+        (D.invariants || []).filter((i) => i.outcome === "PASS").length
+        } checks passed`,
+      hover: "Each check is run on every render. A failure puts a banner on "
+             + "the figure itself.",
       detail: () => `
         <p>Run on <b>every</b> render. A failure puts a banner on the figure
-        itself — not a log line, not a toast — so a screenshot carries the
-        warning with it.</p>
-        <table><thead><tr><th>#</th><th>check</th><th>this run</th></tr></thead><tbody>
+        itself, not in a log line and not in a toast, so a screenshot carries
+        the warning with it.</p>
+        <table><thead><tr><th>id</th><th>check</th><th>this run</th></tr></thead><tbody>
         ${(D.invariants || []).map((i) => `<tr>
           <td class="n">${esc(i.id)}</td><td>${esc(i.name)}</td>
           <td class="n">${esc(i.outcome)}</td></tr>`).join("")}
         </tbody></table>
-        <p><b>Every gene is accounted for:</b>
-        <code>input == rendered + ledgered</code>, asserted in code.
-        This run: <b>${n(acct.input)}</b> in,
+        <p><b>Every gene is accounted for.</b> The number drawn plus the number
+        in the drop ledger equals the number submitted, asserted in code.
+        Genes this run: <b>${n(acct.input)}</b> submitted,
         <b>${n(acct.rendered)}</b> drawn,
-        <b>${n(acct.ledgered)}</b> in the ledger.</p>
+        <b>${n(acct.ledgered)}</b> in the drop ledger.</p>
         ${(D.ledger || []).length ? `<p><b>What left the figure, and why:</b></p>
-          <ul>${(D.ledger || []).map((e) => `<li><code>${esc(e.input)}</code> —
+          <ul>${(D.ledger || []).map((e) => `<li><code>${esc(e.input)}</code>:
             ${esc(e.status)}. ${esc(e.reason)}</li>`).join("")}</ul>` : ""}`,
     },
     {
@@ -494,9 +519,10 @@ function draw(D) {
       detail: () => `
         <p>A Circos figure: the circle is the submitted gene set in a stated
         order, and each ring is one evidence track.</p>
-        <p><b>No ranking, no score, no weights.</b> ${esc(D.no_ranking)}</p>
-        <p>This run's order: <code>${esc(acct.ordering_note)}</code></p>
-        <p>The figure states on itself what it did — the contrast, the sign
+        <p>${esc(D.no_ranking)}</p>
+        <p>This run's spoke order: <code>${esc(
+          (acct.ordering_note || "").replace(/^spoke order:\s*/, ""))}</code></p>
+        <p>The figure states on itself what it did: the contrast, the sign
         convention, the selection rule, the region and how it was chosen, the
         three counts, any active filter, and what a missing chromosome suffix
         means. <b>A screenshot that cannot be audited is not a deliverable</b>,
@@ -506,42 +532,55 @@ function draw(D) {
     },
     {
       id: "verdict", kind: "decision", title: "11. Decide GO / NO-GO",
-      stat: () => Object.entries(rule.counts || {})
-        .map(([k, v]) => `${v} ${k.replace(" DATA", "")}`).join(" · ") || "3 criteria",
+      stat: () => {
+        const per = Object.entries(rule.counts || {})
+          .map(([k, v]) => `${v} ${k.replace(" DATA", "")}`).join(" · ");
+        return per ? `genes: ${per}` : "3 criteria";
+      },
+      hover: "The verdict is decided per gene, so these are gene counts. "
+             + "Every drawn gene gets exactly one of the three.",
       detail: () => `
-        <p class="what" style="margin:0 0 6px">decision — per gene, in the drawer</p>
+        <p>The verdict is decided per gene. It is shown in that gene's
+        drawer.</p>
         <p>Three criteria, each <b>met / not met / no data</b> with its value
         shown:</p>
-        <table><thead><tr><th>#</th><th>criterion</th><th>met when</th></tr></thead><tbody>
+        <table><thead><tr><th>number</th><th>criterion</th><th>met when</th>
+        </tr></thead><tbody>
         ${(rule.criteria || []).map((k) => `<tr><td class="n">${n(k.n)}</td>
           <td>${esc(k.name)}<br><span style="color:var(--muted)">${esc(k.source)}</span></td>
           <td>${esc(k.met_when)}</td></tr>`).join("")}
         </tbody></table>
         <ul>
-          <li><b>GO</b> — ${esc(rule.go)}</li>
-          <li><b>NO-GO</b> — ${esc(rule.no_go)}</li>
-          <li><b>INSUFFICIENT DATA</b> — ${esc(rule.insufficient)}</li>
+          <li><b>GO</b>: ${esc(rule.go)}</li>
+          <li><b>NO-GO</b>: ${esc(rule.no_go)}</li>
+          <li><b>INSUFFICIENT DATA</b>: ${esc(rule.insufficient)}</li>
         </ul>
-        <p>This run: ${Object.entries(rule.counts || {})
-          .map(([k, v]) => `<b>${v}</b> ${esc(k)}`).join(", ") || "—"}.</p>
+        <p>Genes this run: ${Object.entries(rule.counts || {})
+          .map(([k, v]) => `<b>${v}</b> ${esc(k)}`).join(", ")
+          || "not available"}.</p>
         <p><b>What never affects the verdict.</b> ${esc(rule.never_a_criterion)}</p>`,
     },
     {
       id: "summaries", kind: "spend", title: "12. Bake summaries",
-      stat: () => `${money(sp.total)} total · measured ${n(sp.measured)}`,
+      stat: () => `${money(sp.total)} model spend · measured ${n(sp.measured)}`,
+      hover: "Paid model calls for this run, added across every account. No "
+             + "paid call is on the render path.",
       detail: () => `
         <p>The per-gene evidence summary and the mouse-phenotype flag are the
-        only model-written text on the page, and they are <b>baked offline into
-        the drawer files</b> — nothing is generated while you read.</p>
-        <p>A summary paraphrases <b>only the table it sits above</b>. The
-        phenotype lead is reported at three levels —
-        <code>asserted</code> / <code>asserted-negative</code> /
-        <code>none found</code> — labelled “abstract asserts target manipulation
-        altered the phenotype (unverified)”, with the sentence and the PMID.
-        <b>It is never folded into a verdict.</b></p>
-        <p><b>Spend, measured ${esc(sp.measured)}</b> — ${money(sp.total)} across
-        ${n((sp.accounts || []).length)} accounts:</p>
-        <table><thead><tr><th>account</th><th>spent</th><th>calls</th></tr></thead><tbody>
+        only text on the page written by a large language model. Both are
+        <b>baked offline into the drawer files</b>. Nothing is generated while
+        the page is open.</p>
+        <p>A summary paraphrases <b>only the table printed above it</b>. The
+        phenotype lead is reported at three levels:
+        <code>asserted</code>, <code>asserted-negative</code> and
+        <code>none found</code>. Each one is labelled “abstract asserts target
+        manipulation altered the phenotype (unverified)”, with the sentence and
+        the PMID. <b>It is never folded into a verdict.</b></p>
+        <p><b>Model spend, measured ${esc(sp.measured)}.</b> ${money(sp.total)}
+        across ${n((sp.accounts || []).length)} accounts:</p>
+        <table><thead><tr><th>account</th>
+        <th>spent as of ${esc(sp.measured)}</th>
+        <th>model calls</th></tr></thead><tbody>
         ${(sp.accounts || []).map((a) => `<tr><td><code>${esc(a.account)}</code><br>
           <span style="color:var(--muted)">${esc(a.purpose)}</span></td>
           <td class="n">${money(a.spent)}<br>
@@ -550,9 +589,9 @@ function draw(D) {
         </tbody></table>
         <p>${esc(sp.note)}</p>
         <p style="color:var(--muted)">Each cap is an approval gate rather than a
-        ceiling: a call that would cross one is stopped, the numbers are named
-        and the refusal is recorded at $0.00, so “why is there no summary” is
-        answerable from the ledger file.</p>`,
+        ceiling. A call that would cross one is stopped, the numbers are named
+        and the refusal is recorded as $0.00 spent, so a missing summary is
+        explained by the spend ledger.</p>`,
     },
   ];
 
@@ -609,6 +648,14 @@ function draw(D) {
       if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(d); }
     });
 
+  // What the number in the `stat` line below is counted in, on hover. Puck's
+  // dashboard language puts a definition in hover text rather than in prose on
+  // the surface (rule 3), and a count on a flowchart that does not say what it
+  // counts is the same defect as an unlabelled axis (rule 16). First child so
+  // the tooltip is the box's, and `aria-label` above still carries the step
+  // name, so the accessible name is unchanged.
+  g.filter((d) => d.hover).insert("title", ":first-child").text((d) => d.hover);
+
   g.append("rect").attr("class", "box")
     .attr("width", BOX_W).attr("height", BOX_H).attr("rx", 8);
   g.append("text").attr("class", "title")
@@ -643,7 +690,7 @@ function draw(D) {
   // 3. AN UNKNOWN HASH IS NOT A DEAD PAGE. A stale `#box-whatever` falls back
   //    to the first box rather than leaving the pane on "Click any box".
   // -------------------------------------------------------------------------
-  const WHAT = {source: "reads a public source", derived: "derived here",
+  const WHAT = {source: "queries a public source", derived: "derived here",
                 decision: "a decision, stated on the figure",
                 check: "a check that can stop the figure",
                 spend: "costs money", out: "output"};

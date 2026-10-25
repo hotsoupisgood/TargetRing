@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -48,7 +49,7 @@ OUT = REPO / "docs" / "flow" / "flow.json"
 SOURCES = [
     {"name": "Open Targets", "gives": "tractability, chemical probe, safety "
      "flags, furthest trial phase, trial activity, mouse phenotypes, and the "
-     "chromosome the gene sits on",
+     "gene's chromosome",
      "url": "https://platform.opentargets.org/",
      "by": "Ensembl gene id"},
     {"name": "GTEx v8", "gives": "the region's median TPM and the median "
@@ -57,7 +58,7 @@ SOURCES = [
      "by": "Ensembl gene id, at the exact gencode version"},
     {"name": "Pharos", "gives": "the target development level, Tdark to Tclin",
      "url": "https://pharos.nih.gov/", "by": "UniProt accession"},
-    {"name": "PubTator3", "gives": "literature volume — mentions resolved to a "
+    {"name": "PubTator3", "gives": "literature volume: mentions resolved to a "
      "gene id, never text-matched",
      "url": "https://www.ncbi.nlm.nih.gov/research/pubtator3/",
      "by": "NCBI gene id"},
@@ -68,6 +69,39 @@ SOURCES = [
     {"name": "ChEMBL", "gives": "drug mechanisms in the drawer",
      "url": "https://www.ebi.ac.uk/chembl/", "by": "ChEMBL target id"},
 ]
+
+# The run's own prose, as the page has to show it. Puck's dashboard language
+# (`style/DASHBOARD-LANGUAGE.md`, 2026-10-21) applies to "any text an exporter
+# writes into a data file that the page shows", and three of its rules land on
+# sentences this script copies out of a manifest: no em dash in visible text
+# (5), no repo path in visible text (10), and a measured verb rather than an
+# impressionistic one (2, "sits above").
+#
+# The manifest is NOT rewritten — it is a finished run's own record, and
+# `scripts/restamp_wording.py` is the only thing that edits a baked artefact.
+# The rewrite belongs where the visible string is written, which is here.
+# Keyed on the exact manifest phrase so a manifest that changes its wording
+# falls through unedited rather than half-edited, and `plain()` is idempotent:
+# exporting the same run twice gives the same bytes.
+VISIBLE_REWRITES = (
+    ("LLM triage of the top 10 genes",
+     "large language model triage of the top 10 genes"),
+    ("summarising only the table it sits above",
+     "summarising only the table printed above it"),
+    ("baked offline by scripts/bake_summaries.py from the gene's own drawer "
+     "values", "baked offline from the gene's own drawer values"),
+)
+
+
+def plain(text: Any) -> Any:
+    """Manifest prose as visible page text. A non-string is returned as-is."""
+    if not isinstance(text, str):
+        return text
+    for old, new in VISIBLE_REWRITES:
+        text = text.replace(old, new)
+    # Rule 5: a period, a colon or a comma. A colon, because every dash this
+    # reaches introduces the clause that explains the one before it.
+    return re.sub(r"\s*[—–]\s*", ": ", text)
 
 
 def read_manifest(run_id: str) -> dict[str, Any]:
@@ -96,7 +130,7 @@ def spend(manifest: dict[str, Any]) -> dict[str, Any]:
     rows = [{"account": a, "spent": round(float(v.get("spent") or 0), 2),
              "cap": round(float(v.get("cap") or 0), 2),
              "calls": int(v.get("calls") or 0),
-             "purpose": v.get("purpose", "")}
+             "purpose": plain(v.get("purpose", ""))}
             for a, v in accounts.items()]
     return {
         "measured": when,
@@ -104,10 +138,10 @@ def spend(manifest: dict[str, Any]) -> dict[str, Any]:
         "accounts": rows,
         # Said on the page, because it is the thing a reader worries about when
         # they see dollars on a diagram of a pipeline.
-        "note": "No paid call is on the render path: the figure draws without a "
-                "key. Each account has its own cap and none borrows from "
-                "another. Model prices change, so read these as what this "
-                "project had cost by the date above, not as a price list.",
+        "note": "No paid call is on the render path: the figure draws without "
+                "an API key. Each account has its own cap and none borrows "
+                "from another. Model prices change, so these are the amounts "
+                "this project had spent by the date above, not a price list.",
     }
 
 
@@ -144,7 +178,7 @@ def build(run_id: str) -> dict[str, Any]:
     verdicts = verdict_counts(run_id)
     return {
         "run_id": run_id,
-        "generated_from": "targetring.config and this run's own manifest.json",
+        "generated_from": "the build's own constants and this run's manifest",
         "timestamp_utc": m.get("timestamp_utc"),
         "git_sha": (m.get("git_sha") or "")[:12],
         "disease": "Crohn's disease",
@@ -161,7 +195,8 @@ def build(run_id: str) -> dict[str, Any]:
             "index_built_utc": (contrast.get("index_built_utc") or "")[:10],
         },
         "region": m.get("region"),
-        "region_inferred": [c.get("condition") for c in (m.get("run_conditions") or [])
+        "region_inferred": [plain(c.get("condition"))
+                            for c in (m.get("run_conditions") or [])
                             if "inferred from the disease" in (c.get("condition") or "")],
         # The three-stage selection, which is the one place a gene count can
         # shrink without anybody noticing — so every stage's number is here.
@@ -179,10 +214,10 @@ def build(run_id: str) -> dict[str, Any]:
             "input": m.get("input_row_count"),
             "rendered": m.get("rendered_count"),
             "ledgered": len(m.get("ledger") or []),
-            "ordering_note": m.get("ordering_note"),
+            "ordering_note": plain(m.get("ordering_note")),
         },
         "ledger": [{"input": e.get("input"), "status": e.get("status"),
-                    "reason": e.get("reason", "")}
+                    "reason": plain(e.get("reason", ""))}
                    for e in (m.get("ledger") or [])],
         "rings": {
             # The four cell states, which is rule 1 and the reason the whole
@@ -202,20 +237,23 @@ def build(run_id: str) -> dict[str, Any]:
             "go": "all three met",
             "no_go": "any one not met",
             "insufficient": "none not met, but any no data",
+            # The sentence Puck's 2026-10-18 decision was quoted for, stated
+            # formally instead: a public page carries the rule, not the chat
+            # message that set it (dashboard language 7 and 10).
             "never_a_criterion":
                 "Safety and toxicity rings, druggability rings, clinical stage, "
-                "drug count and literature volume. Puck, 2026-10-18: \"no "
-                "toxicity data or low druggability does not exclude. this could "
-                "be fixed by consulting a chemist.\" They print as a caveat "
-                "line under the verdict, never as an exclusion.",
+                "drug count and literature volume. A target is not excluded "
+                "for missing toxicity data or for low druggability, because a "
+                "chemist can resolve both. These print as a caveat line under "
+                "the verdict, never as an exclusion.",
             "counts": verdicts,
         },
         "spend": spend(m),
         "no_ranking":
-            "There is no score, no weighted sum, no front and no ranking of any "
-            "kind. The spoke order is a decision, it is stated on the figure, "
-            "and it is checked in the artefact. The rings are evidence for a "
-            "reader to weigh.",
+            "There is no score, no weighted sum and no ranking of any kind. "
+            "The spoke order is a decision. It is stated on the figure and it "
+            "is checked in the artefact. The rings are evidence for a reader "
+            "to weigh.",
     }
 
 

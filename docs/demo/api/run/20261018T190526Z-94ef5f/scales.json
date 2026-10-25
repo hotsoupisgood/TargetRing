@@ -6,7 +6,7 @@
  "states": [
   {
    "key": "no_data",
-   "label": "no data \u2014 never measured here",
+   "label": "no data: never measured here",
    "fill": "#e8e8e8",
    "hatch": "////",
    "edge": "#4d4d4d"
@@ -20,7 +20,7 @@
   },
   {
    "key": "failed",
-   "label": "call FAILED \u2014 not the same as absent",
+   "label": "call FAILED: not the same as absent",
    "fill": "#000000",
    "hatch": "xxxx",
    "edge": "#ff0000"
@@ -164,7 +164,7 @@
    "printed_units": "mean of 3 keys, each 0 or 1",
    "bound_units": "mean of 3 keys, each 0 or 1",
    "moves": false,
-   "transform": "fixed 0\u20131, same colour in every run",
+   "transform": "fixed 0 to 1, same colour in every run",
    "stepped": false,
    "colours": [
     "#ebddd1",
@@ -213,7 +213,7 @@
    ],
    "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
    "source_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section",
-   "tooltip": "Tractability (family suggests druggable) \u00b7 mean of 3 keys, each 0 or 1 \u00b7 fixed 0\u20131, same colour in every run \u00b7 source: Open Targets \u00b7 https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section"
+   "tooltip": "Tractability (family suggests druggable) \u00b7 mean of 3 keys, each 0 or 1 \u00b7 fixed 0 to 1, same colour in every run \u00b7 source: Open Targets \u00b7 https://platform-docs.opentargets.org/web-interface/target-prioritisation#tractability-section"
   },
   {
    "n": 4,
@@ -249,9 +249,9 @@
   {
    "n": 5,
    "key": "safety",
-   "label": "Safety flags & constraint \u2014 NOT evidence of safety",
+   "label": "Safety flags & constraint: NOT evidence of safety",
    "short_label": "Safety flags \u2260 safe",
-   "column_label": "Safety flags \u2014 NOT evidence of safety",
+   "column_label": "Safety flags: NOT evidence of safety",
    "units": "mean of 4 keys, each in [-1, 1]",
    "printed_units": "mean of 4 keys, each in [-1, 1]",
    "bound_units": "mean of 4 keys, each in [-1, 1]",
@@ -322,7 +322,7 @@
    "printed_units": "\u00d7 median across the GTEx panel",
    "bound_units": "\u00d7 median across the GTEx panel",
    "moves": true,
-   "transform": "log10; ticks are the raw ratio. Range moves with the submitted set \u2014 unbounded above",
+   "transform": "log10; ticks are the raw ratio. Range moves with the submitted set, unbounded above",
    "stepped": false,
    "colours": [
     "#dde1d1",
@@ -371,7 +371,7 @@
    ],
    "source_text": "GTEx v8 \u00b7 gtexportal.org/api/v2/redoc",
    "source_url": "https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get",
-   "tooltip": "Regional specificity \u00b7 \u00d7 median across the GTEx panel \u00b7 log10; ticks are the raw ratio. Range moves with the submitted set \u2014 unbounded above \u00b7 source: GTEx v8 \u00b7 https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get"
+   "tooltip": "Regional specificity \u00b7 \u00d7 median across the GTEx panel \u00b7 log10; ticks are the raw ratio. Range moves with the submitted set, unbounded above \u00b7 source: GTEx v8 \u00b7 https://gtexportal.org/api/v2/redoc#tag/Expression-Data-Endpoints/operation/get_median_gene_expression_api_v2_expression_medianGeneExpression_get"
   },
   {
    "n": 7,
@@ -434,7 +434,7 @@
    "printed_units": "three named states, no order implied by colour",
    "bound_units": "three named states, no order implied by colour",
    "moves": false,
-   "transform": "categorical \u2014 not a ramp, and not comparable to one",
+   "transform": "categorical: not a ramp, and not comparable to one",
    "stepped": true,
    "colours": [
     "#983c22",
@@ -442,9 +442,9 @@
     "#7592e6"
    ],
    "categories": [
-    "stopped for cause \u2014 OT category Negative / Safety_Sideeffects",
-    "dormant \u2014 drugs exist, no live trial, no for-cause stop",
-    "live trial \u2014 recruiting or ongoing"
+    "stopped for cause: OT category Negative / Safety_Sideeffects",
+    "dormant: drugs exist, no live trial, no for-cause stop",
+    "live trial: recruiting or ongoing"
    ],
    "ticks": [
     {
@@ -462,12 +462,12 @@
    ],
    "source_text": "Open Targets \u00b7 platform-docs.opentargets.org",
    "source_url": "https://platform-docs.opentargets.org/drug/clinical-report",
-   "tooltip": "Pipeline: current activity (Open Targets clinicalReports) \u00b7 three named states, no order implied by colour \u00b7 categorical \u2014 not a ramp, and not comparable to one \u00b7 source: Open Targets \u00b7 https://platform-docs.opentargets.org/drug/clinical-report"
+   "tooltip": "Pipeline: current activity (Open Targets clinicalReports) \u00b7 three named states, no order implied by colour \u00b7 categorical: not a ramp, and not comparable to one \u00b7 source: Open Targets \u00b7 https://platform-docs.opentargets.org/drug/clinical-report"
   },
   {
    "n": 9,
    "key": "tdl",
-   "label": "Target development level (Pharos TDL \u2014 knowledge, not a pocket)",
+   "label": "Target development level (Pharos TDL: knowledge, not a pocket)",
    "short_label": "TDL \u2014 knowledge",
    "column_label": "Target development level",
    "units": "Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin",
@@ -503,7 +503,7 @@
    ],
    "source_text": "Pharos \u00b7 druggablegenome.net",
    "source_url": "https://druggablegenome.net/IDGProteinFamilies",
-   "tooltip": "Target development level (Pharos TDL \u2014 knowledge, not a pocket) \u00b7 Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin \u00b7 4 discrete levels, fixed \u00b7 source: Pharos \u00b7 https://druggablegenome.net/IDGProteinFamilies"
+   "tooltip": "Target development level (Pharos TDL: knowledge, not a pocket) \u00b7 Tdark \u00b7 Tbio \u00b7 Tchem \u00b7 Tclin \u00b7 4 discrete levels, fixed \u00b7 source: Pharos \u00b7 https://druggablegenome.net/IDGProteinFamilies"
   },
   {
    "n": 10,
@@ -600,9 +600,9 @@
   {
    "n": 12,
    "key": "completeness",
-   "label": "k \u2014 external rings with a measurement",
+   "label": "k: external rings with a measurement",
    "short_label": "k of 9 rings",
-   "column_label": "k \u2014 external rings",
+   "column_label": "k: external rings",
    "units": "rings with a real value, of 9",
    "printed_units": "rings with a real value, of 9",
    "bound_units": "rings with a real value, of 9",

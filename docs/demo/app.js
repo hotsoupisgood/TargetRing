@@ -116,7 +116,12 @@ function provenanceLine(c) {
   const id = c.contrast_id || c.id;
   if (id) parts.push(`contrast <code>${esc(id)}</code>`);
   if (c.n_test != null && c.n_ref != null) {
-    parts.push(`n=${esc(c.n_test)} vs ${esc(c.n_ref)}`);
+    // `n=61 vs 13` stays the printed form: it is Atlas's own shorthand and
+    // `scripts/ui_checks.py`'s `DE_FACTS` reads it off this line. What n counts
+    // is the hover (rule 13 of the dashboard language standard, 2026-10-21).
+    parts.push(`<span title="n is how many samples each group of this comparison`
+      + ` had: the test group first, the reference group second.">n=${
+        esc(c.n_test)} vs ${esc(c.n_ref)}</span>`);
   }
   const plat = platformWord(c.platform);
   if (plat) parts.push(esc(plat));
@@ -138,10 +143,11 @@ const DE_RING_KEYS = ["logfc", "neg_log10_padj"];
 //: `title` attribute.
 const DIM_TITLE =
   "Every gene stays on the grid, in the same order, with the same cells. "
-  + "Nothing is recomputed, and no run, figure, artefact, values.csv or "
-  + "manifest is touched. Nothing is added to the drop ledger either \u2014 the "
+  + "Nothing is recomputed, and nothing this run wrote is touched: not the "
+  + "figure, not the stored cell values, not the manifest. Nothing is added to "
+  + "the drop ledger either: the "
   + "ledger is for genes that are genuinely not on the figure. The bound is "
-  + "compared against the column's own raw value in values.csv, in the units "
+  + "compared against the column's own raw stored number, in the units "
   + "its label states, never a rank or a colour position. A gene with no value "
   + "on the column you dim on is neither a match nor an exclusion and gets its "
   + "own treatment. To actually remove genes, use the threshold filters on the "
@@ -269,7 +275,7 @@ async function init() {
       $("#demo-runs").innerHTML = (r.runs || []).map((x) => {
         const src = x.contrast
           ? `genes from Expression Atlas <code>${esc(x.contrast)}</code>${
-              x.contrast_name ? " — " + esc(x.contrast_name) : ""}`
+              x.contrast_name ? ": " + esc(x.contrast_name) : ""}`
           : "genes from a pasted differential-expression table";
         return `<div class="demo-card">
           <p><b>${esc(x.region || "")}</b> · ${esc(x.n_genes ?? "")} genes ·
@@ -278,9 +284,12 @@ async function init() {
           <div class="row">
             <a class="btn" href="?run=${encodeURIComponent(x.run_id)}">Open the run</a>
             <a class="btn ghost" href="/api/run/${encodeURIComponent(x.run_id)}/figure.png"
-               target="_blank" rel="noopener">figure.png</a>
+               target="_blank" rel="noopener"
+               title="The figure this run drew, as an image.">the figure image</a>
             <a class="btn ghost" href="/api/run/${encodeURIComponent(x.run_id)}/manifest.json"
-               target="_blank" rel="noopener">manifest.json</a>
+               target="_blank" rel="noopener"
+               title="Every source and schema version this run read, the model id and prompt hash, and PASS or FAIL for each invariant."
+              >sources, versions and invariants</a>
           </div>
           <img src="/api/run/${encodeURIComponent(x.run_id)}/figure.png"
                alt="targetring figure, run ${esc(x.run_id)}" loading="lazy">
@@ -384,8 +393,9 @@ async function init() {
       `<p class="hint">No figure is drawn in this session. You are looking at run
        <code>${esc(wanted)}</code> as a table, read from its artefacts on disk.
        Its rendered figure is
-       <a href="/api/run/${esc(wanted)}/figure.svg" target="_blank" rel="noopener">
-       figure.svg</a>.</p>`;
+       <a href="/api/run/${esc(wanted)}/figure.svg" target="_blank" rel="noopener"
+          title="The figure this run drew, as it was written next to the run.">
+       one link away</a>.</p>`;
     picker.value = wanted;
     // The evidence pane's picker too, so switching to that tab opens the run
     // the reader deep-linked rather than asking for one again.
@@ -443,6 +453,26 @@ async function init() {
 // links to. Both come from `/api/criteria`, i.e. `recommend.criteria_block()`,
 // which reads `current_thresholds()` — so neither can state a bound the drawers
 // were not computed against.
+//: One criterion, one name, one definition, read from whatever the server
+//: publishes and never from a string in here: the "expressed" criterion became
+//: "expressed in <region>" on 2026-10-21, and the region is the RUN's, so this
+//: page cannot know it. `/api/criteria` names a criterion `name`; a drawer's
+//: criterion names it `label` (`recommend._criterion`), so both are read, in
+//: that order, and the internal `key` is only the last resort.
+//:
+//: The definition is hover text and never visible prose (rule 13). As of
+//: 2026-10-21 `recommend._criterion` and `criteria_spec` publish NO definition
+//: key: `detail` is read first and `hover` second, and with neither there is no
+//: hover at all, which is exactly what both surfaces did before. Each returns
+//: "" rather than a missing value, so neither can render the word "undefined".
+const critName = (x) => x.name || x.label || x.key || "";
+const critHover = (x) => x.detail || x.hover || "";
+
+//: The `title` attribute for a name, or nothing. Written here once so the
+//: drawer's list and the Table tab's two renderings cannot disagree.
+const critNameAttr = (x) =>
+  critHover(x) ? ` title="${esc(critHover(x))}"` : "";
+
 function renderCriteria(c) {
   const top = $("#table-criteria");
   // v4.3: the rule renders once, in `top`. `bottom` is the retired container
@@ -453,7 +483,7 @@ function renderCriteria(c) {
     top.innerHTML =
       `<h3 class="pane-h">${esc(c.heading)}</h3>
        <ol class="criteria">` +
-      c.criteria.map((x) => `<li><b>${esc(x.name)}</b> —
+      c.criteria.map((x) => `<li><b${critNameAttr(x)}>${esc(critName(x))}</b>:
          <span class="bound">${esc(x.met_when)}</span></li>`).join("") +
       `</ol>
        ${/* Review of 2026-10-20, item 4. The rule used to render TWICE on this
@@ -469,7 +499,8 @@ function renderCriteria(c) {
          <div class="reveal">
            <table><thead><tr><th>#</th><th>Criterion</th><th>Met when</th>
              <th>Source</th></tr></thead><tbody>` +
-      c.criteria.map((x) => `<tr><td>${esc(x.n)}</td><td>${esc(x.name)}</td>
+      c.criteria.map((x) => `<tr><td>${esc(x.n)}</td>
+        <td${critNameAttr(x)}>${esc(critName(x))}</td>
         <td class="reason">${esc(x.met_when)}</td>
         <td class="reason">${esc(x.source)}</td></tr>`).join("") +
       `</tbody></table>
@@ -648,9 +679,11 @@ function indexNoteHtml(ix) {
     <b>${ix.n_experiments}</b> of ${ix.n_experiments_in_population} human
     differential experiments carrying a <code>disease</code> factor, built
     <b>${esc((ix.built_utc || "").slice(0, 10))}</b>${
-      ix.stale ? ` — <b class="bad-text">STALE</b> (older than ${
-        ix.stale_after_days} days; rebuild with
-        <code>scripts/build_atlas_index.py</code>)` : ""}.
+      /* The builder is `scripts/build_atlas_index.py`, and its name stays in
+         this comment: no file or document paths in visible text (the dashboard
+         language standard of 2026-10-21, rule 10). */
+      ix.stale ? `, <b class="bad-text">STALE</b> (older than ${
+        ix.stale_after_days} days; rebuild the index)` : ""}.
     ${ix.n_failed_experiments} experiment(s) failed to parse.
     ${ix.n_contrasts_without_disease_id} contrast(s) carry no
     <code>disease</code> factor id on the test group, so they appear under no
@@ -662,11 +695,11 @@ function indexNoteHtml(ix) {
 function sourcesHtml(rows) {
   if (!rows || !rows.length) return "";
   return `<details class="src"><summary><span class="chev" aria-hidden="true">▾</span>
-      Where these come from — ${rows.length} source(s)</summary>
+      Where these come from: ${rows.length} source(s)</summary>
     <div class="reveal"><table><tbody>${rows.map((s) => `<tr>
       <td><a href="${esc(s.doc_url)}" target="_blank" rel="noopener">${
         esc(s.legend_text)}</a></td>
-      <td class="reason">reads ${esc(s.reads)}</td>
+      <td class="reason">field: ${esc(s.reads)}</td>
       <td class="reason">${esc(s.version)}</td></tr>`).join("")}
     </tbody></table></div></details>`;
 }
@@ -681,7 +714,7 @@ function chooseDisease(d, ix) {
   $("#disease-chosen").hidden = false;
   $("#disease-chosen").innerHTML =
     `<div class="note"><b>${esc(d.label)}</b>
-      — <code>${esc(d.current_id)}</code> for Open Targets,
+      Current id <code>${esc(d.current_id)}</code> for Open Targets,
       <code>${d.atlas_ids.map(esc).join("</code> <code>")}</code> for Expression
       Atlas. ${esc(d.counts.count_text)}, ${esc(d.counts.built_text)}.
       ${notes ? `<ul class="tight">${notes}</ul>` : ""}
@@ -734,8 +767,8 @@ async function showDiskRunFigure(runId) {
   if (!ok) return;
   const slot = document.createElement("p");
   slot.className = "disk-run-figure";
-  slot.innerHTML = `<img src="${url}" alt="figure.png exported by run ${esc(runId)}"
-    loading="lazy"><span class="hint">This run's own exported figure.png, read
+  slot.innerHTML = `<img src="${url}" alt="the figure image exported by run ${esc(runId)}"
+    loading="lazy"><span class="hint">This run's own exported figure image, read
     from disk; the interactive circle is drawn only in the session that ran it.</span>`;
   $("#figure").appendChild(slot);
 }
@@ -805,7 +838,7 @@ async function showToolFigure(runId) {
   if (hint && cells) {
     hint.classList.remove("unavailable");
     hint.textContent = "Click a gene label or any of its cells to open the "
-      + "drawer — the verdict, the summary and the phenotype models, read from "
+      + "drawer: the verdict, the summary and the phenotype models, read from "
       + "this run's own files.";
   }
 }
@@ -995,7 +1028,7 @@ async function inferRegion(label) {
      <span class="hint">${esc(r.reason)}${
        r.cached ? " (remembered from an earlier run on "
                   + esc((r.chosen_utc || "").slice(0, 10)) + ")" : ""}
-     — change it above if that is the wrong tissue.</span>`;
+     Change it above if that is the wrong tissue.</span>`;
 }
 
 // Drop an inference made for a PREVIOUS disease. Only resets the select if we
@@ -1064,7 +1097,7 @@ function pickedContrastHtml(picked) {
   const p = picked.chosen;
   const n = picked.n_considered;
   return `<div class="note picked">
-    <p class="picked-line"><b>Gene expression</b> — chosen for you</p>
+    <p class="picked-line"><b>Gene expression</b>: chosen for you</p>
     <p class="picked-line">Differential expression:
       ${esc(p.test_label)} <b>(${p.n_test})</b> vs
       ${esc(p.ref_label)} <b>(${p.n_ref})</b></p>
@@ -1075,7 +1108,7 @@ function pickedContrastHtml(picked) {
       : ""}
     <div class="row">
       <button id="use-picked" class="primary">
-        Use this comparison — step 3: the gene table →</button>
+        Use this comparison. Step 3: the gene table →</button>
       <button id="show-all-contrasts" class="ghost">choose a different one</button>
     </div>
     <details class="ev-why"><summary>how this was chosen</summary>
@@ -1086,9 +1119,9 @@ function pickedContrastHtml(picked) {
             this build spends most of its effort on. */""}
       ${picked.fell_back_from
         ? `<p class="hint"><b>This fell back to the rule above.</b>
-           Asked first — ${esc(picked.fell_back_from)}</p>` : ""}
+           Asked first: ${esc(picked.fell_back_from)}</p>` : ""}
       <p class="hint">${n} contrast(s) were eligible;
-        ${picked.excluded.length} were not —
+        ${picked.excluded.length} were not:
         ${esc([...new Set(picked.excluded.map((e) => e.excluded_reason))].join(" "))}</p>
     </details></div>`;
 }
@@ -1104,19 +1137,19 @@ function renderContrasts(b, picked) {
   const open = picked && picked.chosen ? "" : " open";
   $("#contrast-panel").innerHTML = `
     <h2>Gene expression</h2>
-    <p class="sub-head">Differential expression — which comparison to draw</p>
+    <p class="sub-head">Differential expression: which comparison to draw</p>
     <p class="picker-head"><b>${esc(c.count_text)}</b> · ${esc(c.built_text)}</p>
     ${picked === null
       ? `<p class="hint" id="pick-pending">Choosing a comparison for you…
          the full list is below and works now.</p>`
       : pickedContrastHtml(picked)}
     <details id="all-contrasts"${open}>
-    <summary><b>All ${b.rows.length} comparisons</b> — choose a different one,
+    <summary><b>All ${b.rows.length} comparisons</b>: choose a different one,
       or check how the choice above was made</summary>
     <div class="reveal">
     <div class="note ${c.availability === "none_supported" ? "warn" : ""}"
       ><b>What this app excludes:</b> ${esc(b.excludes)}</div>
-    ${b.dominance ? `<div class="note warn"><b>${esc(b.dominance.text)}</b> —
+    ${b.dominance ? `<div class="note warn"><b>${esc(b.dominance.text)}</b>.
       these rows are not independent evidence.</div>` : ""}
     <p class="hint">${esc(b.row_unit)}<br><b>${esc(b.no_default)}</b></p>
     <div class="row">
@@ -1124,7 +1157,7 @@ function renderContrasts(b, picked) {
       <select id="picker-sort">${b.sorts.map((s) =>
         `<option value="${esc(s.value)}" ${s.value === b.order ? "selected" : ""}>${
           esc(s.label)}</option>`).join("")}</select>
-      <span class="hint">shown: ${esc(b.order_text)}. One column at a time — a
+      <span class="hint">shown: ${esc(b.order_text)}. One column at a time. A
         composite order over n and platform would be a ranking of contrasts.</span>
     </div>
     <p class="hint">Flagged: ${f.n_under_8_total} with a side under n=8
@@ -1193,8 +1226,8 @@ function contrastRowHtml(r, i) {
   return `<tr id="crow-${i}" class="${cls}">
     <td><code>${esc(r.accession)}</code></td>
     <td><code>${esc(r.contrast_id)}</code></td>
-    <td>${esc(r.test_label || "—")} <b>(${r.n_test})</b></td>
-    <td>${esc(r.ref_label || "—")} <b>(${r.n_ref})</b></td>
+    <td>${esc(r.test_label || "no data")} <b>(${r.n_test})</b></td>
+    <td>${esc(r.ref_label || "no data")} <b>(${r.n_ref})</b></td>
     <td>${tissue}</td>
     <td>${r.is_rnaseq ? "RNA-seq" : `<code>${esc(r.platform)}</code>`}</td>
     ${/* Neutral styling on purpose. A within-disease contrast is not a worse
@@ -1221,9 +1254,15 @@ function showContrast(r) {
   // is two GETs per experiment and `-analysis-methods.tsv` would be a third, for
   // two strings that only matter once a contrast is drawn. An empty cell would
   // read as "this contrast has no pipeline", so the reason is printed instead.
+  // The file name stays in the comment above and out of the reader's line: no
+  // file or document paths in visible text (the dashboard language standard of
+  // 2026-10-21, rule 10). What a reader needs is WHEN it arrives, not which
+  // file it arrives in.
   const NOT_YET = {
-    ensembl_release: "not fetched yet — stage 3 reads -analysis-methods.tsv",
-    pipeline: "not fetched yet — stage 3 reads -analysis-methods.tsv",
+    ensembl_release: "not fetched yet. Stage 3 reads it from this experiment's "
+      + "own analysis methods",
+    pipeline: "not fetched yet. Stage 3 reads it from this experiment's "
+      + "own analysis methods",
   };
   const rows = ref
     ? Object.entries(ref).filter(([k]) => k !== "sign_sentence")
@@ -1258,11 +1297,15 @@ function showContrast(r) {
       esc(r.not_drawable_reason)}</p>`}
     ${rows ? `<table class="kvtable"><tbody>${rows}</tbody></table>` : ""}
     <p class="hint">No statistic has been fetched for this contrast yet.
-      <a href="${esc(r.configuration_url)}" target="_blank" rel="noopener">its
-      <code>-configuration.xml</code></a> is where every string above comes from.</p>
+      Every string above is read from this experiment's configuration at
+      Expression Atlas:
+      <a href="${esc(ATLAS_EXPERIMENT + r.accession)}" target="_blank"
+         rel="noopener" title="The Expression Atlas page for experiment ${
+           esc(r.accession)}, which lists its contrasts and its analysis methods."
+        >${esc(r.accession)}</a>.</p>
     ${r.drawable
       ? `<div class="row"><button id="use-contrast" class="primary">
-           Use this comparison — step 3: the gene table →</button></div>`
+           Use this comparison. Step 3: the gene table →</button></div>`
       : ""}`;
   if (r.drawable) $("#use-contrast").onclick = () => selectContrast(r);
   $("#contrast-detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -1325,7 +1368,7 @@ function syncPasteSection() {
   // section that silently vanishes reads as a bug; one that says why it is
   // gone reads as the app knowing what route you are on.
   note.innerHTML =
-    `<b>1. Differential expression table — not used on this path.</b><br>
+    `<b>1. Differential expression table: not used on this path.</b><br>
      Your genes come from <code>${esc(t.contrast.accession)} ${
        esc(t.contrast.contrast_id)}</code>, selected in step 3 above, and the
      figure is drawn with <b>Make spokes</b> in step 4. The region, the gene
@@ -1432,19 +1475,21 @@ function renderGeneTable() {
   });
 
   const verboseProse = TERSE_TABLE ? "" : `
-    <p class="hint">Each row is one gene in this CONTRAST's own
-      <code>-analytics.tsv</code>, resolved through the same identifier
+    <p class="hint">Each row is one gene in this CONTRAST's own statistics
+      table at Expression Atlas, resolved through the same identifier
       resolver a pasted id would go through (rule 5). <code>no_match</code> and
       <code>ambiguous</code> are real states, never blank. Selection is
-      ${esc(acc.n_top)} of ${esc(acc.n_with_statistic)} genes that carry BOTH a
-      p-value and a log2FC — never a fallback to log2FC alone, which would
+      ${esc(acc.n_top)} of ${esc(acc.n_with_statistic)} genes that carry BOTH an
+      adjusted p and a log2 fold change. It is never a fallback to the log2 fold
+      change alone, which would
       surface exactly the ${esc(acc.n_without_statistic)} genes DESeq2's own
       independent filtering already excluded (rule 1 as a sort).</p>`;
 
   panel.innerHTML = `
     <h2>3. Gene table</h2>
     <p class="step-line"><b>${esc(t.selection_rule_line)}</b> ·
-      n=${t.contrast.n_test} vs ${t.contrast.n_ref} ·
+      <span title="n is how many samples each group of this comparison had: the test group first, the reference group second."
+        >n=${t.contrast.n_test} vs ${t.contrast.n_ref}</span> ·
       ${t.contrast.is_rnaseq ? "RNA-seq" : esc(t.contrast.platform)} ·
       Ensembl ${esc(t.contrast.ensembl_release || "?")}</p>
     <p class="hint"><i>${esc(t.sign_sentence)}</i></p>
@@ -1452,25 +1497,33 @@ function renderGeneTable() {
     <div class="row">
       <label><input type="checkbox" id="terse-toggle" ${TERSE_TABLE ? "checked" : ""}>
         terse mode</label>
-      <span class="hint">top genes, easy metrics, no explanatory prose —
+      <span class="hint">top genes, easy metrics, no explanatory prose.
         the load-bearing facts (contrast, n, sign) never leave, whichever mode.</span>
     </div>
     <div class="scroll-x"><table class="picker gene-table"><thead><tr>
       <th>gene</th>
-      <th class="sortable" data-sort="log2fc">logFC</th>
-      <th class="sortable" data-sort="pvalue">adj p</th>
+      ${/* The short name stays and the long one is the hover, which is where
+            rule 13 puts a definition in a tool. `logFC` is the header of the
+            column the reader submitted, the token the filter syntax parses and
+            the ring's own label on the figure, and `recommend.py` keeps it on
+            the GO / NO-GO line for the same reason, so renaming it on this one
+            table would put two names for one quantity on one page. */""}
+      <th class="sortable" data-sort="log2fc"
+          title="log2 fold change: each +1 is a doubling, so +2.6 is about 6 times higher. The direction it is stated in is the line above this table.">logFC</th>
+      <th class="sortable" data-sort="pvalue"
+          title="The adjusted p this contrast reported, on a scale from 0 to 1. Anything under ${esc(pCutoffText())} prints as the bound rather than as an exponent.">adjusted p</th>
       ${TERSE_TABLE ? "" : "<th>resolution</th>"}
       <th>select</th>
     </tr></thead><tbody>${sorted.map((row) => geneRowHtml(row)).join("")}
     </tbody></table></div>
-    <p class="hint">${esc(acc.n_top)} shown ·
-      <span id="sel-count">${SELECTED.size}</span> selected —
+    <p class="hint">${esc(acc.n_top)} genes shown ·
+      <span id="sel-count">${SELECTED.size}</span> genes selected:
       all of them, by this contrast's own adjusted p; untick to narrow ·
       <button class="ghost" id="select-all">select all</button>
       <button class="ghost" id="select-none">select none</button></p>
     <div class="row">
       <button id="continue-heatmap" class="primary">
-        Continue — step 4: heatmap &amp; selection →</button>
+        Continue. Step 4: heatmap &amp; selection →</button>
     </div>`;
 
   $("#terse-toggle").onchange = (e) => { TERSE_TABLE = e.target.checked; renderGeneTable(); };
@@ -1527,8 +1580,8 @@ function syncHeatmapCount() {
   if (btn) btn.disabled = SELECTED.size === 0;
   const label = $("#make-spokes-label");
   if (label) label.textContent = SELECTED.size
-    ? `— send ${SELECTED.size} gene(s) to the circos`
-    : "— select at least one gene";
+    ? `sends ${SELECTED.size} gene(s) to the circos`
+    : "select at least one gene";
 }
 
 // Step 3 collapses; step 4 shows the heatmap and the selection UI. Selecting
@@ -1537,8 +1590,9 @@ function syncHeatmapCount() {
 function loadHeatmapStep() {
   const t = GENE_TABLE;
   $("#gene-table-panel").innerHTML = `
-    <p class="step-line"><b>3</b> ${esc(t.selection_rule_line)} ·
-      ${esc(t.accounting.n_with_statistic)} of ${esc(t.accounting.n_total)} had a statistic
+    <p class="step-line"><b>Step 3</b> ${esc(t.selection_rule_line)} ·
+      ${esc(t.accounting.n_with_statistic)} of ${esc(t.accounting.n_total)} genes
+      had a statistic
       <button class="linkish" id="change-gene-table">[change]</button></p>`;
   $("#change-gene-table").onclick = () => {
     $("#heatmap-panel").hidden = true;
@@ -1559,12 +1613,12 @@ function loadHeatmapStep() {
   // a template literal here; it is built with the DOM API below instead.
   panel.innerHTML = `
     <h2>4. Heatmap &amp; selection</h2>
-    <p class="hint">Rows are z-scored across the samples shown — block structure is
+    <p class="hint">Rows are z-scored across the samples shown. Block structure is
       guaranteed by construction and is not evidence on its own; the raw-scale
       panel and the per-sample influence strip beside it are what make a
       near-null contrast look different rather than merely say it is.</p>
     <div id="heatmap-img-slot"></div>
-    <p class="hint">Selection is the same checkboxes as step 3 —
+    <p class="hint">Selection is the same checkboxes as step 3,
       <b id="make-spokes-count">${SELECTED.size}</b> gene(s) selected.</p>
     <div class="row">
       <button id="make-spokes" class="primary" disabled>
@@ -1588,7 +1642,7 @@ async function makeSpokes() {
   if (!t || !t.contrast) {
     if (DISK_RUN) return redrawLoadedRun(DISK_RUN);
     const s = $("#make-spokes-status");
-    if (s) s.textContent = "No comparison is loaded — press “Use this comparison” first.";
+    if (s) s.textContent = "No comparison is loaded. Press “Use this comparison” first.";
     return;
   }
   const btn = $("#make-spokes");
@@ -1638,7 +1692,7 @@ async function makeSpokes() {
   // back from the manifest the run just wrote rather than re-typed.
   $("#make-spokes-status").textContent = "";
   $("#heatmap-panel").innerHTML = `
-    <p class="step-line"><b>4</b> ${esc(SELECTED.size)} gene(s) selected —
+    <p class="step-line"><b>4</b> ${esc(SELECTED.size)} gene(s) selected:
       figure built below.</p>`;
   RUN = body;
   $("#result").hidden = false;
@@ -1825,16 +1879,18 @@ function renderProgress(doneKeys, currentKey, weights, elapsed, stageElapsed) {
     // Seconds on the live stage only: a number that is still moving is the
     // cheapest possible proof that the thing has not hung.
     const secs = state === "now" && stageElapsed >= 3
-      ? ` <span class="pg-secs">${stageElapsed}s</span>` : "";
+      ? ` <span class="pg-secs" title="Seconds spent in this stage so far.">${
+          stageElapsed}s</span>` : "";
     return `<li class="pg-${state}">${
       state === "now" ? `<span class="pg-spin" aria-hidden="true"></span>` : ""
       }<span class="pg-mark">${mark}</span>${esc(label)}${secs}</li>`;
   }).join("");
   return `<div class="pg">
     <div class="pg-bar"><div class="pg-fill" style="width:${pct}%"></div></div>
-    <p class="pg-head"><b>${pct}%</b> · ${elapsed}s elapsed</p>
+    <p class="pg-head" title="Percent of this run's stages finished, weighted by how long each stage took on past runs, and seconds elapsed since the run was submitted."><b>${
+      pct}%</b> · ${elapsed}s elapsed</p>
     <ul class="pg-list">${rows}</ul>
-    <p class="hint">Each stage above is a real event — it appears when that work
+    <p class="hint">Each stage above is a real event. It is printed when that work
       finished. The bar is an <b>estimate</b>, weighted by how long each stage
       took on past runs, so it moves unevenly and slows down inside a long
       stage. Which stage dominates depends on the run: drawing the circle on a
@@ -1970,7 +2026,7 @@ async function analyse() {
     failSoft(picked
       ? "This button draws a table you pasted, and there isn't one. Your "
         + "genes are coming from the gene expression comparison chosen above "
-        + "— press “Use this comparison” there to load them."
+        + "Press “Use this comparison” there to load them."
       : "Paste a differential expression table, or upload one, first.");
     if (picked) picked.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
@@ -2064,7 +2120,7 @@ function render(b) {
   if (failed.length || contractFails.length) {
     banner.hidden = false;
     banner.textContent =
-      "DO NOT TRUST THIS FIGURE — " +
+      "DO NOT TRUST THIS FIGURE. " +
       failed.map((i) => `${i.id} ${i.name}: FAIL`).join(" · ") +
       contractFails.map((c) => ` · source contract ${c.check} FAILED`).join("");
   } else {
@@ -2073,12 +2129,12 @@ function render(b) {
 
   const conds = $("#conditions");
   const condLines = unchecked
-    .map((i) => `${i.id} ${i.name}: not checked${i.affects ? " — " + i.affects : ""}`)
-    .concat((b.run_conditions || []).map((c) => `${c.condition} — ${c.affects}`));
+    .map((i) => `${i.id} ${i.name}: not checked${i.affects ? ". Affects " + i.affects : ""}`)
+    .concat((b.run_conditions || []).map((c) => `${c.condition}. Affects ${c.affects}`));
   if (condLines.length) {
     conds.hidden = false;
     conds.innerHTML =
-      `<b>Run conditions — not an invariant failure.</b> These checks could not be run;
+      `<b>Run conditions, not an invariant failure.</b> These checks could not be run;
        each line says what it affects.<ul class="tight">` +
       condLines.map((l) => `<li>${esc(l)}</li>`).join("") + `</ul>`;
   } else {
@@ -2086,20 +2142,20 @@ function render(b) {
   }
 
   $("#counts").innerHTML =
-    `<b>${b.counts.input}</b> genes in · <b>${b.counts.rendered}</b> rendered · ` +
+    `<b>${b.counts.input}</b> genes in · <b>${b.counts.rendered}</b> genes rendered · ` +
     `<button class="drop linkish" id="show-ledger"><b>${b.counts.dropped}</b>` +
-    ` not shown — why?</button> · ` +
+    ` genes not shown, in the drop ledger</button> · ` +
     `region <b>${esc(b.region)}</b> · ${esc(b.ordering_note || "")}` +
     // v2.5 item 2. A filtered figure must never read as the whole submitted set,
     // so the counts line — the one thing everybody reads — says so first.
     ((b.filters || []).length
-      ? `<div class="note warn"><b>Filtered — this is not your whole submitted set.</b>
+      ? `<div class="note warn"><b>Filtered. This is not your whole submitted set.</b>
          ${b.filters.map((f) => `<code>${esc(f.expression)}</code>${f.drop_no_data
            ? " <span class='pill warn'>+ drop no-data</span>" : ""}`).join(" · ")}
          · <b>${b.filter_counts.filtered || 0}</b> gene(s) filtered into the ledger` +
         (b.filter_counts.kept_unevaluated
-          ? ` · <b>${b.filter_counts.kept_unevaluated}</b> kept and marked ~ (no data on a
-             filtered ring — a threshold never drops a gene for being unmeasured)` : "") +
+          ? ` · <b>${b.filter_counts.kept_unevaluated}</b> gene(s) kept and marked ~ (no data on a
+             filtered ring. A threshold never drops a gene for being unmeasured)` : "") +
         `</div>`
       : "") +
     (b.warnings.length ? `<div class="note warn">${b.warnings.map(esc).join("<br>")}</div>` : "");
@@ -2266,7 +2322,7 @@ function renderDecode(s) {
        <span>${esc(st.label)}</span></div>`).join("") +
     `<div class="state"><span class="sw"
        style="background:#fff;border-style:dashed"></span>
-       <span>value — decode it against that ring's own scale, below</span></div>` +
+       <span>value. Decode it against that ring's own scale, below</span></div>` +
     // COUNCIL V12: named, not numbered. `r.categories` comes off the same
     // `sorted(spec.categorical)` as `r.colours`, so a colour cannot be paired
     // with the wrong state; the tick labels this used to read are the ring's
@@ -2390,10 +2446,12 @@ function renderLedger(b) {
   const shown = new Set(["renamed", "possible_mouse"]);
   $("#ledger").innerHTML =
     `<p class="hint">Problems first. <b>renamed</b> and <b>possible_mouse</b> genes
-     <em>are</em> on the figure — they are listed so you can see what was changed.
+     <em>are</em> on the figure. They are listed so you can see what was changed.
      Everything else is absent from it.</p>` +
     `<table><thead><tr><th>Input</th><th>Status</th><th>On the figure?</th>
-     <th>Resolved</th><th>Row</th><th>Reason</th></tr></thead><tbody>` +
+     <th>Resolved</th>
+     <th title="The row this gene sat on in the table you submitted, counting from the first data row.">Row</th>
+     <th>Reason</th></tr></thead><tbody>` +
     rows.map((e) => `<tr>
       <td><code>${esc(e.input)}</code></td>
       <td><span class="pill ${e.status === "renamed" ? "warn"
@@ -2445,12 +2503,12 @@ function renderCaveats(b) {
     `<div class="note warn"><b>This figure is internally consistent and auditable.
      Nothing on it is ranked or scored.</b> It is your gene set, the evidence rings,
      and a drawer per gene.</div>
-     <h4>Not attempted — and deliberately so</h4>
+     <h4>Not attempted, and deliberately so</h4>
      <ul class="tight">${(b.not_attempted || []).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
      <h4>Spoke order</h4>
      <p>${esc(b.ordering_note || "")}</p>
      <p class="hint">The order carries meaning, so it is printed on the figure too.
-     The default is your own table's order — it is your measurement, not a composite
+     The default is your own table's order. It is your measurement, not a composite
      this app invented.</p>
      ${llmAccountsHtml(b.llm)}`;
 }
@@ -2481,7 +2539,7 @@ async function loadEvidence(runId) {
   const id = (runId || "").trim();
   if (!id) {
     $("#evidence-status").textContent =
-      "No run loaded. Draw a figure, or type a run id above — every run under " +
+      "No run loaded. Draw a figure, or type a run id above. Every run under " +
       "runs/ can be opened by id.";
     return;
   }
@@ -2549,7 +2607,7 @@ function missingWords(f, labels) {
     const nd = (f.not_drawn || []).includes(r);
     const word = nd ? "this run did not draw it"
       : (GAP_WORDS[st] ? GAP_WORDS[st][0] : st);
-    return `${labels[r] || r} \u2014 ${word}`;
+    return `${labels[r] || r}: ${word}`;
   }).join("; ");
 }
 
@@ -2576,12 +2634,13 @@ function evidenceGeneRow(g, d) {
   const pills = ordered.map((f) => evPill(
     f.kind === "contradiction" ? "bad" : "warn",
     FIRE_WORD[f.kind] || f.kind,
-    `${f.headline} \u2014 ${ruleWords(f.rule)}. ${f.why}`)).join(" ");
+    `${f.headline}: ${ruleWords(f.rule)}. ${f.why}`)).join(" ");
 
   // The unevaluable readings collapse to ONE pill with a count. Which rules,
   // and which ring each is waiting on, are in the hover.
   const cannot = unevaluable.length
-    ? evPill("grey", `${unevaluable.length} cannot be checked`,
+    ? evPill("grey", `${unevaluable.length} reading${
+        unevaluable.length === 1 ? "" : "s"} cannot be checked`,
              unevaluable.map((f) =>
                `${ruleWords(f.rule)}: needs ${missingWords(f, labels)}.`)
                .join(" "))
@@ -2592,7 +2651,8 @@ function evidenceGeneRow(g, d) {
     .filter(([, keys]) => keys.length)
     .map(([state, keys]) => evPill(
       GAP_WORDS[state] ? GAP_WORDS[state][1] : "grey",
-      `${keys.length} ${esc(state).replace(/_/g, " ")}`,
+      `${keys.length} ring${keys.length === 1 ? "" : "s"}, ${
+        esc(state).replace(/_/g, " ")}`,
       `${GAP_WORDS[state] ? GAP_WORDS[state][0] : state}: `
       + keys.map((k) => labels[k] || k).join(", ")))
     .join(" ");
@@ -2605,12 +2665,13 @@ function evidenceGeneRow(g, d) {
     <th scope="row"${g.ensembl_id ? ` title="Ensembl id ${esc(g.ensembl_id)}"` : ""}>
       <b>${esc(g.gene)}</b>${g.ensembl_id
       ? ` <code class="ev-ens">${esc(g.ensembl_id)}</code>` : ""}</th>
-    <td class="ev-k" title="k \u2014 how many of the ${esc(d.k_max)} external rings have a real measurement for this gene. Your own logFC and adjusted p are not counted.">${
+    <td class="ev-k" title="k: how many of the ${esc(d.k_max)} external rings have a real measurement for this gene. Your own logFC and adjusted p are not counted.">${
       esc(g.k)}/${esc(d.k_max)}</td>
     <td class="ev-pills">${pills} ${cannot} ${gapPills}</td>
     <td class="ev-headline">${esc(headline)}</td>
     <td class="ev-clear" title="readings that ran and did not hold">${
-      clear.length ? esc(clear.length) + " clear" : "\u2014"}</td>
+      clear.length ? esc(clear.length) + " reading"
+        + (clear.length === 1 ? "" : "s") + " clear" : "none"}</td>
   </tr>`;
 }
 
@@ -2620,9 +2681,9 @@ function renderEvidence(d) {
   // findings — a target with two disagreements is not twice one.
   const counts = `<ul class="tight ev-counts">
     <li><b>${esc(fc.genes)}</b> gene(s) on this figure</li>
-    <li><b>${esc(fc.with_contradiction)}</b> where two sources disagree</li>
-    <li><b>${esc(fc.with_flag)}</b> carrying a flag</li>
-    <li><b>${esc(fc.with_unevaluable)}</b> with at least one reading that
+    <li><b>${esc(fc.with_contradiction)}</b> gene(s) where two sources disagree</li>
+    <li><b>${esc(fc.with_flag)}</b> gene(s) carrying a flag</li>
+    <li><b>${esc(fc.with_unevaluable)}</b> gene(s) with at least one reading that
       cannot be checked</li></ul>`;
 
   $("#evidence").innerHTML =
@@ -2633,7 +2694,7 @@ function renderEvidence(d) {
          esc(d.region || "none")}">${esc(regionLabel(d.region))}</span> ·
        ${esc(d.timestamp_utc || "")}
        <p class="hint">Order: ${esc(d.ordering_note || d.ordering || "")}
-       — the order this run drew its spokes in. This surface does not reorder
+       The order this run drew its spokes in. This surface does not reorder
        it.${d.ordering_note_drift
           ? ` <span class="src">${esc(d.ordering_note_drift)}</span>` : ""}</p>
      </div>
@@ -2644,17 +2705,17 @@ function renderEvidence(d) {
            eleven genes reads the table below. */""}
      <details class="sources" id="ev-rules">
        <summary><span class="chev" aria-hidden="true">▾</span>
-         what was checked \u2014 ${esc((d.rules || []).length)} readings, and what
+         what was checked: ${esc((d.rules || []).length)} readings, and what
          each one means</summary>
        <div class="reveal"><ul class="tight ev-rules">${(d.rules || []).map((r) =>
        `<li><span class="pill ${r.kind === "contradiction" ? "bad" : "warn"}">${
-         esc(r.kind)}</span> <b>${esc(ruleWords(r.key))}</b> \u2014 reads ${
+         esc(r.kind)}</span> <b>${esc(ruleWords(r.key))}</b>, from ${
          (r.rings || []).map((k) => `<code>${esc((d.ring_labels || {})[k] || k)}</code>`)
            .join(" + ")}<br><span class="reason">${esc(r.why)}</span></li>`)
        .join("")}</ul></div>
      </details>
      <table class="ev-table"><thead><tr>
-       <th>gene</th><th title="k — external rings with a measurement">k</th>
+       <th>gene</th><th title="k: external rings with a measurement">k</th>
        <th>readings</th><th>finding</th><th>clear</th>
      </tr></thead><tbody>${d.order.map((name) => {
        const g = d.genes.find((x) => x.gene === name);
@@ -2677,7 +2738,8 @@ function llmAccountsHtml(llm) {
       <td>${a.calls} call${a.calls === 1 ? "" : "s"}</td>
       <td class="reason">${esc(a.purpose)}</td></tr>`).join("");
   const prices = Object.entries(llm.price_table || {}).map(([m, p]) =>
-    `<code>${esc(m)}</code> $${p.input}/$${p.output} per MTok in/out`).join("; ");
+    `<code>${esc(m)}</code> $${p.input} per million input tokens, $${
+      p.output} per million output tokens`).join("; ");
   // Counted from the payload, not written down: this said "two caps, two
   // counters" above a four-row table after rule 8 was amended twice on
   // 2026-10-09. A hardcoded count beside a rendered list is a caption that
@@ -2701,7 +2763,7 @@ function llmAccountsHtml(llm) {
     .reduce((t, a) => t + Number(a.spent || 0), 0);
   const calls = Object.values(llm.accounts || {})
     .reduce((t, a) => t + Number(a.calls || 0), 0);
-  return `<h4>Paid calls — $${spent.toFixed(2)} total${
+  return `<h4>Paid calls: $${spent.toFixed(2)} total${
     when ? `, measured ${esc(when)}` : ""}</h4>
     ${when ? `<p class="hint">Every dollar below is the total spent up to
       <b>${esc(when)}</b>, folded from the ledger on that date. Model prices
@@ -2714,16 +2776,16 @@ function llmAccountsHtml(llm) {
           when ? ` <span class="hint">measured ${esc(when)}</span>` : ""}</td>
         <td>${esc(fmtCount(calls))} call${calls === 1 ? "" : "s"}</td>
         <td class="reason">${nAcc} cap${nAcc === 1 ? "" : "s"}, ${nAcc} counter${
-          nAcc === 1 ? "" : "s"} — none borrows from another</td></tr>
+          nAcc === 1 ? "" : "s"}. None borrows from another</td></tr>
       </tbody></table>
     <p class="hint">No account borrows from another and all are separate
-    from any other budget on this machine. Spend is folded from
-    <code>${esc(llm.ledger_path || "runs/spend-ledger.jsonl")}</code>, which is
-    append-only and lives outside <code>cache/</code> so a cache reset cannot zero
+    from any other budget on this machine. Spend is folded from this project's
+    own spend ledger, which is append-only and is kept outside the cache, so
+    clearing the cache cannot zero
     it. A refused call is recorded too, at $0.00, so "why is there no summary" is
-    answerable from the file. Prices are a pinned constant (cached
+    answerable from the ledger. Prices are a pinned constant (cached
     ${esc(llm.price_table_cached_utc || "")}): ${prices}. A model with no pinned
-    price cannot be called — the ledger refuses rather than guessing.</p>`;
+    price cannot be called. The ledger refuses rather than guessing.</p>`;
 }
 
 // ---------- drawer ----------
@@ -2743,7 +2805,7 @@ const DRAWER_OPEN = ["your measurement", "drug pipeline", "literature"];
 const DRAWER_CAVEATS = [
   ["mouse phenotype lead", "a lead, not a verdict"],
   ["mouse phenotype table", "per-paper raw evidence; the LLM summary paraphrases only these rows"],
-  ["ChEMBL mechanisms", "untrusted — resolution unprobed"],
+  ["ChEMBL mechanisms", "untrusted: resolution unprobed"],
   ["safety liabilities", "absence is weak evidence of safety"],
 ];
 
@@ -2768,7 +2830,7 @@ function sectionise(html) {
     const body = m[2];
     const open = DRAWER_OPEN.some((t) => title.startsWith(t)) ? " open" : "";
     const hit = DRAWER_CAVEATS.find(([t]) => title.startsWith(t));
-    const caveat = hit ? ` <span class="caveat">— ${esc(hit[1])}</span>` : "";
+    const caveat = hit ? ` <span class="caveat">${esc(hit[1])}</span>` : "";
     return `<details class="sect"${open}>` +
       `<summary><span class="chev" aria-hidden="true">▾</span> <b>${esc(title)}</b>` +
       `${caveat} <span class="count">${esc(sectionCount(body))}</span></summary>` +
@@ -2916,7 +2978,7 @@ function phenotypeFlagHtml(pf, terms) {
   return `<li class="crit-flag ${pf.flag ? "flag-1" : "flag-0"}"
     title="${esc(pf.note || "")} Model ${esc(pf.model || "")}, prompt ${esc(pf.prompt_version || "")}.">
     <b>phenotype (Claude)</b>: <span class="flag-num">${pf.flag}</span>
-    <span class="flag-why">— ${esc(pf.reason || "")}</span>${models}</li>`;
+    <span class="flag-why">${esc(pf.reason || "")}</span>${models}</li>`;
 }
 
 // ---------- which model each phenotype term came from (2026-10-18) ----------
@@ -2932,6 +2994,13 @@ function phenotypeFlagHtml(pf, terms) {
 const PUBMED = "https://pubmed.ncbi.nlm.nih.gov/";
 const PHENOTYPE_TERMS_SHOWN = 12;
 
+//: Where an accession becomes a page a reader can use. The contrast panel used
+//: to link `r.configuration_url`, the ftp XML dump the adapter parses, which a
+//: phone renders as an unstyled blob of markup; this is the same experiment's
+//: own page at Expression Atlas (verified 2026-10-21: `E-GEOD-101794` returns
+//: 200 text/html). The XML stays the parsed source and stays in the manifest.
+const ATLAS_EXPERIMENT = "https://www.ebi.ac.uk/gxa/experiments/";
+
 function phenotypeModelCount(terms) {
   const ids = new Set();
   (terms || []).forEach((t) => (t.models || []).forEach((m) => { if (m.id) ids.add(m.id); }));
@@ -2941,7 +3010,7 @@ function phenotypeModelCount(terms) {
 // "term — n model(s)", one per line, for the verdict box's phenotype tooltip.
 function phenotypeTermsTooltip(terms) {
   if (!terms || !terms.length) return "";
-  return terms.map((t) => `${t.label} — ${(t.models || []).length} model(s)`).join("\n");
+  return terms.map((t) => `${t.label}: ${(t.models || []).length} model(s)`).join("\n");
 }
 
 function phenotypeModelHtml(m) {
@@ -2950,7 +3019,7 @@ function phenotypeModelHtml(m) {
   if (m.genetic_background) bits.push(esc(m.genetic_background));
   const pmids = (m.pmids || []).map((p) =>
     `<a href="${esc(PUBMED + p)}" target="_blank" rel="noopener">${esc(p)}</a>`).join(", ");
-  return `<li class="pheno-model"><code>${esc(m.id || "—")}</code>${
+  return `<li class="pheno-model"><code>${esc(m.id || "no data")}</code>${
     bits.length ? " " + bits.join(" · ") : ""}${
     pmids ? ` · <span class="pheno-pmids">papers: ${pmids}</span>`
           : ` · <span class="hint">no paper on this model in MGI</span>`}</li>`;
@@ -2963,7 +3032,7 @@ function phenotypeTermListHtml(terms, labels) {
       .map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
       ${mp.length > PHENOTYPE_TERMS_SHOWN
         ? `<p class="hint">…and ${mp.length - PHENOTYPE_TERMS_SHOWN} more</p>` : ""}
-      <p class="hint">This drawer was baked before the models were recorded — which
+      <p class="hint">This drawer was baked before the models were recorded, which
         mouse each term came from is in the phenotype table below.</p>`;
   }
   const shown = terms.slice(0, PHENOTYPE_TERMS_SHOWN);
@@ -2975,13 +3044,13 @@ function phenotypeTermListHtml(terms, labels) {
       ${models.length
         ? `<ul class="pheno-models">${models.map(phenotypeModelHtml).join("")}</ul>`
         : `<p class="hint">MGI records this phenotype and names no biological model
-           for it — not the same as no model existing.</p>`}</li>`;
+           for it. That is not the same as no model existing.</p>`}</li>`;
   }).join("");
   return `<ul class="tight pheno-terms">${h}</ul>
     ${terms.length > PHENOTYPE_TERMS_SHOWN
       ? `<p class="hint">…and ${terms.length - PHENOTYPE_TERMS_SHOWN} more term(s)</p>` : ""}
     <p class="hint">Each model is MGI's allelic composition and genetic background;
-      the papers under it are that MODEL's literature — MGI does not attribute a paper
+      the papers under it are that MODEL's literature. MGI does not attribute a paper
       to a particular phenotype, and neither does this list.</p>`;
 }
 
@@ -3003,7 +3072,7 @@ function recommendationHtml(rec, phenotypeFlag, phenotypeTerms) {
     const termsTip = c.key === "phenotype" ? phenotypeTermsTooltip(phenotypeTerms) : "";
     const tip = termsTip ? `${c.shown || ""}\n\n${termsTip}` : (c.shown || "");
     return `<li class="crit ${esc(st)}"><span class="mark" aria-hidden="true">${CRIT_MARK[st] || "~"}</span>
-      <b>${esc(c.label || c.key)}</b> <span class="word">${CRIT_WORD[st] || esc(st)}</span>
+      <b${critNameAttr(c)}>${esc(critName(c))}</b> <span class="word">${CRIT_WORD[st] || esc(st)}</span>
       <span class="shown" title="${esc(tip)}">${esc(c.bare || c.shown || "")}</span>${area}</li>`;
   }).join("");
   // The region as a three-word tag, with the long sentence in its tooltip.
@@ -3077,7 +3146,7 @@ function drawerHtml(d) {
   }
 
   if (d.input_symbol !== d.gene) {
-    h += `<div class="note warn">Submitted as <code>${esc(d.input_symbol)}</code> —
+    h += `<div class="note warn">Submitted as <code>${esc(d.input_symbol)}</code>,
           ${esc(d.resolution_note)}</div>`;
   }
 
@@ -3092,16 +3161,23 @@ function drawerHtml(d) {
   // `2.19538e-22`. `d.padj` itself is untouched in the payload and on disk;
   // this is the one line that showed the raw float to a reader.
   h += `<h4>your measurement</h4><dl class="kv">
-    <dt>logFC</dt><dd>${d.logfc}</dd>
-    <dt>adjusted p</dt><dd>${fmtP(d.padj)}</dd>
+    ${/* Puck, 2026-10-21 10:05: "do not allow disembodied numbers without
+          units", with this exact field as his example. The long name is the
+          HOVER and the short one stays on the surface: `logFC` is the header
+          of the column the reader submitted, the ring's label on the figure
+          and the name `recommend.py` keeps on the GO / NO-GO line three lines
+          above this one, so renaming it here alone would be two names for one
+          quantity in one drawer. The value is untouched either way. */""}
+    <dt title="log2 fold change: each +1 is a doubling, so +2.6 is about 6 times higher. Read from the table you submitted.">logFC</dt><dd>${d.logfc}</dd>
+    <dt title="The adjusted p from the table you submitted, on a scale from 0 to 1. Anything under ${esc(pCutoffText())} prints as the bound rather than as an exponent.">adjusted p</dt><dd>${fmtP(d.padj)}</dd>
     ${/* v4.3, review of 2026-10-20 item 5: "8/9", the form the grid and the
           Evidence tab print. It read "8 of 9" here and "k = 8 of 9 external
           rings measured" on the Evidence tab, for one number. */""}
     <dt>rings with a real value (k)</dt><dd>${esc(d.k)}/${esc(d.k_max)}
-      <span class="hint">completeness only — k orders nothing and selects nothing</span></dd>
+      <span class="hint">completeness only. k orders nothing and selects nothing</span></dd>
     <dt>Pharos TDL</dt><dd>${d.tdl && d.tdl.state === "value"
       ? `<b>${esc((d.tdl.raw || {}).tdl || "")}</b> <span class="hint">development level, not a pocket</span>`
-      : `<span class='pill grey'>${esc((d.tdl || {}).state || "—")}</span>`}</dd></dl>`;
+      : `<span class='pill grey'>${esc((d.tdl || {}).state || "no data")}</span>`}</dd></dl>`;
   if (d.k_note) h += `<div class="note">${esc(d.k_note)}</div>`;
   // v2.5 item 2, rule 1: this gene is on the figure because a threshold could
   // not be evaluated against a cell it has no data for, not because it passed.
@@ -3129,22 +3205,23 @@ function drawerHtml(d) {
   }
   if (drugs.length) {
     h += `<div class="note">An approved drug that hits this gene is not the same as
-      this gene being clinically validated — polypharmacology defeats a mechanism
+      this gene being clinically validated. Polypharmacology defeats a mechanism
       filter alone. The indication is shown beside the phase for exactly that reason.</div>
       <div class="scroll-x"><table><thead><tr><th>Drug</th><th>Modality</th><th>Furthest phase</th>
       <th>Current status</th><th>Indication</th><th>Trials</th><th>Stopped</th>
       <th>Link</th></tr></thead><tbody>` +
       drugs.map((r) => `<tr>
         <td><b>${esc(r.drug)}</b></td>
-        <td>${esc(r.modality || "—")}</td>
-        <td>${esc(r.max_stage || "—")}</td>
-        <td>${esc(r.status || "—")}${r.n_with_status === 0
+        <td>${esc(r.modality || "no data")}</td>
+        <td>${esc(r.max_stage || "no data")}</td>
+        <td>${esc(r.status || "no data")}${r.n_with_status === 0
           ? " <span class='hint'>(no trial row carries a status)</span>" : ""}</td>
-        <td>${esc((r.indications || []).join("; ") || "—")}</td>
-        <td>${r.n_trials}</td>
-        <td class="reason">${esc(Object.entries(r.stop_reasons || {})
-          .map(([k, v]) => `${k} ${v}`).join(", ") || "—")}</td>
-        <td>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">open</a>` : "—"}</td>
+        <td>${esc((r.indications || []).join("; ") || "none")}</td>
+        <td title="Trial reports Open Targets records for this drug, counted as drug-trial pairs.">${r.n_trials}</td>
+        <td class="reason" title="Each number is how many of this drug's trial reports carried that stop-reason category.">${
+          esc(Object.entries(r.stop_reasons || {})
+          .map(([k, v]) => `${k} ${v}`).join(", ") || "none")}</td>
+        <td>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">open</a>` : "no data"}</td>
       </tr>`).join("") + `</tbody></table></div>`;
   }
 
@@ -3155,15 +3232,17 @@ function drawerHtml(d) {
   const tr = d.trials || {};
   const trDrugs = (tr.drugs || []).filter((r) => (r.n_trials || 0) > 0 || r.error);
   if (tr.source) {
-    h += `<h4>trials — ${esc(tr.source)}</h4>
+    h += `<h4>trials, ${esc(tr.source)}</h4>
       <p class="summary-line">${tr.n_lead_sponsors || 0} distinct lead sponsor(s)
         across this gene's drugs${(tr.lead_sponsors || []).length
           ? ": " + tr.lead_sponsors.slice(0, 6).map(esc).join(", ") : ""}.</p>`;
     // v2.4 requirement 1: the source labels actually seen, so the next
     // relabelling is visible in the drawer instead of emptying a ring.
     if (tr.sources_seen && Object.keys(tr.sources_seen).length) {
-      h += `<p class="summary-line hint">report source labels on this gene:
-        ${Object.entries(tr.sources_seen).map(([k, v]) => `${esc(k)} ${v}`).join(" · ")}</p>`;
+      h += `<p class="summary-line hint">report source labels on this gene,
+        with how many clinical report rows carried each label:
+        ${Object.entries(tr.sources_seen).map(([k, v]) => `${esc(k)} ${v} row(s)`)
+          .join(" · ")}</p>`;
     }
     // v2.3 item 2. The target-level totals are DISTINCT NCT ids; the sum of the
     // rows below is drug-trial pairs. Both are shown and the note says which is
@@ -3171,10 +3250,11 @@ function drawerHtml(d) {
     if (tr.n_distinct_trials !== undefined) {
       h += `<p class="summary-line"><b>${tr.n_distinct_trials}</b> distinct trial(s)
         <span class="hint">(${tr.n_pairs} drug-trial pairs)</span> ·
-        <b>${tr.n_distinct_live}</b> live <span class="hint">(${tr.n_pairs_live} pairs)</span> ·
-        <b>${tr.n_distinct_stopped}</b> stopped early
-        <span class="hint">(${tr.n_pairs_stopped} pairs)</span>${
-          tr.distinct_is_a_floor ? " — <b>a floor</b>" : ""}</p>
+        <b>${tr.n_distinct_live}</b> live trial(s)
+        <span class="hint">(${tr.n_pairs_live} drug-trial pairs)</span> ·
+        <b>${tr.n_distinct_stopped}</b> trial(s) stopped early
+        <span class="hint">(${tr.n_pairs_stopped} drug-trial pairs)</span>${
+          tr.distinct_is_a_floor ? ", <b>a floor</b>" : ""}</p>
         <div class="note">${esc(tr.dedup_note || "")}</div>`;
     }
     h += `<div class="note">${esc(tr.note || "")}</div>`;
@@ -3184,18 +3264,21 @@ function drawerHtml(d) {
         <th>Live example</th></tr></thead><tbody>` +
         trDrugs.map((r) => `<tr>
           <td><b>${esc(r.drug)}</b></td>
-          <td>${r.error ? "—" : r.n_trials}${
+          <td title="Trial reports for this drug, counted as drug-trial pairs.">${
+            r.error ? "failed" : r.n_trials}${
             !r.error && r.n_distinct !== undefined && r.n_distinct !== r.n_trials
-              ? ` <span class="hint">(${r.n_distinct} distinct NCT)</span>` : ""}</td>
-          <td>${r.error ? "—" : r.n_live}</td>
-          <td>${r.error ? "—" : r.n_stopped}${
-            r.n_for_cause ? ` <span class="hint">(${r.n_for_cause} for cause)</span>` : ""}</td>
-          <td>${esc((r.sponsors || []).slice(0, 3).join("; ") || "—")}</td>
+              ? ` <span class="hint">(${r.n_distinct} distinct NCT id(s))</span>` : ""}</td>
+          <td title="Of those reports, how many carry a status Open Targets counts as live.">${
+            r.error ? "failed" : r.n_live}</td>
+          <td title="Of those reports, how many carry a status Open Targets counts as stopped early.">${
+            r.error ? "failed" : r.n_stopped}${
+            r.n_for_cause ? ` <span class="hint">(${r.n_for_cause} of them for cause)</span>` : ""}</td>
+          <td>${esc((r.sponsors || []).slice(0, 3).join("; ") || "none")}</td>
           <td>${(r.live || []).length
             ? `<a href="${esc(r.live[0].url || "#")}" target="_blank" rel="noopener">${
                 esc(r.live[0].nct_id)}</a> ${esc(r.live[0].status)}
                <span class="hint">${esc((r.live[0].conditions || []).join(", "))}</span>`
-            : r.error ? `<span class="hint">${esc(r.error)}</span>` : "—"}</td>
+            : r.error ? `<span class="hint">${esc(r.error)}</span>` : "no data"}</td>
         </tr>`).join("") + `</tbody></table></div>`;
       const stopped = trDrugs.flatMap((r) => (r.stopped || []).map((s) => ({...s, drug: r.drug})))
         .filter((s) => s.why_stopped || (s.categories || []).length).slice(0, 6);
@@ -3203,12 +3286,12 @@ function drawerHtml(d) {
         // v2.4: Open Targets categorises the stop, so the category leads and the
         // sponsor's free text follows it verbatim for a human to read — rather
         // than the free text standing alone with nothing to anchor it.
-        h += `<p class="summary-line">Why trials stopped — <b>Open Targets' category</b>
+        h += `<p class="summary-line">Why trials stopped, by <b>Open Targets' category</b>
           first, then the sponsor's own words verbatim:</p><ul class="reason">` +
-          stopped.map((s) => `<li><code>${esc(s.nct_id || "—")}</code> ${esc(s.drug)}:
+          stopped.map((s) => `<li><code>${esc(s.nct_id || "no data")}</code> ${esc(s.drug)}:
             <b>${esc((s.categories || []).join(", ") || "no category")}</b>${
               s.for_cause ? ` <span class="hint">(for cause)</span>` : ""}
-            — “${esc(s.why_stopped)}”</li>`).join("") + `</ul>`;
+            “${esc(s.why_stopped)}”</li>`).join("") + `</ul>`;
       }
     }
   }
@@ -3224,22 +3307,23 @@ function drawerHtml(d) {
     <dt>PubTator3 records</dt><dd>
       <a href="${esc(ptUrl)}" target="_blank" rel="noopener">${
         esc(fmtCount(lit.pubtator_count))}</a>
-      <span class="hint">gene-id resolved — opens the result list</span></dd>
+      <span class="hint">gene-id resolved. Opens the result list</span></dd>
     <dt>query</dt><dd><code>${esc(lit.pubtator_query || "")}</code></dd>
-    <dt>Europe PMC</dt><dd>
+    <dt title="Articles Europe PMC returns for the query printed below. It is context, and it sets no ring value.">Europe PMC search hits</dt><dd>
       <a href="${esc(epmcUrl)}" target="_blank" rel="noopener">${
         esc(fmtCount(lit.europepmc_count))}</a>
-      ${lit.europepmc_error ? `<span class="hint">— ${esc(lit.europepmc_error)}</span>` : ""}
+      ${lit.europepmc_error ? `<span class="hint">${esc(lit.europepmc_error)}</span>` : ""}
       ${lit.europepmc_echo_live === false
-        ? `<span class="hint">— replayed from cache, not checked this run</span>` : ""}
+        ? `<span class="hint">replayed from cache, not checked this run</span>` : ""}
       <br><code>${esc(lit.europepmc_query || "")}</code>
-      <br><span class="hint">A count, not evidence: it swings 44% on phrasing
-      alone, measured. It sets no ring value — the literature ring is the
+      <br><span class="hint" title="Measured on this build: rephrasing the same gene's query moved this hit count by 44% of itself, so a ratio of two such counts measures how ambiguous a symbol is rather than how little the gene has been studied.">A count, not evidence: it swings 44% on phrasing
+      alone, measured. It sets no ring value. The literature ring is the
       PubTator3 count above.</span></dd></dl>`;
   const years = Object.entries(lit.years || {}).sort((a, b) => b[0].localeCompare(a[0]));
   if (years.length) {
-    h += `<p class="hint">by year: ${years.slice(0, 8)
-      .map(([y, n]) => `${esc(y)}: ${esc(fmtCount(n))}`).join(" · ")}</p>`;
+    h += `<p class="hint" title="The year facet of the same PubTator3 search as the count above, newest first.">PubTator3 records by year: ${
+      years.slice(0, 8)
+      .map(([y, n]) => `${esc(y)}: ${esc(fmtCount(n))} record(s)`).join(" · ")}</p>`;
   }
 
   // --- rodent lead (COUNCIL M4) ---
@@ -3247,18 +3331,18 @@ function drawerHtml(d) {
   const mp = d.mouse_phenotypes || [];
   h += mp.length
     ? `<div class="note warn">A lead, not a verdict, and never folded into any score.
-       The ring is three states — not phenotyped / phenotyped-and-normal /
+       The ring is three states: not phenotyped / phenotyped-and-normal /
        phenotyped-with-abnormal. The count below is context, not a score,
        and the source is mouse only, not rat.</div>
        ${phenotypeTermListHtml(d.phenotype_terms, mp)}`
-    : `<p class="hint">No mouse phenotype records — not phenotyped, which is not the
+    : `<p class="hint">No mouse phenotype records. Not phenotyped, which is not the
        same as “no phenotype”. Embryonic-lethal lines drop out of adult phenotyping,
        which biases exactly the essential genes the safety ring flags as
        risky.</p>`;
 
   if (d.triage) h += triageHtml(d.triage);
   else h += `<div class="note">LLM triage of the rodent lead was not run for this gene
-             — see the run manifest.</div>`;
+             See the run manifest.</div>`;
 
   // --- phenotype table (stage 7). Beside the rodent lead, not a new page or a
   // step in the stepped flow (PLAN §9) — a second, lazy-loaded panel so a
@@ -3266,8 +3350,8 @@ function drawerHtml(d) {
   // alone spends anything. ---
   h += `<h4>mouse phenotype table (MGI, via Open Targets × Europe PMC)</h4>
     <div id="phenotype-panel" data-gene="${esc(d.gene)}">
-      <p class="hint">One row per (phenotype, model, paper) MGI curates for this gene —
-        the ring's raw evidence, not its reduction — plus an LLM paraphrase of exactly
+      <p class="hint">One row per (phenotype, model, paper) MGI curates for this gene:
+        the ring's raw evidence, not its reduction, plus an LLM paraphrase of exactly
         those rows, with its own $5 cap, separate from triage's.</p>
       <button type="button" class="btn" onclick="loadPhenotypes('${esc(d.gene)}')">Load
         phenotype table &amp; summary</button>
@@ -3279,7 +3363,7 @@ function drawerHtml(d) {
     ? `<ul class="tight">${sl.map((s) =>
         `<li>${esc(s.event)} <span class="hint">${esc(s.datasource || "")}</span></li>`)
         .join("")}</ul>`
-    : `<p class="hint">No rows. Open Targets' safety records are sparse — absence here is
+    : `<p class="hint">No rows. Open Targets' safety records are sparse. Absence here is
        weak evidence of safety.</p>`);
 
   // --- ChEMBL, explicitly untrusted ---
@@ -3290,26 +3374,38 @@ function drawerHtml(d) {
     h += `<p class="hint">${ch.n_direct_efficacy} of ${ch.n_mechanisms} rows are
       <code>direct_interaction=1</code> and <code>disease_efficacy=1</code>
       (target ${esc(ch.target_chembl_id)}).</p>
-      <table><thead><tr><th>Molecule</th><th>Action</th><th>Direct</th><th>Efficacy</th>
-      <th>Max phase</th><th>Mechanism</th></tr></thead><tbody>` +
+      <table><thead><tr><th>Molecule</th><th>Action</th>
+      <th title="ChEMBL's direct_interaction flag: 1 where ChEMBL records the molecule acting on this gene's product directly, 0 where it does not.">Direct</th>
+      <th title="ChEMBL's disease_efficacy flag: 1 where ChEMBL records the mechanism as the one the drug works through for the indication, 0 where it does not.">Efficacy</th>
+      <th title="The highest clinical phase ChEMBL records for this molecule, on ChEMBL's own max_phase scale.">Max phase</th><th>Mechanism</th></tr></thead><tbody>` +
       ch.rows.map((m) => `<tr>
         <td>${m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.molecule)}</a>`
           : esc(m.molecule)}</td>
-        <td>${esc(m.action_type || "—")}</td><td>${m.direct_interaction}</td>
-        <td>${m.disease_efficacy}</td><td>${esc(m.max_phase ?? "—")}</td>
+        <td>${esc(m.action_type || "no data")}</td><td>${m.direct_interaction}</td>
+        <td>${m.disease_efficacy}</td><td>${esc(m.max_phase ?? "no data")}</td>
         <td class="reason">${esc(m.mechanism_of_action || "")}</td></tr>`).join("") +
       `</tbody></table>`;
   }
 
   // --- every cell, with its state and why ---
   h += `<h4>every ring, with its state</h4><table><thead><tr><th>Ring</th><th>State</th>
-        <th>Value</th><th>Why</th></tr></thead><tbody>` +
-    Object.entries(d.cells || {}).map(([k, c]) => `<tr>
+        <th title="The number this run stored for the ring, in the units that ring's own scale is drawn on.">Value</th>
+        <th>Why</th></tr></thead><tbody>` +
+    Object.entries(d.cells || {}).map(([k, c]) => {
+      // The unit is the RING's, read off `RING_INFO` exactly as the grid's and
+      // the circle's hovers read it, so no third opinion about what a stored
+      // number is measured in can exist here. A drawer opened before either
+      // surface filled `RING_INFO` simply prints the number, as it always did.
+      const ri = RING_INFO[k] || {};
+      const unit = ri.bound_units || ri.units || "";
+      return `<tr>
       <td>${esc(k)}</td>
       <td><span class="pill ${c.state === "value" ? "ok"
         : c.state === "failed" ? "bad" : "grey"}">${esc(c.state)}</span></td>
-      <td>${c.value == null ? "—" : (+c.value).toPrecision(4)}</td>
-      <td class="reason">${esc(fmtNumsInText(c.detail))}</td></tr>`).join("") +
+      <td>${c.value == null ? "no data"
+        : esc((+c.value).toPrecision(4) + (unit ? " " + unit : ""))}</td>
+      <td class="reason">${esc(fmtNumsInText(c.detail))}</td></tr>`;
+    }).join("") +
     `</tbody></table>`;
   return h;
 }
@@ -3344,7 +3440,7 @@ async function loadPhenotypes(gene) {
 
 function phenotypeSectionHtml(d) {
   if (d.state === "none found") {
-    return `<p class="hint">No mouse phenotype records for this gene — not phenotyped,
+    return `<p class="hint">No mouse phenotype records for this gene. Not phenotyped,
       which is not the same as "no phenotype". No LLM call was made
       (PLAN §3 stage 7a: a gene with zero rows stops here).</p>`;
   }
@@ -3352,9 +3448,10 @@ function phenotypeSectionHtml(d) {
   const rows = d.rows || [];
   const counts = d.level_counts || {};
   let h = `<p class="summary-line">${rows.length} row(s)
-      <span class="hint">(${Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(", ")})</span>
+      <span class="hint">(by level: ${Object.entries(counts)
+        .map(([k, v]) => `${v} ${k}`).join(", ")})</span>
       · ${d.n_distinct_pmids} distinct PMID(s), ${d.n_articles_fetched} of up to
-      ${d.max_articles_cap} fetched from Europe PMC.</p>`;
+      ${d.max_articles_cap} articles fetched from Europe PMC.</p>`;
 
   h += `<div class="scroll-x" style="max-height:340px;overflow-y:auto">
       <table><thead><tr><th>MP term</th><th>level</th><th>model</th><th>PMID</th>
@@ -3368,9 +3465,9 @@ function phenotypeSectionHtml(d) {
         ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(r.pmid)}/" target="_blank"
              rel="noopener">${esc(r.pmid)}</a>`
         : "no PMID on record"}</td>
-      <td>${esc(r.title || "—")}${r.year ? ` <span class="hint">(${esc(r.year)})</span>` : ""}
+      <td>${esc(r.title || "no data")}${r.year ? ` <span class="hint">(${esc(r.year)})</span>` : ""}
         <div class="hint">${esc(r.abstract_status || "")}</div></td>
-      <td>${esc(r.sentence || "—")}</td>
+      <td>${esc(r.sentence || "no data")}</td>
     </tr>`).join("") + `</tbody></table></div>`;
 
   h += `<p class="hint">Source: ${(d.source || []).map((s) => esc(s.legend_text)).join(" · ")}</p>`;
@@ -3396,20 +3493,20 @@ function phenotypeSummaryHtml(s, capRows, totalRows) {
 
   const rowCap = totalRows > capRows
     ? `<p class="hint">summary computed over the first ${capRows} of ${totalRows} table rows
-        (<code>PHENOTYPE_SUMMARY_MAX_ROWS</code>) — the table above shows every row
+        (<code>PHENOTYPE_SUMMARY_MAX_ROWS</code>). The table above shows every row
         regardless.</p>`
     : "";
 
   return `<h4 style="margin-top:.75em">summary</h4>
     <p class="hint">model ${esc(s.model)} · prompt ${esc(s.prompt_hash)} ·
-      ${s.input_tokens} in / ${s.output_tokens} out
+      ${s.input_tokens} input tokens, ${s.output_tokens} output tokens
       ${s.cached ? ` · <b>cached ${esc(s.cached_at)}</b> (no charge)`
         : ` · $${(+s.cost_usd).toFixed(4)} this call`}
       · ${esc(s.note)}</p>
     <p class="hint">sends only: ${esc(s.sends_only)}</p>
     ${rowCap}${acctLine}
     <ul class="tight">${(s.claims || []).map((c) => `<li>${esc(c.text)}
-      <span class="hint">(rows ${c.row_ids.join(", ")} — “${esc(c.quote)}”)</span></li>`)
+      <span class="hint">(rows ${c.row_ids.join(", ")}: “${esc(c.quote)}”)</span></li>`)
       .join("")}</ul>`;
 }
 
@@ -3525,7 +3622,7 @@ function fmtStampUTC(s) {
 // same cases. Not for measurements: a count has no significant-figure question,
 // and `num` stays the formatter for a ring value.
 function fmtCount(n, missing) {
-  const miss = missing === undefined ? "—" : missing;
+  const miss = missing === undefined ? "no data" : missing;
   if (n === null || n === undefined || n === "" || typeof n === "boolean") return miss;
   const v = Number(n);
   if (!Number.isFinite(v)) return miss;
@@ -3561,7 +3658,7 @@ function fmtCount(n, missing) {
 // one cutoff and then another. `tests/test_pvalue.py` asserts the mirror.
 const P_CUTOFF = 0.05;
 const P_SIG_DIGITS = 2;
-const P_MISSING = "—";
+const P_MISSING = "no data";
 
 // The cutoff as it appears inside `<0.05`: the bound with the rule's own
 // digits, not padded out to two significant ones.
@@ -3617,10 +3714,16 @@ const P_IN_TEXT = /\badjusted p ([0-9][0-9.eE+-]*)/g;
 //: pattern, read two ways.
 const P_IN_TEXT_ONCE = new RegExp(P_IN_TEXT.source);
 
+// Below the cutoff this says "below 0.05" rather than "<0.05". The CELL still
+// prints `fmtP`'s "<0.05", because that is a value in a column; this is the
+// same p inside a sentence, and the dashboard language standard of 2026-10-21
+// asks a sentence for plain words (rule 6). Same number, same cutoff, one
+// source for both: `pCutoffText`.
 function fmtPInText(s) {
   return String(s == null ? "" : s).replace(P_IN_TEXT, (whole, n) => {
     const v = Number(n);
-    return Number.isFinite(v) && v >= 0 && v <= 1 ? "adjusted p " + fmtP(v) : whole;
+    if (!(Number.isFinite(v) && v >= 0 && v <= 1)) return whole;
+    return "adjusted p " + (v < P_CUTOFF ? "below " + pCutoffText() : fmtP(v));
   });
 }
 
@@ -3807,7 +3910,7 @@ function cellTooltip(ringKey, gene) {
   // and where the number came from.
   const measures = `${r.label}${r.units ? ", in " + r.units : ""}${
     r.transform ? " (" + r.transform + ")" : ""}${
-    r.source ? " — source: " + r.source : ""}.`;
+    r.source ? ". Source: " + r.source : ""}.`;
   // `fmtPInText`: the `neg_log10_padj` cell's detail is "adjusted p 2.19538e-22
   // (submitted)", written by `run.py` and read back as data by
   // `drawer_bake._padj`, so it is reformatted HERE, on the way to the screen,
@@ -3886,7 +3989,7 @@ async function loadTable(runId) {
   const id = (runId || "").trim();
   if (!id) {
     $("#table-status").textContent =
-      "No run loaded. Draw a figure, or type a run id above — every run under " +
+      "No run loaded. Draw a figure, or type a run id above. Every run under " +
       "runs/ can be opened by id.";
     return;
   }
@@ -3947,7 +4050,7 @@ async function loadTable(runId) {
     if (hint && !$("#figure").querySelector('[id^="cell|"]')) {
       hint.classList.add("unavailable");
       hint.textContent = (d.baked_drawers || []).length
-        ? "No figure is drawn in this session. Open a gene from the Table tab — its drawer is read from disk."
+        ? "No figure is drawn in this session. Open a gene from the Table tab. Its drawer is read from disk."
         : "No figure is drawn in this session, and the per-gene drawer needs the run in memory, so nothing here opens one.";
     }
   }
@@ -4013,20 +4116,22 @@ function renderTable(d) {
   const bad = d.any_invariant_failed;
   const cnt = d.counts;
   $("#table-meta").innerHTML =
-    (bad ? `<div id="table-banner" class="banner-bad">DO NOT TRUST THIS TABLE —
+    (bad ? `<div id="table-banner" class="banner-bad">DO NOT TRUST THIS TABLE.
        an invariant failed on run ${esc(d.run_id)}. See the Invariants tab.</div>` : "") +
     `<div class="counts">
-       <b>${esc(cnt.input)}</b> genes in · <b>${esc(cnt.rendered)}</b> in this table ·
+       <b>${esc(cnt.input)}</b> genes in · <b>${esc(cnt.rendered)}</b> genes in this
+         table ·
        <button class="drop linkish" id="table-show-ledger"><b>${esc(cnt.dropped)}</b>
-         not shown — why?</button> ·
+         genes not shown, in the drop ledger</button> ·
        region <b title="GTEx tissue id: ${esc(d.region || "none")}">${
          esc(regionLabel(d.region))}</b> ·
        <span class="pill ok">input = rendered + ledgered</span>
-       <span class="hint">${esc(cnt.input)} = ${esc(cnt.rendered)} + ${esc(cnt.dropped)},
+       <span class="hint">${esc(cnt.input)} genes in = ${esc(cnt.rendered)} rendered
+         + ${esc(cnt.dropped)} ledgered,
          checked against this run's own artefacts before the table was built</span>
      </div>` +
     ((d.filters || []).length
-      ? `<div class="note warn"><b>Filtered — this is not the whole submitted set.</b>
+      ? `<div class="note warn"><b>Filtered. This is not the whole submitted set.</b>
          ${d.filters.map((f) => `<code>${esc(f.expression)}</code>`).join(" · ")}</div>`
       : "") +
     // Review of 2026-10-20, item 4. This was a 185-word paragraph on the
@@ -4044,7 +4149,7 @@ function renderTable(d) {
           ? " This run predates submitted_order in the manifest, so the "
             + "tie-break and the no-value block use the order it was drawn in."
           : "")
-       + (d.drawer_note ? " " + d.drawer_note : ""))}">Spoke order —
+       + (d.drawer_note ? " " + d.drawer_note : ""))}">Spoke order:
        <b>${esc(d.ordering_note || d.ordering)}</b>.
        ${/* v4.0. The links are the payload's, not this file's: three hardcoded
              `/api/…` hrefs are correct in the app and dead in the offline
@@ -4070,12 +4175,13 @@ function renderTable(d) {
        <span class="lbl">Sort</span>` +
     (d.sort.length
       ? d.sort.map((k, i) => `<span class="key">
-          <b>${i + 1}.</b> ${esc(ringLabel(k.ordering))}
+          <b title="Sort key ${i + 1} of ${d.sort.length}. Keys are applied in turn; a later key only breaks ties the one before it left.">${
+            i + 1}.</b> ${esc(ringLabel(k.ordering))}
           <button class="dir" data-i="${i}" title="reverse this key">${
             k.reverse ? "worst first ↑" : "best first ↓"}</button>
           <button class="rm" data-i="${i}" title="remove this key">✕</button>
         </span>`).join("")
-      : `<span class="hint">unsorted — the order this run drew the spokes in</span>`) +
+      : `<span class="hint">unsorted: the order this run drew the spokes in</span>`) +
       `<button id="table-clear" class="ghost">reset to the circle's order</button>
      </div>
      <p class="hint" title="${esc((d.sort_note || "")
@@ -4108,7 +4214,10 @@ function renderTable(d) {
   };
   const rank = (o) => {
     const i = d.sort.findIndex((x) => x.ordering === o);
-    return i < 0 ? "" : `<span class="krank">${i + 1}</span>`;
+    // The badge is a sort-key POSITION, not a score of any kind (rule 7), so it
+    // says which it is on hover rather than sitting in the head as a bare digit.
+    return i < 0 ? "" : `<span class="krank" title="Sort key ${i + 1} of ${
+      d.sort.length}: this column's place in the sort, not a value.">${i + 1}</span>`;
   };
 
   // v4.2, Puck 2026-10-19: "that gene expression expansion should be organised
@@ -4131,9 +4240,9 @@ function renderTable(d) {
   // continuation line here is indented on purpose, because
   // `test_the_export_neutralises_only_the_bootstrap` reads this file for
   // top-level statements by looking for a letter in column 0.
-  const groupTitle = `Columns ${deStart + 1}–${deStart + deSpan}: the `
+  const groupTitle = `Columns ${deStart + 1} to ${deStart + deSpan}: the `
     + "differential expression submitted to this run. The comparison, its "
-    + "Atlas provenance and which way log2FC points are stated directly "
+    + "Atlas provenance and the direction log2FC is stated in are printed directly "
     + "above the grid.";
   // `+ 2`: the Gene and k columns, which are not rings and are in no group.
   const groupRow = !deSpan ? "" : `<tr class="colgroups">
@@ -4150,7 +4259,7 @@ function renderTable(d) {
   let head = `<tr>
     <th class="sortable gene-col" data-ordering="alphabetical">Gene${
       esc(dirOf("alphabetical"))}${rank("alphabetical")}</th>
-    <th title="k — how many of the ${d.k_max} external rings have a real measurement.
+    <th title="k: how many of the ${d.k_max} external rings have a real measurement.
       A completeness gauge: it orders nothing and selects nothing (PLAN §2).">k</th>`
     // v3.7 items 2 and 4. Three lines per head and only one of them is new
     // pixels: the ring number and `column_label` (the scale column's own name for
@@ -4172,9 +4281,9 @@ function renderTable(d) {
     + d.rings.map((r) => `<th class="${r.sortable ? "sortable" : "unsortable"}${
         (d.dim || []).some((f) => f.ring === r.key) ? " dim-key" : ""}"
         data-ordering="${r.sortable ? "ring:" + esc(r.key) : ""}"
-        title="${esc(r.n + ". " + r.label + (r.units ? " — " + r.units : "")
-          + (r.source_name ? " — source: " + r.source_name : "")
-          + (r.sortable ? "" : " — not sortable: ordering by k would order by how much "
+        title="${esc(r.n + ". " + r.label + (r.units ? ". In " + r.units : "")
+          + (r.source_name ? ". Source: " + r.source_name : "")
+          + (r.sortable ? "" : ". Not sortable: ordering by k would order by how much "
             + "anybody has studied a gene (PLAN §2)"))}">
         <span class="rn">${r.n}</span> ${esc(r.column_label)}${
           esc(dirOf("ring:" + r.key))}${rank("ring:" + r.key)}${r.source_name
@@ -4186,7 +4295,7 @@ function renderTable(d) {
     const divider = (primary && i === blockStart && blockStart >= 0)
       ? `<tr class="missing-divider"><td colspan="${d.rings.length + 2}">
            ${d.missing_block.length} gene(s) have <b>no value</b> on
-           ${esc(ringLabel(primary))}. They are <b>last, not lowest</b> — this key
+           ${esc(ringLabel(primary))}. They are <b>last, not lowest</b>. This key
            cannot place them, so it does not pretend to.</td></tr>`
       : "";
     // v3.8. A dim filter is view state, so it adds a CLASS and a WORD to a row
@@ -4213,7 +4322,8 @@ function renderTable(d) {
           // in which case the label opens that file (`openDrawer`).
           : `<span class="gene">${esc(g.gene)}</span>`}
         <div class="ens">${esc(g.ensembl_id)}</div>${dimTag}</th>
-      <td class="kcell">${esc(g.k)}<span class="of">/${esc(d.k_max)}</span></td>`
+      <td class="kcell" title="k: how many of the ${esc(d.k_max)} external rings have a real measurement for this gene. Your own logFC and adjusted p are not counted.">${
+        esc(g.k)}<span class="of">/${esc(d.k_max)}</span></td>`
       + d.rings.map((r) => cellHtml(g.cells[r.key], r.key, g.gene)).join("")
       + `</tr>`;
   }).join("");
@@ -4238,7 +4348,7 @@ function renderTable(d) {
     $("#table-grid").querySelectorAll("th.sortable").forEach((th) => {
       th.classList.remove("sortable");
       th.classList.add("unsortable");
-      th.title = (th.title ? th.title + " — " : "")
+      th.title = (th.title ? th.title + ". " : "")
         + "sorting needs the analysis server; this is the order the run drew.";
     });
     const clear = $("#table-clear");
@@ -4301,7 +4411,7 @@ function renderTable(d) {
   $("#table-ledger").innerHTML =
     `<details id="table-ledger-details">
        <summary><span class="chev" aria-hidden="true">▾</span>
-         <b>Drop ledger</b> — ${led.length} row(s): every input gene that is not in
+         <b>Drop ledger</b>, ${led.length} row(s): every input gene that is not in
          this grid, and why</summary>
        <div class="reveal" id="table-ledger-body"></div>
      </details>`;
@@ -4363,7 +4473,7 @@ function renderDimBar(d) {
              `column_label` and `units`: the bound below is compared against the
              column's own raw `values.csv` number "in the units its label
              states", and on the two restating columns the HEAD states the units
-             of the PRINT instead — column 2 prints the adjusted p over a file
+             of the PRINT instead. Column 2 prints the adjusted p over a file
              holding −log10(padj), column 11 prints PubTator3 records over a file
              holding log10(1 + records). So this entry keeps the ring's own name
              and the file's own units, the bound stays in the stored scale, and
@@ -4455,20 +4565,20 @@ function renderDimCounts(d) {
   // the whole thing as one string — the form somebody pastes under a screenshot.
   $("#table-dim-counts").innerHTML =
     `<div class="tally" title="${esc(d.dim_count_line)}">
-       <b>${esc(c.match ?? 0)}</b> shown ·
-       <b>${esc(c.dimmed ?? 0)}</b> dimmed ·
-       <b>${esc(c.unevaluable ?? 0)}</b> cannot be evaluated</div>
+       <b>${esc(c.match ?? 0)}</b> genes shown ·
+       <b>${esc(c.dimmed ?? 0)}</b> genes dimmed ·
+       <b>${esc(c.unevaluable ?? 0)}</b> genes cannot be evaluated</div>
      <p>${esc(d.dim_count_note)}</p>
      <div class="three">
        <span class="swat is-match"><i><em></em></i> matches the bound</span>
-       <span class="swat is-dimmed"><i><em></em></i> has a value and misses it —
+       <span class="swat is-dimmed"><i><em></em></i> has a value and misses it,
          faded, still here</span>
        <span class="swat is-unevaluable"><i><em></em></i> no value on this column,
-         so the bound cannot be evaluated — full strength</span>
+         so the bound cannot be evaluated, full strength</span>
      </div>
      <p class="note">Dimming is a view state: the
        <b>${esc((d.counts || {}).rendered)}</b> genes rendered and the
-       <b>${esc((d.counts || {}).dropped)}</b> in the drop ledger are the same
+       <b>${esc((d.counts || {}).dropped)}</b> genes in the drop ledger are the same
        numbers as with no dim filter set. A dimmed gene is a rendered gene.</p>`;
 }
 
@@ -4505,10 +4615,11 @@ function renderTableSources(d) {
     `<details id="table-sources-details" class="sources"${
        withFailures.length ? " open" : ""}>
        <summary><span class="chev" aria-hidden="true">▾</span>
-         <b>Where these ${rows.length} columns come from</b> —
-         ${rows.filter((r) => r.linked).length} with a source link,
-         ${rows.filter((r) => !r.linked).length} without and why${withFailures.length
-           ? `, ${withFailures.length} with a FAILED cell` : ""}</summary>
+         <b>Where these ${rows.length} columns come from</b>:
+         ${rows.filter((r) => r.linked).length} columns with a source link,
+         ${rows.filter((r) => !r.linked).length} columns without and why${
+           withFailures.length
+           ? `, ${withFailures.length} columns with a FAILED cell` : ""}</summary>
        <div class="reveal">
          <p class="hint">${esc(d.citation_note || "")}</p>
          <ol class="srclist">` +
@@ -4526,11 +4637,11 @@ function renderTableSources(d) {
         ${r.linked
           ? `<a href="${esc(r.url)}" target="_blank" rel="noopener"
                title="${esc(r.reason)}">${esc(r.anchor_text)}</a>`
-          : `<span class="nolink">no source link — ${esc(r.reason)}</span>`}
+          : `<span class="nolink">no source link: ${esc(r.reason)}</span>`}
         ${r.recorded_drift ? `<span class="why warnish">${esc(r.recorded_drift)}</span>` : ""}
         ${r.failed_target
           ? `<span class="failnote"><b>${r.failed_genes.length} FAILED cell(s)</b>
-              on this column — ${esc(r.failed_genes.join(", "))} —
+              on this column, ${esc(r.failed_genes.join(", "))},
               <b>not answered by the link above.</b> ${esc(r.failed_target.why)}
               <a href="${esc(r.failed_target.url)}" target="_blank" rel="noopener">${
                 esc(r.failed_target.text)}</a></span>`
@@ -4578,7 +4689,7 @@ function cellHtml(c, ringKey, gene) {
   // concluding the gene has no value. The cell's own `detail` is the record, and
   // the citation strip's FAILED row names the gene and links manifest.json.
   const lead = c.state === "failed"
-    ? "call FAILED — not absence, and NOT answered by this column's source link. "
+    ? "call FAILED. Not absence, and NOT answered by this column's source link. "
       + "The record is this run's own: "
     : "";
   return `<td class="st-${esc(c.state)}" title="${esc(lead + c.detail)}">${
@@ -4588,14 +4699,14 @@ function cellHtml(c, ringKey, gene) {
 function triageHtml(t) {
   if (t.error) return `<div class="note warn">Triage failed: ${esc(t.error)}</div>`;
   return `<div class="note warn">
-      <b>${esc(t.verdict)}</b> — abstract asserts target manipulation altered the phenotype
+      <b>${esc(t.verdict)}</b>: abstract asserts target manipulation altered the phenotype
       (unverified). Never folded into the score.</div>
     <p>“${esc(t.sentence)}”</p>
     <p class="hint">PMID
       <a href="https://pubmed.ncbi.nlm.nih.gov/${esc(t.pmid)}/" target="_blank"
          rel="noopener">${esc(t.pmid)}</a>
       · model <code>${esc(t.model)}</code> · prompt <code>${esc(t.prompt_hash)}</code>
-      · quote verified in abstract: ${t.quote_verified ? "yes" : "NO — discarded"}</p>`;
+      · quote verified in abstract: ${t.quote_verified ? "yes" : "NO, discarded"}</p>`;
 }
 
 // v4.0. The app boots itself; the offline export does not.

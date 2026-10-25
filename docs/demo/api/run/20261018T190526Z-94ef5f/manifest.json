@@ -87,7 +87,7 @@
   {
    "check": "opentargets.ring_keys",
    "ok": true,
-   "detail": "every key a ring reads is present"
+   "detail": "every key a ring queries is present"
   },
   {
    "check": "opentargets.field_snapshot",
@@ -159,7 +159,7 @@
    "id": "I8",
    "name": "contrast identity",
    "outcome": "PASS",
-   "detail": "E-GEOD-101794 g2_g1 \u2014 prose name and sign sentence both printed on the figure and match the `ContrastRef` this run used",
+   "detail": "E-GEOD-101794 g2_g1: prose name and sign sentence both printed on the figure and match the `ContrastRef` this run used",
    "affects": ""
   },
   {
@@ -184,7 +184,7 @@
     "spent": 0.05852,
     "calls": 5,
     "remaining": 4.94148,
-    "purpose": "the phenotype-page summary, one call per gene, summarising only the table it sits above"
+    "purpose": "the phenotype-page summary, one call per gene, summarising only the table printed below it"
    },
    "chooser": {
     "cap": 2.0,
@@ -205,7 +205,7 @@
     "spent": 0.996595,
     "calls": 52,
     "remaining": 2.003405,
-    "purpose": "the per-gene evidence summary, baked offline by scripts/bake_summaries.py from the gene's own drawer values and served as a file; the app never makes this call"
+    "purpose": "the per-gene evidence summary, baked offline before publication from the gene's own drawer values and served as a file; the app never makes this call"
    }
   },
   "lines": [
@@ -238,7 +238,7 @@
   {
    "input": "ENSG00000279487",
    "status": "unresolved",
-   "reason": "'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence.",
+   "reason": "'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release: not in the current release, not evidence of absence.",
    "resolved_symbol": null,
    "ensembl_id": null,
    "row": 11
@@ -259,9 +259,9 @@
   "total_s": 22.49
  },
  "not_attempted": [
-  "Measured rate limits under parallel load \u2014 unmeasured for every source. Concurrency is capped at 4 per host and any 429 is a hard run failure (QA \u00a75).",
-  "LLM triage gold set \u2014 labelling ~20 abstracts is human work. Triage precision is UNMEASURED (QA S2 item 5).",
-  "Any ChEMBL-backed ring \u2014 UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring.",
+  "Measured rate limits under parallel load: unmeasured for every source. Concurrency is capped at 4 per host and any 429 is a hard run failure (QA \u00a75).",
+  "LLM triage gold set: labelling ~20 abstracts is human work. Triage precision is UNMEASURED (QA S2 item 5).",
+  "Any ChEMBL-backed ring: UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL is drawer evidence only and drives no ring.",
   "Any ordering of the genes by merit. The spokes are in the order this run states on the figure and nothing on it is a ranking, a score or a recommendation."
  ],
  "environment": {
@@ -281,7 +281,7 @@
  "run_conditions": [
   {
    "condition": "region Small_Intestine_Terminal_Ileum was inferred from the disease, not chosen",
-   "affects": "the regional-specificity ring only \u2014 every other ring is unaffected. Crohn disease most characteristically causes transmural granulomatous inflammation of the terminal ileum, the classic site examined for diagnosis and research. Chosen for 'Crohn disease' by the region chooser (remembered from 2026-10-09). Change the region in the form and re-run if this is the wrong tissue."
+   "affects": "the regional-specificity ring only: every other ring is unaffected. Crohn disease most characteristically causes transmural granulomatous inflammation of the terminal ileum, the classic site examined for diagnosis and research. Chosen for 'Crohn disease' by the region chooser (remembered from 2026-10-09). Change the region in the form and re-run if this is the wrong tissue."
   },
   {
    "condition": "no Pharos TDL for 2 of 11 gene(s) (PELATON, FCGR1BP)",
@@ -302,7 +302,7 @@
   {
    "ring": "neg_log10_padj",
    "linked": "no",
-   "reason": "the `g2_g1.p-value` column of E-GEOD-101794-analytics.tsv, read from Expression Atlas, Ensembl 95 for contrast g2_g1 (DESeq2 version: 1.10.1) and drawn as \u2212log10(padj) so that more significant is larger \u2014 that one transform and nothing else. Not a table you submitted. The run's manifest records the file's URL under `contrast.analytics_url` and the cell detail prints the original p back",
+   "reason": "the `g2_g1.p-value` column of E-GEOD-101794-analytics.tsv, read from Expression Atlas, Ensembl 95 for contrast g2_g1 (DESeq2 version: 1.10.1) and drawn as \u2212log10(padj) so that more significant is larger: that one transform and nothing else. Not a table you submitted. The run's manifest records the file's URL under `contrast.analytics_url` and the cell detail prints the original p back",
    "legend_text": "",
    "doc_url": "",
    "endpoint": "",
@@ -332,7 +332,7 @@
   {
    "ring": "safety",
    "linked": "yes",
-   "reason": "states that an absent safety record scores 0 rather than 'safe' \u2014 the caveat this ring's label carries",
+   "reason": "states that an absent safety record scores 0 rather than 'safe': the caveat this ring's label carries",
    "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
    "doc_url": "https://platform-docs.opentargets.org/web-interface/target-prioritisation#safety-section",
    "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
@@ -352,17 +352,17 @@
   {
    "ring": "clinical_phase",
    "linked": "yes",
-   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications \u2014 the reason the ring gates on attribution",
+   "reason": "documents the widget this ring reads, including that the maximum stage is taken across indications: the reason the ring gates on attribution",
    "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
    "doc_url": "https://platform-docs.opentargets.org/target/drugs",
    "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
    "version": "api/v4 graphql \u00b7 target query schema v4",
-   "reads": "target.drugAndClinicalCandidates \u2014 maximum stage per indication"
+   "reads": "target.drugAndClinicalCandidates: maximum stage per indication"
   },
   {
    "ring": "clinical_activity",
    "linked": "yes",
-   "reason": "the clinical report record itself \u2014 the statuses and the stop categories, which is what the three states are built from",
+   "reason": "the clinical report record itself: the statuses and the stop categories, which is what the three states are built from",
    "legend_text": "Open Targets \u00b7 platform-docs.opentargets.org",
    "doc_url": "https://platform-docs.opentargets.org/drug/clinical-report",
    "endpoint": "https://api.platform.opentargets.org/api/v4/graphql",
@@ -397,12 +397,12 @@
    "doc_url": "https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
    "endpoint": "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/search/",
    "version": "search api \u00b7 schema v1",
-   "reads": "search?text=@GENE_<id> \u2014 records matching the resolved NCBI Gene id"
+   "reads": "search?text=@GENE_<id>: records matching the resolved NCBI Gene id"
   },
   {
    "ring": "completeness",
    "linked": "no",
-   "reason": "computed here, by counting rings 3-11: k is how many of the nine external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs \u2014 no source of its own is read for it",
+   "reason": "computed here, by counting rings 3-11: k is how many of the nine external rings have a real measurement for this gene. It is arithmetic over the other rings' cells, so its provenance is theirs: no source of its own is read for it",
    "legend_text": "",
    "doc_url": "",
    "endpoint": "",

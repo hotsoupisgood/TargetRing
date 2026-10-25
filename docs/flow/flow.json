@@ -1,6 +1,6 @@
 {
  "run_id": "20261018T190526Z-94ef5f",
- "generated_from": "targetring.config and this run's own manifest.json",
+ "generated_from": "the build's own constants and this run's manifest",
  "timestamp_utc": "2026-10-18T19:05:48+00:00",
  "git_sha": "19a6b1b346f7",
  "disease": "Crohn's disease",
@@ -40,7 +40,7 @@
   {
    "input": "ENSG00000279487",
    "status": "unresolved",
-   "reason": "'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release \u2014 not in the current release, not evidence of absence."
+   "reason": "'ENSG00000279487' matched no Open Targets record Ensembl release 95 (Atlas) id not in the current Open Targets release: not in the current release, not evidence of absence."
   }
  ],
  "rings": {
@@ -56,7 +56,7 @@
  "sources": [
   {
    "name": "Open Targets",
-   "gives": "tractability, chemical probe, safety flags, furthest trial phase, trial activity, mouse phenotypes, and the chromosome the gene sits on",
+   "gives": "tractability, chemical probe, safety flags, furthest trial phase, trial activity, mouse phenotypes, and the gene's chromosome",
    "url": "https://platform.opentargets.org/",
    "by": "Ensembl gene id"
   },
@@ -74,7 +74,7 @@
   },
   {
    "name": "PubTator3",
-   "gives": "literature volume \u2014 mentions resolved to a gene id, never text-matched",
+   "gives": "literature volume: mentions resolved to a gene id, never text-matched",
    "url": "https://www.ncbi.nlm.nih.gov/research/pubtator3/",
    "by": "NCBI gene id"
   },
@@ -144,28 +144,31 @@
     "n": 1,
     "key": "expressed",
     "name": "Expressed",
-    "met_when": "GTEx median TPM \u2265 1 in the run's region (fallback: tissue-distribution ring > 0 if GTEx is absent)",
+    "met_when": "GTEx median TPM at least 1 in the run's region (fallback: tissue-distribution score above 0 if GTEx is absent)",
+    "hover": "Expressed: the gene's median expression in the run's region in GTEx, a public atlas of gene activity by tissue, is at least 1 TPM (transcripts per million). Where GTEx has no median for a gene, Open Targets' tissue-distribution score decides instead; that score runs from -1 to +1 and this rule counts any score above 0.",
     "source": "GTEx median TPM, Open Targets prioritisation"
    },
    {
     "n": 2,
     "key": "dysregulated",
     "name": "Dysregulated in this study",
-    "met_when": "|logFC| \u2265 1 and adjusted p \u2264 0.05",
+    "met_when": "|log2 fold change| \u2265 1 and adjusted p \u2264 0.05",
+    "hover": "Dysregulated: log2 fold change: each +1 is a doubling, so +2.6 is about 6 times higher, and adjusted p is the significance after correcting for testing every gene. This rule counts |log2 fold change| of at least 1 with adjusted p at 0.05 or below, both read from the table you submitted.",
     "source": "the submitted DE table"
    },
    {
     "n": 3,
     "key": "phenotype",
     "name": "Phenotype in a study",
-    "met_when": "mouse-KO ring > 0, or \u2265 1 abnormal mouse phenotype term(s)",
+    "met_when": "mouse-KO ring above 0 on its 0-to-1 scale, or \u2265 1 abnormal mouse phenotype term(s)",
+    "hover": "Phenotype in a study: Open Targets records which mouse genes have been knocked out and what changed. The ring is three states, not a number: an abnormal phenotype on record, none on record, or no record at all (drawn hatched). This rule counts a ring above 0, or at least 1 abnormal mouse term. A mouse result is a lead, never a verdict.",
     "source": "Open Targets mousePhenotypes"
    }
   ],
   "go": "all three met",
   "no_go": "any one not met",
   "insufficient": "none not met, but any no data",
-  "never_a_criterion": "Safety and toxicity rings, druggability rings, clinical stage, drug count and literature volume. Puck, 2026-10-18: \"no toxicity data or low druggability does not exclude. this could be fixed by consulting a chemist.\" They print as a caveat line under the verdict, never as an exclusion.",
+  "never_a_criterion": "Safety and toxicity rings, druggability rings, clinical stage, drug count and literature volume. A target is not excluded for missing toxicity data or for low druggability, because a chemist can resolve both. These print as a caveat line under the verdict, never as an exclusion.",
   "counts": {
    "GO": 5,
    "NO-GO": 5,
@@ -181,14 +184,14 @@
     "spent": 0.0,
     "cap": 5.0,
     "calls": 0,
-    "purpose": "LLM triage of the top 10 genes (not built; nothing has ever been spent on it)"
+    "purpose": "large language model triage of the top 10 genes (not built; nothing has ever been spent on it)"
    },
    {
     "account": "phenotype",
     "spent": 0.06,
     "cap": 5.0,
     "calls": 5,
-    "purpose": "the phenotype-page summary, one call per gene, summarising only the table it sits above"
+    "purpose": "the phenotype-page summary, one call per gene, summarising only the table printed below it"
    },
    {
     "account": "chooser",
@@ -209,10 +212,10 @@
     "spent": 1.0,
     "cap": 3.0,
     "calls": 52,
-    "purpose": "the per-gene evidence summary, baked offline by scripts/bake_summaries.py from the gene's own drawer values and served as a file; the app never makes this call"
+    "purpose": "the per-gene evidence summary, baked offline before publication from the gene's own drawer values and served as a file; the app never makes this call"
    }
   ],
-  "note": "No paid call is on the render path: the figure draws without a key. Each account has its own cap and none borrows from another. Model prices change, so read these as what this project had cost by the date above, not as a price list."
+  "note": "No paid call is on the render path: the figure draws without an API key. Each account has its own cap and none borrows from another. Model prices change, so these are the amounts this project had spent by the date above, not a price list."
  },
- "no_ranking": "There is no score, no weighted sum, no front and no ranking of any kind. The spoke order is a decision, it is stated on the figure, and it is checked in the artefact. The rings are evidence for a reader to weigh."
+ "no_ranking": "There is no score, no weighted sum and no ranking of any kind. The spoke order is a decision. It is stated on the figure and it is checked in the artefact. The rings are evidence for a reader to weigh."
 }
