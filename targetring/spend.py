@@ -93,19 +93,24 @@ ACCOUNT_PURPOSE: dict[str, str] = {
     TRIAGE: (f"LLM triage of the top {config.TRIAGE_TOP_N} genes (not built; "
              f"nothing has ever been spent on it)"),
     PHENOTYPE: ("the phenotype-page summary, one call per gene, summarising "
-                "only the table it sits above"),
+                "only the table printed below it"),
     CHOOSER: ("the contrast chooser, one call per disease, choosing only among "
               "contrasts the index already offered it"),
     REGION: ("the region chooser, one call per disease and then cached, "
              "choosing only among the GTEx tissues this build can read"),
-    SUMMARY: ("the per-gene evidence summary, baked offline by "
-              "scripts/bake_summaries.py from the gene's own drawer values and "
-              "served as a file; the app never makes this call"),
-    PHENOTYPE_LLM: ("the Claude-coded 0/1 phenotype flag, baked offline by "
-                    "scripts/bake_phenotype_flags.py from the gene's mouse "
-                    "phenotype terms and the contrast's disease area; a display "
-                    "aid beside the owner's phenotype criterion, never the "
-                    "criterion, and the app never makes this call"),
+    # These two name a build step rather than a repo path: a reader of the
+    # page cannot follow a script name, and the dashboard language standard
+    # keeps file paths off a visible surface (rule 10). The FACT that matters
+    # is that the call was made offline, once, before publication, and that
+    # the running app never makes it.
+    SUMMARY: ("the per-gene evidence summary, baked offline before publication "
+              "from the gene's own drawer values and served as a file; the app "
+              "never makes this call"),
+    PHENOTYPE_LLM: ("the Claude-coded phenotype flag, 0 or 1, baked offline "
+                    "before publication from the gene's mouse phenotype terms "
+                    "and the contrast's disease area; a display aid beside the "
+                    "owner's phenotype criterion, never the criterion, and the "
+                    "app never makes this call"),
 }
 
 #: Terminal statuses. A line carrying one of these is the last word on its

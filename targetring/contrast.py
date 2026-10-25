@@ -216,7 +216,7 @@ class ContrastRef:
                 f"(n={self.n_ref} vs {self.n_test}). A group this small "
                 f"supports no useful dispersion estimate, so this contrast's "
                 f"adjusted p-values are extreme for a reason that is not "
-                f"biological — and because the rows shown were selected by "
+                f"biological. Because the rows shown were selected by "
                 f"adjusted p, that selection preferentially picks the genes "
                 f"whose dispersion estimate collapsed hardest. "
                 f"The numbers shown are Atlas's own and are reproduced "
@@ -313,7 +313,7 @@ class MicroarrayNotDrawable(Exception):
         super().__init__(
             f"{ref.accession} {ref.contrast_id} exists in Expression Atlas but "
             f"is microarray (platform {ref.platform!r}), and this app reads "
-            f"RNA-seq only — a settled decision, not a missing feature "
+            f"RNA-seq only: a settled decision, not a missing feature "
             f"(docs/DECISION-RNASEQ-ONLY-2026-10-02.md). Its statistics are in "
             f"{ref.accession}_{ref.platform}-analytics.tsv if you need them "
             f"elsewhere; nothing here is drawn from them.")

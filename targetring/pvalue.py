@@ -54,9 +54,10 @@ P_CUTOFF = config.RECOMMEND_MAX_Q
 #: Significant digits at or above the cutoff.
 P_SIG_DIGITS = 2
 
-#: What a p that is not there prints as. The same em dash the drawer already
-#: uses for an absent value, so a missing p does not look like a small one.
-P_MISSING = "—"
+#: What a p that is not there prints as. `states.py`'s own name for the state,
+#: so a missing p cannot be mistaken for a small one. Never a dash, a blank or a
+#: zero: AGENTS.md rule 1 says missing is not low.
+P_MISSING = "no data"
 
 
 def cutoff_text(cutoff: float = P_CUTOFF) -> str:
@@ -100,7 +101,7 @@ def format_p(p: Any, missing: str = P_MISSING, cutoff: float = P_CUTOFF) -> str:
     >>> format_p(1)
     '1'
     >>> format_p(None)
-    '—'
+    'no data'
     """
     if p is None or isinstance(p, bool):
         return missing

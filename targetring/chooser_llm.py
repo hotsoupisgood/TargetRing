@@ -247,7 +247,7 @@ class ModelChooser:
             except Exception as e:  # noqa: BLE001 -- CapExceeded and friends
                 # Rule 8 as amended: a cap is an approval gate. Say the number
                 # rather than failing mute, so the next step is obvious.
-                return None, f"the chooser did not run — {e}"
+                return None, f"the chooser did not run: {e}"
 
         out = self.client.complete(cands, max_tokens=self.max_tokens)
 
@@ -267,7 +267,7 @@ class ModelChooser:
                                cache_read_tokens=out.cache_read_tokens,
                                status=status, note=out.error or "")
         if not out.ok:
-            return None, f"the chooser did not run — {out.error}"
+            return None, f"the chooser did not run: {out.error}"
 
         by_key = {c.key: c for c in cands}
         if not out.key:

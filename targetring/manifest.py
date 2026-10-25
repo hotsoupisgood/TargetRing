@@ -152,11 +152,11 @@ class Manifest:
 # The reviews' explicit "do not attempt tonight" list, carried into every run so
 # a screenshot cannot be mistaken for more than it is.
 NOT_ATTEMPTED: list[str] = [
-    "Measured rate limits under parallel load — unmeasured for every source. "
+    "Measured rate limits under parallel load: unmeasured for every source. "
     "Concurrency is capped at 4 per host and any 429 is a hard run failure (QA §5).",
-    "LLM triage gold set — labelling ~20 abstracts is human work. Triage precision "
+    "LLM triage gold set: labelling ~20 abstracts is human work. Triage precision "
     "is UNMEASURED (QA S2 item 5).",
-    "Any ChEMBL-backed ring — UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL "
+    "Any ChEMBL-backed ring: UniProt/ChEMBL resolution is unprobed at scale, so ChEMBL "
     "is drawer evidence only and drives no ring.",
     # v2.5: the two ranking entries are gone, because the thing they declined to "
     # claim no longer exists. Nothing here is ranked, scored or weighted.

@@ -223,7 +223,7 @@ class RegionChooser:
                     max_tokens=self.max_tokens, key=f"region:{disease}",
                     prompt_hash=prompt_hash())
             except Exception as e:  # noqa: BLE001 -- CapExceeded and friends
-                return RegionResult("", f"the region chooser did not run — {e}",
+                return RegionResult("", f"the region chooser did not run: {e}",
                                     error="cap")
 
         out = self.client.complete(disease, regions, max_tokens=self.max_tokens)
@@ -239,7 +239,7 @@ class RegionChooser:
                 note=out.error or "")
 
         if not out.ok:
-            return RegionResult("", f"the region chooser did not run — "
+            return RegionResult("", f"the region chooser did not run: "
                                     f"{out.error}", error="call")
         if not out.tissue:
             return RegionResult("", f"no tissue in the GTEx panel suits this "

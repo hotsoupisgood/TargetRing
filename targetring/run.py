@@ -126,7 +126,7 @@ def _ledger_reason_for(res: Any, contrast: Any) -> str:
     if contrast is None or res.status not in ("no_match", "ambiguous"):
         return base
     return (f"{base} Ensembl release {contrast.ensembl_release or '95'} "
-           f"(Atlas) id not in the current Open Targets release — not in the "
+           f"(Atlas) id not in the current Open Targets release. Not in the "
            f"current release, not evidence of absence.")
 
 
@@ -307,7 +307,7 @@ async def run_analysis(
         _say("contracts", "Checked the source contracts")
         contract_failures = [c for c in contracts if not c["ok"]]
         for c in contract_failures:
-            warnings.append(f"source contract FAILED — {c['check']}: {c['detail'][:200]}")
+            warnings.append(f"source contract FAILED. {c['check']}: {c['detail'][:200]}")
 
         # --- resolve, before any ring -----------------------------------
         t = time.time()
@@ -439,7 +439,9 @@ async def run_analysis(
     import math
 
     cells_by_ring: dict[str, dict[str, Cell]] = {
-        "logfc": {g: value(by_gene[g][0].logfc, f"logFC {by_gene[g][0].logfc:g} (submitted)")
+        "logfc": {g: value(by_gene[g][0].logfc,
+                           f"log2 fold change {by_gene[g][0].logfc:g} "
+                           f"(submitted)")
                   for g in genes},
         "neg_log10_padj": {
             g: (value(-math.log10(by_gene[g][0].padj),
@@ -511,7 +513,8 @@ async def run_analysis(
                  # 2026-10-20, item 5). This read "8 of 9 external rings" in
                  # the drawer beside a grid cell reading "8/9".
                  f"k = {stats[g].k}/{EXTERNAL_RING_COUNT} external rings with a "
-                 f"real measurement (your own logFC and padj are not counted)")
+                 f"real measurement (your own log2 fold change and "
+                 f"adjusted p are not counted)")
         for g in genes
     }
     ordering = normalise_ordering(ordering, cells_by_ring)
@@ -590,7 +593,7 @@ async def run_analysis(
     if region_inferred:
         conditions.append((
             f"region {region} was inferred from the disease, not chosen",
-            (f"the regional-specificity ring only — every other ring is "
+            (f"the regional-specificity ring only: every other ring is "
              f"unaffected. {region_reason} Change the region in the form and "
              f"re-run if this is the wrong tissue.").strip()))
     # Panel S1, the half of it that was still open. `heatmap.py`'s own
@@ -1117,8 +1120,8 @@ def _write_csv(path: Path, rows, ledger, parsed, ordering_note: str = "",
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
-        fh.write(f"\n# SPOKE ORDER — {ordering_note}\n")
-        fh.write("\n# FILTERS ACTIVE ON THIS FIGURE — it is not the whole submitted set\n")
+        fh.write(f"\n# SPOKE ORDER: {ordering_note}\n")
+        fh.write("\n# FILTERS ACTIVE ON THIS FIGURE: it is not the whole submitted set\n")
         fw = csv.writer(fh)
         fw.writerow(["ring", "comparison", "threshold", "drop_no_data", "expression"])
         for f in active_filters:
@@ -1127,13 +1130,13 @@ def _write_csv(path: Path, rows, ledger, parsed, ordering_note: str = "",
         if not active_filters:
             fw.writerow(["", "", "", "", "none"])
         if kept_unevaluated:
-            fh.write("\n# KEPT, NOT FILTERED — no data on a filtered ring, so the "
+            fh.write("\n# KEPT, NOT FILTERED: no data on a filtered ring, so the "
                      "threshold could not be evaluated (marked ~ on the figure)\n")
             uw = csv.writer(fh)
             uw.writerow(["gene", "rings_not_evaluated"])
             for g, rings_unfiltered in sorted(kept_unevaluated.items()):
                 uw.writerow([g, " ".join(rings_unfiltered)])
-        fh.write("\n# DROP LEDGER — every input row is above or below this line\n")
+        fh.write("\n# DROP LEDGER: every input row is above or below this line\n")
         lw = csv.writer(fh)
         lw.writerow(["input_symbol", "status", "resolved_symbol", "ensembl_id", "row", "reason"])
         for e in ledger:

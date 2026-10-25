@@ -400,7 +400,7 @@ FAMILIES: dict[str, Family] = {
     "logfc": Family(
         "logfc_div", "diverging", tuple(diverging_hexes("blue", "ember")),
         "blue = down · pale = no change · orange = up. Neither direction is "
-        "drawn as the good one — the figure cannot say which is therapeutic.",
+        "drawn as the good one. The figure cannot say which is therapeutic.",
     ),
     # Safety is signed with a *stated* bad direction, so it gets a diverging
     # pair whose warm arm is the bad one -- also a hard constraint in the

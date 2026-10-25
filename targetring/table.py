@@ -232,7 +232,7 @@ def _assert_the_files_own_count_agrees(csv_path: Path, rows: list[dict[str, str]
         raise TableUnavailable(
             f"{csv_path.name} says `rendered={stated}` and its cell section holds "
             f"{genes} gene(s). The file disagrees with itself about where the cells "
-            f"end — the likeliest cause is an appended section being read as data, "
+            f"end. The likeliest cause is an appended section being read as data, "
             f"or cells lost from the middle. No table is drawn."
         )
 
@@ -294,7 +294,7 @@ def _assert_accounted_from_manifest(m: dict[str, Any], run_id: str) -> None:
         ) from e
     if i != r + d:
         raise TableUnavailable(
-            f"run {run_id}: gene accounting is broken in the artefact — {i} input rows "
+            f"run {run_id}: gene accounting is broken in the artefact: {i} input rows "
             f"!= {r} rendered + {d} ledgered. No table is drawn for it."
         )
 
@@ -345,7 +345,7 @@ def _assert_ring_list_agrees(run_id: str, manifest: dict[str, Any],
                 f"run {run_id}: values.csv and manifest.json disagree about which "
                 f"rings this run has. "
                 + (f"{len(lost)} ring(s) the manifest cites have no cell in the "
-                   f"CSV at all ({', '.join(lost[:6])}) — the figure would be "
+                   f"CSV at all ({', '.join(lost[:6])}). The figure would be "
                    f"drawn without them and would look complete. " if lost else "")
                 + (f"{len(uncited)} ring(s) in the CSV are cited nowhere "
                    f"({', '.join(uncited[:6])}). " if uncited else "")
@@ -412,7 +412,7 @@ def load(run_id: str) -> RunTable:
             ) from e
         if gene in cells.setdefault(ring, {}):
             raise TableUnavailable(
-                f"run {run_id}: {gene} appears twice on ring {ring}. A wide table "
+                f"run {run_id}: {gene} is listed twice on ring {ring}. A wide table "
                 f"would silently keep one of them."
             )
         cells[ring][gene] = TableCell(cell=_cell_from_row(row),
@@ -429,7 +429,7 @@ def load(run_id: str) -> RunTable:
              if g not in cells.get(ring["key"], {})]
     if holes:
         raise TableUnavailable(
-            f"run {run_id}: the pivot is not rectangular — {len(holes)} gene/ring "
+            f"run {run_id}: the pivot is not rectangular: {len(holes)} gene/ring "
             f"pair(s) have no cell ({', '.join(holes[:6])}"
             f"{'…' if len(holes) > 6 else ''}). Every gene must have a cell on every "
             f"ring, even if that cell is hatched."

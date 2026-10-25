@@ -141,11 +141,11 @@ WEDGE_TEXT_MARGIN_DEG = 1.5
 # asserted, not assumed.
 STATE_STYLE: dict[str, dict[str, Any]] = {
     "no_data": {"fc": "#e8e8e8", "hatch": "////", "ec": "#4d4d4d",
-                "label": "no data — never measured here"},
+                "label": "no data: never measured here"},
     "not_applicable": {"fc": "#ffffff", "hatch": "....", "ec": "#808080",
                        "label": "not applicable to this gene"},
     "failed": {"fc": "#000000", "hatch": "xxxx", "ec": "#ff0000",
-               "label": "call FAILED — not the same as absent"},
+               "label": "call FAILED: not the same as absent"},
 }
 
 
@@ -426,9 +426,9 @@ ACTIVITY_LABELS: dict[float, str] = {
     # matters -- roughly 7 of 8 BRAF terminations say nothing about the target
     # (Insufficient_Enrollment 108, Business_Administrative 51 against Negative
     # 17 and Safety_Sideeffects 13), and those land on 0.0, not here.
-    -1.0: "stopped for cause — OT category Negative / Safety_Sideeffects",
-    0.0: "dormant — drugs exist, no live trial, no for-cause stop",
-    1.0: "live trial — recruiting or ongoing",
+    -1.0: "stopped for cause: OT category Negative / Safety_Sideeffects",
+    0.0: "dormant: drugs exist, no live trial, no for-cause stop",
+    1.0: "live trial: recruiting or ongoing",
 }
 
 # COUNCIL V4 / V2-REPORT §2.4, and QA-v2-retest §5. The four safety keys buy
@@ -521,10 +521,10 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # answer the same question, and "rings that are genuinely comparable may
     # share a family" is the other half of making twelve families legible.
     RingSpec("tractable", "Tractability (family suggests druggable)",
-             "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder — "
+             "OT prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder. "
              "3 dense keys, present for every target with a prioritisation record",
              family="tractability", units="mean of 3 keys, each 0 or 1",
-             domain=(0.0, 1.0), transform="fixed 0–1, same colour in every run",
+             domain=(0.0, 1.0), transform="fixed 0 to 1, same colour in every run",
              short_source="Open Targets",
              short_label="Tractability (suggested)",
              wedge_tooltip=True,
@@ -534,7 +534,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # swatches -- a 256-step ramp here would offer a reader positions that do
     # not exist.
     RingSpec("chemical_probe", "Chemical probe available (prior tool-compound effort)",
-             "OT prioritisation: hasHighQualityChemicalProbes — SPARSE. Explicit 0.0 = "
+             "OT prioritisation: hasHighQualityChemicalProbes, SPARSE. Explicit 0.0 = "
              "looked, no probe; key absent = no_data (hatched)",
              family="tractability", units="probe: no / yes",
              domain=(0.0, 1.0), levels=2,
@@ -546,7 +546,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # same kind of diverging as logFC: here one arm genuinely is the bad one, so
     # it gets the warm arm and says so. The caveat stays on the label because
     # the four keys buy comparability, not evidence of safety.
-    RingSpec("safety", "Safety flags & constraint — NOT evidence of safety",
+    RingSpec("safety", "Safety flags & constraint: NOT evidence of safety",
              "OT prioritisation: hasSafetyEvent, geneEssentiality, geneticConstraint, isCancerDriverGene",
              family="safety", units="mean of 4 keys, each in [-1, 1]",
              domain=(-1.0, 1.0), scale="diverging",
@@ -557,7 +557,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
              # to shorten it. `SAFETY_RING_CAVEAT` is checked onto both renders
              # for the same reason: "Safety flags & constraint" on its own reads
              # as a safety score, which is the one thing this ring is not.
-             table_label="Safety flags — NOT evidence of safety"),
+             table_label="Safety flags: NOT evidence of safety"),
     # V6: a ratio over five orders of magnitude, so log10. Deliberately NOT a
     # fixed domain: the ratio is unbounded above (TTR reaches 5,204x in liver)
     # and a fixed domain would clip TTR, APOB and SERPINA1 to the same top
@@ -569,7 +569,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
              family="specificity", units="× median across the GTEx panel",
              scale="log",
              transform="log10; ticks are the raw ratio. Range moves with the "
-                       "submitted set — unbounded above",
+                       "submitted set, unbounded above",
              short_source="GTEx v8",
              short_label="Region TPM ÷ median",
              wedge_tooltip=True),
@@ -592,18 +592,18 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # slide render carries (v2.3 Still open 4).
     RingSpec("clinical_activity", f"Pipeline: current activity ({ACTIVITY_SOURCE_LABEL})",
              "OT drugAndClinicalCandidates.rows[].clinicalReports, selected by carrying a "
-             "trialOverallStatus — NOT by a source literal (the AACT->ClinicalTrials.gov "
+             "trialOverallStatus, NOT by a source literal (the AACT->ClinicalTrials.gov "
              "relabelling of 2026-09-24 is what a literal filter missed)",
              family="", units="three named states, no order implied by colour",
              categorical=ACTIVITY_PALETTE, category_labels=ACTIVITY_LABELS,
-             transform="categorical — not a ramp, and not comparable to one",
+             transform="categorical: not a ramp, and not comparable to one",
              short_source="Open Targets",
              short_label="Trial activity now",
              wedge_tooltip=True,
              table_label="Pipeline: current activity"),
     # v2.2 item 4 / COUNCIL S1. An explicit ordinal, never inferred -- four
     # named levels, so four swatches.
-    RingSpec("tdl", "Target development level (Pharos TDL — knowledge, not a pocket)",
+    RingSpec("tdl", "Target development level (Pharos TDL: knowledge, not a pocket)",
              "Pharos GraphQL target(q:{sym}).tdl; Tdark 0 / Tbio 1 / Tchem 2 / Tclin 3",
              family="knowledge", units="Tdark · Tbio · Tchem · Tclin",
              domain=(0.0, float(TDL_MAX)), levels=TDL_MAX + 1,
@@ -655,7 +655,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
     # chroma the others use -- a deliberately muted instrument rather than a
     # twelfth measurement. v2.5 narrowed what k means; this is what that
     # narrowing looks like in colour.
-    RingSpec("completeness", "k — external rings with a measurement",
+    RingSpec("completeness", "k: external rings with a measurement",
              "derived; maximum is the number of external rings",
              family="gauge", units=f"rings with a real value, of {EXTERNAL_RING_COUNT}",
              domain=(0.0, float(EXTERNAL_RING_COUNT)),
@@ -664,7 +664,7 @@ RING_SPECS: tuple[RingSpec, ...] = (
                        "nothing, and is drawn muted to say so",
              short_source="derived",
              short_label=f"k of {EXTERNAL_RING_COUNT} rings",
-             table_label="k — external rings"),
+             table_label="k: external rings"),
 )
 
 #: The two rings whose provenance is the run's own DE input rather than an
@@ -3162,7 +3162,8 @@ def _stamp_notes(ordering_note: str, filter_notes: Sequence[str], region: str,
         "adult phenotyping, which biases exactly the essential genes the safety ring flags "
         "as risky.",
         f"Missing is never imputed. k = how many of the {EXTERNAL_RING_COUNT} EXTERNAL rings "
-        f"have a real measurement for that gene; your own logFC and padj are not counted. It "
+        f"have a real measurement for that gene; your own log2 fold change and adjusted p "
+        f"are not counted. It "
         f"is a completeness gauge: it orders nothing and selects nothing.",
         # v2.7. This used to read "starts at 12 o'clock". 12 o'clock is now the
         # middle of the ring-name gap and the first spoke begins half a wedge

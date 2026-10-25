@@ -76,8 +76,8 @@ def classify_input(raw: str) -> tuple[str, ResolutionStatus | None, str]:
         return (
             cleaned,
             "excel_corrupt",
-            "Excel converted this symbol to a date. Unrecoverable from the value alone — "
-            "re-export the source file with the symbol column formatted as Text.",
+            "Excel converted this symbol to a date. Unrecoverable from the value alone. "
+            "Re-export the source file with the symbol column formatted as Text.",
         )
     m = ENSEMBL_RE.match(cleaned)
     if m:
@@ -185,7 +185,7 @@ class Resolver:
             status = "possible_mouse"
             note = (
                 f"{cleaned!r} is styled like a mouse symbol and resolved to human "
-                f"{hit['name']}. Not auto-converted — silently orthologue-mapping would "
+                f"{hit['name']}. Not auto-converted: silently orthologue-mapping would "
                 f"change the science. Check the species of the source table."
             )
         elif renamed:
@@ -270,7 +270,7 @@ def ledger_reason(r: Resolution) -> str:
     """The user-facing sentence for a gene that will not be rendered."""
     return {
         "excel_corrupt": r.note,
-        "ambiguous": f"Ambiguous identifier — {r.note}. Disambiguate and re-run.",
+        "ambiguous": f"Ambiguous identifier: {r.note}. Disambiguate and re-run.",
         "no_match": r.note or "no match",
     }.get(r.status, r.note)
 

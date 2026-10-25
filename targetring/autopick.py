@@ -63,8 +63,8 @@ from .atlas_index import COMPARISON_LABELS
 #: Why a row is not eligible to be chosen automatically. Each is a statement
 #: about the row, not a judgement of the experiment behind it.
 EXCLUSION_REASONS: dict[str, str] = {
-    "not_drawable": ("this app does not read this contrast's format — "
-                     "microarray, a settled decision of 2026-10-02 — or its "
+    "not_drawable": ("this app does not read this contrast's format "
+                     "(microarray, a settled decision of 2026-10-02), or its "
                      "contrast id does not establish the sign"),
     "not_case_control": ("both sides carry the same disease annotation, or "
                          "neither side is annotated as diseased, so this is "
@@ -193,8 +193,8 @@ def candidates_from_rows(rows: list[dict[str, Any]]
 #: makes a contrast unusable.
 _CONTROL_HINTS: tuple[tuple[str, str], ...] = (
     ("non inflammatory bowel disease", "the control side is people investigated "
-     "for this disease who turned out not to have it, not healthy volunteers — "
-     "shared symptomatic signal is subtracted out"),
+     "for this disease who turned out not to have it, not healthy volunteers. "
+     "Shared symptomatic signal is subtracted out"),
     ("adjacent", "the control side is tissue taken near the lesion, from the "
      "same affected individuals"),
     ("not applicable", "the control side's condition is annotated "

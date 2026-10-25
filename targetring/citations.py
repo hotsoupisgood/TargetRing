@@ -86,7 +86,7 @@ RETIRED_RINGS: dict[str, str] = {
         "three dense keys) and Chemical probe (the sparse fourth), because an absent "
         "probe key was taking three present keys down with it. So this column has no "
         "scale in this build's legend, and its citation above is the retired 4-key "
-        "measure's own — not Tractability's."),
+        "measure's own, not Tractability's."),
 }
 
 # Why a `failed` cell is not sent to the ring's source documentation. This is the
@@ -94,7 +94,7 @@ RETIRED_RINGS: dict[str, str] = {
 FAILED_NOTE = (
     "A failed call is not absence. The source above documents a field that is "
     "working, so sending a reader there answers a question they did not ask and "
-    "leaves them with the false conclusion that the gene has no value — the "
+    "leaves them with the false conclusion that the gene has no value. That is the "
     "plausible wrong output this project's first rule exists to prevent. These "
     "cells point at this run's own record instead: hover the cell for the reason "
     "the call failed, and open manifest.json for what the run recorded."
@@ -104,7 +104,7 @@ FAILED_NOTE = (
 # same reason `figure.caveats_for_the_page` hands its clauses over: the page draws
 # claims about provenance, it does not author them.
 NO_DATA_NOTE = (
-    "A link is the column's, not a cell's — the ring is what has a source. "
+    "A link is the column's, not a cell's: the ring is what has a source. "
     "It answers a measured cell and a hatched no-data one alike: “is this gene "
     "really absent upstream?” is a question you check at the source. It does "
     "not answer a black FAILED cell; those rows say where to look instead."

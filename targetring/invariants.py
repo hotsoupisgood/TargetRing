@@ -118,7 +118,7 @@ class InvariantReport:
 
     def banner_lines(self) -> list[str]:
         """Red banner. FAIL only: an invariant was checked and did not hold."""
-        return [f"{r.id} {r.name}: FAIL — {_summarise(r.detail)}" for r in self.failures]
+        return [f"{r.id} {r.name}: FAIL. {_summarise(r.detail)}" for r in self.failures]
 
     def condition_lines(self) -> list[str]:
         """Amber notice. Checks that could not run, and source outages.
@@ -128,11 +128,11 @@ class InvariantReport:
         banner stop working the day it is real.
         """
         out = [
-            f"{r.id} {r.name}: NOT CHECKED — {_summarise(r.detail, 150)}"
+            f"{r.id} {r.name}: NOT CHECKED. {_summarise(r.detail, 150)}"
             + (f" · {r.affects}" if r.affects else "")
             for r in self.unchecked
         ]
-        out += [f"{head} — {why}" for head, why in self.conditions]
+        out += [f"{head}: {why}" for head, why in self.conditions]
         return out
 
     def summary_line(self) -> str:
@@ -155,11 +155,11 @@ class InvariantReport:
         bits = [f"INVARIANTS {passed}/{n} PASS"]
         if self.failures:
             bits.append(f"{len(self.failures)} FAILED "
-                        f"({', '.join(r.id for r in self.failures)}) — "
-                        f"do not trust the numbers on this figure")
+                        f"({', '.join(r.id for r in self.failures)}). "
+                        f"Do not trust the numbers on this figure")
         if self.unchecked:
             bits.append(f"{len(self.unchecked)} NOT CHECKED "
-                        f"({', '.join(r.id for r in self.unchecked)}) — not "
+                        f"({', '.join(r.id for r in self.unchecked)}). Not "
                         f"a failure and not a pass; see manifest.json")
         if not self.failures and not self.unchecked:
             bits.append("every check this build can make, made and held; "
@@ -671,7 +671,7 @@ def _i8_contrast_identity(ref: Any, svg_path: Path | None) -> Result:
             f"anywhere in its own text; a reader cannot verify which contrast "
             f"(or which direction) this figure came from")
     return Result("I8", "contrast identity", "PASS",
-                  f"{ref.accession} {ref.contrast_id} — prose name and sign "
+                  f"{ref.accession} {ref.contrast_id}: prose name and sign "
                   f"sentence both printed on the figure and match the "
                   f"`ContrastRef` this run used")
 

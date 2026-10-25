@@ -281,7 +281,7 @@ SORT_LABEL_UNSORTED = "row order: the order this run drew the spokes in"
 SORT_LABEL_PREFIX = "row order: "
 SORT_LABEL_JOIN = ", then "
 SORT_LABEL_TAIL = (
-    ". Lexicographic — the keys are applied in turn and never combined. "
+    ". Lexicographic. The keys are applied in turn and never combined. "
     "Genes with no value on a key are last on it, never lowest.")
 
 
@@ -296,7 +296,7 @@ def sort_phrase(spec: SortKey, ring_labels: dict[str, str] | None = None,
         return ((table_phrase or "your submitted") + " order"
                 + (", reversed" if spec.reverse else ""))
     if spec.ordering == ALPHABETICAL:
-        return "gene symbol, Z–A" if spec.reverse else "gene symbol, A–Z"
+        return "gene symbol, Z to A" if spec.reverse else "gene symbol, A to Z"
     ring = is_ring_ordering(spec.ordering) or "?"
     return f"'{labels.get(ring, ring)}' {'worst' if spec.reverse else 'best'} first"
 

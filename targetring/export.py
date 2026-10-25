@@ -217,7 +217,7 @@ def assert_grades_reproduce_the_sort(t: table_mod.RunTable, g: Grades) -> int:
             named = ", ".join(grade_id(k) for k in keys) or "(no keys)"
             raise AssertionError(
                 f"run {t.run_id}: the frozen sort grades do not reproduce "
-                f"`order.order_by_keys` for [{named}] — grades give {got}, the "
+                f"`order.order_by_keys` for [{named}]: grades give {got}, the "
                 f"build gives {want}. No export is written: a table that sorts "
                 f"differently from the app is the wrong output this export exists "
                 f"to not be.")
@@ -417,14 +417,14 @@ def _provenance_html(blob: dict[str, Any], t: table_mod.RunTable) -> str:
         <dt>invariants</dt>
           <dd>{'<span class="pill bad">A CHECK FAILED</span>' if bad
               else '<span class="pill ok">no check failed</span>'}
-            — {passes} of {len(p['invariants'])} PASS, listed in full below.
+            · {passes} of {len(p['invariants'])} PASS, listed in full below.
             <b>NOT_EVALUATED is not a pass.</b></dd>
         <dt>spoke order the circle used</dt>
           <dd>{_esc(p['ordering_note'] or p['ordering'])}{
             f"<br><small>{_esc(p['ordering_note_drift'])}</small>"
             if p.get('ordering_note_drift') else ''}</dd>
-        <dt>rings drawn</dt><dd>{len(p['rings'])}, in the figure's radial order —
-          column 1 is the outermost band</dd>
+        <dt>rings drawn</dt><dd>{len(p['rings'])}, in the figure's radial order.
+          Column 1 is the outermost band</dd>
         <dt>exported (UTC)</dt><dd>{_esc(blob['exported_at_utc'])}</dd>
         <dt>git SHA this file was exported at</dt>
           <dd><code>{_esc(blob['exported_by_git_sha'])}</code></dd>
@@ -440,7 +440,7 @@ def _what_this_is_not_html(blob: dict[str, Any]) -> str:
     return f"""
     <div id="export-what">
       <div class="note warn"><b>This is a frozen copy of one run's table. Nothing
-        on it is ranked or scored</b> (PLAN §3) — sorting by a column is
+        on it is ranked or scored</b> (PLAN §3). Sorting by a column is
         lexicographic and combines nothing, and there is no column here that means
         "how good is this gene". Genes with no value on the column you sort by are
         <b>last, not lowest</b>.</div>
@@ -485,13 +485,13 @@ def build_html(run_id: str) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- targetring — offline table export. ONE FILE, no server, no network.
+<!-- targetring: offline table export. ONE FILE, no server, no network.
      Everything below is inlined: the stylesheet is `static/app.css`, the renderer
      is `static/app.js` verbatim, and the data is this run's own artefacts. There
      is deliberately no <link>, no <script src>, no <img>, no font and no fetch:
      opened from `file://` a browser blocks requests for sibling files, so an
      external reference would render an empty grid with nothing to explain it. -->
-<title>{_esc(FIGURE_TITLE)} — run {_esc(run_id)} table (offline export)</title>
+<title>{_esc(FIGURE_TITLE)} · run {_esc(run_id)} table (offline export)</title>
 <!-- An empty data: icon, so not even a favicon is requested. -->
 <link rel="icon" href="data:,">
 <style>
@@ -514,13 +514,13 @@ def build_html(run_id: str) -> str:
   </div>
   <details id="export-invariants" open>
     <summary><span class="chev" aria-hidden="true">▾</span>
-      <b>Invariants and source contracts</b> — what this run checked about itself,
+      <b>Invariants and source contracts</b>: what this run checked about itself,
       read back out of its manifest</summary>
     <div class="reveal" id="invariants"></div>
   </details>
   <details id="export-manifest">
     <summary><span class="chev" aria-hidden="true">▾</span>
-      <b>manifest.json</b> — this run's own record, inlined verbatim: sources,
+      <b>manifest.json</b>: this run's own record, inlined verbatim: sources,
       schema versions, timings and every invariant result</summary>
     <div class="reveal"><pre id="export-manifest-body">{_esc(manifest_json)}</pre></div>
   </details>

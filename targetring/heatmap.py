@@ -151,7 +151,7 @@ def parse_raw_counts(text: str, acc: str, wanted_genes: set[str],
                 raise HardFailure(
                     f"{acc}-raw-counts.tsv:{lineno} has {len(parts)} field(s) "
                     f"but column {idx} is assay {a!r}; the row is truncated. A "
-                    f"short row is refused, never read as a zero count — that "
+                    f"short row is refused, never treated as a zero count. That "
                     f"would give this gene a value it does not have and "
                     f"understate {a}'s library size, inflating every other "
                     f"gene's CPM in that column.")
@@ -162,7 +162,7 @@ def parse_raw_counts(text: str, acc: str, wanted_genes: set[str],
                 raise HardFailure(
                     f"{acc}-raw-counts.tsv:{lineno} assay {a!r} for gene "
                     f"{gid!r} is {raw!r}, which is not a number. Refused rather "
-                    f"than imputed to 0.0 (rule 1: missing is not low) — a zero "
+                    f"than imputed to 0.0 (rule 1: missing is not low). A zero "
                     f"here would be drawn as a real low-expression cell and "
                     f"would also understate {a}'s library size, inflating every "
                     f"other gene's CPM in that column. The likeliest cause is a "
@@ -171,7 +171,7 @@ def parse_raw_counts(text: str, acc: str, wanted_genes: set[str],
                 raise HardFailure(
                     f"{acc}-raw-counts.tsv:{lineno} assay {a!r} for gene "
                     f"{gid!r} parsed as {raw!r} -> {x}; a non-finite count is "
-                    f"refused for the same reason `states.Cell` refuses one — "
+                    f"refused for the same reason `states.Cell` refuses one: "
                     f"it cannot be z-scored and would poison the whole row.")
             row[a] = x
             library_size[a] += x
@@ -490,7 +490,7 @@ def influence_sentence(threshold: float, n_outliers: int, n_samples: int,
     as a direction, and states the threshold as the fraction it actually is.
     """
     return (f"Per-sample influence: leave-one-out change in this figure's "
-            f"between-group separation, which is {baseline:.3f} — the mean "
+            f"between-group separation, which is {baseline:.3f}, the mean "
             f"over the rows above of each gene's own |mean z(test) − mean "
             f"z(ref)|, unsigned so that genes moving in opposite directions "
             f"do not cancel. The most influential single sample moves it by "
@@ -524,8 +524,8 @@ def directional_balance_sentence(n_up: int, n_down: int, signed: float,
     return (f"Directional balance of the selected rows: {n_up} up, {n_down} "
             f"down of {total}. Their signed mean z difference is {signed:+.3f}, "
             f"which is {cancelled:.0f}% smaller than the unsigned separation "
-            f"above because up and down genes cancel in a signed average — so "
-            f"a signed figure near zero means opposed, not absent.")
+            f"above because up and down genes cancel in a signed average. A "
+            f"signed figure near zero means opposed, not absent.")
 
 
 def colour_direction_sentence() -> str:
@@ -556,7 +556,7 @@ def render(data: HeatmapData, out_svg: Path, out_png: Path | None = None) -> Hea
     invariant in this repo uses) finds all seven strings on the one artefact a
     reader actually has open."""
     if not data.rows:
-        raise HeatmapRefused("no genes to draw — selecting nothing is a "
+        raise HeatmapRefused("no genes to draw: selecting nothing is a "
                              "refusal, not an empty figure")
 
     n_genes = len(data.rows)

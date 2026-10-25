@@ -105,7 +105,7 @@ MAX_REASON_CHARS = 300
 
 NOTE = ("A 0/1 read of this gene's mouse phenotype terms against the contrast's "
         "disease area, written by the model named beside it from those terms and "
-        "nothing else, when the drawer was baked. It sits BESIDE the owner's "
+        "nothing else, when the drawer was baked. It is printed BESIDE the owner's "
         "deterministic phenotype criterion and is never the criterion: it never "
         "changes the GO / NO-GO verdict and orders nothing on the figure.")
 

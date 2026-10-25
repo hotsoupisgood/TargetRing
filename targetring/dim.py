@@ -101,7 +101,7 @@ NOTE_T = ("Dimming {named}. All {total} genes are still on the grid; nothing was
           "removed and nothing was added to the drop ledger.")
 NOTE_JOIN = " and "
 COUNT_LINE_T = ("{match} shown · {dimmed} dimmed · {unevaluable} cannot be "
-                "evaluated — {note}")
+                "evaluated: {note}")
 NOT_A_NUMBER_T = "{ring}: {raw} is not a number"
 
 
@@ -328,7 +328,7 @@ def count_line(outcome: DimOutcome, dims: Sequence[DimFilter],
 
 
 def _uncapitalise(s: str) -> str:
-    """`Dimming …` after an em dash reads as a new sentence when it is a clause."""
+    """`Dimming …` after the colon is a clause of that line, not a new sentence."""
     return s[:1].lower() + s[1:] if s else s
 
 

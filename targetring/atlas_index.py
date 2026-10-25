@@ -234,13 +234,13 @@ class DiseaseContrastSummary:
         parts: list[str] = []
         if self.n_microarray:
             parts.append(
-                f"{self.n_microarray} microarray — in Atlas, not read here "
+                f"{self.n_microarray} microarray: in Atlas, not read here "
                 f"(this app reads RNA-seq only)")
         if self.n_unsafe_sign:
             parts.append(
-                f"{self.n_unsafe_sign} with an unestablished sign — the contrast "
-                f"id is not {{reference}}_{{test}}, so which way the log2FC "
-                f"points is unknown")
+                f"{self.n_unsafe_sign} with an unestablished sign: the contrast "
+                f"id is not {{reference}}_{{test}}, so the direction the "
+                f"log2FC is stated in is unknown")
         return "; ".join(parts)
 
     @property
@@ -269,7 +269,7 @@ class DiseaseContrastSummary:
     @property
     def built_text(self) -> str:
         date = (self.built_utc or "unknown")[:10]
-        return f"index built {date}" + (" — STALE" if self.stale else "")
+        return f"index built {date}" + (" (STALE)" if self.stale else "")
 
 
 @dataclass
@@ -450,9 +450,9 @@ class AtlasIndex:
             "rejected_ids": list(ref.rejected_ids),
             "ols_fetched_utc": ref.ols_fetched_utc,
             "counts": s.as_dict(),
-            # `Crohn disease · MONDO_0005011 — 123 contrasts (22 RNA-seq,
+            # `Crohn disease · MONDO_0005011 · 123 contrasts (22 RNA-seq,
             #  101 microarray) in 9 experiments · index built 2026-09-29`
-            "text": (f"{ref.label} · {ref.current_id} — {s.count_text} · "
+            "text": (f"{ref.label} · {ref.current_id} · {s.count_text} · "
                      f"{s.built_text}"),
         }
 
@@ -491,7 +491,7 @@ NOT_DISEASED_IDS: frozenset[str] = frozenset({
 #: Stated; never used to remove a row or to choose one (`picker_payload`).
 COMPARISON_LABELS: dict[str, str] = {
     "case_vs_unaffected": "diseased vs not diseased",
-    "within_one_disease": "within one disease — both sides diseased",
+    "within_one_disease": "within one disease: both sides diseased",
     "disease_vs_disease": "one disease vs a different disease",
     "undetermined": "not determinable from the annotation",
 }
@@ -532,16 +532,16 @@ def _flags(c: IndexedContrast) -> list[dict[str, str]]:
     """
     out: list[dict[str, str]] = []
     if c.invalid_reason:
-        out.append({"key": "invalid_id", "label": "INVALID — sign unsafe",
+        out.append({"key": "invalid_id", "label": "INVALID: sign unsafe",
                     "reason": c.invalid_reason})
     if not c.is_rnaseq:
         out.append({
             "key": "microarray",
-            "label": f"microarray ({c.platform}) — in Atlas, not read here",
+            "label": f"microarray ({c.platform}): in Atlas, not read here",
             "reason": (
                 "This contrast's statistics exist in Expression Atlas; this app "
                 "does not read them. Microarray support was measured and then "
-                "declined on 2026-10-02 (RNA-seq only — "
+                "declined on 2026-10-02 (RNA-seq only, "
                 "docs/DECISION-RNASEQ-ONLY-2026-10-02.md), not deferred, so this "
                 "will not become drawable later. The row is greyed and still "
                 "counted: hiding it would make this picker look like Atlas has "
@@ -610,7 +610,7 @@ def picker_row(c: IndexedContrast, built_utc: str) -> dict[str, Any]:
             "{reference}_{test}, so which group 'up' refers to is unknown"
             if c.invalid_reason else
             f"this contrast exists in Expression Atlas on microarray design "
-            f"{c.platform}, and this app reads RNA-seq only — a settled "
+            f"{c.platform}, and this app reads RNA-seq only: a settled "
             f"decision of 2026-10-02, not a missing feature "
             f"(docs/DECISION-RNASEQ-ONLY-2026-10-02.md). Atlas has the data; "
             f"nothing here is drawn from it."
@@ -633,8 +633,8 @@ def picker_row(c: IndexedContrast, built_utc: str) -> dict[str, Any]:
 #: contrasts, which is rule 7 in a table.
 PICKER_SORTS: dict[str, str] = {
     "": "accession, then contrast id",
-    "n": "smallest side, ascending — then accession and contrast id",
-    "platform": "platform — then accession and contrast id",
+    "n": "smallest side ascending, then accession and contrast id",
+    "platform": "platform, then accession and contrast id",
 }
 
 
@@ -726,7 +726,7 @@ def picker_payload(index: "AtlasIndex", ref: DiseaseRef, sort: str = "") -> dict
                        "sensible default exists; the dominance line above gives "
                        "this disease's own figure."),
         "row_unit": ("Each row is one CONTRAST, not one experiment: an experiment "
-                     "with 101 contrasts appears 101 times, because the sign, the "
+                     "with 101 contrasts is listed 101 times, because the sign, the "
                      "groups and the n per side differ per contrast."),
         # In the payload, not only in the panel's HTML, for the same reason
         # `no_default` is: the statement a reader relies on must travel with the
@@ -738,13 +738,13 @@ def picker_payload(index: "AtlasIndex", ref: DiseaseRef, sort: str = "") -> dict
             f"they are in Expression Atlas, they are listed and counted below, "
             f"and this app does not read them. That is a decision taken on "
             f"2026-10-02 after measuring the platform, not a feature still "
-            f"coming — see docs/DECISION-RNASEQ-ONLY-2026-10-02.md."
+            f"coming. See docs/DECISION-RNASEQ-ONLY-2026-10-02.md."
             if summary.n_microarray else
             f"All {summary.n_contrasts} contrasts listed here are RNA-seq, which "
             f"is what this app reads. Nothing is excluded by platform."
             if summary.n_contrasts else
-            "Expression Atlas has no contrasts for this disease in this index — "
-            "nothing is being withheld by platform, there is nothing to withhold."),
+            "Expression Atlas has no contrasts for this disease in this index. "
+            "Nothing is being withheld by platform, there is nothing to withhold."),
     }
 
 

@@ -153,8 +153,8 @@ def _approved_but_not_tclin(c: dict[str, Cell]) -> str:
 
 def _tclin_but_no_attributable_drug(c: dict[str, Cell]) -> str:
     if _v(c, "tdl") == TDL_TCLIN and _v(c, "clinical_phase") == PHASE_NONE:
-        return ("Pharos classes this gene Tclin — an approved drug acts "
-                "through it — and Open Targets attributes no indication to it "
+        return ("Pharos classes this gene Tclin (an approved drug acts "
+                "through it) and Open Targets attributes no indication to it "
                 "at all")
     return ""
 
@@ -163,7 +163,7 @@ def _probe_but_tdark(c: dict[str, Cell]) -> str:
     if (_v(c, "chemical_probe") == PROBE_PRESENT
             and _v(c, "tdl") == TDL_TDARK):
         return ("a high-quality chemical probe exists, and Pharos classes this "
-                "gene Tdark — nobody has looked")
+                "gene Tdark: nobody has looked")
     return ""
 
 
@@ -171,7 +171,7 @@ def _reached_a_phase_then_stopped_for_cause(c: dict[str, Cell]) -> str:
     if (_v(c, "clinical_phase") > PHASE_NONE
             and _v(c, "clinical_activity") == ACTIVITY_STOPPED_FOR_CAUSE):
         return ("a drug reached the clinic against this gene and a trial was "
-                "stopped for cause — Open Targets categorised the stop "
+                "stopped for cause: Open Targets categorised the stop "
                 "Negative or Safety_Sideeffects")
     return ""
 
@@ -203,7 +203,7 @@ def _safety_liabilities_recorded(c: dict[str, Cell]) -> str:
 def _mouse_phenotyped_and_normal(c: dict[str, Cell]) -> str:
     if _v(c, "rodent") == MOUSE_NO_ABNORMAL:
         return ("the mouse WAS phenotyped and no abnormal phenotype is "
-                "reported — this is a measurement, not a gap")
+                "reported. This is a measurement, not a gap")
     return ""
 
 
@@ -224,7 +224,7 @@ RULES: tuple[Rule, ...] = (
               "is gated on Open Targets target-disease GENETIC evidence, so a "
               "genuinely drugged gene with no genetic association scores 0 "
               "here. That makes this a disagreement about attribution rather "
-              "than about the drug — which is worth seeing, and is not "
+              "than about the drug. That is worth seeing, and is not "
               "evidence against the gene."),
          test=_tclin_but_no_attributable_drug),
     Rule("probe_but_tdark", CONTRADICTION,
@@ -236,7 +236,7 @@ RULES: tuple[Rule, ...] = (
          test=_probe_but_tdark),
     Rule("reached_a_phase_then_stopped_for_cause", FLAG,
          ("clinical_phase", "clinical_activity"),
-         why=("Not a contradiction — a history, and the one most likely to "
+         why=("Not a contradiction: a history, and the one most likely to "
               "change a go/no-go call. Measured: roughly 7 of 8 "
               "terminations say nothing about the gene "
               "(Insufficient_Enrollment, Business_Administrative); those land "
@@ -246,8 +246,8 @@ RULES: tuple[Rule, ...] = (
     Rule("safety_liabilities_recorded", FLAG,
          ("safety",),
          why=("The ring's own label is 'NOT evidence of safety'. NEGATIVE is "
-              "the liability arm — `hasSafetyEvent` and `isCancerDriverGene` "
-              "are observed only as -1, and palette.py's legend for this "
+              "the liability arm: `hasSafetyEvent` and `isCancerDriverGene` "
+              "are observed only as -1, and the legend for this "
               "family is 'red = liability / constraint, blue = clean on these "
               "four keys'. A negative value means Open Targets holds one of "
               "those records; it does not quantify risk. The converse matters "
@@ -261,7 +261,7 @@ RULES: tuple[Rule, ...] = (
          why=("The rodent result is a lead, not a verdict. "
               "This is the level a reader is most likely to misread, because "
               "it looks like the hatched 'not phenotyped' state and means the "
-              "opposite — somebody made the mouse and it was normal. Stated "
+              "opposite: somebody made the mouse and it was normal. Stated "
               "as a measurement so it is not mistaken for a gap."),
          test=_mouse_phenotyped_and_normal),
 )

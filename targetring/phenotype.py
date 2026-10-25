@@ -260,7 +260,7 @@ PROVENANCE_NOTE = (
     "MGI curates two things separately: which biological models show a "
     "phenotype, and which papers describe each model. One row here is one "
     "(phenotype, model) pair MGI curated. The papers on a row are that "
-    "MODEL's literature — MGI does not attribute a paper to a particular "
+    "MODEL's literature. MGI does not attribute a paper to a particular "
     "phenotype, and neither does this table.")
 
 
@@ -395,7 +395,7 @@ class SummaryOutcome:
         # not just true in the code. The model never sees the DE table, the run
         # id, the region, or anything Puck typed.
         d["sends_only"] = ("MP terms, model ids, PMIDs, public paper titles "
-                           "and one abstract sentence per row — the rows shown "
+                           "and one abstract sentence per row: the rows shown "
                            "below, nothing else")
         return d
 

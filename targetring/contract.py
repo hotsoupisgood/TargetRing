@@ -68,7 +68,7 @@ async def check_contracts(http: Http) -> list[dict[str, Any]]:
         ring_keys = set(TRACTABLE_KEYS) | set(PROBE_KEYS) | set(SAFETY_KEYS)
         absent = ring_keys - set(items)
         record("opentargets.ring_keys", not absent,
-               "every key a ring reads is present" if not absent
+               "every key a ring queries is present" if not absent
                else f"rings would be empty for: {sorted(absent)}")
     except Exception as e:  # noqa: BLE001
         record("opentargets.production_query", False, describe(e))
