@@ -3162,13 +3162,17 @@ function drawerHtml(d) {
   // this is the one line that showed the raw float to a reader.
   h += `<h4>your measurement</h4><dl class="kv">
     ${/* Puck, 2026-10-21 10:05: "do not allow disembodied numbers without
-          units", with this exact field as his example. The long name is the
-          HOVER and the short one stays on the surface: `logFC` is the header
-          of the column the reader submitted, the ring's label on the figure
-          and the name `recommend.py` keeps on the GO / NO-GO line three lines
-          above this one, so renaming it here alone would be two names for one
-          quantity in one drawer. The value is untouched either way. */""}
-    <dt title="log2 fold change: each +1 is a doubling, so +2.6 is about 6 times higher. Read from the table you submitted.">logFC</dt><dd>${d.logfc}</dd>
+          units", with this exact field as his example. An earlier pass kept
+          the short name here and put the long one in the hover, arguing that
+          the GO / NO-GO line three lines above said "logFC" and renaming this
+          one alone would be two names for one quantity in one drawer. That
+          line now reads "log2 fold change +2.9", so the argument inverts:
+          leaving this as "logFC" IS the two names it was there to avoid. The
+          live drawer showed both at once. Spelled out, with the doubling rule
+          still in the hover. The short name stays where it is a LABEL and not
+          a unit: the ring on the figure, and the column head, which has to
+          match the figure. The value is untouched either way. */""}
+    <dt title="log2 fold change: each +1 is a doubling, so +2.6 is about 6 times higher. Read from the table you submitted.">log2 fold change</dt><dd>${d.logfc}</dd>
     <dt title="The adjusted p from the table you submitted, on a scale from 0 to 1. Anything under ${esc(pCutoffText())} prints as the bound rather than as an exponent.">adjusted p</dt><dd>${fmtP(d.padj)}</dd>
     ${/* v4.3, review of 2026-10-20 item 5: "8/9", the form the grid and the
           Evidence tab print. It read "8 of 9" here and "k = 8 of 9 external
