@@ -67,9 +67,9 @@ _PADJ_RE = re.compile(r"adjusted p ([0-9.eE+-]+)")
 BAKED_NOTE = (
     "Drug pipeline, trials and safety liabilities from Open Targets; TDL from "
     "Pharos; the PubTator3 count; ChEMBL mechanisms and the Europe PMC count "
-    "-- fetched, or read from this machine's cache, when this drawer was "
+    ": fetched, or read from this machine's cache, when this drawer was "
     "baked, not when you clicked. Every ring's state, value and reason is the "
-    "run's own values.csv.")
+    "run's own recorded table of values.")
 
 
 class BakeRefused(RuntimeError):

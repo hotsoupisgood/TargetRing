@@ -159,10 +159,10 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
         endpoint=config.OPENTARGETS_URL,
         version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
         reads=("target.prioritisation: hasLigand, hasPocket, hasSmallMoleculeBinder, "
-               "hasHighQualityChemicalProbes — the mean of FOUR keys. The successor "
+               "hasHighQualityChemicalProbes: the mean of FOUR keys. The successor "
                "ring `tractable` is the mean of the first THREE; this one is not it"),
-        why=("this ring averaged four prioritisation keys, and the fourth — "
-             "hasHighQualityChemicalProbes — is documented in this page's Chemical "
+        why=("this ring averaged four prioritisation keys, and the fourth, "
+             "hasHighQualityChemicalProbes, is documented in this page's Chemical "
              "probes section while the other three are in its Tractability section. "
              "The page is cited rather than either anchor because either anchor "
              "alone would document a different key count from the one this ring "
@@ -186,7 +186,7 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
         version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
         reads=("target.prioritisation: hasSafetyEvent, geneEssentiality, "
                "geneticConstraint, isCancerDriverGene"),
-        why=("states that an absent safety record scores 0 rather than 'safe' — "
+        why=("states that an absent safety record scores 0 rather than 'safe': "
              "the caveat this ring's label carries"),
     ),
     # The endpoint doc, anchored on the operation, not the portal front page.
@@ -209,9 +209,9 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
         url="https://platform-docs.opentargets.org/target/drugs",
         endpoint=config.OPENTARGETS_URL,
         version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
-        reads="target.drugAndClinicalCandidates — maximum stage per indication",
-        why=("documents the widget this ring reads, including that the maximum "
-             "stage is taken across indications — the reason the ring gates on "
+        reads="target.drugAndClinicalCandidates: maximum stage per indication",
+        why=("documents the widget this ring queries, including that the maximum "
+             "stage is taken across indications: the reason the ring gates on "
              "attribution"),
     ),
     "clinical_activity": SourceDoc(
@@ -221,7 +221,7 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
         endpoint=config.OPENTARGETS_URL,
         version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
         reads="clinicalReports: trialOverallStatus, trialWhyStopped category",
-        why=("the clinical report record itself — the statuses and the stop "
+        why=("the clinical report record itself: the statuses and the stop "
              "categories, which is what the three states are built from"),
     ),
     # TDL is served by Pharos and *defined* by the IDG Knowledge Management
@@ -259,7 +259,7 @@ RING_SOURCE_DOCS: dict[str, SourceDoc] = {
         url="https://www.ncbi.nlm.nih.gov/research/pubtator3/api",
         endpoint=config.PUBTATOR_SEARCH,
         version=f"search api · schema v{config.SCHEMA_VERSIONS['pubtator.count']}",
-        reads="search?text=@GENE_<id> — records matching the resolved NCBI Gene id",
+        reads="search?text=@GENE_<id>: records matching the resolved NCBI Gene id",
         why=("the API this ring counts through, which is where the gene-id "
              "resolution that stops common-word symbols inflating is specified"),
     ),
@@ -313,7 +313,7 @@ DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
         why=("Atlas's help pages are client-rendered and document neither file, so "
              "this link names the resource and nothing more. What a contrast IS is "
              "stated per experiment in its own -configuration.xml, which this build "
-             "reads and prints verbatim — including the prose <name> — rather "
+             "reads and prints verbatim, including the prose <name>, rather "
              "than reconstructing from the id. The id is {reference}_{test} and is "
              "asserted every run (I8): eight of the Atlas's 1,126 human "
              "differential contrasts fail that assertion, measured 2026-09-29"),
@@ -335,7 +335,7 @@ DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
         version=f"api/v4 graphql · target query schema v{config.SCHEMA_VERSIONS['opentargets.target']}",
         reads=("target.mousePhenotypes[].biologicalModels{id "
                "allelicComposition geneticBackground literature} (upstream: "
-               "MGI) — one row per (phenotype, model, PMID)"),
+               "MGI): one row per (phenotype, model, PMID)"),
         why=("as with `rodent`, Open Targets publishes no page for this "
              "field; this table names its upstream dataset (MGI), which is "
              "who curates the phenotype-to-model-to-paper links this page "
@@ -348,7 +348,7 @@ DATA_SOURCE_DOCS: dict[str, SourceDoc] = {
         url="https://europepmc.org/RestfulWebService",
         endpoint=config.EUROPEPMC_SEARCH,
         version=f"search api, resultType=core · schema v{config.SCHEMA_VERSIONS['europepmc.article']}",
-        reads="search?query=EXT_ID:<pmid> AND SRC:MED&resultType=core — title, pubYear, journalInfo, abstractText",
+        reads="search?query=EXT_ID:<pmid> AND SRC:MED&resultType=core: title, pubYear, journalInfo, abstractText",
         why=("the documented RESTful API this page calls once per distinct "
              "PMID, capped and the cap stated on the page; a PMID this "
              "returns nothing for stays in the table as 'abstract "
@@ -398,7 +398,7 @@ _COMPLETENESS_REASON = (
     f"{EXTERNAL_RING_COUNT} external rings have a real "
     f"measurement for this gene. It "
     "is arithmetic over the other rings' cells, so its provenance "
-    "is theirs — no source of its own is read for it")
+    "is theirs: no source of its own is read for it")
 
 
 @dataclass(frozen=True)
@@ -480,18 +480,18 @@ class DESource:
             # hole was laid out around.
             table_phrase_short="your submitted DE table",
             logfc_reason=(
-                "the logFC column of the DE table you submitted — your own "
-                "measurement, read straight off your file and not transformed. "
-                "The run's manifest records which header it was read from "
-                "(`input.columns.logfc`) and `values.csv` carries the value "
-                "per gene"),
+                "the log2 fold change column of the DE table you submitted: "
+                "your own measurement, read straight off your file and not "
+                "transformed. The run's manifest records which header it was "
+                "read from, and the run's recorded table of values carries the "
+                "value per gene"),
             padj_reason=(
-                "the adjusted-p column of the DE table you submitted — your "
+                "the adjusted-p column of the DE table you submitted: your "
                 "own measurement, with one transform and nothing else. The "
                 "table shows the adjusted p; the ring draws −log10(padj), so "
                 "that more significant is larger. The run's manifest records "
-                "which header it was read from (`input.columns.padj`) and the "
-                "cell detail prints the original p back"),
+                "which header it was read from, and the cell detail prints the "
+                "original adjusted p back"),
         )
 
     @staticmethod
@@ -508,29 +508,40 @@ class DESource:
             kind="contrast", short_source="Expression Atlas",
             label_qualifier="Atlas",
             source_phrase=f"Expression Atlas {where}",
-            table_phrase=f"the {where} contrast's own -analytics.tsv",
+            # Rule 10 again, and the same length rule as below: this is the
+            # phrase for a sentence with room for it, so it spells the source
+            # out in words. `table_phrase_short` is the one the centre hole is
+            # laid out around and is NOT touched here.
+            table_phrase=(f"the {where} contrast's own differential "
+                          f"expression table"),
             # "Atlas E-GEOD-101794 g2_g1" — 25 characters against the full
             # phrase's 52, which puts the ordering note within two characters
             # of the paste path's length. `Atlas` rather than `Expression
             # Atlas` because that is already the figure's own word for this
             # source: `label_qualifier` prints "logFC (Atlas)" one band away.
             table_phrase_short=f"Atlas {where}",
+            # Rule 10 keeps the analytics file name and the two raw column names
+            # off a visible surface: this text prints under an unlinked column in
+            # the citation strip, where nothing else carries it. It still names
+            # everything a reader needs to find the number again -- the
+            # accession, the contrast, the Ensembl release and the pipeline --
+            # and the run's manifest holds the table's URL verbatim for anybody
+            # checking the cell against the source.
             logfc_reason=(
-                f"the `{contrast_id}.log2foldchange` column of "
-                f"{accession}-analytics.tsv, read from Expression Atlas{release} "
-                f"for contrast {contrast_id}{how}. Not a table you submitted: "
+                f"the log2 fold change column of the Expression Atlas "
+                f"differential expression table for {accession}{release}, "
+                f"contrast {contrast_id}{how}. Not a table you submitted: "
                 f"this run selected these genes from that contrast. The run's "
-                f"manifest records the file's URL under `contrast.analytics_url` "
-                f"and `values.csv` carries the value per gene"),
+                f"manifest records the table's URL, and the run's recorded "
+                f"table of values carries the value per gene"),
             padj_reason=(
-                f"the `{contrast_id}.p-value` column of "
-                f"{accession}-analytics.tsv, read from Expression Atlas{release} "
-                f"for contrast {contrast_id}{how} — that one column and nothing "
+                f"the significance column of the same Expression Atlas "
+                f"differential expression table for {accession}{release}, "
+                f"contrast {contrast_id}{how}: that one column and nothing "
                 f"else. The table shows the adjusted p; the ring draws "
                 f"−log10(padj), so that more significant is larger. Not a table "
-                f"you submitted. The run's manifest records the file's URL under "
-                f"`contrast.analytics_url` and the cell detail prints the "
-                f"original p back"),
+                f"you submitted. The run's manifest records the table's URL, and "
+                f"the cell detail prints the original adjusted p back"),
         )
 
     @staticmethod
@@ -600,7 +611,7 @@ def assert_every_ring_resolves(ring_keys: Iterable[str]) -> None:
         raise AssertionError(
             f"ring(s) {missing} have neither an entry in RING_SOURCE_DOCS nor a "
             f"stated reason in UNLINKED_RINGS. Every ring a run draws must resolve "
-            f"to a citation or to a reason there is none — add one, and do not "
+            f"to a citation or to a reason there is none. Add one, and do not "
             f"borrow a neighbouring ring's URL to do it.")
 
 
@@ -718,7 +729,7 @@ def data_source_rows(keys: Iterable[str]) -> list[dict[str, str]]:
         if doc is None:
             raise AssertionError(
                 f"source {key!r} has no entry in DATA_SOURCE_DOCS. Every source a "
-                f"page reads must resolve to a citation — add one, and do not "
+                f"page reads must resolve to a citation. Add one, and do not "
                 f"borrow a neighbouring source's URL to do it.")
         rows.append({"source": key, "legend_text": doc.legend_text,
                      "doc_url": doc.url, "endpoint": doc.endpoint,

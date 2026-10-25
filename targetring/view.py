@@ -47,23 +47,28 @@ from .run import FILTERABLE_RINGS
 # printing three links to routes that nothing is serving.
 DRAWER_AVAILABLE_NOTE = "Click a gene to open its drawer."
 DRAWER_ON_DISK_NOTE = (
-    "Read from disk — the per-gene drawer needs the run in memory, so it is not "
+    "Read from disk. The per-gene drawer needs the run in memory, so it is not "
     "available for this one.")
 # A run read from disk whose drawers `scripts/bake_drawers.py` wrote beside it.
 # The drawer opens, and the note says what it is: the drug pipeline and the
 # literature as they were on the day they were fetched, not a live lookup.
 DRAWER_BAKED_NOTE = (
-    "Click a gene to open its drawer — read from disk, as recorded when this "
+    "Click a gene to open its drawer. Read from disk, as recorded when this "
     "run's drawers were baked; nothing is fetched on click.")
 
 
 def app_artefact_links(run_id: str) -> list[dict[str, str]]:
     """Where the app sends a reader whose run is on disk. Server routes, so the
     export does not use them."""
+    # Rule 10: the label names what the reader gets and the format it arrives
+    # in, never the file name. The download menu beside the figure words its own
+    # items the same way ("CSV: every cell, with its Ensembl id"), so the two
+    # routes to the same artefact read alike.
     return [
-        {"label": "its figure", "url": f"/api/run/{run_id}/figure.svg"},
-        {"label": "values.csv", "url": f"/api/run/{run_id}/values.csv"},
-        {"label": "manifest.json", "url": f"/api/run/{run_id}/manifest.json"},
+        {"label": "the figure, as SVG", "url": f"/api/run/{run_id}/figure.svg"},
+        {"label": "every cell, as CSV", "url": f"/api/run/{run_id}/values.csv"},
+        {"label": "sources and versions, as JSON",
+         "url": f"/api/run/{run_id}/manifest.json"},
     ]
 
 
