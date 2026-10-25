@@ -508,6 +508,13 @@ label.check input { margin-right: 6px; }
 ol.criteria { margin: 0 0 10px; padding-left: 22px; max-width: 80ch; }
 ol.criteria li { margin: 0 0 3px; }
 ol.criteria .bound { color: var(--tr-ink-3, inherit); }
+/* v4.3, 2026-10-21. A criterion whose name carries its definition says so the
+   way everything else on this page does: the dotted underline is the only
+   signal that there is a tooltip to open (see `.crit-aid`). Scoped to
+   `[title]`, so a criterion the server publishes no definition for is drawn
+   exactly as it was and nothing underlines a name with nothing behind it. */
+ol.criteria li b[title], #criteria-detail td[title] {
+  border-bottom: 1px dotted var(--line); cursor: help; }
 /* v4.3: `#full-descriptions` was the bottom copy of the GO/NO-GO rule and
    is gone (review of 2026-10-20, item 4). `#criteria-detail` is the
    collapsed line that replaced it, under the criteria it is about. */
@@ -691,6 +698,11 @@ td.reason { color: var(--muted); }
 .verdict .verdict-region { font-size: 12px; color: var(--muted);
                            border-bottom: 1px dotted var(--line); cursor: help; }
 .verdict .crit .shown { cursor: help; }
+/* The criterion NAME, when the server publishes a definition for it (v4.3,
+   2026-10-21: "expressed" became "expressed in <region>", with the definition
+   on hover). Same dotted signal as the aid beside it, and only ever on a name
+   that actually has a definition behind it. */
+.verdict .crit b[title] { border-bottom: 1px dotted var(--line); cursor: help; }
 .verdict .verdict-rule { margin: 4px 0 0; font-size: 12px; color: var(--muted);
                          cursor: help; }
 /* The Claude-coded phenotype flag: one row in the same list as the three
@@ -1293,7 +1305,7 @@ ul.tight li { margin: 2px 0; }
 .srclist { margin: 6px 0 0; padding-left: 2.1em; }
 .srclist li { margin-bottom: 9px; font-size: 12.5px; line-height: 1.45; }
 .srclist .lbl { font-weight: 600; }
-.srclist .lbl::after, .srclist .un::after { content: " — "; color: var(--muted);
+.srclist .lbl::after, .srclist .un::after { content: " · "; color: var(--muted);
                                             font-weight: 400; }
 .srclist .un { color: var(--muted); }
 /* The anchor text is `name · domain`, never a bare underline: nothing in an
