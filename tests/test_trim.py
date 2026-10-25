@@ -108,13 +108,27 @@ class TestTheTrimmedBox:
         assert crit(rec, "expressed")["bare"] == "19.06 TPM"
         # The p is printed against the cutoff rather than as an exponent (Puck,
         # 2026-10-19 18:03: "the small ps should just show less than the cut
-        # off: <0.05"). `tests/test_pvalue.py` owns the format; this line is
-        # here because the bare string is what the box prints.
-        assert crit(rec, "dysregulated")["bare"] == "logFC +3.1, p <0.05"
+        # off: <0.05"). The operator is the WORD since 2026-10-21: an ASCII
+        # "p <0.05" on a tool surface is a FAIL against the dashboard language
+        # standard, and `recommend._p_words` turns the operator into the word
+        # it means without moving the number. `tests/test_pvalue.py` owns the
+        # format; this line is here because the bare string is what the box
+        # prints.
+        #
+        # The units sweep of 2026-10-21 10:05 spells the quantity out here:
+        # "logFC +2.6" -> "log2 fold change +2.6" is the instruction's own
+        # worked example, and this line was the only bare value whose unit was
+        # an abbreviation. The value and the operator word are unchanged.
+        assert crit(rec, "dysregulated")["bare"] == (
+            "log2 fold change +3.1, p under 0.05")
         assert crit(rec, "phenotype")["bare"] == "6 abnormal terms"
         for c in rec["criteria"]:
             # No sentence: short, no prose clause, nothing about the tissue.
-            assert len(c["bare"]) <= 24, c
+            # 24 characters was the budget while "logFC" carried the unit; the
+            # dysregulated line costs 11 more now that the unit is spelled out,
+            # and nothing else on the box moved.
+            budget = 36 if c["key"] == "dysregulated" else 24
+            assert len(c["bare"]) <= budget, c
             assert "the run's chosen tissue" not in c["bare"]
             assert not c["bare"].endswith("."), c
 
@@ -129,7 +143,8 @@ class TestTheTrimmedBox:
         none_known = r.recommend(r.Facts(), T)
         assert crit(none_known, "expressed")["bare"] == "no TPM"
         assert crit(none_known, "phenotype")["bare"] == "not phenotyped"
-        assert crit(none_known, "dysregulated")["bare"] == "no logFC or adjusted p"
+        assert crit(none_known, "dysregulated")["bare"] == (
+            "no log2 fold change or adjusted p")
         td = r.recommend(r.Facts(**{**BASE, "region_tpm": None,
                                     "tissue_distribution": 0.42}), T)
         assert crit(td, "expressed")["bare"] == "tissue distribution +0.42"
@@ -196,8 +211,8 @@ class TestTheTrimmedBox:
 
     def test_the_rule_is_one_line_with_the_thresholds_in_the_tooltip(self) -> None:
         rec = r.recommend(r.Facts(**BASE), T)
-        assert rec["rule_short"] == ("rule: expressed AND dysregulated AND phenotype "
-                                     "— not used to order or filter the figure")
+        assert rec["rule_short"] == ("rule: expressed AND dysregulated AND phenotype"
+                                     ": not used to order or filter the figure")
         assert "\n" not in rec["rule_short"] and len(rec["rule_short"]) < 100
         # v4.3: the bound is printed with the glyph a reader reads. The RULE
         # VERSION is hashed over the ASCII form (`recommend._canonical`), so a

@@ -190,7 +190,11 @@ class TestTheUnlinkableRingsStateTheirProvenance:
         reasons = sources.UNLINKED_RINGS
         for key in NO_URL_RINGS:
             assert "nothing to link to" not in reasons[key], key
-        assert "logFC column" in reasons["logfc"]
+        # The quantity is spelled out since the units sweep of 2026-10-21
+        # 10:05: "logFC +2.6" -> "log2 fold change +2.6". What this line is
+        # about is unchanged -- the reason names the COLUMN the number was
+        # read from, not a URL.
+        assert "log2 fold change column" in reasons["logfc"]
         assert "you submitted" in reasons["logfc"]
         assert "adjusted-p column" in reasons["neg_log10_padj"]
         assert "−log10" in reasons["neg_log10_padj"], (

@@ -742,9 +742,15 @@ class TestItIsNotTheThresholdFilterControl:
             assert phrase in bar, phrase
         js = (STATIC / "app.js").read_text()
         title = js[js.index("const DIM_TITLE ="):js.index("const PADJ_RING")]
-        for phrase in ("drop ledger", "threshold filters", "values.csv",
+        # The hover named `values.csv` until the wording pass of 2026-10-21,
+        # which took file paths off every visible surface (rule 10 of the
+        # dashboard language standard). The FACT it was there to carry is
+        # unchanged and is what this pins: the bound is compared against the
+        # column's own stored number, not a rank or a colour position.
+        for phrase in ("drop ledger", "threshold filters", "raw stored number",
                        "neither a match nor an exclusion"):
             assert phrase in title, phrase
+        assert "values.csv" not in title
 
     def test_the_dim_filter_refuses_the_drop_no_data_toggle(self) -> None:
         """§3.2's rule-1 opt-out has no meaning here — nothing is being removed,

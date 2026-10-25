@@ -375,19 +375,35 @@ class TestEverySurfaceResolvesFromTheRun:
             assert spec.short_source == "Expression Atlas"
 
     @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
-    def test_the_stated_reasons_name_the_file_and_deny_the_claim(
+    def test_the_stated_reasons_identify_the_table_and_deny_the_claim(
             self, run_id) -> None:
-        """The reason a reader checks the number against. It must name the
-        analytics file, and it must positively say the table was not submitted —
-        the old text's forwarding pointer (`input.columns.logfc`) pointed at a
-        manifest key that exists on no run."""
+        """The reason a reader checks the number against.
+
+        It prints under an UNLINKED column in the citation strip, so it is
+        visible text and rule 10 of the dashboard language standard applies:
+        no file or document paths. Until 2026-10-21 this named the analytics
+        file and the two raw column names, which was one of the strip's
+        file-path FAILs. What the reason has to do is unchanged and is what
+        this pins: identify the table well enough to find the number again
+        (the accession and the contrast, which together name one Atlas table),
+        and positively deny that the reader submitted it. The forwarding
+        pointer stays gone -- the old text pointed at `input.columns.logfc`,
+        a manifest key that exists on no run.
+        """
         m = _manifest(run_id)
         de = S.DESource.from_manifest(m)
         for reason in (de.logfc_reason, de.padj_reason):
-            assert f"{m['contrast']['accession']}-analytics.tsv" in reason
+            assert m["contrast"]["accession"] in reason
+            assert m["contrast"]["contrast_id"] in reason
+            assert "Expression Atlas" in reason
             assert "Not a table you submitted" in reason
             assert "input.columns" not in reason
-            assert "contrast.analytics_url" in reason
+            # Rule 10: the file name and the raw column names are off the
+            # surface. The manifest still records the table's URL verbatim.
+            assert ".tsv" not in reason
+            assert "values.csv" not in reason
+            assert "contrast.analytics_url" not in reason
+            assert "manifest records the table's URL" in reason
 
     @pytest.mark.parametrize("run_id", CONTRAST_RUNS)
     def test_the_citation_strip_names_atlas_as_the_source(self, run_id) -> None:
@@ -401,7 +417,12 @@ class TestEverySurfaceResolvesFromTheRun:
     def test_the_table_phrase_names_the_contrast_not_your_table(self, run_id
                                                                  ) -> None:
         de = S.DESource.from_manifest(_manifest(run_id))
-        assert "analytics.tsv" in de.table_phrase
+        # Rule 10 again: this phrase goes in the Table tab's sort label, so it
+        # names the contrast's own table in words and not by file name. The
+        # centre hole's `table_phrase_short` is the length-budgeted one and is
+        # covered by its own test below.
+        assert "differential expression table" in de.table_phrase
+        assert ".tsv" not in de.table_phrase
         assert "your" not in de.table_phrase.lower()
 
 

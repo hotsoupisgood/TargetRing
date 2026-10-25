@@ -476,7 +476,7 @@ class TestTheRealCrohnsNumbers:
         s = crohns_index.summary_for(CROHNS_IDS)
         assert s.count_text == (
             "17 drawable of 138 contrasts in 17 experiments · "
-            "121 microarray — in Atlas, not read here "
+            "121 microarray: in Atlas, not read here "
             "(this app reads RNA-seq only)")
 
     def test_drawable_is_not_the_rnaseq_count(self, crohns_index) -> None:
@@ -588,7 +588,7 @@ class TestTheCountLineSeparatesAbsentFromUnsupported:
         assert (s.n_contrasts, s.n_drawable, s.n_microarray) == (7, 0, 7)
         assert s.count_text == (
             "0 drawable of 7 contrasts in 1 experiment · "
-            "7 microarray — in Atlas, not read here "
+            "7 microarray: in Atlas, not read here "
             "(this app reads RNA-seq only)")
 
     def test_the_two_zeroes_are_different_strings(self, crohns_index) -> None:
@@ -793,8 +793,8 @@ class TestAutocompleteEntry:
         ref = (await ols.resolve("Crohn's disease"))[0]
         e = crohns_index.autocomplete_entry(ref)
         assert e["text"] == (
-            "Crohn disease · MONDO_0005011 — 17 drawable of 138 contrasts in "
-            "17 experiments · 121 microarray — in Atlas, not read here "
+            "Crohn disease · MONDO_0005011 · 17 drawable of 138 contrasts in "
+            "17 experiments · 121 microarray: in Atlas, not read here "
             "(this app reads RNA-seq only) · index built 2026-09-29")
 
     async def test_it_carries_both_id_spaces_separately(self, ols, crohns_index) -> None:
@@ -980,7 +980,7 @@ class TestThePickerSort:
         mins = [r["min_n"] for r in p["rows"]]
         assert mins == sorted(mins)
         assert p["order"] == "n"
-        assert p["order_text"].startswith("smallest side, ascending")
+        assert p["order_text"].startswith("smallest side ascending")
         # and within one n, the default order
         threes = [(r["accession"], r["contrast_id"])
                   for r in p["rows"] if r["min_n"] == 3]
@@ -1014,7 +1014,7 @@ class TestAnInvalidContrastIsShownNotDropped:
             invalid_reason="contrast id 'g1_g2' is not g2_g1; the sign of every "
                            "log2FC is unestablished")
         row = idx.picker_row(bad, "2026-09-29T00:00:00+00:00")
-        assert row["flags"][0]["label"] == "INVALID — sign unsafe"
+        assert row["flags"][0]["label"] == "INVALID: sign unsafe"
         assert row["drawable"] is False
         assert "sign of this contrast is unestablished" in row["not_drawable_reason"]
         assert "contrast_ref" not in row, (
@@ -1100,8 +1100,8 @@ class TestDiseasesRoute:
         assert r.status_code == 200
         body = r.json()
         assert body["diseases"][0]["text"] == (
-            "Crohn disease · MONDO_0005011 — 17 drawable of 138 contrasts in "
-            "17 experiments · 121 microarray — in Atlas, not read here "
+            "Crohn disease · MONDO_0005011 · 17 drawable of 138 contrasts in "
+            "17 experiments · 121 microarray: in Atlas, not read here "
             "(this app reads RNA-seq only) · index built 2026-09-29")
 
     def test_it_carries_the_index_s_own_provenance(self, client) -> None:

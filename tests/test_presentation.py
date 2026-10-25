@@ -448,7 +448,15 @@ class TestWedge:
         body = svg.read_text()
         # The scale column wraps the safety title onto a continuation line, so
         # the caveat is checked in the two pieces the figure actually draws.
-        assert "NOT evidence" in body and "of safety" in body
+        # Rule 5 of the dashboard language standard replaced this label's em
+        # dash with a colon (2026-10-21), which moves where the wrap falls. So
+        # this asks its own question of the JOINED text rather than of one drawn
+        # line: is any of the caveat truncated away? One word of wrap movement
+        # no longer breaks it.
+        drawn = re.sub(r"\s+", " ", " ".join(
+            "".join(el.itertext()) for el in
+            ET.parse(svg).getroot().iter("{http://www.w3.org/2000/svg}text")))
+        assert "Safety flags & constraint: NOT evidence of safety" in drawn
         assert "a LEAD, not a verdict" in body
 
     def test_every_tooltip_answers_what_is_this_and_what_am_i_looking_at(self) -> None:
@@ -1281,7 +1289,7 @@ class TestV30TheLegendAsItsOwnImage:
         svg = self._legend(tmp_path)
         t, body = self._text(svg), svg.read_text()
         assert "Mouse-phenotype ring" in t, "the caveat block is not on the legend"
-        assert "no data — never measured here" in t, "the cell states are not on it"
+        assert "no data: never measured here" in t, "the cell states are not on it"
         hrefs = set(re.findall(r'<a xlink:href="([^"]+)"', body))
         # The rings THIS legend draws, which v3.9 makes a subset of the registry:
         # the registry also covers rings only older runs on disk drew, and the
@@ -2971,7 +2979,7 @@ class TestTheRegionFollowsTheDisease:
         js = (STATIC / "app.js").read_text()
         assert 'id="region-inferred"' in html
         assert "Region set to" in js
-        assert "change it above" in js
+        assert "Change it above" in js
 
     def test_a_remembered_answer_says_it_is_remembered(self) -> None:
         js = (STATIC / "app.js").read_text()

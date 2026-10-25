@@ -91,10 +91,12 @@ def test_js_grouping_matches_pythons():
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="no node on this box")
-def test_a_missing_count_is_a_dash_and_never_a_zero():
+def test_a_missing_count_is_named_and_never_a_zero():
     """AGENTS.md rule 1 at the formatter: missing is not low. A gene with no
-    PubTator3 count must not print `0` records."""
-    assert _js_counts("fmtCount(v)", [None, "", True, "abc"]) == ["—"] * 4
+    PubTator3 count must not print `0` records. It prints the state's own
+    name since 2026-10-21: an em dash is not reader-visible text any more
+    (dashboard language rule 5), and a blank would read as a zero."""
+    assert _js_counts("fmtCount(v)", [None, "", True, "abc"]) == ["no data"] * 4
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="no node on this box")

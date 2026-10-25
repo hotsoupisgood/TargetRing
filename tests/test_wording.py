@@ -23,6 +23,7 @@ No network, no model call.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import re
 
@@ -259,8 +260,22 @@ class TestOneNameOneFormat:
         assert modernise("65217 genes") == "65,217 genes"
         for untouched in ("ENSG00000081041", "E-GEOD-101794", "b39c02a638ef",
                           "2026-10-18", "#808080", "2200-step colormap",
-                          "20261018T190526Z-94ef5f"):
+                          "20261018T190526Z-94ef5f",
+                          # A BARE PMID. Every exemption above works off a
+                          # neighbouring letter or separator, and a PMID has
+                          # neither: this one is exempt because the whole
+                          # string is digits, so it is an identifier and not a
+                          # sentence with a count in it. Grouping it to
+                          # "11,911,824" broke all 12 PubMed links in the tool
+                          # and shipped (link check, 2026-10-21).
+                          "11911824", "9892619", "20643340"):
             assert modernise(untouched) == untouched, untouched
+
+    def test_an_already_grouped_identifier_is_left_alone(self) -> None:
+        """`modernise` must be a no-op on text a previous pass corrupted, so
+        the repair can be the restamp's and only the restamp's."""
+        from targetring.wording import modernise
+        assert modernise("11,911,824") == "11,911,824"
 
     def test_a_year_is_not_a_count(self) -> None:
         from targetring.wording import modernise
@@ -269,9 +284,16 @@ class TestOneNameOneFormat:
     def test_the_bounds_print_as_glyphs(self) -> None:
         from targetring.wording import modernise
         assert modernise("TPM >= 1 and p <= 0.05") == "TPM ≥ 1 and p ≤ 0.05"
-        assert modernise("yes (area) -- met on 2") == "yes (area) — met on 2"
+        # The dashboard language standard of 2026-10-21 forbids an em dash in
+        # reader-visible text (rule 5), so a spaced "--" closes to a comma. It
+        # used to become an em dash, which is the thing that rule bans.
+        assert modernise("yes (area) -- met on 2") == "yes (area), met on 2"
+        assert "—" not in modernise("yes (area) -- met on 2")
         # A hyphenated word and a flag survive: the dash rule needs spaces.
         assert modernise("gene-id resolved --force") == "gene-id resolved --force"
+        # Idempotent: the output holds no spaced "--" for a second pass to find.
+        once = modernise("a -- b -- c")
+        assert once == "a, b, c" and modernise(once) == once
 
     def test_a_gene_is_not_called_a_target(self) -> None:
         from targetring.wording import modernise
@@ -293,6 +315,31 @@ class TestOneNameOneFormat:
         assert "≥" in t.sentence() and ">=" not in t.sentence()
         assert ">=" in recommend._canonical(t.sentence())
         assert recommend.rule_version(t) == "bdc70c8fc230"
+
+    def test_the_rule_version_does_not_move_with_the_units_wording(self) -> None:
+        """The same guard, for the units sweep of 2026-10-21 10:05.
+
+        That sweep spelled "logFC" out as "log2 fold change" and gave the mouse
+        ring its 0-to-1 scale, in `Thresholds.sentence` among other places. The
+        bound and the quantity are the same; only the words moved. So the hash
+        must not move, or all 46 baked verdicts would claim a rule change that
+        did not happen. `RULE_WORDS` is what folds the wording back.
+        """
+        t = recommend.current_thresholds()
+        assert "log2 fold change" in t.sentence()
+        assert "mouse phenotype ring above 0 on its 0-to-1 scale" in t.sentence()
+        canonical = recommend._canonical(t.sentence())
+        assert "|logFC|" in canonical
+        assert "mouse phenotype ring > 0 or" in canonical
+        assert "log2 fold change" not in canonical
+        assert recommend.rule_version(t) == "bdc70c8fc230"
+
+    def test_the_rule_version_still_moves_when_a_threshold_moves(self) -> None:
+        """The other half: the fold-back must not deafen the hash to a real
+        change. A different bound on the same quantity is a different rule."""
+        t = recommend.current_thresholds()
+        moved = dataclasses.replace(t, min_abs_logfc=t.min_abs_logfc + 1)
+        assert recommend.rule_version(moved) != recommend.rule_version(t)
 
     def test_modernise_is_a_no_op_on_what_the_build_writes(self) -> None:
         """Every reader-visible registry, through the rule. A new adapter

@@ -176,8 +176,17 @@ def test_above_the_cutoff_keeps_its_leading_zero():
         assert not s.startswith("."), f"{v!r} printed as {s!r} with no leading zero"
 
 
-def test_missing_keeps_the_existing_marker():
-    assert format_p(None) == P_MISSING == "—"
+def test_missing_prints_the_state_it_is_in():
+    """The marker names the state, and is not a dash.
+
+    It was "—" until 2026-10-21. The dashboard language standard forbids an em
+    dash in reader-visible text (rule 5), and a bare dash was the wrong marker
+    anyway: a missing adjusted p has to read as missing, never as a small one
+    or a blank (AGENTS.md rule 1, missing is not low). It now prints the name
+    `states.py` gives the state.
+    """
+    assert format_p(None) == P_MISSING == "no data"
+    assert "—" not in P_MISSING and "–" not in P_MISSING
     assert format_p(float("nan")) == P_MISSING
     assert format_p("") == P_MISSING
     assert format_p(True) == P_MISSING
@@ -209,17 +218,24 @@ def _dysregulated(padj: float, logfc: float = 3.1) -> dict:
 
 
 def test_verdict_strings_print_the_inequality():
-    """The GO box reads "met logFC +3.1, p <0.05" (Puck's own example)."""
+    """The GO box reads "met log2 fold change +3.1, adjusted p under 0.05".
+
+    Puck's own example was "p <0.05" (2026-10-19 18:03). The statement is
+    unchanged and the number has not moved; the operator is the word it means,
+    because an ASCII "p <0.05" on a tool surface is a p-value FAIL against the
+    dashboard language standard adopted 2026-10-21. `recommend._p_words` is
+    the one place that conversion happens.
+    """
     c = _dysregulated(2.19538e-22)
-    assert c["bare"] == "logFC +3.1, p <0.05"
-    assert c["shown"] == "logFC 3.1, adjusted p <0.05"
+    assert c["bare"] == "log2 fold change +3.1, p under 0.05"
+    assert c["shown"] == "log2 fold change 3.1, adjusted p under 0.05"
     assert c["status"] == recommend.MET
 
 
 def test_a_verdict_p_above_the_cutoff_is_a_decimal():
     c = _dysregulated(0.2)
-    assert c["shown"] == "logFC 3.1, adjusted p 0.20"
-    assert c["bare"] == "logFC +3.1, p 0.20"
+    assert c["shown"] == "log2 fold change 3.1, adjusted p 0.20"
+    assert c["bare"] == "log2 fold change +3.1, p 0.20"
 
 
 def test_the_rule_text_is_not_reformatted():
@@ -231,11 +247,11 @@ def test_the_rule_text_is_not_reformatted():
     # v4.3, review of 2026-10-20 item 5: the bound is printed with the glyph a
     # reader reads (≤, not <=). It is still the BOUND and still not reformatted
     # into the measurement's "<0.05" -- which is what this test is about.
-    assert c["threshold"] == "|logFC| ≥ 1 and adjusted p ≤ 0.05"
+    assert c["threshold"] == "|log2 fold change| ≥ 1 and adjusted p ≤ 0.05"
     assert "<0.05" not in c["threshold"]
     spec = {x["key"]: x for x in recommend.criteria_spec()}
     assert spec["dysregulated"]["met_when"] == (
-        "|logFC| ≥ 1 and adjusted p ≤ 0.05")
+        "|log2 fold change| ≥ 1 and adjusted p ≤ 0.05")
 
 
 def test_the_stored_number_is_untouched():
@@ -269,14 +285,14 @@ def test_fmt_p_in_text_rewrites_the_cell_detail_but_not_the_rule():
         "adjusted p 0.2 (submitted)",
         "|logFC| >= 1 and adjusted p <= 0.05",
         "adjusted p is exactly 0; -log10 is undefined, not infinite",
-        "logFC 3.1 (submitted)",
+        "log2 fold change 3.1 (submitted)",
     ]
     assert _js_formatter("fmtPInText(v)", given) == [
-        "adjusted p <0.05 (submitted)",
+        "adjusted p below 0.05 (submitted)",
         "adjusted p 0.20 (submitted)",
         "|logFC| >= 1 and adjusted p <= 0.05",
         "adjusted p is exactly 0; -log10 is undefined, not infinite",
-        "logFC 3.1 (submitted)",
+        "log2 fold change 3.1 (submitted)",
     ]
 
 

@@ -270,7 +270,7 @@ class TestDiseaseAreaMatch:
                        "n_abnormal_phenotypes": 2, "disease_text": "Crohn's disease"})
         a = r.disease_area_match(f)
         assert a["matched"] is False
-        assert a["shown"].startswith("disease-area match: no — met on 2 term(s), none in the disease area")
+        assert a["shown"].startswith("disease-area match: no. Met on 2 term(s), none in the disease area")
 
     def test_an_unmapped_contrast_claims_nothing(self) -> None:
         f = r.Facts(**{**BASE, "mouse_phenotypes": CXCL1_TERMS, "disease_text": "COVID-19"})

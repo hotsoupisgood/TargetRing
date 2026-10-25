@@ -25,6 +25,7 @@ Spec: docs/RECOMMEND-SPEC.md, last section.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -227,7 +228,7 @@ class TestThePage:
 
     def test_the_verdict_boxs_phenotype_tooltip_is_term_then_model_count(
             self, js: str) -> None:
-        assert ("return terms.map((t) => `${t.label} — ${(t.models || []).length} "
+        assert ("return terms.map((t) => `${t.label}: ${(t.models || []).length} "
                 "model(s)`).join(\"\\n\");") in js
         assert 'c.key === "phenotype" ? phenotypeTermsTooltip(phenotypeTerms) : ""' in js
 
@@ -235,7 +236,7 @@ class TestThePage:
         assert "function phenotypeFlagHtml(pf, terms)" in js
         assert "models: ${n}" in js
         # The sentence itself: still `pf.reason`, still nothing else.
-        assert '<span class="flag-why">— ${esc(pf.reason || "")}</span>${models}' in js
+        assert '<span class="flag-why">${esc(pf.reason || "")}</span>${models}' in js
 
     def test_the_small_type_is_styled(self) -> None:
         css = (STATIC / "app.css").read_text()
@@ -273,6 +274,29 @@ class TestTheDemoRunsOnDisk:
                     assert set(m) == {"id", "allelic_composition",
                                       "genetic_background", "pmids"}, p
                     assert isinstance(m["pmids"], list)
+
+    def test_every_baked_pmid_is_digits_only(self) -> None:
+        """A PMID is the whole PubMed link. `app.js` builds each href as the
+        PubMed base plus this value with no validation, so one stray character
+        in here is a dead link on the published site and nothing on the page
+        says so.
+
+        Not hypothetical. `wording.modernise` read each PMID as a count of
+        four digits or more and gave it thousands separators, so `11911824`
+        became `11,911,824` and every one of the 12 PubMed links in the tool
+        resolved to an empty `[uid]` search. It shipped in 9f19811 and the live
+        site served it until the link check of 2026-10-21. The guard is
+        `wording._BARE_IDENTIFIER` plus `restamp_wording.ID_KEYS`; this is the
+        assertion on the artefacts those two protect.
+        """
+        seen = 0
+        for p in demo_drawers():
+            for t in json.loads(p.read_text())["phenotype_terms"]:
+                for m in t["models"]:
+                    for pmid in m["pmids"]:
+                        assert re.fullmatch(r"[0-9]+", pmid), (p.name, pmid)
+                        seen += 1
+        assert seen, "no baked PMIDs found, so this asserted nothing"
 
     def test_the_paid_blocks_survived_the_pass(self) -> None:
         """`--phenotype-terms-only` exists so adding a display field does not
